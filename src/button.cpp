@@ -1,5 +1,5 @@
 
-#include "def.h"
+#include "button.h"
 
 
 static uint32_t btnHolded = 0;
@@ -152,4 +152,106 @@ void btnInterrupt() {
     DOINT(UP);
     DOINT(SEL);
     DOINT(DOWN);
+}
+
+
+/* ------------------------------------------------------------------------------------------- *
+ * Инициализация кнопок
+ * ------------------------------------------------------------------------------------------- */
+static btn_t btnall[] = {
+    { BUTTON_PIN_UP },
+    { BUTTON_PIN_SEL },
+    { BUTTON_PIN_DOWN },
+};
+
+void btnChkState(btn_t &b) {
+    uint8_t val = digitalRead(b.pin);
+    uint32_t m = millis();
+    uint32_t tm = m-b.lastchg;
+    
+    if (tm >= BTN_FILTER_TIME) { // Защита от дребезга
+        bool pushed = b.val == LOW; // Была ли нажата кнопка всё это время
+        if (!pushed && (b.pushed != 0))  { // кнопка отпущена давно, можно сбросить флаги сработавших событий
+            b.pushed = 0;
+            /*    Serial.print(F("btn[pin:"));
+                Serial.print(b.pin);
+                Serial.println(F("] released"));*/
+        }
+        
+        if (pushed) {
+            if (((b.pushed & BTN_PUSHED_SIMPLE) == 0) && ((val != LOW) || (b.hndlong == NULL))) {
+                b.pushed |= BTN_PUSHED_SIMPLE;
+                if (b.hndsmpl != NULL) b.hndsmpl();
+                /*static int counter = 0;
+                counter++;
+                Serial.print(F("btn[pin:"));
+                Serial.print(b.pin);
+                Serial.println(F("] pushed simple"));
+                Serial.println(counter);
+                Serial.println(tm);*/
+            }
+            if (((b.pushed & BTN_PUSHED_LONG) == 0) && ((m-b.lastchg) >= BTN_LONG_TIME)) {
+                b.pushed |= BTN_PUSHED_LONG | BTN_PUSHED_SIMPLE;
+                if (b.hndlong != NULL) b.hndlong();
+                /*Serial.print(F("btn[pin:"));
+                Serial.print(b.pin);
+                Serial.println(F("] pushed long"));*/
+            }
+        }
+    }
+    
+    if (b.val != val) b.lastchg = m;
+    b.val = val;
+}
+
+void btnInit() {
+    for (auto &b : btnall) {
+        pinMode(b.pin, INPUT_PULLUP);
+        b.val = digitalRead(b.pin);
+    }
+    
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[0].pin),
+        []() { btnChkState(btnall[0]); },
+        CHANGE
+    );
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[1].pin),
+        []() { btnChkState(btnall[1]); },
+        CHANGE
+    );
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[2].pin),
+        []() { btnChkState(btnall[2]); },
+        CHANGE
+    );
+    
+    //btnInterrupt();
+}
+
+void btnProcess() {
+    for (auto &b : btnall)
+        btnChkState(b);
+}
+
+void btnHndClear() {
+    for (auto &b : btnall) {
+        b.hndsmpl = NULL;
+        b.hndlong = NULL;
+    }
+}
+
+void btnHnd(uint8_t btn, button_time_t tm, button_hnd_t hnd) {
+    btn_t *b;
+    switch (btn) {
+        case BTN_UP:    b = &(btnall[0]); break;
+        case BTN_SEL:   b = &(btnall[1]); break;
+        case BTN_DOWN:  b = &(btnall[2]); break;
+        default: return;
+    }
+    
+    switch (tm) {
+        case BTN_SIMPLE:    b->hndsmpl = hnd; break;
+        case BTN_LONG:      b->hndlong = hnd; break;
+    }
 }

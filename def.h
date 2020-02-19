@@ -10,18 +10,9 @@
 #include <TinyGPS++.h>
 #include <TimeLib.h>
 
-// Пины кнопок
-//#define BUTTON_PIN_UP     14
-//#define BUTTON_PIN_SEL    27
-//#define BUTTON_PIN_DOWN   26
-#define BUTTON_PIN_UP     12
-#define BUTTON_PIN_SEL    14
-#define BUTTON_PIN_DOWN   27
-
-// Коды кнопок
-#define BTN_UP    0x1
-#define BTN_DOWN  0x2
-#define BTN_SEL   0x8
+#include "src/button.h"
+#include "src/display.h"
+#include "src/mode.h"
 
 // Время (мс) удержания кнопки для различных ситуаций
 #define BTNTIME_PWRON     3000
@@ -30,9 +21,6 @@
 #define BTNTIME_MENUEXIT  2000
 #define BTNTIME_FACTORY   4000
 #define BTNTIME_SAVEPNT   2000
-
-uint8_t btnRead();
-void btnInterrupt();
 
 // Пин подсветки дисплея
 #define LIGHT_PIN 32
@@ -93,8 +81,6 @@ typedef enum {
     DISP_MENUHOLD
 } display_mode_t;
 
-void displayInit();
-void displayUpdate();
 void displayOn();
 void displayOff();
 void displayLightTgl();

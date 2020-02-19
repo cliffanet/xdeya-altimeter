@@ -18,7 +18,6 @@ bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >
 
 bool is_on = true;
 
-
 //------------------------------------------------------------------------------
 void setup() {
     Serial.begin(115200);
@@ -28,11 +27,8 @@ void setup() {
     // инициируем uart-порт GPS-приёмника
     ss.begin(9600);
 
-    // инициируем пины кнопок
-    pinMode(BUTTON_PIN_UP,    INPUT_PULLUP);
-    pinMode(BUTTON_PIN_SEL,   INPUT_PULLUP);
-    pinMode(BUTTON_PIN_DOWN,  INPUT_PULLUP);
-    btnInterrupt();
+    // инициируем кнопки
+    btnInit();
 
     pinMode(LIGHT_PIN, OUTPUT);
 
@@ -41,6 +37,8 @@ void setup() {
     cfgApply();
     Serial.println("begin");
     Serial.println(sizeof(cfg));
+
+    modeMain();
 }
 
 //------------------------------------------------------------------------------
@@ -69,7 +67,7 @@ uint16_t testDeg() { return _testDeg; }
 //------------------------------------------------------------------------------
 void loop() {
     // читаем состояние кнопок
-    uint8_t btn = btnRead();
+    //uint8_t btn = btnRead();
     
     if (!is_on) {
         delay(1000); // Использование прерываний позволяет делать более длинный паузы в состоянии Off
@@ -110,11 +108,14 @@ void loop() {
             break;
             
         case DISP_MENUHOLD:
-            if (btn == 0) menuHold(0, 0);
+            //if (btn == 0) menuHold(0, 0);
             break;
     }
-
+    
+    btnProcess();
     displayUpdate();
     
-    delay(200);
+    delay(100);
+    btnProcess();
+    delay(100);
 }
