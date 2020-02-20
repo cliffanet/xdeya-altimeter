@@ -1,33 +1,35 @@
 
-#include "def.h"
+#include "../eeprom.h"
 
 #include <EEPROM.h>
 
 // конфиг, сохраняемый в eeprom
 eeprom_cfg_t cfg;
 
+static EEPROMClass EEPcfg(EEPROM_CFG_NAME, 0);
+
 /* ------------------------------------------------------------------------------------------- *
  * Функции чтения и сохранения конфига в eeprom
  * ------------------------------------------------------------------------------------------- */
 void cfgLoad() {
-    EEPROM.begin(sizeof(eeprom_cfg_t));
-    eeprom_cfg_t *_cfg = (eeprom_cfg_t *)EEPROM.getDataPtr();
+    EEPcfg.begin(EEPROM_CFG_SIZE);
+    eeprom_cfg_t *_cfg = (eeprom_cfg_t *)EEPcfg.getDataPtr();
 
-    if ((_cfg->mgc1 == EEPROM_MGC1) && (_cfg->ver == EEPROM_VER) && (_cfg->mgc2 == EEPROM_MGC2)) {
+    if ((_cfg->mgc1 == EEPROM_MGC1) && (_cfg->ver == EEPROM_VER)) {
         cfg = *_cfg;
     }
     else {
         eeprom_cfg_t _cfg;
         cfg = _cfg;
     }
-    EEPROM.end();
+    EEPcfg.end();
 }
 
 void cfgSave() {
-    EEPROM.begin(sizeof(eeprom_cfg_t));
-    *((eeprom_cfg_t *)EEPROM.getDataPtr()) = cfg;
-    EEPROM.commit();
-    EEPROM.end();
+    EEPcfg.begin(EEPROM_CFG_SIZE);
+    *((eeprom_cfg_t *)EEPcfg.getDataPtr()) = cfg;
+    EEPcfg.commit();
+    EEPcfg.end();
     Serial.print("config saved to eeprom");
 }
 

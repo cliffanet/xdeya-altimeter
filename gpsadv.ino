@@ -45,7 +45,6 @@ void setup() {
 void pwrOn() {
     if (is_on) return;
     is_on = true;
-    displaySetMode(DISP_MAIN);
     displayOn();
         Serial.println("pwr on");
 }
@@ -66,9 +65,6 @@ uint16_t testDeg() { return _testDeg; }
 
 //------------------------------------------------------------------------------
 void loop() {
-    // читаем состояние кнопок
-    //uint8_t btn = btnRead();
-    
     if (!is_on) {
         delay(1000); // Использование прерываний позволяет делать более длинный паузы в состоянии Off
         return;
@@ -86,36 +82,13 @@ void loop() {
             tmadj = millis() + TIME_ADJUST_INTERVAL;
         }
     }
-
-    static bool disp_init = true;
-    if (disp_init && (displayMode() == DISP_INIT) && gps.satellites.isValid()) {
-        displaySetMode(DISP_MAIN);
-        disp_init = false;
-    }
-
-    switch (displayMode()) {
-        case DISP_MAIN:
-            _testDeg += 5;
-            displayChange(DISP_MAIN, 500);
-            break;
-            
-        case DISP_TIME:
-            displayChange(DISP_TIME, 1000);
-            break;
-            
-        case DISP_MENU:
-            menuTimeOut();
-            break;
-            
-        case DISP_MENUHOLD:
-            //if (btn == 0) menuHold(0, 0);
-            break;
-    }
     
     btnProcess();
+    timerProcess();
     displayUpdate();
     
     delay(100);
     btnProcess();
+    timerProcess();
     delay(100);
 }
