@@ -54,18 +54,43 @@ void altcalc::tick(float press)
                 _state = ACST_TAKEOFF40;
             break;
         case ACST_TAKEOFF40:
+            if ((_altlast < 10) && (_speed < 1))
+                _state = ACST_GROUND;
+            else
             if ((_altlast > 100) && ((a*1000) > 1))
                 _state = ACST_TAKEOFF;
             break;
         case ACST_TAKEOFF:
+            if ((_altlast < 40) && (_speed < 1))
+                _state = ACST_GROUND;
+            else
             if ((_altlast > 300) && ((a*1000) < -30))
                 _state = ACST_FREEFALL;
-            break;
-        case ACST_FREEFALL:
-            if ((a*1000) > -25)
+            else
+            if ((_altlast > 1000) && ((a*1000) < -5))
                 _state = ACST_CANOPY;
             break;
+        case ACST_FREEFALL:
+            if ((_altlast > 300) && ((a*1000) > 3))
+                _state = ACST_TAKEOFF;
+            else
+            if ((a*1000) > -25)
+                _state = ACST_CANOPY;
+            else
+            if ((_altlast < 40) && (_speed < 1))
+                _state = ACST_GROUND;
+            else
+            break;
         case ACST_CANOPY:
+            if ((_altlast > 300) && ((a*1000) > 3))
+                _state = ACST_TAKEOFF;
+            else
+            if ((_altlast < 40) && (_speed < 1))
+                _state = ACST_GROUND;
+            else
+            if ((_altlast > 300) && ((a*1000) < -30))
+                _state = ACST_FREEFALL;
+            else
             if ((_altlast < 100) && (((a*1000) > -25) && ((a*1000) < -1)))
                 _state = ACST_LANDING;
             break;
