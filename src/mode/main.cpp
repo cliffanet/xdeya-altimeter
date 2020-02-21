@@ -7,14 +7,16 @@
  *  между ними
  * *********************************************************************/
 
-#define MODE_MAIN_MIN   1
-#define MODE_MAIN_MAX   3
+#define MODE_MAIN_MIN       1
+#define MODE_MAIN_MAX       4
 // Экран отображения только показаний GPS
-#define MODE_MAIN_GPS   1
+#define MODE_MAIN_GPS       1
 // Экран отображения высоты (большими цифрами)
-#define MODE_MAIN_ALT   2
+#define MODE_MAIN_ALT       2
+// Экран отображения высоты и GPS
+#define MODE_MAIN_ALTGPS    3
 // Экран отображения времени
-#define MODE_MAIN_TIME  3
+#define MODE_MAIN_TIME      4
 
 static uint8_t mode = MODE_MAIN_GPS; // Текущая страница отображения, сохраняется при переходе в меню
 
@@ -55,67 +57,19 @@ inline void drawPointArrow(U8G2 &u8g2, float ang) {
     u8g2.drawLine(APNT(32,16,32,31), APNT(36,21,32,31));
 }
 
-/* ------------------------------------------------------------------------------------------- *
- * Функция отрисовки всей информации о GPS
- * ------------------------------------------------------------------------------------------- */
-//uint16_t testDeg();
+static void displayCompasFull(U8G2 &u8g2) {
+    auto &gps = gpsGet();
 
-static void displayGPS(U8G2 &u8g2) {
-    TinyGPSPlus &gps = gpsGet();
-    char s[50];
-    
-    u8g2.setFont(u8g2_font_ncenB08_tr); 
-    
-    // количество спутников в правом верхнем углу
-    if (gps.satellites.value() > 0)
-        sprintf_P(s, PSTR("sat: %d"), gps.satellites.value());
-    else
-        strcpy_P(s, PSTR("no sat :("));
-    u8g2.drawStr(65, 8, s);
-
-    if (gps.satellites.value() == 0)
+    if (!gps.satellites.isValid() || (gps.satellites.value() == 0)) {
+        char s[10];
+        u8g2.setFont(u8g2_font_osb26_tr);
+        strcpy_P(s, PSTR("NO"));
+        u8g2.drawStr((62-u8g2.getStrWidth(s))/2, 28, s);
+        strcpy_P(s, PSTR("SAT"));
+        u8g2.drawStr((62-u8g2.getStrWidth(s))/2, 60, s);
         return;
-
-    // Текущие координаты
-    if (gps.location.isValid()) {
-        sprintf_P(s, PSTR("la:%f"), gps.location.lat());
-        u8g2.drawStr(65, 22, s);
-        sprintf_P(s, PSTR("lo:%f"), gps.location.lng());
-        u8g2.drawStr(65, 34, s);
     }
-
-    bool in_pnt = false;
-    if (gps.location.isValid() && PNT_NUMOK && POINT.used) {
-        double dist = 
-            TinyGPSPlus::distanceBetween(
-                gps.location.lat(),
-                gps.location.lng(),
-                POINT.lat, 
-                POINT.lng
-            );
-
-        in_pnt = dist < 8.0;
-        
-        u8g2.setFont(u8g2_font_ncenB18_tr); 
-        if (dist < 950) 
-            sprintf_P(s, PSTR("%dm"), (int)round(dist));
-        else if (dist < 9500) 
-            sprintf_P(s, PSTR("%0.1fkm"), dist/1000);
-        else if (dist < 950000) 
-            sprintf_P(s, PSTR("%dkm"), (int)round(dist/1000));
-        else
-            sprintf_P(s, PSTR("%0.2fMm"), dist/1000000);
-        u8g2.drawStr(62, 64, s);
-    }
-    /*
-    static bool in_pnt_prev = false;
-    if (!in_pnt_prev && in_pnt)
-        msgFlash(flashPntReached);
-    in_pnt_prev = in_pnt;
-    */
-    //    drawCompas(u8g2, DEG_TO_RAD*(360 - testDeg()));
-    //    drawPointArrow(u8g2, DEG_TO_RAD*(testDeg()));
-
+    
     // Компас и стрелка к точке внутри него
     if (gps.course.isValid() && gps.location.isValid()) {
         // Компас показывает, куда смещено направление нашего движения 
@@ -124,6 +78,14 @@ static void displayGPS(U8G2 &u8g2) {
         // а стрелка показывает отклонение направления к точке относительно 
         // направления нашего движения
         if (PNT_NUMOK && POINT.used) {
+            bool in_pnt = 
+                TinyGPSPlus::distanceBetween(
+                    gps.location.lat(),
+                    gps.location.lng(),
+                    POINT.lat, 
+                    POINT.lng
+                ) < 8.0;
+            
             if (in_pnt) {
                 u8g2.drawCircle(32, 31, 10);
                 u8g2.drawCircle(32, 31, 15);
@@ -149,6 +111,55 @@ static void displayGPS(U8G2 &u8g2) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ * Функция отрисовки всей информации о GPS
+ * ------------------------------------------------------------------------------------------- */
+//uint16_t testDeg();
+
+static void displayGPS(U8G2 &u8g2) {
+    auto &gps = gpsGet();
+    char s[50];
+    
+    displayCompasFull(u8g2);
+    if (!gps.satellites.isValid() || (gps.satellites.value() == 0))
+        return;
+    
+    u8g2.setFont(u8g2_font_ncenB08_tr);
+    
+    // количество спутников в правом верхнем углу
+    sprintf_P(s, PSTR("sat: %d"), gps.satellites.value());
+    u8g2.drawStr(65, 8, s);
+
+    // Текущие координаты
+    if (gps.location.isValid()) {
+        sprintf_P(s, PSTR("la:%f"), gps.location.lat());
+        u8g2.drawStr(65, 22, s);
+        sprintf_P(s, PSTR("lo:%f"), gps.location.lng());
+        u8g2.drawStr(65, 34, s);
+    }
+
+    if (gps.location.isValid() && PNT_NUMOK && POINT.used) {
+        double dist = 
+            TinyGPSPlus::distanceBetween(
+                gps.location.lat(),
+                gps.location.lng(),
+                POINT.lat, 
+                POINT.lng
+            );
+        
+        u8g2.setFont(u8g2_font_ncenB18_tr); 
+        if (dist < 950) 
+            sprintf_P(s, PSTR("%dm"), (int)round(dist));
+        else if (dist < 9500) 
+            sprintf_P(s, PSTR("%0.1fkm"), dist/1000);
+        else if (dist < 950000) 
+            sprintf_P(s, PSTR("%dkm"), (int)round(dist/1000));
+        else
+            sprintf_P(s, PSTR("%0.2fMm"), dist/1000000);
+        u8g2.drawStr(62, 64, s);
+    }
+}
+
+/* ------------------------------------------------------------------------------------------- *
  * Функция отрисовки Высоты (большими цифрами)
  * ------------------------------------------------------------------------------------------- */
 static void displayAlt(U8G2 &u8g2) {
@@ -156,7 +167,7 @@ static void displayAlt(U8G2 &u8g2) {
     auto &ac = altCalc();
 
     u8g2.setFont(u8g2_font_fub49_tn);
-    sprintf_P(s, PSTR("%0.1f"), ac.alt());// / 1000);
+    sprintf_P(s, PSTR("%0.1f"), ac.alt() / 1000);
     //uint8_t x = 17; // Для немоноширных шрифтов автоцентровка не подходит (прыгает при смене цифр)
     //uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2;
     uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))-15;
@@ -166,6 +177,82 @@ static void displayAlt(U8G2 &u8g2) {
     u8g2.setFont(u8g2_font_ncenB08_tr); 
     sprintf_P(s, PSTR("%d km/h"), round(ac.speed() * 3.6));
     u8g2.drawStr(0, 64, s);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ * Функция отрисовки Высоты + GPS
+ * ------------------------------------------------------------------------------------------- */
+//uint16_t testDeg();
+
+static void displayAltGPS(U8G2 &u8g2) {
+    auto &gps = gpsGet();
+    char s[50];
+    
+    displayCompasFull(u8g2);
+    
+    u8g2.drawHLine(64, 31, 64);
+    
+    // Высота и скорость снижения
+    auto &ac = altCalc();
+    u8g2.setFont(u8g2_font_ncenB08_tr);
+    int16_t alt = round(ac.alt());
+    int16_t o = alt % ALT_STEP;
+    alt -= o;
+    if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
+    
+    u8g2.setFont(u8g2_font_fub20_tn);
+    sprintf_P(s, PSTR("%d"), alt);
+    u8g2.drawStr(128-u8g2.getStrWidth(s), 20, s);
+    
+    u8g2.setFont(u8g2_font_helvB08_tf);
+    sprintf_P(s, PSTR("%0.1f m/s"), ac.speed());
+    u8g2.drawStr(64, 30, s);
+    
+    // Текущий режим высоты
+    u8g2.setFont(u8g2_font_b10_b_t_japanese1);
+    switch (ac.state()) {
+        case ACST_INIT:         strcpy_P(s, PSTR("INIT"));  break;
+        case ACST_GROUND:       strcpy_P(s, PSTR("gnd"));   break;
+        case ACST_TAKEOFF40:    strcpy_P(s, PSTR("TO40"));  break;
+        case ACST_TAKEOFF:      strcpy_P(s, PSTR("TOFF"));  break;
+        case ACST_FREEFALL:     strcpy_P(s, PSTR("FF"));    break;
+        case ACST_CANOPY:       strcpy_P(s, PSTR("CNP"));   break;
+        case ACST_LANDING:      strcpy_P(s, PSTR("LAND"));  break;
+        default: s[0] = '\0';
+    }
+    u8g2.drawStr(128-u8g2.getStrWidth(s), 30, s);
+    
+    // Далее жпс данные
+    if (!gps.satellites.isValid() || (gps.satellites.value() == 0))
+        return;
+    
+    // 
+    if (gps.location.isValid() && PNT_NUMOK && POINT.used) {
+        double dist = 
+            TinyGPSPlus::distanceBetween(
+                gps.location.lat(),
+                gps.location.lng(),
+                POINT.lat, 
+                POINT.lng
+            );
+        
+        u8g2.setFont(u8g2_font_fub20_tf);
+        if (dist < 950) 
+            sprintf_P(s, PSTR("%0.0fm"), dist);
+        else if (dist < 9500) 
+            sprintf_P(s, PSTR("%0.1fkm"), dist/1000);
+        else if (dist < 950000) 
+            sprintf_P(s, PSTR("%0.0fkm"), dist/1000);
+        else
+            sprintf_P(s, PSTR("%0.2fMm"), dist/1000000);
+        u8g2.drawStr(128-u8g2.getStrWidth(s), 54, s);
+    }
+    
+    if (gps.speed.isValid()) {
+        u8g2.setFont(u8g2_font_helvB08_tf);
+        sprintf_P(s, PSTR("%0.1f m/s"), gps.speed.mps());
+        u8g2.drawStr(64, 64, s);
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -201,6 +288,7 @@ static void displayHnd() {  // назначение рисовальщика п�
     switch (mode) {
         case MODE_MAIN_GPS:     displayHnd(displayGPS); break;
         case MODE_MAIN_ALT:     displayHnd(displayAlt); break;
+        case MODE_MAIN_ALTGPS:  displayHnd(displayAltGPS); break;
         case MODE_MAIN_TIME:    displayHnd(displayTime); break;
     }
 }
