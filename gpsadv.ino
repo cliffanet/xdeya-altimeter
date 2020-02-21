@@ -29,6 +29,9 @@ void setup() {
 
     // инициируем кнопки
     btnInit();
+    
+    // инициализируем высотомер
+    altInit();
 
     pinMode(LIGHT_PIN, OUTPUT);
 
@@ -82,12 +85,14 @@ void loop() {
             tmadj = millis() + TIME_ADJUST_INTERVAL;
         }
     }
-    
+
+    altProcess();
     btnProcess();
     timerProcess();
     displayUpdate();
     
     delay(100);
+    altProcess();
     btnProcess();
     timerProcess();
     delay(100);

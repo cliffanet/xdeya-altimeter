@@ -29,6 +29,8 @@ extern bool is_on;
 #include "src/mode.h"
 #include "src/timer.h"
 #include "src/eeprom.h"
+#include "src/altcalc.h"
+#include "src/altimeter.h"
 
 
 // GPS

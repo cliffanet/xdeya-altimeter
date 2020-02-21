@@ -8,11 +8,13 @@
  * *********************************************************************/
 
 #define MODE_MAIN_MIN   1
-#define MODE_MAIN_MAX   2
+#define MODE_MAIN_MAX   3
 // Экран отображения только показаний GPS
 #define MODE_MAIN_GPS   1
+// Экран отображения высоты (большими цифрами)
+#define MODE_MAIN_ALT   2
 // Экран отображения времени
-#define MODE_MAIN_TIME  2
+#define MODE_MAIN_TIME  3
 
 static uint8_t mode = MODE_MAIN_GPS; // Текущая страница отображения, сохраняется при переходе в меню
 
@@ -147,6 +149,26 @@ static void displayGPS(U8G2 &u8g2) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ * Функция отрисовки Высоты (большими цифрами)
+ * ------------------------------------------------------------------------------------------- */
+static void displayAlt(U8G2 &u8g2) {
+    char s[20];
+    auto &ac = altCalc();
+
+    u8g2.setFont(u8g2_font_fub49_tn);
+    sprintf_P(s, PSTR("%0.1f"), ac.alt());// / 1000);
+    //uint8_t x = 17; // Для немоноширных шрифтов автоцентровка не подходит (прыгает при смене цифр)
+    //uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2;
+    uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))-15;
+    u8g2.setCursor(x, 52);
+    u8g2.print(s);
+
+    u8g2.setFont(u8g2_font_ncenB08_tr); 
+    sprintf_P(s, PSTR("%d km/h"), round(ac.speed() * 3.6));
+    u8g2.drawStr(0, 64, s);
+}
+
+/* ------------------------------------------------------------------------------------------- *
  * Функция отрисовки Текущего времени
  * ------------------------------------------------------------------------------------------- */
 static void displayTime(U8G2 &u8g2) {
@@ -178,6 +200,7 @@ static void displayTime(U8G2 &u8g2) {
 static void displayHnd() {  // назначение рисовальщика по экрану
     switch (mode) {
         case MODE_MAIN_GPS:     displayHnd(displayGPS); break;
+        case MODE_MAIN_ALT:     displayHnd(displayAlt); break;
         case MODE_MAIN_TIME:    displayHnd(displayTime); break;
     }
 }
