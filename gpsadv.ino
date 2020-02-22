@@ -1,16 +1,14 @@
 
 #include "def.h"
-#include <Arduino.h>
 
-
-#include <TinyGPS++.h>
-TinyGPSPlus gps;
-TinyGPSPlus &gpsGet() { return gps; }
-// будем использовать стандартный экземпляр класса HardwareSerial, 
-// т.к. он и так в системе уже есть и память под него выделена
-// Стандартные пины для свободного аппаратного Serial2: 16(rx), 17(tx)
-#define ss Serial2
-
+#include "src/button.h"
+#include "src/display.h"
+#include "src/mode.h"
+#include "src/timer.h"
+#include "src/eeprom.h"
+#include "src/gps.h"
+#include "src/altcalc.h"
+#include "src/altimeter.h"
 
 #include <TimeLib.h>
 static uint32_t tmadj = 0;
@@ -23,9 +21,6 @@ void setup() {
     Serial.begin(115200);
     
     displayInit();
-    
-    // инициируем uart-порт GPS-приёмника
-    ss.begin(9600);
 
     // инициируем кнопки
     btnInit();
@@ -33,7 +28,8 @@ void setup() {
     // инициализируем высотомер
     altInit();
 
-    pinMode(LIGHT_PIN, OUTPUT);
+    // инициируем gps
+    gpsInit();
 
     // загружаем сохранённый конфиг
     cfgLoad();
@@ -73,11 +69,10 @@ void loop() {
         return;
     }
 
-    while (ss.available()) {
-        gps.encode( ss.read() );
-    }
+    gpsProcess();
 
     if (millis() >= tmadj) {
+        auto &gps = gpsGet();
         if (gps.time.age() < 500) {
             // set the Time to the latest GPS reading
             setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());

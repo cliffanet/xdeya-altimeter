@@ -6,8 +6,6 @@
 #define _def_H
 
 #include <Arduino.h>
-#include <U8g2lib.h>
-#include <TinyGPS++.h>
 #include <TimeLib.h>
 
 
@@ -19,22 +17,6 @@ bool timeOk();
 // Логическое состояние включенности устройства
 extern bool is_on;
 
-// Количество сохраняемых GPS-точек
-#define PNT_COUNT     3
-#define PNT_NUMOK     ((cfg.pntnum > 0) && (cfg.pntnum <= PNT_COUNT))
-#define POINT         cfg.pntall[cfg.pntnum-1]
-
-#include "src/button.h"
-#include "src/display.h"
-#include "src/mode.h"
-#include "src/timer.h"
-#include "src/eeprom.h"
-#include "src/altcalc.h"
-#include "src/altimeter.h"
-
-
-// GPS
-TinyGPSPlus &gpsGet();
 
 void pwrOn();
 void pwrOff();

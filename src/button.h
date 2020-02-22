@@ -5,7 +5,7 @@
 #ifndef _button_H
 #define _button_H
 
-#include "../def.h"
+#include <Arduino.h>
 
 // Пины кнопок
 //#define BUTTON_PIN_UP     14

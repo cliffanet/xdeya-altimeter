@@ -5,7 +5,8 @@
 #ifndef _eeprom_H
 #define _eeprom_H
 
-#include "../def.h"
+#include <Arduino.h>
+#include "gps.h"
 
 /* 
  *  Конфиг, сохраняемый в EEPROM
@@ -16,6 +17,13 @@
 #define EEPROM_CFG_SIZE 512
 #define EEPROM_CFG_NAME "cfg"
 
+
+// Количество сохраняемых GPS-точек
+#define PNT_COUNT     3
+#define PNT_NUMOK     ((cfg.pntnum > 0) && (cfg.pntnum <= PNT_COUNT))
+#define POINT         cfg.pntall[cfg.pntnum-1]
+
+// Основной конфиг
 typedef struct __attribute__((__packed__)) {    // структура для хранения точек в eeprom
     uint8_t mgc1 = EEPROM_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
     uint8_t ver = EEPROM_VER;

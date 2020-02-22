@@ -1,6 +1,10 @@
 
-#include "../../def.h"
-
+#include "../mode.h"
+#include "../display.h"
+#include "../button.h"
+#include "../eeprom.h"
+#include "../timer.h"
+#include "../../def.h" //time
 
 // Заголовки функций, которые нужны в описании списка меню
 static void valInt(char *txt, int val);

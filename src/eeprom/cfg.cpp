@@ -1,5 +1,6 @@
 
 #include "../eeprom.h"
+#include "../display.h"
 
 #include <EEPROM.h>
 

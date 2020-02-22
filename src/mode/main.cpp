@@ -1,5 +1,10 @@
 
-#include "../../def.h"
+#include "../mode.h"
+#include "../display.h"
+#include "../button.h"
+#include "../gps.h"
+#include "../altimeter.h"
+#include "../../def.h" //time
 
 /* *********************************************************************
  *  Отображение основного режима с показаниями прибора

@@ -24,6 +24,8 @@ void displayInit() {
     do {
         u8g2.drawStr(0,24,"Init...");
     } while( u8g2.nextPage() );
+    
+    pinMode(LIGHT_PIN, OUTPUT);
 }
 
 void displayHnd(display_hnd_t hnd) {

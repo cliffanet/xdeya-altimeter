@@ -5,7 +5,8 @@
 #ifndef _display_H
 #define _display_H
 
-#include "../def.h"
+#include <Arduino.h>
+#include <U8g2lib.h>
 
 // Пин подсветки дисплея
 #define LIGHT_PIN 32

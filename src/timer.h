@@ -5,7 +5,7 @@
 #ifndef _timer_H
 #define _timer_H
 
-#include "../def.h"
+#include <Arduino.h>
 
 typedef void (*timer_hnd_t)();
 

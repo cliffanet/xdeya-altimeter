@@ -5,7 +5,7 @@
 #ifndef _altimeter_H
 #define _altimeter_H
 
-#include "../def.h"
+#include <Arduino.h>
 #include "altcalc.h"
 
 // Шаг отображения высоты

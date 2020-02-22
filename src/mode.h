@@ -5,7 +5,7 @@
 #ifndef _mode_H
 #define _mode_H
 
-#include "../def.h"
+#include <Arduino.h>
 
 #define MENU_STR_COUNT  5
 #define MENU_TIMEOUT    15000
