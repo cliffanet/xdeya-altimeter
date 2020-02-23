@@ -37,6 +37,8 @@ class altcalc
         const float     alt()       const { return _altappr; }
         const float     speed()     const { return _speed; }
         const ac_state_t state()    const { return _state; }
+        
+        void gndcorrect();
   
     private:
         void initend();

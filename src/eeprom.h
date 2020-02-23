@@ -13,7 +13,7 @@
  */
 #define EEPROM_MGC1     0xe4
 #define EEPROM_VER      1
-//#define EEPROM_MGC2     0x7a
+#define EEPROM_MGC2     0x7a
 #define EEPROM_CFG_SIZE 512
 #define EEPROM_CFG_NAME "cfg"
 
@@ -24,7 +24,7 @@
 #define POINT         cfg.pntall[cfg.pntnum-1]
 
 // Основной конфиг
-typedef struct __attribute__((__packed__)) {    // структура для хранения точек в eeprom
+typedef struct __attribute__((__packed__)) {
     uint8_t mgc1 = EEPROM_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
     uint8_t ver = EEPROM_VER;
     
@@ -38,8 +38,7 @@ typedef struct __attribute__((__packed__)) {    // структура для х�
         double lng = 0;
     } pntall[PNT_COUNT];
     
-//    char res[512-3-3-17*PNT_COUNT] = { 0 };   // выравнивание структуры до 512 байт на случай, если появятся новые параметры
-//   uint8_t mgc2 = EEPROM_MGC2;
+    bool gndmanual = true;                      // Разрешение на ручную автокорректировку нуля
 } eeprom_cfg_t;
 
 extern eeprom_cfg_t cfg;

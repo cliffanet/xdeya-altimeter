@@ -101,6 +101,21 @@ void altcalc::tick(float press)
     }
 }
 
+void altcalc::gndcorrect() {
+    // пересчёт _pressgnd
+    
+    if (_state == ACST_INIT) // Пока не завершилась инициализация, дальше ничего не считаем
+        return;
+    
+    double pr = 0;
+    for (auto &r: _rr) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
+        pr += _rr[cur].press;
+    _pressgnd = pr / AC_RR_ALT_SIZE;
+    
+    for (auto &r: _rr) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
+        r.alt = calc_alt(_pressgnd, r.press);
+}
+
 void altcalc::initend() {
     // сразу после включения первые значения датчик даёт сбойные, поэтому считаем
     // по той же формуле среднего взвешенного - самое крайнее значение - наиболее значимое

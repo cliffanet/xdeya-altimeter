@@ -3,12 +3,14 @@
 #include "../display.h"
 #include "../button.h"
 #include "../eeprom.h"
+#include "../altimeter.h"
 #include "../timer.h"
 #include "../../def.h" //time
 
 // Заголовки функций, которые нужны в описании списка меню
 static void valInt(char *txt, int val);
 static void valOn(char *txt, bool val);
+static void valYes(char *txt, bool val);
 static void flashP(char *txt, int16_t count = 20);
 static void flashHold();
 static void flashClear();
@@ -17,6 +19,8 @@ static void menuExit();
 static void menuSubMain(int16_t sel);
 static void menuSubPoint();
 static void menuSubDisplay();
+static void menuSubGnd();
+static void menuSubInfo();
 static void menuSubTime();
 static void menuSubPower();
 static void menuSubSystem();
@@ -60,6 +64,14 @@ static const menu_el_t menumain[] {
         .enter = menuSubDisplay,
     },
     {
+        .name = PSTR("Gnd Correct"),
+        .enter = menuSubGnd,
+    },
+    {
+        .name = PSTR("Auto Screen-Mode"),
+        .enter = menuSubInfo,
+    },
+    {
         .name = PSTR("Time"),
         .enter = menuSubTime,
     },
@@ -76,7 +88,7 @@ static const menu_el_t menumain[] {
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления GPS-точками
  * ------------------------------------------------------------------------------------------- */
-static const menu_el_t mengpsupoint[] {
+static const menu_el_t menugpsupoint[] {
     {
         .name = PSTR("Exit"),
         .enter = [] () { menuSubMain(1); },
@@ -196,12 +208,92 @@ static const menu_el_t menudisplay[] {
 };
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Меню сброса нуля высотомера (на земле)
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menugnd[] {
+    {
+        .name = PSTR("Exit"),
+        .enter = [] () { menuSubMain(3); },
+    },
+    {   // принудительная калибровка (On Ground)
+        .name = PSTR("Manual set"),
+        .enter = flashHold,  // Сброс только по длинному нажатию
+        .showval = NULL,
+        .editup = NULL,
+        .editdown = NULL,
+        .hold = [] () {
+            if (!cfg.gndmanual) { // Точка может быть не выбрана
+                flashP(PSTR("Manual not allowed"));
+                return;
+            }
+            
+            altCalc().gndcorrect();
+            flashP(PSTR("GND corrected"));
+        },
+    },
+    {   // разрешение принудительной калибровки: нет, "на земле", всегда
+        .name = PSTR("Allow mnl set"),
+        .enter = [] () {
+            cfg.gndmanual = cfg.gndmanual ? false : true;
+            Serial.println(cfg.gndmanual);
+            cfgchg = true;
+        },
+        .showval = [] (char *txt) { valYes(txt, cfg.gndmanual); },
+    },
+    {   // выбор автоматической калибровки: нет, автоматически на земле
+        .name = PSTR("Auto correct"),
+        .enter = NULL,
+        .showval = [] (char *txt) { strcpy_P(txt, PSTR("On GND")); },
+    },
+};
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Меню автоматизации экранами с информацией
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menuinfo[] {
+    {
+        .name = PSTR("Exit"),
+        .enter = [] () { menuSubMain(4); },
+    },
+    {   // переключать ли экран в падении автоматически в отображение только высоты
+        .name = PSTR("Auto FF-screen"),
+        .enter = NULL,
+        .showval = [] (char *txt) { strcpy_P(txt, PSTR("Yes")); },
+    },
+    {   // куда переключать экран под куполом: не переключать, жпс, часы, жпс+высота (по умолч)
+        .name = PSTR("On CNP"),
+        .enter = NULL,
+        .showval = [] (char *txt) { strcpy_P(txt, PSTR("GPS+Alti")); },
+    },
+    {   // куда переключать экран после приземления: не переключать, жпс (по умолч), часы, жпс+высота
+        .name = PSTR("After Land"),
+        .enter = NULL,
+        .showval = [] (char *txt) { strcpy_P(txt, PSTR("No auto")); },
+    },
+    {   // куда переключать экран при длительном бездействии на земле
+        .name = PSTR("On GND"),
+        .enter = NULL,
+        .showval = [] (char *txt) { strcpy_P(txt, PSTR("Clock")); },
+    },
+    {   // куда переключать экран при включении: запоминать после выключения, все варианты экрана
+        .name = PSTR("Turned On"),
+        .enter = NULL,
+        .showval = [] (char *txt) { strcpy_P(txt, PSTR("Last")); },
+    },
+    {   // запрещать пользоваться меню в падении
+        .name = PSTR("Deny menu on FF"),
+        .enter = NULL,
+        .showval = [] (char *txt) { strcpy_P(txt, PSTR("Yes")); },
+    },
+};
+
+/* ------------------------------------------------------------------------------------------- *
  *  Меню управления часами
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menutime[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(3); },
+        .enter = [] () { menuSubMain(5); },
     },
     {   // Выбор временной зоны, чтобы корректно синхронизироваться с службами времени
         .name = PSTR("Zone"),
@@ -245,7 +337,7 @@ static const menu_el_t menutime[] {
 static const menu_el_t menupower[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(3); },
+        .enter = [] () { menuSubMain(6); },
     },
     {
         .name = PSTR("Off"),
@@ -263,7 +355,7 @@ static const menu_el_t menupower[] {
 static const menu_el_t menusystem[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(4); },
+        .enter = [] () { menuSubMain(7); },
     },
     {
         .name = PSTR("Factory reset"),
@@ -355,6 +447,9 @@ static void valInt(char *txt, int val) {    // числовые
 static void valOn(char *txt, bool val) {    // On/Off
     strcpy_P(txt, val ? PSTR("On") : PSTR("Off"));
 }
+static void valYes(char *txt, bool val) {   // Yes/No
+    strcpy_P(txt, val ? PSTR("Yes") : PSTR("No"));
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Функции мигания сообщением на выбранном пункте меню
@@ -435,6 +530,25 @@ static void menuDown() {    // вниз
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Изменения значения при редактировании
+ * ------------------------------------------------------------------------------------------- */
+static void editUp() {      // Вверх
+    const auto &m = menu[menusel];
+    if (m.editup == NULL) return;
+    m.editup();
+    flashClear();
+    timerUpdate(MENU_TIMEOUT);  // Обновляем таймер автовыхода
+}
+
+static void editDown() {    // вниз
+    const auto &m = menu[menusel];
+    if (m.editdown == NULL) return;
+    m.editdown();
+    flashClear();
+    timerUpdate(MENU_TIMEOUT);  // Обновляем таймер автовыхода
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  Функции режима редактирования
  * ------------------------------------------------------------------------------------------- */
 static void menuEditOff() {     // Выход из режима редактирования
@@ -452,8 +566,8 @@ static void menuEditOn() {      // Вход в режим редактирова
         return;
     
     // Переназначаем кнопки
-    btnHnd(BTN_UP,      BTN_SIMPLE, m.editup);
-    btnHnd(BTN_DOWN,    BTN_SIMPLE, m.editdown);
+    btnHnd(BTN_UP,      BTN_SIMPLE, editUp);
+    btnHnd(BTN_DOWN,    BTN_SIMPLE, editDown);
     btnHnd(BTN_SEL,     BTN_SIMPLE, menuEditOff);
     
     if (m.enter != NULL)    // При входе в режим редактирования можно использовать обработчик enter (как и при обычном нажатии)
@@ -477,9 +591,9 @@ static void menuSubMain(int16_t sel) {      // главное меню
 }
 
 static void menuSubPoint() {
-    menu = mengpsupoint;
+    menu = menugpsupoint;
     menutitle = PSTR("GPS points");
-    menusz = sizeof(mengpsupoint) / sizeof(menu_el_t);
+    menusz = sizeof(menugpsupoint) / sizeof(menu_el_t);
     menusel=0;
     menutop=0;
     menuHnd();
@@ -489,6 +603,24 @@ static void menuSubDisplay() {
     menu = menudisplay;
     menutitle = PSTR("Display");
     menusz = sizeof(menudisplay) / sizeof(menu_el_t);
+    menusel=0;
+    menutop=0;
+    menuHnd();
+}
+
+static void menuSubGnd() {
+    menu = menugnd;
+    menutitle = PSTR("Gnd Correct");
+    menusz = sizeof(menugnd) / sizeof(menu_el_t);
+    menusel=0;
+    menutop=0;
+    menuHnd();
+}
+
+static void menuSubInfo() {
+    menu = menuinfo;
+    menutitle = PSTR("Auto Screen-Mode");
+    menusz = sizeof(menuinfo) / sizeof(menu_el_t);
     menusel=0;
     menutop=0;
     menuHnd();
@@ -547,5 +679,12 @@ static void menuExit() {
         cfgSave();
         cfgchg = false;
     }
+    menu = NULL;
+    menusel=0;
+    menutop=0;
+    menusz=0;
+    menuedit = false;
+    flashstr[0] = '\0';
+    flashcnt = 0;
     modeMain();     // выходим в главный режим отображения показаний
 }

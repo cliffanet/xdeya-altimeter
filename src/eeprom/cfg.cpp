@@ -7,30 +7,34 @@
 // конфиг, сохраняемый в eeprom
 eeprom_cfg_t cfg;
 
-static EEPROMClass EEPcfg(EEPROM_CFG_NAME, 0);
-
 /* ------------------------------------------------------------------------------------------- *
  * Функции чтения и сохранения конфига в eeprom
  * ------------------------------------------------------------------------------------------- */
 void cfgLoad() {
-    EEPcfg.begin(EEPROM_CFG_SIZE);
-    eeprom_cfg_t *_cfg = (eeprom_cfg_t *)EEPcfg.getDataPtr();
+    EEPROMClass eep(EEPROM_CFG_NAME, 0);
+    eep.begin(EEPROM_CFG_SIZE);
+    auto *e = eep.getDataPtr();
+    eeprom_cfg_t *_cfg = (eeprom_cfg_t *)e;
 
-    if ((_cfg->mgc1 == EEPROM_MGC1) && (_cfg->ver == EEPROM_VER)) {
+    if ((_cfg->mgc1 == EEPROM_MGC1) && (_cfg->ver == EEPROM_VER) && (e[EEPROM_CFG_SIZE-1] == EEPROM_MGC2)) {
         cfg = *_cfg;
     }
     else {
         eeprom_cfg_t _cfg;
         cfg = _cfg;
     }
-    EEPcfg.end();
+    eep.end();
 }
 
 void cfgSave() {
-    EEPcfg.begin(EEPROM_CFG_SIZE);
-    *((eeprom_cfg_t *)EEPcfg.getDataPtr()) = cfg;
-    EEPcfg.commit();
-    EEPcfg.end();
+    EEPROMClass eep(EEPROM_CFG_NAME, 0);
+    eep.begin(EEPROM_CFG_SIZE);
+    auto *e = eep.getDataPtr();
+    bzero(e, EEPROM_CFG_SIZE);
+    memcpy(e, &cfg, sizeof(cfg));
+    e[EEPROM_CFG_SIZE-1] = EEPROM_MGC2;
+    eep.commit();
+    eep.end();
     Serial.print("config saved to eeprom");
 }
 

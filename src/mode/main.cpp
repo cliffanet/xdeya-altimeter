@@ -2,6 +2,7 @@
 #include "../mode.h"
 #include "../display.h"
 #include "../button.h"
+#include "../eeprom.h"
 #include "../gps.h"
 #include "../altimeter.h"
 #include "../../def.h" //time
@@ -312,6 +313,7 @@ static void btnSelSmpl() {  // Обработка нажатия на средн
 void modeMain() {
     displayHnd();
     btnHndClear();
+    btnHnd(BTN_UP,  BTN_LONG,   displayLightTgl);
     btnHnd(BTN_SEL, BTN_SIMPLE, btnSelSmpl);
     btnHnd(BTN_SEL, BTN_LONG,   modeMenu);
     

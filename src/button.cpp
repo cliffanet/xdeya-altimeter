@@ -1,5 +1,6 @@
 
 #include "button.h"
+#include <vector>
 
 /* ------------------------------------------------------------------------------------------- *
  * Инициализация кнопок
@@ -9,6 +10,8 @@ static btn_t btnall[] = {
     { BUTTON_PIN_SEL },
     { BUTTON_PIN_DOWN },
 };
+
+static std::vector<button_hnd_t> hndall;
 
 /* ------------------------------------------------------------------------------------------- *
  * Проверка состояния
@@ -27,11 +30,11 @@ void btnChkState(btn_t &b) {
         if (pushed) {
             if (((b.pushed & BTN_PUSHED_SIMPLE) == 0) && ((val != LOW) || (b.hndlong == NULL))) {
                 b.pushed |= BTN_PUSHED_SIMPLE;
-                if (b.hndsmpl != NULL) b.hndsmpl(); // Простое нажатие
+                if (b.hndsmpl != NULL) hndall.push_back(b.hndsmpl); // Простое нажатие
             }
             if (((b.pushed & BTN_PUSHED_LONG) == 0) && ((m-b.lastchg) >= BTN_LONG_TIME)) {
                 b.pushed |= BTN_PUSHED_LONG | BTN_PUSHED_SIMPLE; // чтобы после длинного нажатия не сработало простое, помечаем простое тоже сработавшим
-                if (b.hndlong != NULL) b.hndlong(); // Длинное нажатие
+                if (b.hndlong != NULL) hndall.push_back(b.hndlong); // Длинное нажатие
             }
         }
     }
@@ -73,6 +76,11 @@ void btnInit() {
 void btnProcess() {
     for (auto &b : btnall)
         btnChkState(b);
+    if (hndall.size() > 0) {
+        for (auto hnd: hndall)
+            hnd();
+        hndall.clear();
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
