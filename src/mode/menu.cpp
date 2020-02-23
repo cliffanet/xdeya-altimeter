@@ -227,23 +227,25 @@ static const menu_el_t menugnd[] {
                 return;
             }
             
-            altCalc().gndcorrect();
+            altCalc().gndreset();
             flashP(PSTR("GND corrected"));
         },
     },
     {   // разрешение принудительной калибровки: нет, "на земле", всегда
         .name = PSTR("Allow mnl set"),
         .enter = [] () {
-            cfg.gndmanual = cfg.gndmanual ? false : true;
-            Serial.println(cfg.gndmanual);
+            cfg.gndmanual = !cfg.gndmanual;
             cfgchg = true;
         },
         .showval = [] (char *txt) { valYes(txt, cfg.gndmanual); },
     },
     {   // выбор автоматической калибровки: нет, автоматически на земле
         .name = PSTR("Auto correct"),
-        .enter = NULL,
-        .showval = [] (char *txt) { strcpy_P(txt, PSTR("On GND")); },
+        .enter = [] () {
+            cfg.gndauto = !cfg.gndauto;
+            cfgchg = true;
+        },
+        .showval = [] (char *txt) { strcpy_P(txt, cfg.gndauto ? PSTR("On GND") : PSTR("No")); },
     },
 };
 

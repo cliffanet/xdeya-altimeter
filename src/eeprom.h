@@ -38,7 +38,8 @@ typedef struct __attribute__((__packed__)) {
         double lng = 0;
     } pntall[PNT_COUNT];
     
-    bool gndmanual = true;                      // Разрешение на ручную автокорректировку нуля
+    bool gndmanual = true;                      // Разрешение на ручную корректировку нуля
+    bool gndauto = true;                        // Разрешение на автокорректировку нуля
 } eeprom_cfg_t;
 
 extern eeprom_cfg_t cfg;

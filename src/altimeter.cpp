@@ -1,5 +1,6 @@
 
 #include "altimeter.h"
+#include "eeprom.h"
 
 #include <Adafruit_BMP280.h>
 
@@ -23,4 +24,12 @@ void altInit() {
 
 void altProcess() {
     ac.tick(bme.readPressure());
+    // Автокорректировка нуля
+    if (cfg.gndauto &&
+        (ac.state() == ACST_GROUND) &&
+        (ac.direct() == ACDIR_NULL) &&
+        (ac.dircnt() >= ALT_AUTOGND_INTERVAL)) {
+        ac.gndreset();
+        Serial.println("auto GND reseted");
+    }
 }

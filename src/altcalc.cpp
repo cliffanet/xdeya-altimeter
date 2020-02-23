@@ -24,6 +24,10 @@ void altcalc::tick(float press)
             initend();
         cur = 0;
     }
+    
+    // количество тиков между изменениями в направлении движения (вверх/вниз)
+    _dircnt++;
+    
     if (_state == ACST_INIT) // Пока не завершилась инициализация, дальше ничего не считаем
         return;
     
@@ -47,34 +51,36 @@ void altcalc::tick(float press)
 
     _speed = a >= 0 ? a*1000 : a * -1000;
     _altappr = ((float)(m - millprev)) * a + b;
+    
+    float a1000 = a*1000; // верт скорость в м/с со знаком: + вверх, - вниз
 
     switch (_state) {
         case ACST_GROUND:
-            if ((_altlast > 40) && (_altlast < 100) && ((a*1000) > 1))
+            if ((_altlast > 40) && (_altlast < 100) && (a1000 > 1))
                 _state = ACST_TAKEOFF40;
             break;
         case ACST_TAKEOFF40:
             if ((_altlast < 10) && (_speed < 1))
                 _state = ACST_GROUND;
             else
-            if ((_altlast > 100) && ((a*1000) > 1))
+            if ((_altlast > 100) && (a1000 > 1))
                 _state = ACST_TAKEOFF;
             break;
         case ACST_TAKEOFF:
             if ((_altlast < 40) && (_speed < 1))
                 _state = ACST_GROUND;
             else
-            if ((_altlast > 300) && ((a*1000) < -30))
+            if ((_altlast > 300) && (a1000 < -30))
                 _state = ACST_FREEFALL;
             else
-            if ((_altlast > 1000) && ((a*1000) < -5))
+            if ((_altlast > 1000) && (a1000 < -5))
                 _state = ACST_CANOPY;
             break;
         case ACST_FREEFALL:
-            if ((_altlast > 300) && ((a*1000) > 3))
+            if ((_altlast > 300) && (a1000 > 3))
                 _state = ACST_TAKEOFF;
             else
-            if ((a*1000) > -25)
+            if (a1000 > -25)
                 _state = ACST_CANOPY;
             else
             if ((_altlast < 40) && (_speed < 1))
@@ -82,26 +88,42 @@ void altcalc::tick(float press)
             else
             break;
         case ACST_CANOPY:
-            if ((_altlast > 300) && ((a*1000) > 3))
+            if ((_altlast > 300) && (a1000 > 3))
                 _state = ACST_TAKEOFF;
             else
             if ((_altlast < 40) && (_speed < 1))
                 _state = ACST_GROUND;
             else
-            if ((_altlast > 300) && ((a*1000) < -30))
+            if ((_altlast > 300) && (a1000 < -30))
                 _state = ACST_FREEFALL;
             else
-            if ((_altlast < 100) && (((a*1000) > -25) && ((a*1000) < -1)))
+            if ((_altlast < 100) && ((a1000 > -25) && (a1000 < -1)))
                 _state = ACST_LANDING;
             break;
         case ACST_LANDING:
-            if ((_altlast < 100) && (((a*1000) > -1) && ((a*1000) < 1)))
+            if ((_altlast < 100) && ((a1000 > -1) && (a1000 < 1)))
                 _state = ACST_GROUND;
             break;
     }
+    
+    // текущее направление движения
+    if ((_dir != ACDIR_NULL) && (a1000 > -0.3) && (a1000 < 0.3)) {
+        _dir = ACDIR_NULL;
+        _dircnt = 0;
+    }
+    else
+    if ((_dir != ACDIR_UP) && (a1000 > 0.5)) {
+        _dir = ACDIR_UP;
+        _dircnt = 0;
+    }
+    else
+    if ((_dir != ACDIR_DOWN) && (a1000 < -0.5)) {
+        _dir = ACDIR_DOWN;
+        _dircnt = 0;
+    }
 }
 
-void altcalc::gndcorrect() {
+void altcalc::gndreset() {
     // пересчёт _pressgnd
     
     if (_state == ACST_INIT) // Пока не завершилась инициализация, дальше ничего не считаем
@@ -111,9 +133,14 @@ void altcalc::gndcorrect() {
     for (auto &r: _rr) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
         pr += _rr[cur].press;
     _pressgnd = pr / AC_RR_ALT_SIZE;
+    _state = ACST_GROUND;
     
     for (auto &r: _rr) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
         r.alt = calc_alt(_pressgnd, r.press);
+    
+    // Сбрасываем направление движения при сбросе нуля по той же причине - мы пересчитали высоты
+    _dir = ACDIR_INIT;
+    _dircnt = 0;
 }
 
 void altcalc::initend() {
