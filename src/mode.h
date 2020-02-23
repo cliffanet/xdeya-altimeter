@@ -46,6 +46,7 @@ extern bool modemain;
 
 // Основной режим - отображается одна из страниц с показаниями
 void modeMain();
+void initMain(int8_t m);
 // Принудительный переход в FF-режим
 void modeFF(); 
 

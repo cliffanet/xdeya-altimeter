@@ -56,4 +56,22 @@ void cfgSave();
 void cfgFactory();
 void cfgApply();
 
+#define EEPROM_INF_SIZE     32
+#define EEPROM_INF_NAME     "info"
+
+// Оперативные данные, которые надо сохранять при уходе в сон и выключении
+typedef struct __attribute__((__packed__)) {
+    uint8_t mgc1 = EEPROM_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
+    uint8_t ver = 1;
+    
+    bool pwron = true;                          // Включено ли наше устр-во
+    int8_t mainmode = MODE_MAIN_GPS;            // Текущий режим главного экрана
+} eeprom_inf_t;
+
+extern eeprom_inf_t inf;
+
+void infLoad();
+void infSave();
+
+
 #endif // _eeprom_H

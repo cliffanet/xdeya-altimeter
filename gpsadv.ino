@@ -19,6 +19,8 @@ bool is_on = true;
 //------------------------------------------------------------------------------
 void setup() {
     Serial.begin(115200);
+
+    infLoad();
     
     displayInit();
 
@@ -37,7 +39,15 @@ void setup() {
     Serial.println("begin");
     Serial.println(sizeof(cfg));
 
-    modeMain();
+    switch (cfg.dsplpwron) {
+        case MODE_MAIN_GPS:
+        case MODE_MAIN_ALT:
+        case MODE_MAIN_ALTGPS:
+        case MODE_MAIN_TIME:
+            inf.mainmode = cfg.dsplpwron;
+            break;
+    }
+    initMain(inf.mainmode);
 }
 
 //------------------------------------------------------------------------------

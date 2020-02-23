@@ -324,6 +324,10 @@ static void mainTimeout() {
     if (altCalc().state() != ACST_GROUND)
         return;
     autoChgMode(cfg.dsplgnd);
+    if (inf.mainmode != mode) {
+        inf.mainmode = mode;
+        infSave();
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -372,6 +376,11 @@ void modeMain() {
     timerHnd(mainTimeout, MAIN_TIMEOUT);
     
     Serial.println(F("mode main"));
+}
+
+void initMain(int8_t m) {
+    mode = m;
+    modeMain();
 }
 
 void modeFF() {
