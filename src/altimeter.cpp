@@ -7,6 +7,7 @@
 bool bmpok = false;
 static Adafruit_BMP280 bme; // hardware Wire
 static altcalc ac;
+static altimeter_state_hnd_t statehnd = NULL;
 
 /* ------------------------------------------------------------------------------------------- *
  * Базовые функции обновления дисплея
@@ -23,7 +24,9 @@ void altInit() {
 }
 
 void altProcess() {
+    ac_state_t st = ac.state();
     ac.tick(bme.readPressure());
+    
     // Автокорректировка нуля
     if (cfg.gndauto &&
         (ac.state() == ACST_GROUND) &&
@@ -32,4 +35,13 @@ void altProcess() {
         ac.gndreset();
         Serial.println("auto GND reseted");
     }
+    
+    // Обработка изменения режима высотомера
+    if ((statehnd != NULL) && (st != ac.state()))
+        statehnd(st, ac.state());
+}
+
+
+void altStateHnd(altimeter_state_hnd_t hnd) {
+    statehnd = hnd;
 }

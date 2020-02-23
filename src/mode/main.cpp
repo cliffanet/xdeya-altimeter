@@ -5,6 +5,7 @@
 #include "../eeprom.h"
 #include "../gps.h"
 #include "../altimeter.h"
+#include "../timer.h"
 #include "../../def.h" //time
 
 /* *********************************************************************
@@ -13,16 +14,7 @@
  *  между ними
  * *********************************************************************/
 
-#define MODE_MAIN_MIN       1
-#define MODE_MAIN_MAX       4
-// Экран отображения только показаний GPS
-#define MODE_MAIN_GPS       1
-// Экран отображения высоты (большими цифрами)
-#define MODE_MAIN_ALT       2
-// Экран отображения высоты и GPS
-#define MODE_MAIN_ALTGPS    3
-// Экран отображения времени
-#define MODE_MAIN_TIME      4
+bool modemain = true;
 
 static uint8_t mode = MODE_MAIN_GPS; // Текущая страница отображения, сохраняется при переходе в меню
 
@@ -305,17 +297,83 @@ static void btnSelSmpl() {  // Обработка нажатия на средн
     Serial.print(F("main next: "));
     Serial.println(mode);
     displayHnd();
+    timerUpdate(MAIN_TIMEOUT);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Автопереключение главного экрана при смене режима высотомера
+ * ------------------------------------------------------------------------------------------- */
+static void autoChgMode(int8_t m) {
+    switch (m) {
+        //case MODE_MAIN_NONE      0
+        //case MODE_MAIN_LAST      -1
+        case MODE_MAIN_GPS:
+        case MODE_MAIN_ALT:
+        case MODE_MAIN_ALTGPS:
+        case MODE_MAIN_TIME:
+            mode = m;
+            displayHnd();
+            break;
+    }
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Таймаут бездействия в основном режиме
+ * ------------------------------------------------------------------------------------------- */
+static void mainTimeout() {
+    if (altCalc().state() != ACST_GROUND)
+        return;
+    autoChgMode(cfg.dsplgnd);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Обработка изменения режима высотомера
+ * ------------------------------------------------------------------------------------------- */
+static void altState(ac_state_t prev, ac_state_t curr) {
+    if ((prev == ACST_FREEFALL) && (curr != ACST_FREEFALL) && cfg.dsplautoff) {
+        // Восстанавливаем обработчики после принудительного FF-режима
+        modeMain();
+    }
+    
+    if (modemain)
+        timerHnd(mainTimeout, MAIN_TIMEOUT);
+    
+    switch (curr) {
+        case ACST_GROUND:
+            autoChgMode(cfg.dsplland);
+            break;
+        
+        case ACST_FREEFALL:
+            if (cfg.dsplautoff) {
+                mode = MODE_MAIN_ALT;
+                displayHnd();
+                btnHndClear(); // Запрет использования кнопок в принудительном FF-режиме
+            }
+            break;
+        
+        case ACST_CANOPY:
+            autoChgMode(cfg.dsplcnp);
+            break;
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Инициализация главного режима отображения показаний
  * ------------------------------------------------------------------------------------------- */
 void modeMain() {
+    modemain = true;
     displayHnd();
     btnHndClear();
     btnHnd(BTN_UP,  BTN_LONG,   displayLightTgl);
     btnHnd(BTN_SEL, BTN_SIMPLE, btnSelSmpl);
     btnHnd(BTN_SEL, BTN_LONG,   modeMenu);
+    altStateHnd(altState);
+    
+    timerHnd(mainTimeout, MAIN_TIMEOUT);
     
     Serial.println(F("mode main"));
+}
+
+void modeFF() {
+    altState(ACST_FREEFALL, ACST_FREEFALL);
 }

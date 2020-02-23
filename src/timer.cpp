@@ -10,11 +10,12 @@ static timer_hnd_t thnd = NULL;
 
 void timerHnd(timer_hnd_t hnd, uint32_t timeout) {
     thnd = hnd;
-    tout = millis() + timeout;
+    tout = thnd == NULL ? 0 : millis() + timeout;
 }
 
 void timerUpdate(uint32_t timeout) {
-    tout = millis() + timeout;
+    if (thnd != NULL)
+        tout = millis() + timeout;
 }
 
 void timerClear() {

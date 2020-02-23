@@ -11,6 +11,7 @@
 static void valInt(char *txt, int val);
 static void valOn(char *txt, bool val);
 static void valYes(char *txt, bool val);
+static void valDsplAuto(char *txt, int8_t val);
 static void flashP(char *txt, int16_t count = 20);
 static void flashHold();
 static void flashClear();
@@ -259,33 +260,87 @@ static const menu_el_t menuinfo[] {
     },
     {   // переключать ли экран в падении автоматически в отображение только высоты
         .name = PSTR("Auto FF-screen"),
-        .enter = NULL,
-        .showval = [] (char *txt) { strcpy_P(txt, PSTR("Yes")); },
+        .enter = [] () {
+            cfg.dsplautoff = !cfg.dsplautoff;
+            cfgchg = true;
+        },
+        .showval = [] (char *txt) { valYes(txt, cfg.dsplautoff); },
     },
     {   // куда переключать экран под куполом: не переключать, жпс, часы, жпс+высота (по умолч)
         .name = PSTR("On CNP"),
         .enter = NULL,
-        .showval = [] (char *txt) { strcpy_P(txt, PSTR("GPS+Alti")); },
+        .showval = [] (char *txt) { valDsplAuto(txt, cfg.dsplcnp); },
+        .editup = [] () {
+            if (cfg.dsplcnp > MODE_MAIN_NONE)
+                cfg.dsplcnp--;
+            else
+                cfg.dsplcnp = MODE_MAIN_MAX;
+            cfgchg = true;
+        },
+        .editdown = [] () {
+            if (cfg.dsplcnp < MODE_MAIN_MAX)
+                cfg.dsplcnp ++;
+            else
+                cfg.dsplcnp = MODE_MAIN_NONE;
+            cfgchg = true;
+        },
     },
     {   // куда переключать экран после приземления: не переключать, жпс (по умолч), часы, жпс+высота
         .name = PSTR("After Land"),
         .enter = NULL,
-        .showval = [] (char *txt) { strcpy_P(txt, PSTR("No auto")); },
+        .showval = [] (char *txt) { valDsplAuto(txt, cfg.dsplland); },
+        .editup = [] () {
+            if (cfg.dsplland > MODE_MAIN_NONE)
+                cfg.dsplland--;
+            else
+                cfg.dsplland = MODE_MAIN_MAX;
+            cfgchg = true;
+        },
+        .editdown = [] () {
+            if (cfg.dsplland < MODE_MAIN_MAX)
+                cfg.dsplland ++;
+            else
+                cfg.dsplland = MODE_MAIN_NONE;
+            cfgchg = true;
+        },
     },
     {   // куда переключать экран при длительном бездействии на земле
         .name = PSTR("On GND"),
         .enter = NULL,
-        .showval = [] (char *txt) { strcpy_P(txt, PSTR("Clock")); },
+        .showval = [] (char *txt) { valDsplAuto(txt, cfg.dsplgnd); },
+        .editup = [] () {
+            if (cfg.dsplgnd > MODE_MAIN_NONE)
+                cfg.dsplgnd--;
+            else
+                cfg.dsplgnd = MODE_MAIN_MAX;
+            cfgchg = true;
+        },
+        .editdown = [] () {
+            if (cfg.dsplgnd < MODE_MAIN_MAX)
+                cfg.dsplgnd ++;
+            else
+                cfg.dsplgnd = MODE_MAIN_NONE;
+            cfgchg = true;
+        },
     },
     {   // куда переключать экран при включении: запоминать после выключения, все варианты экрана
-        .name = PSTR("Turned On"),
+        .name = PSTR("Power On"),
         .enter = NULL,
-        .showval = [] (char *txt) { strcpy_P(txt, PSTR("Last")); },
-    },
-    {   // запрещать пользоваться меню в падении
-        .name = PSTR("Deny menu on FF"),
-        .enter = NULL,
-        .showval = [] (char *txt) { strcpy_P(txt, PSTR("Yes")); },
+        .showval = [] (char *txt) { valDsplAuto(txt, cfg.dsplpwron); },
+        .editup = [] () {
+            if (cfg.dsplpwron > MODE_MAIN_LAST)
+                cfg.dsplpwron--;
+            else
+                cfg.dsplpwron = MODE_MAIN_MAX;
+            cfgchg = true;
+        },
+        .editdown = [] () {
+            if (cfg.dsplpwron < MODE_MAIN_MAX)
+                cfg.dsplpwron ++;
+            else
+                cfg.dsplpwron = MODE_MAIN_LAST;
+            cfgchg = true;
+        },
     },
 };
 
@@ -451,6 +506,16 @@ static void valOn(char *txt, bool val) {    // On/Off
 }
 static void valYes(char *txt, bool val) {   // Yes/No
     strcpy_P(txt, val ? PSTR("Yes") : PSTR("No"));
+}
+static void valDsplAuto(char *txt, int8_t val) {
+    switch (val) {
+        case MODE_MAIN_NONE:    strcpy_P(txt, PSTR("No change")); break;
+        case MODE_MAIN_LAST:    strcpy_P(txt, PSTR("Last")); break;
+        case MODE_MAIN_GPS:     strcpy_P(txt, PSTR("GPS")); break;
+        case MODE_MAIN_ALT:     strcpy_P(txt, PSTR("Alti")); break;
+        case MODE_MAIN_ALTGPS:  strcpy_P(txt, PSTR("Alt+GPS")); break;
+        case MODE_MAIN_TIME:    strcpy_P(txt, PSTR("Clock")); break;
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -654,16 +719,27 @@ static void menuSubSystem() {
     menutop=0;
     menuHnd();
 }
+/* ------------------------------------------------------------------------------------------- *
+ *  Автопереключение главного экрана при смене режима высотомера
+ * ------------------------------------------------------------------------------------------- */
+static void altState(ac_state_t prev, ac_state_t curr) {
+    // Из меню мы только контролируем авто переход в режим FF
+    if ((curr == ACST_FREEFALL) && cfg.dsplautoff)
+        modeFF();
+    // Остальные автопереключения при нахождении в меню нас не интересуют
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Вход в меню
  * ------------------------------------------------------------------------------------------- */
 void modeMenu() {
+    modemain = false;
     displayHnd(displayMenu);    // обработчик отрисовки на экране
     btnHndClear();              // Назначаем обработчики кнопок (средняя кнопка назначается в menuSubMain() через menuHnd())
     btnHnd(BTN_UP,      BTN_SIMPLE, menuUp);
     btnHnd(BTN_DOWN,    BTN_SIMPLE, menuDown);
     btnHnd(BTN_SEL,     BTN_LONG,   menuExit);
+    altStateHnd(altState);
     
     timerHnd(menuExit, MENU_TIMEOUT); // Запускаем таймер автовыхода из меню
     

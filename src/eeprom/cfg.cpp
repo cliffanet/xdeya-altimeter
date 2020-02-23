@@ -35,7 +35,7 @@ void cfgSave() {
     e[EEPROM_CFG_SIZE-1] = EEPROM_MGC2;
     eep.commit();
     eep.end();
-    Serial.print("config saved to eeprom");
+    Serial.println("config saved to eeprom");
 }
 
 void cfgFactory() {
