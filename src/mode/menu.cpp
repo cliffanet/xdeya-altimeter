@@ -61,6 +61,21 @@ static const menu_el_t menumain[] {
         .enter = menuSubPoint,
     },
     {
+        .name = PSTR("Jump count"),
+        .enter = NULL,
+        .showval = [] (char *txt) { valInt(txt, cfg.jmpcount); },
+        .editup = [] () {
+            cfg.jmpcount ++;
+            cfgchg = true;
+        },
+        .editdown = [] () {
+            if (cfg.jmpcount > 0) {
+                cfg.jmpcount --;
+                cfgchg = true;
+            }
+        },
+    },
+    {
         .name = PSTR("Display"),
         .enter = menuSubDisplay,
     },

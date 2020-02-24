@@ -47,6 +47,8 @@ typedef struct __attribute__((__packed__)) {
     int8_t dsplland = MODE_MAIN_NONE;           // смена экрана сразу после приземления (не менять)
     int8_t dsplgnd  = MODE_MAIN_NONE;           // смена экрана при длительном нахождении на земле
     int8_t dsplpwron= MODE_MAIN_LAST;           // смена экрана при включении питания
+    
+    uint32_t jmpcount = 0;                      // Сколько всего прыжков у владельца
 } eeprom_cfg_t;
 
 extern eeprom_cfg_t cfg;

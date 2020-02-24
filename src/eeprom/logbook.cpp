@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <EEPROM.h>
+#include <TimeLib.h>
 
 static log_running_t logrun = LOGRUN_NONE;
 static std::vector<log_item_t> logfull;
@@ -16,7 +17,78 @@ enum {
 } jmp = JMP_NONE;
 log_item_t jmpbeg, jmpcnp;
 
+/* ------------------------------------------------------------------------------------------- *
+ *  Добавление ещё одного прыга в простой логбук (eeprom)
+ *  В качестве beg,cnp,end пишется одно и то же - стартовая позиция,
+ *  А в соответствующие моменты будут обновлены и они
+ * ------------------------------------------------------------------------------------------- */
+static void jmpInc(const log_item_t &beg) {
+    cfg.jmpcount++;
+    cfgSave();
+    
+    EEPROMClass eep(EEPROM_LOG_SIMPLE_NAME, 0);
+    eep.begin(sizeof(log_simple_t));
+    auto *ls = (log_simple_t *)eep.getDataPtr();
 
+    if (!EEPROM_LOG_SIMPLE_VALID(*ls)) {
+        log_simple_t log;
+        *ls = log;
+    }
+    if (ls->cnt > LOG_SIMPLE_COUNT)
+        ls->cnt = 0;
+    
+    if (ls->cnt >= LOG_SIMPLE_COUNT) {
+        for (int i=1; i < LOG_SIMPLE_COUNT; i++)
+            ls->jmp[i-1] = ls->jmp[i];
+    }
+    else {
+        ls->cnt++;
+    }
+    
+    auto &log = ls->jmp[ls->cnt-1];
+    log.num = cfg.jmpcount;
+    
+    time_t utm = now();
+    dt_t dt = {
+        .y      = year(utm),
+        .m      = month(utm),
+        .d      = day(utm),
+        .hh     = hour(utm),
+        .mm     = minute(utm),
+        .ss     = second(utm),
+        .dow    = weekday(utm),
+    };
+    log.dt = dt;
+    
+    log.beg = beg;
+    log.cnp = beg;
+    log.end = beg;
+    
+    eep.commit();
+    eep.end();
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Обновление данных по текущему прыгу в простом логбуке (eeprom)
+ * ------------------------------------------------------------------------------------------- */
+static void jmpUpd(const log_item_t &cnp, const log_item_t &end) {
+    EEPROMClass eep(EEPROM_LOG_SIMPLE_NAME, 0);
+    eep.begin(sizeof(log_simple_t));
+    auto *ls = (log_simple_t *)eep.getDataPtr();
+
+    if (!EEPROM_LOG_SIMPLE_VALID(*ls) || (ls->cnt <= 0) || (ls->cnt > LOG_SIMPLE_COUNT))
+        return;
+    
+    auto &log = ls->jmp[ls->cnt-1];
+    if (log.num != cfg.jmpcount)
+        return;
+    
+    log.cnp = cnp;
+    log.end = end;
+    
+    eep.commit();
+    eep.end();
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Общий процессинг (на каждый тик тут приходится два тика высотомера и один тик жпс)
@@ -48,6 +120,7 @@ void logProcess() {
         if (logrun == LOGRUN_NONE)
             logrun = LOGRUN_ALTI;
         jmpbeg = logfull.size() > 0 ? logfull.front() : li;
+        jmpInc(jmpbeg);
     }
     
     if ((logrun == LOGRUN_NONE) && (logfull.size() >= LOG_COUNT_MIN)) {
@@ -65,6 +138,7 @@ void logProcess() {
         ((logrun == LOGRUN_ALTI) && (ac.state() == ACST_GROUND))) { // Либо мы приземлились
         logrun = LOGRUN_NONE;
         // сохраняем лог
+        logfull.clear();
     }
     
     if ((jmp > JMP_FREEFALL) && (ac.state() == ACST_CANOPY)) {
@@ -75,6 +149,7 @@ void logProcess() {
         jmpcnp = li;
         jmp = JMP_CANOPY;
         // Сохраняем промежуточный результат
+        jmpUpd(li, li);
     }
     
     if ((jmp > JMP_NONE) && (ac.state() == ACST_GROUND)) {
@@ -83,6 +158,7 @@ void logProcess() {
             jmpcnp = li;
         jmp = JMP_NONE;
         // Сохраняем
+        jmpUpd(jmpcnp, li);
     }
     
     Serial.println(logfull.size());
