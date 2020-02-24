@@ -53,7 +53,8 @@ void altcalc::tick(float press)
     _altappr = ((float)(m - millprev)) * a + b;
     
     float a1000 = a*1000; // верт скорость в м/с со знаком: + вверх, - вниз
-
+    
+    _stateprev = _state;
     switch (_state) {
         case ACST_GROUND:
             if ((_altlast > 40) && (_altlast < 100) && (a1000 > 1))

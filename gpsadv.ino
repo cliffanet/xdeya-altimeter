@@ -9,6 +9,7 @@
 #include "src/gps.h"
 #include "src/altcalc.h"
 #include "src/altimeter.h"
+#include "src/eeprom/logbook.h"
 
 #include <TimeLib.h>
 static uint32_t tmadj = 0;
@@ -100,5 +101,6 @@ void loop() {
     altProcess();
     btnProcess();
     timerProcess();
+    logProcess();
     delay(100);
 }

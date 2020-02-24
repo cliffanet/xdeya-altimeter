@@ -49,6 +49,8 @@ class altcalc
         const float         alt()       const { return _altappr; }
         // Текущая скорость (абсолютное значение) м/с
         const float         speed()     const { return _speed; }
+        // Режим высоты из предыдущего тика
+        const ac_state_t    stateprev() const { return _stateprev; }
         // Текущий режим высоты (определяется автоматически)
         const ac_state_t    state()     const { return _state; }
         // Направление вертикального движения (вверх/вниз)
@@ -71,6 +73,7 @@ class altcalc
         float _altappr = 0;
         float _speed = 0;
         ac_state_t _state = ACST_INIT;
+        ac_state_t _stateprev = ACST_INIT;
         ac_data_t _rr[AC_RR_ALT_SIZE];
         uint8_t cur = 0;
         ac_direct_t _dir = ACDIR_INIT;

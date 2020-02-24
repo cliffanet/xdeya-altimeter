@@ -10,7 +10,7 @@ static altcalc ac;
 static altimeter_state_hnd_t statehnd = NULL;
 
 /* ------------------------------------------------------------------------------------------- *
- * Базовые функции обновления дисплея
+ * Базовые функции
  * ------------------------------------------------------------------------------------------- */
 
 altcalc & altCalc() {
@@ -24,7 +24,6 @@ void altInit() {
 }
 
 void altProcess() {
-    ac_state_t st = ac.state();
     ac.tick(bme.readPressure());
     
     // Автокорректировка нуля
@@ -37,8 +36,8 @@ void altProcess() {
     }
     
     // Обработка изменения режима высотомера
-    if ((statehnd != NULL) && (st != ac.state()))
-        statehnd(st, ac.state());
+    if ((statehnd != NULL) && (ac.stateprev() != ac.state()))
+        statehnd(ac.stateprev(), ac.state());
 }
 
 
