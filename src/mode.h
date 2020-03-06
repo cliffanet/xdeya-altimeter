@@ -48,9 +48,12 @@ extern bool modemain;
 void modeMain();
 void initMain(int8_t m);
 // Принудительный переход в FF-режим
-void modeFF(); 
+void modeFF();
 
 // Режим меню настроек
 void modeMenu();
+
+// Режим выбора wifi-сети
+void modeWifi();
 
 #endif // _mode_H

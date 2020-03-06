@@ -161,5 +161,5 @@ void logProcess() {
         jmpUpd(jmpcnp, li);
     }
     
-    Serial.println(logfull.size());
+    //Serial.println(logfull.size());
 }

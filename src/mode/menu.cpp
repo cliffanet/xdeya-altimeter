@@ -3,6 +3,7 @@
 #include "../display.h"
 #include "../button.h"
 #include "../eeprom.h"
+#include "../cfg/main.h"
 #include "../altimeter.h"
 #include "../timer.h"
 #include "../../def.h" //time
@@ -25,6 +26,7 @@ static void menuSubInfo();
 static void menuSubTime();
 static void menuSubPower();
 static void menuSubSystem();
+static void menuSubWifi();
 
 // флаг изменения конфига (при выходе из меню его надо сохранить)
 static bool cfgchg = false;
@@ -63,16 +65,13 @@ static const menu_el_t menumain[] {
     {
         .name = PSTR("Jump count"),
         .enter = NULL,
-        .showval = [] (char *txt) { valInt(txt, cfg.jmpcount); },
+        .showval = [] (char *txt) { valInt(txt, jmp.d().count); },
         .editup = [] () {
-            cfg.jmpcount ++;
-            cfgchg = true;
+            jmp.set().count ++;
         },
         .editdown = [] () {
-            if (cfg.jmpcount > 0) {
-                cfg.jmpcount --;
-                cfgchg = true;
-            }
+            if (jmp.d().count > 0)
+                jmp.set().count --;
         },
     },
     {
@@ -98,6 +97,10 @@ static const menu_el_t menumain[] {
     {
         .name = PSTR("System"),
         .enter = menuSubSystem,
+    },
+    {
+        .name = PSTR("Wifi sync"),
+        .enter = menuSubWifi,
     },
 };
 
@@ -205,20 +208,18 @@ static const menu_el_t menudisplay[] {
     {   // Уровень контраста
         .name = PSTR("Contrast"),
         .enter = NULL,
-        .showval = [] (char *txt) { valInt(txt, cfg.contrast); },
+        .showval = [] (char *txt) { valInt(txt, cfgm.d().contrast); },
         .editup = [] () {
-            if (cfg.contrast >= 30) return; // Значения в конфиге от 0 до 30,
+            if (cfgm.d().contrast >= 30) return; // Значения в конфиге от 0 до 30,
                                             // а в сам драйвер пихаем уже доработанные значения, чтобы исключить
                                             // ситуацию, когда не видно совсем, что на экране
-            cfg.contrast ++;                
-            displayContrast(cfg.contrast);  // Сразу же применяем настройку, чтобы увидеть наглядно результат
-            cfgchg = true;
+            cfgm.set().contrast ++;                
+            displayContrast(cfgm.d().contrast);  // Сразу же применяем настройку, чтобы увидеть наглядно результат
         },
         .editdown = [] () {
-            if (cfg.contrast <= 0) return;
-            cfg.contrast --;
-            displayContrast(cfg.contrast);
-            cfgchg = true;
+            if (cfgm.d().contrast <= 0) return;
+            cfgm.set().contrast --;
+            displayContrast(cfgm.d().contrast);
         },
     },
 };
@@ -238,7 +239,7 @@ static const menu_el_t menugnd[] {
         .editup = NULL,
         .editdown = NULL,
         .hold = [] () {
-            if (!cfg.gndmanual) { // Точка может быть не выбрана
+            if (!cfgm.d().gndmanual) {
                 flashP(PSTR("Manual not allowed"));
                 return;
             }
@@ -250,18 +251,16 @@ static const menu_el_t menugnd[] {
     {   // разрешение принудительной калибровки: нет, "на земле", всегда
         .name = PSTR("Allow mnl set"),
         .enter = [] () {
-            cfg.gndmanual = !cfg.gndmanual;
-            cfgchg = true;
+            cfgm.set().gndmanual = !cfgm.d().gndmanual;
         },
-        .showval = [] (char *txt) { valYes(txt, cfg.gndmanual); },
+        .showval = [] (char *txt) { valYes(txt, cfgm.d().gndmanual); },
     },
     {   // выбор автоматической калибровки: нет, автоматически на земле
         .name = PSTR("Auto correct"),
         .enter = [] () {
-            cfg.gndauto = !cfg.gndauto;
-            cfgchg = true;
+            cfgm.set().gndauto = !cfgm.d().gndauto;
         },
-        .showval = [] (char *txt) { strcpy_P(txt, cfg.gndauto ? PSTR("On GND") : PSTR("No")); },
+        .showval = [] (char *txt) { strcpy_P(txt, cfgm.d().gndauto ? PSTR("On GND") : PSTR("No")); },
     },
 };
 
@@ -276,85 +275,77 @@ static const menu_el_t menuinfo[] {
     {   // переключать ли экран в падении автоматически в отображение только высоты
         .name = PSTR("Auto FF-screen"),
         .enter = [] () {
-            cfg.dsplautoff = !cfg.dsplautoff;
+            cfgm.set().dsplautoff = !cfgm.d().dsplautoff;
             cfgchg = true;
         },
-        .showval = [] (char *txt) { valYes(txt, cfg.dsplautoff); },
+        .showval = [] (char *txt) { valYes(txt, cfgm.d().dsplautoff); },
     },
     {   // куда переключать экран под куполом: не переключать, жпс, часы, жпс+высота (по умолч)
         .name = PSTR("On CNP"),
         .enter = NULL,
-        .showval = [] (char *txt) { valDsplAuto(txt, cfg.dsplcnp); },
+        .showval = [] (char *txt) { valDsplAuto(txt, cfgm.d().dsplcnp); },
         .editup = [] () {
-            if (cfg.dsplcnp > MODE_MAIN_NONE)
-                cfg.dsplcnp--;
+            if (cfgm.d().dsplcnp > MODE_MAIN_NONE)
+                cfgm.set().dsplcnp--;
             else
-                cfg.dsplcnp = MODE_MAIN_MAX;
-            cfgchg = true;
+                cfgm.set().dsplcnp = MODE_MAIN_MAX;
         },
         .editdown = [] () {
-            if (cfg.dsplcnp < MODE_MAIN_MAX)
-                cfg.dsplcnp ++;
+            if (cfgm.d().dsplcnp < MODE_MAIN_MAX)
+                cfgm.set().dsplcnp ++;
             else
-                cfg.dsplcnp = MODE_MAIN_NONE;
-            cfgchg = true;
+                cfgm.set().dsplcnp = MODE_MAIN_NONE;
         },
     },
     {   // куда переключать экран после приземления: не переключать, жпс (по умолч), часы, жпс+высота
         .name = PSTR("After Land"),
         .enter = NULL,
-        .showval = [] (char *txt) { valDsplAuto(txt, cfg.dsplland); },
+        .showval = [] (char *txt) { valDsplAuto(txt, cfgm.d().dsplland); },
         .editup = [] () {
-            if (cfg.dsplland > MODE_MAIN_NONE)
-                cfg.dsplland--;
+            if (cfgm.d().dsplland > MODE_MAIN_NONE)
+                cfgm.set().dsplland--;
             else
-                cfg.dsplland = MODE_MAIN_MAX;
-            cfgchg = true;
+                cfgm.set().dsplland = MODE_MAIN_MAX;
         },
         .editdown = [] () {
-            if (cfg.dsplland < MODE_MAIN_MAX)
-                cfg.dsplland ++;
+            if (cfgm.d().dsplland < MODE_MAIN_MAX)
+                cfgm.set().dsplland ++;
             else
-                cfg.dsplland = MODE_MAIN_NONE;
-            cfgchg = true;
+                cfgm.set().dsplland = MODE_MAIN_NONE;
         },
     },
     {   // куда переключать экран при длительном бездействии на земле
         .name = PSTR("On GND"),
         .enter = NULL,
-        .showval = [] (char *txt) { valDsplAuto(txt, cfg.dsplgnd); },
+        .showval = [] (char *txt) { valDsplAuto(txt, cfgm.d().dsplgnd); },
         .editup = [] () {
-            if (cfg.dsplgnd > MODE_MAIN_NONE)
-                cfg.dsplgnd--;
+            if (cfgm.d().dsplgnd > MODE_MAIN_NONE)
+                cfgm.set().dsplgnd--;
             else
-                cfg.dsplgnd = MODE_MAIN_MAX;
-            cfgchg = true;
+                cfgm.set().dsplgnd = MODE_MAIN_MAX;
         },
         .editdown = [] () {
-            if (cfg.dsplgnd < MODE_MAIN_MAX)
-                cfg.dsplgnd ++;
+            if (cfgm.d().dsplgnd < MODE_MAIN_MAX)
+                cfgm.set().dsplgnd ++;
             else
-                cfg.dsplgnd = MODE_MAIN_NONE;
-            cfgchg = true;
+                cfgm.set().dsplgnd = MODE_MAIN_NONE;
         },
     },
     {   // куда переключать экран при включении: запоминать после выключения, все варианты экрана
         .name = PSTR("Power On"),
         .enter = NULL,
-        .showval = [] (char *txt) { valDsplAuto(txt, cfg.dsplpwron); },
+        .showval = [] (char *txt) { valDsplAuto(txt, cfgm.d().dsplpwron); },
         .editup = [] () {
-            if (cfg.dsplpwron > MODE_MAIN_LAST)
-                cfg.dsplpwron--;
+            if (cfgm.d().dsplpwron > MODE_MAIN_LAST)
+                cfgm.set().dsplpwron--;
             else
-                cfg.dsplpwron = MODE_MAIN_MAX;
-            cfgchg = true;
+                cfgm.set().dsplpwron = MODE_MAIN_MAX;
         },
         .editdown = [] () {
-            if (cfg.dsplpwron < MODE_MAIN_MAX)
-                cfg.dsplpwron ++;
+            if (cfgm.d().dsplpwron < MODE_MAIN_MAX)
+                cfgm.set().dsplpwron ++;
             else
-                cfg.dsplpwron = MODE_MAIN_LAST;
-            cfgchg = true;
+                cfgm.set().dsplpwron = MODE_MAIN_LAST;
         },
     },
 };
@@ -371,34 +362,32 @@ static const menu_el_t menutime[] {
         .name = PSTR("Zone"),
         .enter = NULL,
         .showval = [] (char *txt) {
-            if (cfg.timezone == 0) {            // cfg.timezone хранит количество минут в + или - от UTC
+            if (cfgm.d().timezone == 0) {            // cfg.timezone хранит количество минут в + или - от UTC
                 strcpy_P(txt, PSTR("UTC"));     // при 0 - это время UTC
                 return;
             }
-            *txt = cfg.timezone > 0 ? '+' : '-';// Отображение знака смещения
+            *txt = cfgm.d().timezone > 0 ? '+' : '-';// Отображение знака смещения
             txt++;
         
-            uint16_t m = abs(cfg.timezone);     // в часах и минутах отображаем пояс
+            uint16_t m = abs(cfgm.d().timezone);     // в часах и минутах отображаем пояс
             txt += sprintf_P(txt, PSTR("%d"), m / 60);
             m = m % 60;
             sprintf_P(txt, PSTR(":%02d"), m);
         },
         .editup = [] () {
-            if (cfg.timezone >= 12*60)      // Ограничение выбора часового пояса
+            if (cfgm.d().timezone >= 12*60)      // Ограничение выбора часового пояса
                 return;
-            cfg.timezone += 30;             // часовые пояса смещаем по 30 минут
+            cfgm.set().timezone += 30;             // часовые пояса смещаем по 30 минут
             adjustTime(30 * 60);            // сразу применяем настройки
                                             // adjustTime меняет время от текущего,
                                             // поэтому надо передавать не абсолютное значение,
                                             // а смещение от текущего значения, т.е. по 30 минут
-            cfgchg = true;
         },
         .editdown = [] () {
-            if (cfg.timezone <= -12*60)
+            if (cfgm.d().timezone <= -12*60)
                 return;
-            cfg.timezone -= 30;
+            cfgm.set().timezone -= 30;
             adjustTime(-30 * 60);
-            cfgchg = true;
         },
     },
 };
@@ -734,12 +723,23 @@ static void menuSubSystem() {
     menutop=0;
     menuHnd();
 }
+
+
+static void menuSubWifi() {
+    timerClear();   // Убираем таймер автовыхода
+    if (cfgchg) {   // Сохраняем настройки, если изменены
+        cfgSave();
+        cfgchg = false;
+    }
+    modeWifi();
+}
+
 /* ------------------------------------------------------------------------------------------- *
  *  Автопереключение главного экрана при смене режима высотомера
  * ------------------------------------------------------------------------------------------- */
 static void altState(ac_state_t prev, ac_state_t curr) {
     // Из меню мы только контролируем авто переход в режим FF
-    if ((curr == ACST_FREEFALL) && cfg.dsplautoff)
+    if ((curr == ACST_FREEFALL) && cfgm.d().dsplautoff)
         modeFF();
     // Остальные автопереключения при нахождении в меню нас не интересуют
 }
@@ -767,11 +767,19 @@ void modeMenu() {
  *  Выход из меню
  * ------------------------------------------------------------------------------------------- */
 static void menuExit() {
-    timerClear();   // Убираем таймер автовыхода
-    if (cfgchg) {   // Сохраняем настройки, если изменены
-        cfgSave();
-        cfgchg = false;
+    if ( // Сохраняем настройки, если изменены
+            !cfgm.save(false) ||
+            !pt.save(false) ||
+            !jmp.save(false)
+        ) {
+        flashP(PSTR("Config save error"));
+        return;
     }
+    timerClear();   // Убираем таймер автовыхода
+    //if (cfgchg) {   // Сохраняем настройки, если изменены
+    //    cfgSave();
+    //    cfgchg = false;
+    //}
     menu = NULL;
     menusel=0;
     menutop=0;

@@ -10,6 +10,10 @@
 #include "src/altcalc.h"
 #include "src/altimeter.h"
 #include "src/eeprom/logbook.h"
+#include "src/cfg/main.h"
+
+#include "WiFi.h"
+#include "SPIFFS.h"
 
 #include <TimeLib.h>
 static uint32_t tmadj = 0;
@@ -35,7 +39,11 @@ void setup() {
     gpsInit();
 
     // загружаем сохранённый конфиг
-    cfgLoad();
+    if(!SPIFFS.begin(true))
+        Serial.println("SPIFFS Mount Failed");
+    cfgm.load();
+    pt.load();
+    jmp.load();
     cfgApply();
     Serial.println("begin");
     Serial.println(sizeof(cfg));
