@@ -1,17 +1,21 @@
 
 #include "main.h"
+#include "point.h"
+#include "../display.h"
 
 #include <FS.h>
 #include <SPIFFS.h>
 
 template class Config<cfg_main_t>;
-Config<cfg_main_t> cfgm(PSTR(CFG_MAIN_NAME), CFG_MAIN_VER);
+Config<cfg_main_t> cfg(PSTR(CFG_MAIN_NAME), CFG_MAIN_VER);
 
-template class Config<cfg_point_t>;
-Config<cfg_point_t> pt(PSTR(CFG_POINT_NAME), CFG_POINT_VER);
+template class Config<cfg_point_t>; // Почему-то не линкуется, если эту строчку переместить в point.cpp
 
 template class Config<cfg_jump_t>;
 Config<cfg_jump_t> jmp(PSTR(CFG_JUMP_NAME), CFG_JUMP_VER);
+
+template class Config<cfg_info_t>;
+Config<cfg_info_t> inf(PSTR(CFG_INFO_NAME), CFG_INFO_VER);
 
 /* ------------------------------------------------------------------------------------------- *
  *  Описание методов шаблона класса Config
@@ -97,4 +101,33 @@ void Config<T>::reset() {
     data.ver = ver;
     data.mgc2 = CFG_MGC2;
     _modifed = true;
+}
+
+
+bool cfgLoad(bool apply) {
+    if (!cfg.load() ||
+        !pnt.load() ||
+        !jmp.load() ||
+        !inf.load())
+        return false;
+    if (apply) {
+        displayContrast(cfg.d().contrast);
+    }
+    return true;
+}
+bool cfgSave(bool force) {
+    return
+        cfg.save(force) &&
+        pnt.save(force) &&
+        jmp.save(force) &&
+        inf.save(force);
+}
+
+bool cfgFactory() {
+    cfg.reset();
+    pnt.reset();
+    jmp.reset();
+    inf.reset();
+    
+    return cfgSave(true);
 }

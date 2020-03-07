@@ -2,7 +2,7 @@
 #include "../mode.h"
 #include "../display.h"
 #include "../button.h"
-#include "../eeprom.h"
+#include "../cfg/point.h"
 #include "../gps.h"
 #include "../altimeter.h"
 #include "../timer.h"
@@ -75,13 +75,13 @@ static void displayCompasFull(U8G2 &u8g2) {
         drawCompas(u8g2, DEG_TO_RAD*(360 - gps.course.deg()));
         // а стрелка показывает отклонение направления к точке относительно 
         // направления нашего движения
-        if (PNT_NUMOK && POINT.used) {
+        if (pnt.numValid() && pnt.cur().used) {
             bool in_pnt = 
                 TinyGPSPlus::distanceBetween(
                     gps.location.lat(),
                     gps.location.lng(),
-                    POINT.lat, 
-                    POINT.lng
+                    pnt.cur().lat, 
+                    pnt.cur().lng
                 ) < 8.0;
             
             if (in_pnt) {
@@ -93,8 +93,8 @@ static void displayCompasFull(U8G2 &u8g2) {
                     TinyGPSPlus::courseTo(
                         gps.location.lat(),
                         gps.location.lng(),
-                        POINT.lat, 
-                        POINT.lng
+                        pnt.cur().lat, 
+                        pnt.cur().lng
                     );
                 drawPointArrow(u8g2, DEG_TO_RAD*(courseto-gps.course.deg()));
             }
@@ -102,7 +102,7 @@ static void displayCompasFull(U8G2 &u8g2) {
             u8g2.drawDisc(32, 31, 6);
             u8g2.setFont(u8g2_font_helvB08_tr);
             u8g2.setDrawColor(0);
-            u8g2.drawGlyph(30,36, '0' + cfg.pntnum);
+            u8g2.drawGlyph(30,36, '0' + pnt.num());
             u8g2.setDrawColor(1);
         }
     }
@@ -135,13 +135,13 @@ static void displayGPS(U8G2 &u8g2) {
         u8g2.drawStr(65, 34, s);
     }
 
-    if (gps.location.isValid() && PNT_NUMOK && POINT.used) {
+    if (gps.location.isValid() && pnt.numValid() && pnt.cur().used) {
         double dist = 
             TinyGPSPlus::distanceBetween(
                 gps.location.lat(),
                 gps.location.lng(),
-                POINT.lat, 
-                POINT.lng
+                pnt.cur().lat, 
+                pnt.cur().lng
             );
         
         u8g2.setFont(u8g2_font_ncenB18_tr); 
@@ -225,13 +225,13 @@ static void displayAltGPS(U8G2 &u8g2) {
         return;
     
     // 
-    if (gps.location.isValid() && PNT_NUMOK && POINT.used) {
+    if (gps.location.isValid() && pnt.numValid() && pnt.cur().used) {
         double dist = 
             TinyGPSPlus::distanceBetween(
                 gps.location.lat(),
                 gps.location.lng(),
-                POINT.lat, 
-                POINT.lng
+                pnt.cur().lat, 
+                pnt.cur().lng
             );
         
         u8g2.setFont(u8g2_font_fub20_tf);
@@ -323,10 +323,10 @@ static void autoChgMode(int8_t m) {
 static void mainTimeout() {
     if (altCalc().state() != ACST_GROUND)
         return;
-    autoChgMode(cfg.dsplgnd);
-    if (inf.mainmode != mode) {
-        inf.mainmode = mode;
-        infSave();
+    autoChgMode(cfg.d().dsplgnd);
+    if (inf.d().mainmode != mode) {
+        inf.set().mainmode = mode;
+        inf.save();
     }
 }
 
@@ -334,7 +334,7 @@ static void mainTimeout() {
  *  Обработка изменения режима высотомера
  * ------------------------------------------------------------------------------------------- */
 static void altState(ac_state_t prev, ac_state_t curr) {
-    if ((prev == ACST_FREEFALL) && (curr != ACST_FREEFALL) && cfg.dsplautoff) {
+    if ((prev == ACST_FREEFALL) && (curr != ACST_FREEFALL) && cfg.d().dsplautoff) {
         // Восстанавливаем обработчики после принудительного FF-режима
         modeMain();
     }
@@ -344,11 +344,11 @@ static void altState(ac_state_t prev, ac_state_t curr) {
     
     switch (curr) {
         case ACST_GROUND:
-            autoChgMode(cfg.dsplland);
+            autoChgMode(cfg.d().dsplland);
             break;
         
         case ACST_FREEFALL:
-            if (cfg.dsplautoff) {
+            if (cfg.d().dsplautoff) {
                 mode = MODE_MAIN_ALT;
                 displayHnd();
                 btnHndClear(); // Запрет использования кнопок в принудительном FF-режиме
@@ -356,7 +356,7 @@ static void altState(ac_state_t prev, ac_state_t curr) {
             break;
         
         case ACST_CANOPY:
-            autoChgMode(cfg.dsplcnp);
+            autoChgMode(cfg.d().dsplcnp);
             break;
     }
 }

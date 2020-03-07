@@ -1,6 +1,6 @@
 
 #include "altimeter.h"
-#include "eeprom.h"
+#include "cfg/main.h"
 
 #include <Adafruit_BMP280.h>
 
@@ -27,7 +27,7 @@ void altProcess() {
     ac.tick(bme.readPressure());
     
     // Автокорректировка нуля
-    if (cfg.gndauto &&
+    if (cfg.d().gndauto &&
         (ac.state() == ACST_GROUND) &&
         (ac.direct() == ACDIR_NULL) &&
         (ac.dircnt() >= ALT_AUTOGND_INTERVAL)) {

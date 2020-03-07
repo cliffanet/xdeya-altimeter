@@ -5,12 +5,12 @@
 #include "src/display.h"
 #include "src/mode.h"
 #include "src/timer.h"
-#include "src/eeprom.h"
 #include "src/gps.h"
 #include "src/altcalc.h"
 #include "src/altimeter.h"
 #include "src/eeprom/logbook.h"
 #include "src/cfg/main.h"
+#include "src/cfg/point.h"
 
 #include "WiFi.h"
 #include "SPIFFS.h"
@@ -24,8 +24,6 @@ bool is_on = true;
 //------------------------------------------------------------------------------
 void setup() {
     Serial.begin(115200);
-
-    infLoad();
     
     displayInit();
 
@@ -41,22 +39,20 @@ void setup() {
     // загружаем сохранённый конфиг
     if(!SPIFFS.begin(true))
         Serial.println("SPIFFS Mount Failed");
-    cfgm.load();
-    pt.load();
-    jmp.load();
-    cfgApply();
+    cfgLoad(true);
     Serial.println("begin");
     Serial.println(sizeof(cfg));
 
-    switch (cfg.dsplpwron) {
+    switch (cfg.d().dsplpwron) {
         case MODE_MAIN_GPS:
         case MODE_MAIN_ALT:
         case MODE_MAIN_ALTGPS:
         case MODE_MAIN_TIME:
-            inf.mainmode = cfg.dsplpwron;
+            if (inf.d().mainmode != cfg.d().dsplpwron)
+                inf.set().mainmode = cfg.d().dsplpwron;
             break;
     }
-    initMain(inf.mainmode);
+    initMain(inf.d().mainmode);
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +91,7 @@ void loop() {
         if (gps.time.age() < 500) {
             // set the Time to the latest GPS reading
             setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
-            adjustTime(cfg.timezone * 60);
+            adjustTime(cfg.d().timezone * 60);
             tmadj = millis() + TIME_ADJUST_INTERVAL;
         }
     }
