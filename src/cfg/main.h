@@ -43,15 +43,6 @@ typedef struct __attribute__((__packed__)) {
     uint8_t mgc2 = CFG_MGC2;
 } cfg_main_t;
 
-//  Сохранение информации о прыжках
-typedef struct __attribute__((__packed__)) {
-    uint8_t mgc1 = CFG_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
-    uint8_t ver = CFG_JUMP_VER;
-    
-    uint32_t count = 0;                      // Сколько всего прыжков у владельца
-    uint8_t mgc2 = CFG_MGC2;
-} cfg_jump_t;
-
 // Оперативные данные, которые надо сохранять при уходе в сон и выключении
 typedef struct __attribute__((__packed__)) {
     uint8_t mgc1 = CFG_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
@@ -86,7 +77,6 @@ bool cfgSave(bool force = false);
 bool cfgFactory();
 
 extern Config<cfg_main_t> cfg;
-extern Config<cfg_jump_t> jmp;
 extern Config<cfg_info_t> inf;
 
 

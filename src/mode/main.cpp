@@ -296,6 +296,8 @@ static void btnSelSmpl() {  // Обработка нажатия на средн
     if (mode > MODE_MAIN_MAX) mode = MODE_MAIN_MIN;
     Serial.print(F("main next: "));
     Serial.println(mode);
+    inf.set().mainmode = mode;
+    inf.save();
     displayHnd();
     timerUpdate(MAIN_TIMEOUT);
 }

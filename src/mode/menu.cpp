@@ -5,6 +5,7 @@
 #include "../gps.h"
 #include "../cfg/main.h"
 #include "../cfg/point.h"
+#include "../cfg/jump.h"
 #include "../altimeter.h"
 #include "../timer.h"
 #include "../../def.h" //time
@@ -184,7 +185,7 @@ static const menu_el_t menugpsupoint[] {
 static const menu_el_t menudisplay[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(2); },
+        .enter = [] () { menuSubMain(3); },
     },
     {   // Включение / выключение подсветки
         .name = PSTR("Light"),
@@ -218,7 +219,7 @@ static const menu_el_t menudisplay[] {
 static const menu_el_t menugnd[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(3); },
+        .enter = [] () { menuSubMain(4); },
     },
     {   // принудительная калибровка (On Ground)
         .name = PSTR("Manual set"),
@@ -233,6 +234,7 @@ static const menu_el_t menugnd[] {
             }
             
             altCalc().gndreset();
+            jmpReset();
             flashP(PSTR("GND corrected"));
         },
     },
@@ -258,7 +260,7 @@ static const menu_el_t menugnd[] {
 static const menu_el_t menuinfo[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(4); },
+        .enter = [] () { menuSubMain(5); },
     },
     {   // переключать ли экран в падении автоматически в отображение только высоты
         .name = PSTR("Auto FF-screen"),
@@ -343,7 +345,7 @@ static const menu_el_t menuinfo[] {
 static const menu_el_t menutime[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(5); },
+        .enter = [] () { menuSubMain(6); },
     },
     {   // Выбор временной зоны, чтобы корректно синхронизироваться с службами времени
         .name = PSTR("Zone"),
@@ -385,7 +387,7 @@ static const menu_el_t menutime[] {
 static const menu_el_t menupower[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(6); },
+        .enter = [] () { menuSubMain(7); },
     },
     {
         .name = PSTR("Off"),
@@ -403,7 +405,7 @@ static const menu_el_t menupower[] {
 static const menu_el_t menusystem[] {
     {
         .name = PSTR("Exit"),
-        .enter = [] () { menuSubMain(7); },
+        .enter = [] () { menuSubMain(8); },
     },
     {
         .name = PSTR("Factory reset"),

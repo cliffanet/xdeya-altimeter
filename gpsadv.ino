@@ -8,9 +8,9 @@
 #include "src/gps.h"
 #include "src/altcalc.h"
 #include "src/altimeter.h"
-#include "src/eeprom/logbook.h"
 #include "src/cfg/main.h"
 #include "src/cfg/point.h"
+#include "src/cfg/jump.h"
 
 #include "WiFi.h"
 #include "SPIFFS.h"
@@ -97,6 +97,8 @@ void loop() {
     }
 
     altProcess();
+    jmpProcess();
+    
     btnProcess();
     timerProcess();
     displayUpdate();
@@ -105,6 +107,6 @@ void loop() {
     altProcess();
     btnProcess();
     timerProcess();
-    logProcess();
+    //logProcess();
     delay(100);
 }
