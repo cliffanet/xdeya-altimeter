@@ -22,6 +22,7 @@ static void flashClear();
 static void menuExit();
 static void menuSubMain(int16_t sel);
 static void menuSubPoint();
+static void menuSubLogBook();
 static void menuSubDisplay();
 static void menuSubGnd();
 static void menuSubInfo();
@@ -72,6 +73,10 @@ static const menu_el_t menumain[] {
             if (jmp.d().count > 0)
                 jmp.set().count --;
         },
+    },
+    {
+        .name = PSTR("LogBook"),
+        .enter = menuSubLogBook,
     },
     {
         .name = PSTR("Display"),
@@ -661,6 +666,16 @@ static void menuSubPoint() {
     menusel=0;
     menutop=0;
     menuHnd();
+}
+
+static void menuSubLogBook() {
+    // Сохраняем настройки, если изменены
+    if (!cfgSave()) {
+        flashP(PSTR("Config save error"));
+        return;
+    }
+    timerClear();   // Убираем таймер автовыхода
+    modeLogBook();
 }
 
 static void menuSubDisplay() {

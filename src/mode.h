@@ -56,4 +56,7 @@ void modeMenu();
 // Режим выбора wifi-сети
 void modeWifi();
 
+// Режим выбора LogBook
+void modeLogBook();
+
 #endif // _mode_H
