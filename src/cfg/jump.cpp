@@ -2,6 +2,7 @@
 #include "jump.h"
 #include "../altimeter.h"
 #include "../gps.h"
+#include "../logfile.h"
 
 #include <TimeLib.h>
 
@@ -102,7 +103,8 @@ bool ConfigJump::end() {
     if (!save(true))
         return false;
     
-    
+    if (!logAppend(PSTR(JMPLOG_SIMPLE_NAME), data.last, JMPLOG_SIMPLE_ITEM_COUNT, JMPLOG_SIMPLE_FILE_COUNT))
+        return false;
     
     return true;
 }
