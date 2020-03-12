@@ -373,7 +373,7 @@ void modeMain() {
     btnHndClear();
     btnHnd(BTN_UP,  BTN_LONG,   displayLightTgl);
     btnHnd(BTN_SEL, BTN_SIMPLE, btnSelSmpl);
-    btnHnd(BTN_SEL, BTN_LONG,   modeMenu);
+    //btnHnd(BTN_SEL, BTN_LONG,   modeMenu);
     altStateHnd(altState);
     
     timerHnd(mainTimeout, MAIN_TIMEOUT);

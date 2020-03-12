@@ -328,11 +328,11 @@ static const menu_el_t menusystem[] {
 /* ------------------------------------------------------------------------------------------- *
  *  Главное меню конфига, тут в основном только подразделы
  * ------------------------------------------------------------------------------------------- */
-#define SUBMENU(title, menu) [] () { menuEnter(new MenuStatic(PSTR(title), menu, sizeof(menu)/sizeof(menu_el_t))); }
+#define SUBMENU(menu) [] () { menuEnter(new MenuStatic(menu, sizeof(menu)/sizeof(menu_el_t))); }
 static const menu_el_t menumain[] {
     {
         .name = PSTR("GPS points"),
-        .enter = SUBMENU("GPS points", menugpsupoint),
+        .enter = SUBMENU(menugpsupoint),
     },
     {
         .name = PSTR("Jump count"),
@@ -352,27 +352,27 @@ static const menu_el_t menumain[] {
     },
     {
         .name = PSTR("Display"),
-        .enter = SUBMENU("Display", menudisplay),
+        .enter = SUBMENU(menudisplay),
     },
     {
         .name = PSTR("Gnd Correct"),
-        .enter = SUBMENU("Gnd Correct", menugnd),
+        .enter = SUBMENU(menugnd),
     },
     {
         .name = PSTR("Auto Screen-Mode"),
-        .enter = SUBMENU("Auto Screen-Mode", menuinfo),
+        .enter = SUBMENU(menuinfo),
     },
     {
         .name = PSTR("Time"),
-        .enter = SUBMENU("Time", menutime),
+        .enter = SUBMENU(menutime),
     },
     {
         .name = PSTR("Power"),
-        .enter = SUBMENU("Power", menupower),
+        .enter = SUBMENU(menupower),
     },
     {
         .name = PSTR("System"),
-        .enter = SUBMENU("System", menusystem),
+        .enter = SUBMENU(menusystem),
     },
     {
         .name = PSTR("Wifi sync"),
@@ -384,7 +384,7 @@ static const menu_el_t menumain[] {
  *  Описание методов шаблона класса MenuStatic
  * ------------------------------------------------------------------------------------------- */
 MenuStatic::MenuStatic() :
-    MenuStatic(PSTR("Configuration"), menumain, sizeof(menumain)/sizeof(menu_el_t))
+    MenuStatic(menumain, sizeof(menumain)/sizeof(menu_el_t), PSTR("Configuration"))
 {
     
 }
@@ -406,7 +406,8 @@ void MenuStatic::updHnd(int16_t i, button_hnd_t &smp, button_hnd_t &lng, button_
     auto &m = menu[i];
     
     smp = m.enter;
-    lng = m.hold;
+    if (m.hold != NULL)
+        lng = m.hold;
     editup = m.editup;
     editdn = m.editdown;
 }

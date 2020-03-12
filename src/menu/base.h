@@ -8,11 +8,15 @@
 #include <Arduino.h>
 #include "../button.h"
 
-#define MENU_STRCOUNT  5
+#define MENU_STR_COUNT  5
+#define MENUSZ_NAME 20
+#define MENUSZ_VAL 15
+
+#define MENU_TIMEOUT    15000
 
 typedef struct {
-    char name[20] = { '\0' };
-    char val[10] = { '\0' };
+    char name[MENUSZ_NAME] = { '\0' };
+    char val[MENUSZ_VAL] = { '\0' };
 } menu_dspl_el_t;
 
 typedef enum {
@@ -25,7 +29,7 @@ class U8G2;
 
 class MenuBase {
     public:
-        MenuBase(const char *_title, uint16_t _sz, menu_exit_t _exit = MENUEXIT_TOP);
+        MenuBase(uint16_t _sz, const char *_title = NULL, menu_exit_t _exit = MENUEXIT_TOP);
         virtual             // виртуальный деструктор в базовом классе нужен, 
         ~MenuBase() { };    // чтобы корректно уничтожались потомки при выполнении delete
         
@@ -50,10 +54,12 @@ class MenuBase {
         
         // детектор, является ли указанный пункт меню "выходом"
         bool isExit(int16_t i) { return ((elexit == MENUEXIT_TOP) && (i == 0)) || ((elexit == MENUEXIT_BOTTOM) && (i+1 >= sz)); }
+        const char *uptitle() { return _uptitle; }
         
     private:
         int16_t itop = 0, isel = 0, sz = 0;
         menu_exit_t elexit;
+        char _uptitle[MENUSZ_NAME] = { '\0' };
 };
 
 void menuEnter(MenuBase *menu);

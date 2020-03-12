@@ -8,26 +8,44 @@
 
 static std::vector<MenuBase *> mtree;
 
-static char title[20] = { '\0' };
-static menu_dspl_el_t str[MENU_STRCOUNT];
+static char title[MENUSZ_NAME] = { '\0' };
+static menu_dspl_el_t str[MENU_STR_COUNT];
 
 static button_hnd_t editup = NULL, editdn = NULL, editenter = NULL;
 // редактируется ли текущий пункт меню
 static bool menuedit = false;
 // Сообщение моргающим текстом - будет выводится на селекторе меню (в этот момент сам выделенный пункт меню скрывается)
-static char flashstr[20] = { '\0' };
+static char flashstr[MENUSZ_NAME] = { '\0' };
 static int16_t flashcnt = 0; // счётчик мигания - это и таймер мигания, и помогает мигать
 
 static void menuEditOn();
 static void menuLevelUp();
 static void menuExit();
 
-MenuBase::MenuBase(const char *_title, uint16_t _sz, menu_exit_t _exit) :
+MenuBase::MenuBase(uint16_t _sz, const char *_title, menu_exit_t _exit) :
     sz(_sz),
     elexit(_exit)
 {
-    strncpy_P(title, _title, sizeof(title));
-    title[sizeof(title)-1]='\0';
+    strcpy(_uptitle, title);
+    
+    if (_title == NULL) {
+        if (mtree.empty()) {
+            title[0] = '\0';
+        }
+        else {
+            // автоподбор заголовка по текущему выделенному пункту меню
+            auto m = mtree.back();
+            int16_t n = m->isel - m->itop;
+            if ((n>=0) && (n<MENU_STR_COUNT)) {
+                strncpy(title, str[n].name, sizeof(title));
+                title[sizeof(title)-1]='\0';
+            }
+        }
+    }
+    else {
+        strncpy_P(title, _title, sizeof(title));
+        title[sizeof(title)-1]='\0';
+    }
     if (_exit != MENUEXIT_NONE)
         sz++;
 }
@@ -37,13 +55,18 @@ MenuBase::MenuBase(const char *_title, uint16_t _sz, menu_exit_t _exit) :
  *  Инициализация меню - обновляем содержимое в строковом варианте
  * ------------------------------------------------------------------------------------------- */
 void MenuBase::updStr() {
-    for (int16_t i=itop, n=0; (i<sz) && (n<MENU_STRCOUNT); i++, n++)
-        updStr(i);
+    for (int16_t i=itop, n=0; n<MENU_STR_COUNT; i++, n++)
+        if (i<sz)
+            updStr(i);
+        else {
+            str[n].name[0] = '\0';
+            str[n].val[0] = '\0';
+        }
 }
 
 void MenuBase::updStr(int16_t i) {
     int16_t n = i-itop;
-    if ((n < 0) || (n >= MENU_STRCOUNT))
+    if ((n < 0) || (n >= MENU_STR_COUNT))
         return;
     
     if (isExit(i)) {
@@ -53,7 +76,10 @@ void MenuBase::updStr(int16_t i) {
     else {
         if (elexit == MENUEXIT_TOP)
             i--;
-        updStr(str[n], i);
+        auto &s = str[n];
+        updStr(s, i);
+        s.name[sizeof(s.name)-1] = '\0';
+        s.val[sizeof(s.val)-1] = '\0';
     }
     Serial.printf("MenuBase::updStr: [%d] %d: %s\r\n", i, n, str[n].name);
 }
@@ -107,7 +133,7 @@ void MenuBase::displayDraw(U8G2 &u8g2) {
     u8g2.drawBox(0,(isel-itop)*10+14,128,10);
     
     // Выводим видимую часть меню, n - это индекс строки на экране
-    for (uint8_t n = 0; n<MENU_STRCOUNT; n++) {
+    for (uint8_t n = 0; n<MENU_STR_COUNT; n++) {
         uint8_t i = n + itop;   // i - индекс отрисовываемого пункта меню
         if (i >= sz) break;     // для меню, которые полностью отрисовались и осталось ещё место, не выходим за список меню
         u8g2.setDrawColor(isel == i ? 0 : 1); // Выделенный пункт рисуем прозрачным, остальные обычным
@@ -153,11 +179,11 @@ void MenuBase::selUp() {
     }
     else { // если упёрлись в самый верх, перескакиваем в конец меню
         isel = sz-1;
-        if (sz > MENU_STRCOUNT)
-            setTop(sz-MENU_STRCOUNT);
+        if (sz > MENU_STR_COUNT)
+            setTop(sz-MENU_STR_COUNT);
     }
     
-    Serial.printf("selUp: %d (%d)\r\n", isel, sz);
+    Serial.printf("selUp: %d (%d) => %s / %s\r\n", isel, sz, str[isel-itop].name, str[isel-itop].val);
     
     updHnd();
 }
@@ -167,16 +193,16 @@ void MenuBase::selDn() {
     if (isel < sz) {
         // если вылезли вниз за видимую область,
         // поднимаем список выше, чтобы отобразился выделенный пункт
-        if ((isel > itop) && ((isel-itop) >= MENU_STRCOUNT))
-            setTop(isel-MENU_STRCOUNT+1);
+        if ((isel > itop) && ((isel-itop) >= MENU_STR_COUNT))
+            setTop(isel-MENU_STR_COUNT+1);
     }
     else { // если упёрлись в самый низ, перескакиваем в начало меню
         isel = 0;
-        if (sz > MENU_STRCOUNT)
+        if (sz > MENU_STR_COUNT)
             setTop(0);
     }
     
-    Serial.printf("selDn: %d (%d)\r\n", isel, sz);
+    Serial.printf("selDn: %d (%d) => %s / %s\r\n", isel, sz, str[isel-itop].name, str[isel-itop].val);
     
     updHnd();
 }
@@ -203,11 +229,13 @@ static void menuUp() {
     if (mtree.size() == 0) return;
     auto m = mtree.back();
     m->selUp();
+    menuFlashClear();
 }
 static void menuDown() {
     if (mtree.size() == 0) return;
     auto m = mtree.back();
     m->selDn();
+    menuFlashClear();
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -264,10 +292,16 @@ static void menuEditOn() {      // Вход в режим редактирова
 static void menuLevelUp() {
     auto m = mtree.back();
     mtree.pop_back();
+    strcpy(title, m->uptitle());
     delete m;
     menuFlashClear();
     if (mtree.empty())
         menuExit();
+    else {
+        m = mtree.back();
+        m->updStr();
+        m->updHnd();
+    }
 }
 
 static void menuExit() {
