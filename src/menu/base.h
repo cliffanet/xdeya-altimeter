@@ -63,6 +63,8 @@ class MenuBase {
 };
 
 void menuEnter(MenuBase *menu);
+void modeMenu();
+void menuProcess();
         
 // Запоминаем текст сообщения и сколько тактов отображения показывать
 void menuFlashP(char *txt, int16_t count = 20);

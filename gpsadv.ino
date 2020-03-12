@@ -4,6 +4,7 @@
 #include "src/button.h"
 #include "src/display.h"
 #include "src/mode.h"
+#include "src/menu/base.h"
 #include "src/timer.h"
 #include "src/gps.h"
 #include "src/altcalc.h"
@@ -133,6 +134,7 @@ void loop() {
     jmpProcess();
     
     btnProcess();
+    menuProcess();
     timerProcess();
     displayUpdate();
     

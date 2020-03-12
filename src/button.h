@@ -16,14 +16,17 @@
 #define BUTTON_PIN_DOWN   27
 
 // Коды кнопок
-#define BTN_UP    0x1
-#define BTN_DOWN  0x2
-#define BTN_SEL   0x8
+typedef enum {
+    BTN_UP = 1,
+    BTN_DOWN,
+    BTN_SEL
+} btn_code_t;
 
 typedef void (*button_hnd_t)();
 
 typedef struct {
     uint8_t     pin;
+    btn_code_t  code;       // Код кнопки
     uint8_t     val;        // текущее состояние
     uint8_t     pushed;     // сработало ли уже событие pushed, чтобы повторно его не выполнить, пока кнопка не отпущена
     uint32_t    lastchg;    // millis() крайнего изменения состояния
@@ -48,6 +51,9 @@ typedef enum {
 void btnInit();
 void btnProcess();
 void btnHndClear();
-void btnHnd(uint8_t btn, button_time_t tm, button_hnd_t hnd);
+void btnHnd(btn_code_t btn, button_time_t tm, button_hnd_t hnd);
+
+// время ненажатия ни на одну кнопку
+uint32_t btnIdle();
 
 #endif // _button_H

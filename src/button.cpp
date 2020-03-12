@@ -6,12 +6,15 @@
  * Инициализация кнопок
  * ------------------------------------------------------------------------------------------- */
 static btn_t btnall[] = {
-    { BUTTON_PIN_UP },
-    { BUTTON_PIN_SEL },
-    { BUTTON_PIN_DOWN },
+    { BUTTON_PIN_UP,    BTN_UP },
+    { BUTTON_PIN_SEL,   BTN_SEL },
+    { BUTTON_PIN_DOWN,  BTN_DOWN },
 };
 
 static std::vector<button_hnd_t> hndall;
+
+static uint8_t _state = 0;
+static uint32_t _statelast = 0;
 
 /* ------------------------------------------------------------------------------------------- *
  * Проверка состояния
@@ -42,6 +45,14 @@ void btnChkState(btn_t &b) {
     if (b.val != val)
         b.lastchg = m; // время крайнего изменения состояния кнопки
     b.val = val;
+    
+    // текущее положение всех кнопок и их крайнее изменение
+    uint8_t bmask = 1 << (b.code-1);
+    uint8_t state = (_state & ~bmask) | ((val == LOW ? 1 : 0) << (b.code-1));
+    if (_state != state) {
+        _state = state;
+        _statelast = m;
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -96,7 +107,7 @@ void btnHndClear() {
 /* ------------------------------------------------------------------------------------------- *
  * Установка одного обработчика нажатия на кнопку
  * ------------------------------------------------------------------------------------------- */
-void btnHnd(uint8_t btn, button_time_t tm, button_hnd_t hnd) {
+void btnHnd(btn_code_t btn, button_time_t tm, button_hnd_t hnd) {
     btn_t *b;
     switch (btn) {
         case BTN_UP:    b = &(btnall[0]); break;
@@ -109,4 +120,14 @@ void btnHnd(uint8_t btn, button_time_t tm, button_hnd_t hnd) {
         case BTN_SIMPLE:    b->hndsmpl = hnd; break;
         case BTN_LONG:      b->hndlong = hnd; break;
     }
+}
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  время ненажатия ни на одну кнопку
+ * ------------------------------------------------------------------------------------------- */
+uint32_t btnIdle() {
+    if (_state != 0)
+        return 0;
+    return millis() - _statelast;
 }

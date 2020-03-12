@@ -3,6 +3,8 @@
 #include "../display.h"
 #include "../button.h"
 #include "../mode.h"
+#include "../cfg/main.h"
+#include "static.h"
 
 #include <vector>
 
@@ -290,21 +292,27 @@ static void menuEditOn() {      // Вход в режим редактирова
  *  Выход из меню - на уровень выше и совсем
  * ------------------------------------------------------------------------------------------- */
 static void menuLevelUp() {
+    if (mtree.size() <= 1) {
+        menuExit();
+        return;
+    }
     auto m = mtree.back();
     mtree.pop_back();
     strcpy(title, m->uptitle());
     delete m;
     menuFlashClear();
-    if (mtree.empty())
-        menuExit();
-    else {
-        m = mtree.back();
-        m->updStr();
-        m->updHnd();
-    }
+    m = mtree.back();
+    m->updStr();
+    m->updHnd();
 }
 
 static void menuExit() {
+    // Сохраняем настройки, если изменены
+    if (!cfgSave()) {
+        menuFlashP(PSTR("Config save error"));
+        return;
+    }
+
     for (auto m : mtree)
         delete m;
     mtree.clear();
@@ -332,6 +340,20 @@ void menuEnter(MenuBase *menu) {
     menu->updStr();
     menu->updHnd();
     mtree.push_back(menu);
+}
+
+void modeMenu() {
+    menuEnter(new MenuStatic);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Проверка бездействия в меню
+ * ------------------------------------------------------------------------------------------- */
+void menuProcess() {
+    if (mtree.empty())
+        return;
+    if (btnIdle() > MENU_TIMEOUT)
+        menuExit();
 }
 
 /* ------------------------------------------------------------------------------------------- *
