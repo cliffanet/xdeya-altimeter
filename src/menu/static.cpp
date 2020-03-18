@@ -1,5 +1,6 @@
 
 #include "static.h"
+#include "logbook.h"
 #include "../display.h"
 #include "../gps.h"
 #include "../cfg/main.h"
@@ -348,7 +349,7 @@ static const menu_el_t menumain[] {
     },
     {
         .name = PSTR("LogBook"),
-        //.enter = SUBMENU(title, menu),
+        .enter = [] () { menuEnter(new MenuLogBook); },
     },
     {
         .name = PSTR("Display"),

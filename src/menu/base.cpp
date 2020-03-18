@@ -324,6 +324,12 @@ static void menuExit() {
  *  Вход в меню
  * ------------------------------------------------------------------------------------------- */
 void menuEnter(MenuBase *menu) {
+    mtree.push_back(menu);
+    menu->updStr();
+    menu->updHnd();
+}
+
+void modeMenu() {
     displayHnd(displayMenu);    // обработчик отрисовки на экране
     btnHndClear();              // Назначаем обработчики кнопок (средняя кнопка назначается в menuSubMain() через menuHnd())
     btnHnd(BTN_UP,      BTN_SIMPLE, menuUp);
@@ -337,13 +343,15 @@ void menuEnter(MenuBase *menu) {
         });
     
     Serial.println(F("mode menu: "));
-    menu->updStr();
-    menu->updHnd();
-    mtree.push_back(menu);
-}
-
-void modeMenu() {
-    menuEnter(new MenuStatic);
+    
+    if (mtree.empty()) {
+        menuEnter(new MenuStatic);
+    }
+    else {
+        auto m = mtree.back();
+        m->updStr();
+        m->updHnd();
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *

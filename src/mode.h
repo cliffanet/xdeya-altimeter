@@ -40,6 +40,6 @@ void modeMenu();
 void modeWifi();
 
 // Режим выбора LogBook
-void modeLogBook();
+void modeLogBook(size_t i = 0);
 
 #endif // _mode_H

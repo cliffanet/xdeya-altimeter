@@ -56,6 +56,8 @@ class MenuBase {
         bool isExit(int16_t i) { return ((elexit == MENUEXIT_TOP) && (i == 0)) || ((elexit == MENUEXIT_BOTTOM) && (i+1 >= sz)); }
         const char *uptitle() { return _uptitle; }
         
+        int16_t size() const { return sz; }
+        
     private:
         int16_t itop = 0, isel = 0, sz = 0;
         menu_exit_t elexit;

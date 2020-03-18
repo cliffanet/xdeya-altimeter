@@ -67,6 +67,44 @@ bool logAppend(const char *_fname, const T &data, size_t maxrcnt, uint8_t count)
     return sz == sizeof(T);
 }
 
+/* ------------------------------------------------------------------------------------------- *
+ *  „тение записи с индексом i с конца (при i=0 - сама€ последн€€ запись, при i=1 - предпоследн€€)
+ * ------------------------------------------------------------------------------------------- */
+template <typename T>
+bool logRead(T &data, const char *_fname, size_t index = 0) {
+    char fname[36];
+    
+    fname[0] = '/';
+    strncpy_P(fname+1, _fname, 30);
+    fname[30] = '\0';
+    const byte flen = strlen(fname);
+    
+    for (uint16_t n = 1; n <= 1000; n++) {
+        sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n);
+        if (!DISKFS.exists(fname))
+            return false;
+        
+        File fh = DISKFS.open(fname);
+        if (!fh) return false;
+        
+        auto sz = fh.size();
+        auto count = sz / sizeof(T);
+        if (count <= index) {
+            index -= count;
+            fh.close();
+            continue;
+        }
+        
+        fh.seek(sz - (index * sizeof(T)) - sizeof(T));
+        sz = fh.read(reinterpret_cast<uint8_t *>(&data), sizeof(T));
+        fh.close();
+        
+        return (sz == sizeof(T)) && (data.mgc1 == LOG_MGC1) && (data.mgc2 == LOG_MGC2);
+    }
+    
+    return false;
+}
+
 #define logRCount(fname, type)      (logSize(fname)/sizeof(type))
 #define logRCountFull(fname, type)  (logSizeFull(fname)/sizeof(type))
 
