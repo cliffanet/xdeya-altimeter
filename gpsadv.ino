@@ -9,12 +9,13 @@
 #include "src/gps.h"
 #include "src/altcalc.h"
 #include "src/altimeter.h"
+#include "src/track.h"
 #include "src/cfg/main.h"
 #include "src/cfg/point.h"
 #include "src/cfg/jump.h"
 
-#include "WiFi.h"
-#include "SPIFFS.h"
+#include <WiFi.h>
+#include <SPIFFS.h>
 
 #include <TimeLib.h>
 static uint32_t tmadj = 0;
@@ -57,6 +58,7 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
 //------------------------------------------------------------------------------
 void setup() {
     Serial.begin(115200);
+    WiFi.mode(WIFI_OFF);
     
     displayInit();
 
@@ -144,6 +146,6 @@ void loop() {
     altProcess();
     btnProcess();
     timerProcess();
-    //logProcess();
+    trkProcess();
     delay(100);
 }

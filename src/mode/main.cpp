@@ -7,6 +7,7 @@
 #include "../altimeter.h"
 #include "../timer.h"
 #include "../menu/static.h"
+#include "../track.h"
 #include "../../def.h" //time
 
 /* *********************************************************************
@@ -18,6 +19,18 @@
 bool modemain = true;
 
 static uint8_t mode = MODE_MAIN_GPS; // Текущая страница отображения, сохраняется при переходе в меню
+
+
+/* ------------------------------------------------------------------------------------------- *
+ * Функция отрисовки состояния записи трека
+ * ------------------------------------------------------------------------------------------- */
+void drawTrackState(U8G2 &u8g2) {
+    if (!trkRunning() || ((millis() % 2000) < 1000))
+        return;
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.setDrawColor(1);
+    u8g2.drawGlyph(0, 10, 'R');
+}
 
 /* ------------------------------------------------------------------------------------------- *
  * Функция отрисовки компаса, провёрнутого на угол ang
@@ -118,6 +131,8 @@ static void displayGPS(U8G2 &u8g2) {
     auto &gps = gpsGet();
     char s[50];
     
+    drawTrackState(u8g2);
+    
     displayCompasFull(u8g2);
     if (!gps.satellites.isValid() || (gps.satellites.value() == 0))
         return;
@@ -164,6 +179,8 @@ static void displayGPS(U8G2 &u8g2) {
 static void displayAlt(U8G2 &u8g2) {
     char s[20];
     auto &ac = altCalc();
+    
+    drawTrackState(u8g2);
 
     u8g2.setFont(u8g2_font_fub49_tn);
     sprintf_P(s, PSTR("%0.1f"), ac.alt() / 1000);
@@ -186,6 +203,8 @@ static void displayAlt(U8G2 &u8g2) {
 static void displayAltGPS(U8G2 &u8g2) {
     auto &gps = gpsGet();
     char s[50];
+    
+    drawTrackState(u8g2);
     
     displayCompasFull(u8g2);
     
@@ -259,6 +278,9 @@ static void displayAltGPS(U8G2 &u8g2) {
  * ------------------------------------------------------------------------------------------- */
 static void displayTime(U8G2 &u8g2) {
     char s[20];
+    
+    drawTrackState(u8g2);
+    
     if (!timeOk()) {
         u8g2.setFont(u8g2_font_ncenB14_tr); 
         strcpy_P(s, PSTR("Clock wait"));
@@ -301,6 +323,16 @@ static void btnSelSmpl() {  // Обработка нажатия на средн
     inf.save();
     displayHnd();
     timerUpdate(MAIN_TIMEOUT);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Включение/выключение трэкинга
+ * ------------------------------------------------------------------------------------------- */
+static void trackTgl() {
+    if (trkRunning())
+        trkStop();
+    else
+        trkStart(true);
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -374,6 +406,7 @@ void modeMain() {
     btnHnd(BTN_UP,  BTN_LONG,   displayLightTgl);
     btnHnd(BTN_SEL, BTN_SIMPLE, btnSelSmpl);
     btnHnd(BTN_SEL, BTN_LONG,   modeMenu);
+    btnHnd(BTN_DOWN,BTN_LONG,   trackTgl);
     altStateHnd(altState);
     
     timerHnd(mainTimeout, MAIN_TIMEOUT);
