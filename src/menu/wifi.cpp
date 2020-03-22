@@ -26,9 +26,7 @@ MenuWiFi::MenuWiFi() :
     MenuBase(wifiInit(), PSTR("WiFi Sync"))
 {
     wifiall.clear();
-    auto sz = size();
-    if (sz > 0) sz--;
-    for (int i = 0; i < sz; ++i) {
+    for (int i = 0; i < size(); ++i) {
         wifi_t w;
         strncpy(w.name, WiFi.SSID(i).c_str(), sizeof(w.name));
         w.name[sizeof(w.name)-1] = '\0';
@@ -57,9 +55,4 @@ void MenuWiFi::updStr(menu_dspl_el_t &str, int16_t i) {
     str.name[sizeof(str.name)-1] = '\0';
     str.val[0] = w.isopen ? '\0' : '*';
     str.val[1] = '\0';
-}
-
-void MenuWiFi::updHnd(int16_t i, button_hnd_t &smp, button_hnd_t &lng, button_hnd_t &editup, button_hnd_t &editdn) {
-    //ilog = i;
-    smp = [this] () { Serial.println("wifi click"); };
 }

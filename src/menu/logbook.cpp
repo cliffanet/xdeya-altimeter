@@ -10,11 +10,6 @@ static size_t logSize() {
     return logRCountFull(PSTR(JMPLOG_SIMPLE_NAME), struct log_item_s<log_jmp_t>);
 }
 
-static int16_t ilog = 0;
-static void logInfo() {
-    modeLogBook(ilog);
-}
-
 MenuLogBook::MenuLogBook() :
     MenuBase(logSize(), PSTR("LogBook"))
 {
@@ -36,7 +31,6 @@ void MenuLogBook::updStr(menu_dspl_el_t &str, int16_t i) {
     }
 }
 
-void MenuLogBook::updHnd(int16_t i, button_hnd_t &smp, button_hnd_t &lng, button_hnd_t &editup, button_hnd_t &editdn) {
-    ilog = i;
-    smp = logInfo;
+void MenuLogBook::btnSmp() {
+    modeLogBook(sel());
 }

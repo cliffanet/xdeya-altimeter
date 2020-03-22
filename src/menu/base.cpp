@@ -13,12 +13,14 @@ static std::vector<MenuBase *> mtree;
 static char title[MENUSZ_NAME] = { '\0' };
 static menu_dspl_el_t str[MENU_STR_COUNT];
 
-static button_hnd_t editup = NULL, editdn = NULL, editenter = NULL;
 // редактируется ли текущий пункт меню
 static bool menuedit = false;
 // Сообщение моргающим текстом - будет выводится на селекторе меню (в этот момент сам выделенный пункт меню скрывается)
 static char flashstr[MENUSZ_NAME] = { '\0' };
 static int16_t flashcnt = 0; // счётчик мигания - это и таймер мигания, и помогает мигать
+
+static void menuSmp();
+static void menuLng();
 
 static void menuEditOn();
 static void menuLevelUp();
@@ -90,30 +92,15 @@ void MenuBase::updStr(int16_t i) {
  *  Обновление обработчиков кнопок при каждом нажатии
  * ------------------------------------------------------------------------------------------- */
 void MenuBase::updHnd() {
-    button_hnd_t smp = NULL, lng = menuExit;
-    
-    editup = NULL;
-    editdn = NULL;
-    
     if (((elexit == MENUEXIT_TOP) && (isel == 0)) ||
         ((elexit == MENUEXIT_BOTTOM) && ((isel+1) == sz))) {
-        smp = menuLevelUp;
-        
-    }
-    else {
-        updHnd(elexit == MENUEXIT_TOP ? isel-1 : isel, smp, lng, editup, editdn);
+        btnHnd(BTN_SEL, BTN_SIMPLE, menuLevelUp);
+        btnHnd(BTN_SEL, BTN_LONG, menuExit);
+        return;
     }
     
-    if ((editup != NULL) && (editdn != NULL)) {
-        btnHnd(BTN_SEL, BTN_SIMPLE, menuEditOn);
-        editenter = smp;
-    }
-    else {
-        btnHnd(BTN_SEL, BTN_SIMPLE, smp);
-        editenter = NULL;
-    }
-    
-    btnHnd(BTN_SEL, BTN_LONG, lng);
+    btnHnd(BTN_SEL, BTN_SIMPLE, useEdit() ? menuEditOn : menuSmp);
+    btnHnd(BTN_SEL, BTN_LONG, useLng() ? menuLng : NULL);
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -239,25 +226,37 @@ static void menuDown() {
     m->selDn();
     menuFlashClear();
 }
+static void menuSmp() {
+    if (mtree.size() == 0) return;
+    auto m = mtree.back();
+    m->btnSmp();
+    if ((mtree.size() > 0) && (mtree.back() == m))
+        m->updStrSel();
+}
+static void menuLng() {
+    if (mtree.size() == 0) return;
+    auto m = mtree.back();
+    m->btnLng();
+    if ((mtree.size() > 0) && (mtree.back() == m))
+        m->updStrSel();
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Функции режима редактирования
  * ------------------------------------------------------------------------------------------- */
 static void editUp() {      // Вверх
-    if (editup == NULL) return;
-    editup();
     menuFlashClear();
     if (mtree.size() == 0) return;
     auto m = mtree.back();
+    m->edit(+1);
     m->updStrSel();
 }
 
 static void editDown() {    // вниз
-    if (editdn == NULL) return;
-    editdn();
     menuFlashClear();
     if (mtree.size() == 0) return;
     auto m = mtree.back();
+    m->edit(-1);
     m->updStrSel();
 }
 
@@ -272,7 +271,10 @@ static void menuEditOff() {     // Выход из режима редактир
 }
 
 static void menuEditOn() {      // Вход в режим редактирования
-    if ((editup == NULL) && (editdn == NULL))
+    if (mtree.size() == 0) return;
+    auto m = mtree.back();
+    
+    if (!m->useEdit())
         // доп контроль, что это редактируемое поле
         return;
     
@@ -281,8 +283,7 @@ static void menuEditOn() {      // Вход в режим редактирова
     btnHnd(BTN_DOWN,    BTN_SIMPLE, editDown);
     btnHnd(BTN_SEL,     BTN_SIMPLE, menuEditOff);
     
-    if (editenter != NULL)    // При входе в режим редактирования можно использовать обработчик enter (как и при обычном нажатии)
-       editenter();
+    m->editEnter();
     
     menuedit = true;
     menuFlashClear();

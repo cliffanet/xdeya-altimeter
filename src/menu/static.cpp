@@ -50,15 +50,19 @@ static const menu_el_t menugpsupoint[] {
             else
                 strcpy_P(txt, PSTR("[no point]"));
         },
-        .editup = [] () { pnt.numInc(); },
-        .editdown = [] () { pnt.numDec(); },
+        .edit = [] (int val) {
+            if (val == 1)
+                pnt.numDec();
+            else
+            if (val == -1)
+                pnt.numInc();
+        },
     },
     {   // Сохранение текущих координат в выбранной точке
         .name = PSTR("Save position"),
         .enter = menuFlashHold, // Сохранение только по длинному нажатию, чтобы случайно не затереть точку
         .showval = NULL,
-        .editup = NULL,
-        .editdown = NULL,
+        .edit = NULL,
         .hold = [] () {
             if (!pnt.numValid()) { // Точка может быть не выбрана
                 menuFlashP(PSTR("Point not selected"));
@@ -86,8 +90,7 @@ static const menu_el_t menugpsupoint[] {
         .name = PSTR("Clear"),
         .enter = menuFlashHold,  // Стирание только по длинному нажатию, чтобы случайно не затереть точку
         .showval = NULL,
-        .editup = NULL,
-        .editdown = NULL,
+        .edit = NULL,
         .hold = [] () {
             if (!pnt.numValid()) { // Точка может быть не выбрана
                 menuFlashP(PSTR("Point not selected"));
@@ -114,24 +117,18 @@ static const menu_el_t menudisplay[] {
         .name = PSTR("Light"),
         .enter = displayLightTgl,           // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) { valOn(txt, displayLight()); },
-        //.editup = displayLightTgl,      // Сразу же применяем настройку
-        //.editdown = displayLightTgl,
     },
     {   // Уровень контраста
         .name = PSTR("Contrast"),
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, cfg.d().contrast); },
-        .editup = [] () {
-            if (cfg.d().contrast >= 30) return; // Значения в конфиге от 0 до 30,
-                                            // а в сам драйвер пихаем уже доработанные значения, чтобы исключить
-                                            // ситуацию, когда не видно совсем, что на экране
-            cfg.set().contrast ++;                
-            displayContrast(cfg.d().contrast);  // Сразу же применяем настройку, чтобы увидеть наглядно результат
-        },
-        .editdown = [] () {
-            if (cfg.d().contrast <= 0) return;
-            cfg.set().contrast --;
-            displayContrast(cfg.d().contrast);
+        .edit = [] (int val) {
+            int c = cfg.d().contrast;
+            c+=val;
+            if (c > 30) c = 30; // Значения в конфиге от 0 до 30
+            if (c < 0) c = 0;
+            if (cfg.d().contrast == c) return;
+            displayContrast(cfg.set().contrast = c);  // Сразу же применяем настройку, чтобы увидеть наглядно результат
         },
     },
 };
@@ -144,8 +141,7 @@ static const menu_el_t menugnd[] {
         .name = PSTR("Manual set"),
         .enter = menuFlashHold,  // Сброс только по длинному нажатию
         .showval = NULL,
-        .editup = NULL,
-        .editdown = NULL,
+        .edit = NULL,
         .hold = [] () {
             if (!cfg.d().gndmanual) {
                 menuFlashP(PSTR("Manual not allowed"));
@@ -188,68 +184,80 @@ static const menu_el_t menuinfo[] {
         .name = PSTR("On CNP"),
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplcnp); },
-        .editup = [] () {
-            if (cfg.d().dsplcnp > MODE_MAIN_NONE)
-                cfg.set().dsplcnp--;
+        .edit = [] (int val) {
+            if (val == -1) {
+                if (cfg.d().dsplcnp > MODE_MAIN_NONE)
+                    cfg.set().dsplcnp--;
+                else
+                    cfg.set().dsplcnp = MODE_MAIN_MAX;
+            }
             else
-                cfg.set().dsplcnp = MODE_MAIN_MAX;
-        },
-        .editdown = [] () {
-            if (cfg.d().dsplcnp < MODE_MAIN_MAX)
-                cfg.set().dsplcnp ++;
-            else
-                cfg.set().dsplcnp = MODE_MAIN_NONE;
+            if (val == 1) {
+                if (cfg.d().dsplcnp < MODE_MAIN_MAX)
+                    cfg.set().dsplcnp ++;
+                else
+                    cfg.set().dsplcnp = MODE_MAIN_NONE;
+            }
         },
     },
     {   // куда переключать экран после приземления: не переключать, жпс (по умолч), часы, жпс+высота
         .name = PSTR("After Land"),
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplland); },
-        .editup = [] () {
-            if (cfg.d().dsplland > MODE_MAIN_NONE)
-                cfg.set().dsplland--;
+        .edit = [] (int val) {
+            if (val == -1) {
+                if (cfg.d().dsplland > MODE_MAIN_NONE)
+                    cfg.set().dsplland--;
+                else
+                    cfg.set().dsplland = MODE_MAIN_MAX;
+            }
             else
-                cfg.set().dsplland = MODE_MAIN_MAX;
-        },
-        .editdown = [] () {
-            if (cfg.d().dsplland < MODE_MAIN_MAX)
-                cfg.set().dsplland ++;
-            else
-                cfg.set().dsplland = MODE_MAIN_NONE;
+            if (val == 1) {
+                if (cfg.d().dsplland < MODE_MAIN_MAX)
+                    cfg.set().dsplland ++;
+                else
+                    cfg.set().dsplland = MODE_MAIN_NONE;
+            }
         },
     },
     {   // куда переключать экран при длительном бездействии на земле
         .name = PSTR("On GND"),
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplgnd); },
-        .editup = [] () {
-            if (cfg.d().dsplgnd > MODE_MAIN_NONE)
-                cfg.set().dsplgnd--;
+        .edit = [] (int val) {
+            if (val == -1) {
+                if (cfg.d().dsplgnd > MODE_MAIN_NONE)
+                    cfg.set().dsplgnd--;
+                else
+                    cfg.set().dsplgnd = MODE_MAIN_MAX;
+            }
             else
-                cfg.set().dsplgnd = MODE_MAIN_MAX;
-        },
-        .editdown = [] () {
-            if (cfg.d().dsplgnd < MODE_MAIN_MAX)
-                cfg.set().dsplgnd ++;
-            else
-                cfg.set().dsplgnd = MODE_MAIN_NONE;
+            if (val == 1) {
+                if (cfg.d().dsplgnd < MODE_MAIN_MAX)
+                    cfg.set().dsplgnd ++;
+                else
+                    cfg.set().dsplgnd = MODE_MAIN_NONE;
+            }
         },
     },
     {   // куда переключать экран при включении: запоминать после выключения, все варианты экрана
         .name = PSTR("Power On"),
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplpwron); },
-        .editup = [] () {
-            if (cfg.d().dsplpwron > MODE_MAIN_LAST)
-                cfg.set().dsplpwron--;
+        .edit = [] (int val) {
+            if (val == -1) {
+                if (cfg.d().dsplpwron > MODE_MAIN_LAST)
+                    cfg.set().dsplpwron--;
+                else
+                    cfg.set().dsplpwron = MODE_MAIN_MAX;
+            }
             else
-                cfg.set().dsplpwron = MODE_MAIN_MAX;
-        },
-        .editdown = [] () {
-            if (cfg.d().dsplpwron < MODE_MAIN_MAX)
-                cfg.set().dsplpwron ++;
-            else
-                cfg.set().dsplpwron = MODE_MAIN_LAST;
+            if (val == 1) {
+                if (cfg.d().dsplpwron < MODE_MAIN_MAX)
+                    cfg.set().dsplpwron ++;
+                else
+                    cfg.set().dsplpwron = MODE_MAIN_LAST;
+            }
         },
     },
 };
@@ -274,20 +282,23 @@ static const menu_el_t menutime[] {
             m = m % 60;
             sprintf_P(txt, PSTR(":%02d"), m);
         },
-        .editup = [] () {
-            if (cfg.d().timezone >= 12*60)      // Ограничение выбора часового пояса
-                return;
-            cfg.set().timezone += 30;             // часовые пояса смещаем по 30 минут
-            adjustTime(30 * 60);            // сразу применяем настройки
+        .edit = [] (int val) {
+            if (val == -1) {
+                if (cfg.d().timezone >= 12*60)      // Ограничение выбора часового пояса
+                    return;
+                cfg.set().timezone += 30;             // часовые пояса смещаем по 30 минут
+                adjustTime(30 * 60);            // сразу применяем настройки
                                             // adjustTime меняет время от текущего,
                                             // поэтому надо передавать не абсолютное значение,
                                             // а смещение от текущего значения, т.е. по 30 минут
-        },
-        .editdown = [] () {
-            if (cfg.d().timezone <= -12*60)
-                return;
-            cfg.set().timezone -= 30;
-            adjustTime(-30 * 60);
+            }
+            else
+            if (val == 1) {
+                if (cfg.d().timezone <= -12*60)
+                    return;
+                cfg.set().timezone -= 30;
+                adjustTime(-30 * 60);
+            }
         },
     },
 };
@@ -300,8 +311,7 @@ static const menu_el_t menupower[] {
         .name = PSTR("Off"),
         .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
         .showval = NULL,
-        .editup = NULL,
-        .editdown = NULL,
+        .edit = NULL,
         .hold = pwrOff
     },
 };
@@ -314,8 +324,7 @@ static const menu_el_t menusystem[] {
         .name = PSTR("Factory reset"),
         .enter = menuFlashHold,     // Сброс настроек только по длинному нажатию
         .showval = NULL,
-        .editup = NULL,
-        .editdown = NULL,
+        .edit = NULL,
         .hold = [] () {
             if (!cfgFactory()) {
                 menuFlashP(PSTR("EEPROM fail"));
@@ -340,12 +349,8 @@ static const menu_el_t menumain[] {
         .name = PSTR("Jump count"),
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, jmp.d().count); },
-        .editup = [] () {
-            jmp.set().count ++;
-        },
-        .editdown = [] () {
-            if (jmp.d().count > 0)
-                jmp.set().count --;
+        .edit = [] (int val) {
+            jmp.set().count += val;
         },
     },
     {
@@ -404,12 +409,26 @@ void MenuStatic::updStr(menu_dspl_el_t &str, int16_t i) {
         m.showval(str.val);
 }
 
-void MenuStatic::updHnd(int16_t i, button_hnd_t &smp, button_hnd_t &lng, button_hnd_t &editup, button_hnd_t &editdn) {
-    auto &m = menu[i];
-    
-    smp = m.enter;
+void MenuStatic::btnSmp() {
+    auto &m = menu[sel()];
+    if (m.enter != NULL)
+        m.enter();
+}
+
+bool MenuStatic::useLng() {
+    return menu[sel()].hold != NULL;
+}
+
+void MenuStatic::btnLng() {
+    auto &m = menu[sel()];
     if (m.hold != NULL)
-        lng = m.hold;
-    editup = m.editup;
-    editdn = m.editdown;
+        m.hold();
+}
+bool MenuStatic::useEdit() {
+    return menu[sel()].edit != NULL;
+}
+void MenuStatic::edit(int val) {
+    auto &m = menu[sel()];
+    if (m.edit != NULL)
+        m.edit(val);
 }

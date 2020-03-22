@@ -6,7 +6,6 @@
 #define _menu_base_H
 
 #include <Arduino.h>
-#include "../button.h"
 
 #define MENU_STR_COUNT  5
 #define MENUSZ_NAME 20
@@ -40,8 +39,6 @@ class MenuBase {
         void updStr(int16_t i);
         void updStrSel() { updStr(isel); }
         
-        virtual     // получение обработчиков из потомка
-        void updHnd(int16_t i, button_hnd_t &smp, button_hnd_t &lng, button_hnd_t &editup, button_hnd_t &editdn) {}
         void updHnd(); // обновляет обработчики текущего выделенного пункта меню
         
         void displayDraw(U8G2 &u8g2); // перерисовывает на экране всю видимую часть меню
@@ -56,7 +53,19 @@ class MenuBase {
         bool isExit(int16_t i) { return ((elexit == MENUEXIT_TOP) && (i == 0)) || ((elexit == MENUEXIT_BOTTOM) && (i+1 >= sz)); }
         const char *uptitle() { return _uptitle; }
         
-        int16_t size() const { return sz; }
+        // Управление кнопками
+        virtual void btnSmp() {} // Нажатие на среднюю кнопку короткое
+        virtual bool useLng() { return false; } // используется ли длинное нажатие
+        virtual void btnLng() {} // Нажатие на среднюю кнопку длинное
+        virtual bool useEdit() { return false; } // используется ли редактирование
+        virtual void editEnter() {} // вход в режим редактирования
+        virtual void edit(int val) {} // изменение пункта меню на величину val:
+                                                        // +-1 при коротком,
+                                                        // +-10 при удержании 3 сек,
+                                                        // +- 100 при удержании 6 сек
+        
+        int16_t sel() const { return elexit == MENUEXIT_TOP ? isel-1 : isel; }
+        int16_t size() const { return (elexit == MENUEXIT_NONE) || (sz <= 0) ? sz : sz-1; }
         
     private:
         int16_t itop = 0, isel = 0, sz = 0;
