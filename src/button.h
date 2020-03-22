@@ -55,5 +55,7 @@ void btnHnd(btn_code_t btn, button_time_t tm, button_hnd_t hnd);
 
 // время ненажатия ни на одну кнопку
 uint32_t btnIdle();
+// время зажатой одной или более кнопок
+uint32_t btnPressed(uint8_t &btn);
 
 #endif // _button_H

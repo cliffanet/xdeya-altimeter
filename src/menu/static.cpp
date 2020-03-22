@@ -350,7 +350,10 @@ static const menu_el_t menumain[] {
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, jmp.d().count); },
         .edit = [] (int val) {
-            jmp.set().count += val;
+            int32_t c = jmp.d().count + val;
+            if (c < 0) c = 0;
+            if (c == jmp.d().count) return;
+            jmp.set().count = c;
         },
     },
     {

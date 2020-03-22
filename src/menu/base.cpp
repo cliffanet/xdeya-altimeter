@@ -363,6 +363,25 @@ void menuProcess() {
         return;
     if (btnIdle() > MENU_TIMEOUT)
         menuExit();
+    
+    if (menuedit) {
+        // Обработка удержания кнопок вверх/вниз в режиме редактирования
+        uint8_t btn = 0;
+        auto t = btnPressed(btn);
+        int sign = btn == BTN_UP ? 1 : btn == BTN_DOWN ? -1 : 0;
+        if (sign != 0) {
+            auto m = mtree.back();
+            if (t > 3000) {
+                m->edit(sign * 100);
+                m->updStrSel();
+            }
+            else
+            if (t > 1000) {
+                m->edit(sign * 10);
+                m->updStrSel();
+            }
+        }
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
