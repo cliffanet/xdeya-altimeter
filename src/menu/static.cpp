@@ -1,6 +1,7 @@
 
 #include "static.h"
 #include "logbook.h"
+#include "wifi.h"
 #include "../display.h"
 #include "../gps.h"
 #include "../cfg/main.h"
@@ -377,7 +378,7 @@ static const menu_el_t menumain[] {
     },
     {
         .name = PSTR("Wifi sync"),
-        //.enter = menuSubWifi,
+        .enter = [] () { menuEnter(new MenuWiFi); },
     },
 };
 
