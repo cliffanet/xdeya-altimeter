@@ -8,6 +8,9 @@
 #include <Arduino.h>
 #include "cfg/jump.h"
 
+#define TRK_FILE_NAME       "track"
+#define TRK_PRESERV_COUNT   32
+
 typedef enum {
     TRKRUN_NONE = 0,
     TRKRUN_FORCE,

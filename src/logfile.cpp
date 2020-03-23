@@ -131,4 +131,44 @@ bool logRotate(const char *_fname, uint8_t count) {
     return true;
 }
 
+/* ------------------------------------------------------------------------------------------- *
+ *  Удаление самого старшего файла, возвращает сколько осталось
+ * ------------------------------------------------------------------------------------------- */
+int logRemoveLast(const char *_fname, bool removeFirst) {
+    int n = 1;
+    char fname[37], fname1[37];
+
+    fname[0] = '/';
+    strncpy_P(fname+1, _fname, 30);
+    fname[30] = '\0';
+    strcpy(fname1, fname);
+    const byte flen = strlen(fname);
+    
+    // ищем первый свободный слот
+    while (n < 255) {
+        sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n);
+        if (!DISKFS.exists(fname)) break;
+        n++;
+    }
+    if (n <= 1)
+        return -1;
+    
+    n--;
+    if ((n <= 1) && !removeFirst)
+        return -1;
+    
+    sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n);
+    if (!DISKFS.remove(fname)) {
+        Serial.print(F("Can't remove file '"));
+        Serial.print(fname);
+        Serial.println(F("'"));
+        return -1;
+    }
+    Serial.print(F("file '"));
+    Serial.print(fname);
+    Serial.println(F("' removed"));
+    
+    n--;
+    return n;
+}
 

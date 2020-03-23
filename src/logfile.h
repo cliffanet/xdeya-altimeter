@@ -18,6 +18,7 @@ bool logExists(const char *_fname, uint8_t num = 1);
 size_t logSize(const char *_fname, uint8_t num = 1);
 size_t logSizeFull(const char *_fname);
 bool logRotate(const char *_fname, uint8_t count);
+int logRemoveLast(const char *_fname, bool removeFirst = false);
 
 
 #define LOG_MGC1        0xe4
