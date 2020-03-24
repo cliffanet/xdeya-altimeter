@@ -22,6 +22,9 @@ size_t trkStop();
 bool trkRunning();
 trk_running_t trkState();
 
+int trkFileCount();
+size_t trkCountAvail();
+
 void trkProcess();
 
 #endif // _track_H

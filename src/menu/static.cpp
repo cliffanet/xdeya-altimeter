@@ -8,6 +8,7 @@
 #include "../cfg/point.h"
 #include "../cfg/jump.h"
 #include "../altimeter.h"
+#include "../track.h"
 #include "../../def.h" // time/pwr
 
 
@@ -105,6 +106,45 @@ static const menu_el_t menugpsupoint[] {
             }
             
             menuFlashP(PSTR("Point cleared"));
+        },
+    },
+};
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Меню работы с трэками
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menutrack[] {
+    {   // Текущий режим записи трэка
+        .name = PSTR("Recording"),
+        .enter = menuFlashHold,           // Переключаем в один клик без режима редактирования
+        .showval = [] (char *txt) {
+            switch (trkState()) {
+                case TRKRUN_NONE:  strcpy_P(txt, PSTR("no")); break;
+                case TRKRUN_FORCE: strcpy_P(txt, PSTR("Force")); break;
+                case TRKRUN_AUTO:  strcpy_P(txt, PSTR("Auto")); break;
+                default: txt[0] = '\0';
+            }
+        },
+        .edit = NULL,
+        .hold = [] () {
+            if (trkRunning())
+                trkStop();
+            else
+                trkStart(true);
+        },
+    },
+    {   // Количество записей
+        .name = PSTR("Count"),
+        .enter = NULL,
+        .showval = [] (char *txt) { valInt(txt, trkFileCount()); },
+    },
+    {   // Сколько времени доступно
+        .name = PSTR("Avail"),
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            // сколько записей ещё влезет
+            size_t avail = trkCountAvail() / 5; // количество секунд
+            sprintf_P(txt, PSTR("%d s"), avail);
         },
     },
 };
@@ -359,6 +399,10 @@ static const menu_el_t menumain[] {
     {
         .name = PSTR("LogBook"),
         .enter = [] () { menuEnter(new MenuLogBook); },
+    },
+    {
+        .name = PSTR("Track"),
+        .enter = SUBMENU(menutrack),
     },
     {
         .name = PSTR("Display"),

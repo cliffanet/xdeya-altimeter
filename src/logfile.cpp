@@ -1,19 +1,48 @@
 
 #include "logfile.h"
 
+static const byte logFName(char *fname, size_t sz, const char *_fnamesrc) {
+    if (sz <= 7) return 0;
+    sz -= 7;
+    
+    fname[0] = '/';
+    strncpy_P(fname+1, _fnamesrc, sz);
+    fname[sz] = '\0';
+    return strlen(fname);
+}
+static int logFSuffix(char *fname, uint8_t num) {
+    return sprintf_P(fname, PSTR(LOGFILE_SUFFIX), num);
+}
+
 /* ------------------------------------------------------------------------------------------- *
  *  Существование файла
  * ------------------------------------------------------------------------------------------- */
 bool logExists(const char *_fname, uint8_t num) {
     char fname[37];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
     
-    fname[0] = '/';
-    strncpy_P(fname+1, _fname, 30);
-    fname[30] = '\0';
-    const byte flen = strlen(fname);
-    sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), num);
+    logFSuffix(fname+flen, num);
     
     return DISKFS.exists(fname);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Количество файлов
+ * ------------------------------------------------------------------------------------------- */
+int logCount(const char *_fname) {
+    int n = 1;
+    char fname[37];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    
+    while (n < 255) {
+        logFSuffix(fname+flen, n);
+        if (!DISKFS.exists(fname))
+            return n - 1;
+    
+        n++;
+    }
+    
+    return -1;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -21,12 +50,9 @@ bool logExists(const char *_fname, uint8_t num) {
  * ------------------------------------------------------------------------------------------- */
 size_t logSize(const char *_fname, uint8_t num) {
     char fname[37];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
     
-    fname[0] = '/';
-    strncpy_P(fname+1, _fname, 30);
-    fname[30] = '\0';
-    const byte flen = strlen(fname);
-    sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), num);
+    logFSuffix(fname+flen, num);
     
     File fh = DISKFS.open(fname);
     if (!fh)
@@ -42,13 +68,9 @@ size_t logSizeFull(const char *_fname) {
     uint8_t n = 1;
     char fname[37];
     size_t sz = 0;
+    const byte flen = logFName(fname, sizeof(fname), _fname);
     
-    fname[0] = '/';
-    strncpy_P(fname+1, _fname, 30);
-    fname[30] = '\0';
-    const byte flen = strlen(fname);
-    
-    sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n);
+    logFSuffix(fname+flen, n);
     
     while (DISKFS.exists(fname)) {
         File fh = DISKFS.open(fname);
@@ -74,19 +96,16 @@ size_t logSizeFull(const char *_fname) {
 bool logRotate(const char *_fname, uint8_t count) {
     uint8_t n = 1;
     char fname[37], fname1[37];
-
-    fname[0] = '/';
-    strncpy_P(fname+1, _fname, 30);
-    fname[30] = '\0';
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    
     strcpy(fname1, fname);
-    const byte flen = strlen(fname);
     
     if (count == 0)
         count = 255;
 
     // ищем первый свободный слот
     while (1) {
-        sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n);
+        logFSuffix(fname+flen, n);
         if (!DISKFS.exists(fname)) break;
         if (n < count) {
             n++; // пока ещё не достигли максимального номера файла, продолжаем
@@ -108,8 +127,8 @@ bool logRotate(const char *_fname, uint8_t count) {
 
     // теперь переименовываем все по порядку
     while (n > 1) {
-        sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n-1);
-        sprintf_P(fname1+flen, PSTR(LOGFILE_SUFFIX), n);
+        logFSuffix(fname+flen, n-1);
+        logFSuffix(fname1+flen, n);
         
         if (!DISKFS.rename(fname, fname1)) {
             Serial.print(F("Can't rename file '"));
@@ -132,21 +151,80 @@ bool logRotate(const char *_fname, uint8_t count) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  Удаление самого старшего файла, возвращает сколько осталось
+ *  Дописывание в конец
+ * ------------------------------------------------------------------------------------------- */
+bool logAppend(const char *_fname, const uint8_t *data, uint16_t dsz, size_t maxrcnt, uint8_t count) {
+    char fname[36];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    
+    logFSuffix(fname+flen, 1);
+    
+    if (DISKFS.exists(fname)) {
+        File fh = DISKFS.open(fname);
+        if (!fh) return false;
+        
+        auto sz = fh.size();
+        fh.close();
+        
+        if ((sz + dsz) > (maxrcnt*dsz))
+            if (!logRotate(_fname, count))
+                return false;
+    }
+    
+    File fh = DISKFS.open(fname, FILE_APPEND);
+    if (!fh)
+        return false;
+    
+    auto sz = fh.write(data, dsz);
+    fh.close();
+    
+    return sz == dsz;
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Чтение записи с индексом i с конца (при i=0 - самая последняя запись, при i=1 - предпоследняя)
+ * ------------------------------------------------------------------------------------------- */
+bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
+    char fname[36];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    
+    for (uint16_t n = 1; n <= 1000; n++) {
+        logFSuffix(fname+flen, n);
+        if (!DISKFS.exists(fname))
+            return false;
+        
+        File fh = DISKFS.open(fname);
+        if (!fh) return false;
+        
+        auto sz = fh.size();
+        auto count = sz / dsz;
+        if (count <= index) {
+            index -= count;
+            fh.close();
+            continue;
+        }
+        
+        fh.seek(sz - (index * dsz) - dsz);
+        sz = fh.read(data, dsz);
+        fh.close();
+        
+        return sz == dsz;
+    }
+    
+    return false;
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Удаление самого старшего файла, возвращает номер удалённого файла
  * ------------------------------------------------------------------------------------------- */
 int logRemoveLast(const char *_fname, bool removeFirst) {
     int n = 1;
-    char fname[37], fname1[37];
-
-    fname[0] = '/';
-    strncpy_P(fname+1, _fname, 30);
-    fname[30] = '\0';
-    strcpy(fname1, fname);
-    const byte flen = strlen(fname);
+    char fname[37];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
     
     // ищем первый свободный слот
     while (n < 255) {
-        sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n);
+        logFSuffix(fname+flen, n);
         if (!DISKFS.exists(fname)) break;
         n++;
     }
@@ -157,7 +235,7 @@ int logRemoveLast(const char *_fname, bool removeFirst) {
     if ((n <= 1) && !removeFirst)
         return -1;
     
-    sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n);
+    logFSuffix(fname+flen, n);
     if (!DISKFS.remove(fname)) {
         Serial.print(F("Can't remove file '"));
         Serial.print(fname);
@@ -168,7 +246,35 @@ int logRemoveLast(const char *_fname, bool removeFirst) {
     Serial.print(fname);
     Serial.println(F("' removed"));
     
-    n--;
     return n;
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Удаление всех файлов, возвращает сколько файлов удалено
+ * ------------------------------------------------------------------------------------------- */
+int logRemoveAll(const char *_fname, bool removeFirst) {
+    int n = removeFirst ? 1 : 2;
+    char fname[37];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    
+    while (n < 255) {
+        logFSuffix(fname+flen, n);
+        if (!DISKFS.exists(fname))
+            return n - (removeFirst ? 1 : 2);
+        
+        if (!DISKFS.remove(fname)) {
+            Serial.print(F("Can't remove file '"));
+            Serial.print(fname);
+            Serial.println(F("'"));
+            return -1;
+        }
+        Serial.print(F("file '"));
+        Serial.print(fname);
+        Serial.println(F("' removed"));
+    
+        n++;
+    }
+    
+    return -1;
 }
 
