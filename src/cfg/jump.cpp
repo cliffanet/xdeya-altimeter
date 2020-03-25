@@ -3,6 +3,7 @@
 #include "../altimeter.h"
 #include "../gps.h"
 #include "../logfile.h"
+#include "../track.h"
 
 #include <TimeLib.h>
 
@@ -146,8 +147,9 @@ void jmpProcess() {
         // Включаем запись лога прыга
         jmpst = JMP_FREEFALL; // Самое начало прыга помечаем в любом случае как FF,
                               // т.к. из него можно перейти в CNP, но не обратно (именно для jmp)
-        //if (logrun == LOGRUN_NONE)
-        //    logrun = LOGRUN_ALTI;
+        
+        if (!trkRunning())
+            trkStart(false);
         
         jmp.beg();
     }
@@ -168,6 +170,9 @@ void jmpProcess() {
         //if (jmp == JMP_FREEFALL) // Был пропущен момент перехода на JMP_CANOPY
         //    jmpcnp = li;
         jmpst = JMP_NONE;
+        
+        if (trkState() == TRKRUN_AUTO)
+            trkStop();
         
         // Сохраняем
         jmp.end();
