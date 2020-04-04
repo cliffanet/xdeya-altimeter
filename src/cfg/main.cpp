@@ -2,6 +2,7 @@
 #include "main.h"
 #include "point.h"
 #include "jump.h"
+#include "webjoin.h"
 #include "../display.h"
 
 #include <FS.h>
@@ -13,6 +14,8 @@ Config<cfg_main_t> cfg(PSTR(CFG_MAIN_NAME), CFG_MAIN_VER);
 template class Config<cfg_point_t>; // Почему-то не линкуется, если эту строчку переместить в point.cpp
 
 template class Config<cfg_jump_t>;
+
+template class Config<cfg_webjoin_t>;
 
 template class Config<cfg_info_t>;
 Config<cfg_info_t> inf(PSTR(CFG_INFO_NAME), CFG_INFO_VER);

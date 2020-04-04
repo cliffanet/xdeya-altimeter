@@ -21,6 +21,8 @@ class MenuWiFi : public MenuBase {
         ~MenuWiFi();
         void updStr(menu_dspl_el_t &str, int16_t i);
         
+        void btnSmp();
+        
     private:
         std::vector<wifi_t> wifiall;
 };
