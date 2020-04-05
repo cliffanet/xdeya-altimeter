@@ -307,7 +307,8 @@ static void menuLevelUp() {
     m->updHnd();
 }
 
-static void menuExit() {
+// Только завершение режима меню - полный выход из всех меню
+void menuClear() {
     // Сохраняем настройки, если изменены
     if (!cfgSave()) {
         menuFlashP(PSTR("Config save error"));
@@ -317,8 +318,43 @@ static void menuExit() {
     for (auto m : mtree)
         delete m;
     mtree.clear();
+    hndProcess = NULL;
+    
     menuFlashClear();
+}
+
+static void menuExit() {
+    menuClear();
     modeMain();
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Проверка бездействия в меню
+ * ------------------------------------------------------------------------------------------- */
+static void menuProcess() {
+    if (mtree.empty())
+        return;
+    if (btnIdle() > MENU_TIMEOUT)
+        menuExit();
+    
+    if (menuedit) {
+        // Обработка удержания кнопок вверх/вниз в режиме редактирования
+        uint8_t btn = 0;
+        auto t = btnPressed(btn);
+        int sign = btn == BTN_UP ? 1 : btn == BTN_DOWN ? -1 : 0;
+        if (sign != 0) {
+            auto m = mtree.back();
+            if (t > 3000) {
+                m->edit(sign * 100);
+                m->updStrSel();
+            }
+            else
+            if (t > 1000) {
+                m->edit(sign * 10);
+                m->updStrSel();
+            }
+        }
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -353,35 +389,8 @@ void modeMenu() {
         m->updStr();
         m->updHnd();
     }
-}
-
-/* ------------------------------------------------------------------------------------------- *
- *  Проверка бездействия в меню
- * ------------------------------------------------------------------------------------------- */
-void menuProcess() {
-    if (mtree.empty())
-        return;
-    if (btnIdle() > MENU_TIMEOUT)
-        menuExit();
     
-    if (menuedit) {
-        // Обработка удержания кнопок вверх/вниз в режиме редактирования
-        uint8_t btn = 0;
-        auto t = btnPressed(btn);
-        int sign = btn == BTN_UP ? 1 : btn == BTN_DOWN ? -1 : 0;
-        if (sign != 0) {
-            auto m = mtree.back();
-            if (t > 3000) {
-                m->edit(sign * 100);
-                m->updStrSel();
-            }
-            else
-            if (t > 1000) {
-                m->edit(sign * 10);
-                m->updStrSel();
-            }
-        }
-    }
+    hndProcess = menuProcess;
 }
 
 /* ------------------------------------------------------------------------------------------- *

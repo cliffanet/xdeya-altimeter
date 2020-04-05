@@ -23,6 +23,8 @@ bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >
 
 bool is_on = true;
 
+// Обработка процесса текущего режима
+void (*hndProcess)() = NULL;
 
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
     Serial.printf("Listing directory: %s\r\n", dirname);
@@ -138,13 +140,16 @@ void loop() {
     jmpProcess();
     
     btnProcess();
-    menuProcess();
+    if (hndProcess != NULL)
+        hndProcess();
     timerProcess();
     displayUpdate();
     
     delay(100);
     altProcess();
     btnProcess();
+    if (hndProcess != NULL)
+        hndProcess();
     timerProcess();
     trkProcess();
     delay(100);

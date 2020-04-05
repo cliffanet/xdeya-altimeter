@@ -74,8 +74,8 @@ class MenuBase {
 };
 
 void menuEnter(MenuBase *menu);
+void menuClear(); // Только завершение режима меню - полный выход из всех меню
 void modeMenu();
-void menuProcess();
         
 // Запоминаем текст сообщения и сколько тактов отображения показывать
 void menuFlashP(char *txt, int16_t count = 20);

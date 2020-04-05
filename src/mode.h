@@ -26,6 +26,7 @@
 #define MODE_MAIN_TIME      4
 
 extern bool modemain;
+extern void (*hndProcess)();
 
 // Основной режим - отображается одна из страниц с показаниями
 void modeMain();
@@ -38,6 +39,9 @@ void modeMenu();
 
 // Режим выбора wifi-сети
 void modeWifi();
+
+// Режим синхронизации с сервером
+void modeNetSync(const char *net);
 
 // Режим выбора LogBook
 void modeLogBook(size_t i = 0);

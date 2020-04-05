@@ -1,6 +1,6 @@
 
 #include "wifi.h"
-#include "../net/netsync.h"
+#include "../mode.h"
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -21,40 +21,6 @@ static uint16_t wifiInit() {
     Serial.print(F("scan: "));
     Serial.println(n);
     return n;
-}
-
-static bool wifiConnect(const char *net) {
-    Serial.printf("wifi to: %s\r\n", net);
-    
-    WiFi.begin(net, "12344321");
-    
-    uint32_t m = millis() + 10000;
-    while (m > millis()) {
-        auto st = WiFi.status();
-        if (st != WL_CONNECTED) continue;
-        break;
-    }
-    
-    if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("wifi can't connect");
-        WiFi.mode(WIFI_OFF);
-        return false;
-    }
-    
-    Serial.println("wifi connected");
-    
-    WiFiClient cli;
-    NetSync ns(cli);
-    while (ns.process())
-        delay(100);
-    
-    if (ns.error())
-        Serial.printf("Sync error: %s\r\n", ns.errstr());
-    
-    WiFi.mode(WIFI_OFF);
-    
-    Serial.println("finish");
-    return true;
 }
 
 MenuWiFi::MenuWiFi() :
@@ -94,5 +60,5 @@ void MenuWiFi::updStr(menu_dspl_el_t &str, int16_t i) {
 
 void MenuWiFi::btnSmp() {
     auto const &w = wifiall[sel()];
-    wifiConnect(w.name);
+    modeNetSync(w.name);
 }

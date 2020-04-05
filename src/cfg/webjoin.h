@@ -32,7 +32,5 @@ class ConfigWebJoin : public Config<cfg_webjoin_t> {
         uint8_t extid() const { return data.extid; }
 };
 
-extern ConfigWebJoin webjoin;
-
 
 #endif // _cfg_webjoin_H
