@@ -7,20 +7,14 @@
 #include "../menu/base.h"
 #include "../button.h"
 #include "../display.h"
+#include "../net/srv.h"
+#include "../net/data.h"
 
-#include <Arduino.h>
 #include <WiFi.h> // htonl
 
 static uint32_t timeout;
 static char title[20];
-static WiFiClient cli;
 static uint16_t joinnum = 0;
-
-typedef struct __attribute__((__packed__)) {
-    char    mgc;
-    uint8_t cmd;
-    int16_t len;
-} phdr_t;
 
 /* ------------------------------------------------------------------------------------------- *
  * Функция отрисовки меню
@@ -93,11 +87,13 @@ static void displayNetSync(U8G2 &u8g2) {
     }
 }
 
+uint32_t netSyncTimeout() { return timeout; }
+
 /* ------------------------------------------------------------------------------------------- *
  *  Выход с паузой перед этим, чтобы увидеть результат синхронизации
  * ------------------------------------------------------------------------------------------- */
 static void syncExit() {
-    cli.stop();
+    srvStop();
     WiFi.mode(WIFI_OFF);
     hndProcess = NULL;
     modeMain();
@@ -110,13 +106,14 @@ static void waitToExit() {
 }
 
 #define ERR(s) toExit(PSTR(s))
-static void toExit(const char *_title = NULL) {
+void toExit(const char *_title) {
     if (_title == NULL)
         title[0] = '\0';
     else {
         strncpy_P(title, _title, sizeof(title));
         title[sizeof(title)-1] = '\0';
     }
+    srvStop();
     WiFi.mode(WIFI_OFF);
     hndProcess = waitToExit;
     timeout = millis() + 5000;
@@ -142,121 +139,15 @@ static void msg(const char *_title = NULL, void (*hnd)() = NULL, int32_t _timeou
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  чтение инфы от сервера, возвращает true, если есть инфа
+ *  Пересылка на сервер данных
  * ------------------------------------------------------------------------------------------- */
-static bool srvWait(size_t sz) {
-    if (cli.available() >= sz)
-        return true;
-    
-    if (!cli.connected())
-        ERR("server connect lost");
-    else
-    if (timeout < millis())
-        ERR("server timeout");
-    
-    return false;
-}
-
-static bool srvReadData(uint8_t *data, uint16_t sz) {
-    if (sz == 0)
-        return true;
-    
-    size_t sz1 = cli.read(data, sz);
-    if (sz1 != sz) {
-        ERR("fail read from server");
-        return false;
+static void dataToServer() {
+    Serial.println("dataToServer");
+    msg(PSTR("Sending config..."));
+    if (!sendCfg()) {
+        ERR("send cfg fail");
+        return;
     }
-    
-    return true;
-}
-
-static bool srvWaitHdr(phdr_t &p) {
-    if (!srvWait(sizeof(phdr_t)))
-        return false;
-    
-    if (!srvReadData(reinterpret_cast<uint8_t *>(&p), sizeof(phdr_t)))
-        return false;
-    if ((p.mgc != '#') || (p.cmd == 0)) {
-        ERR("recv proto fail");
-        return false;
-    }
-    
-    p.len = ntohs(p.len);
-    
-    return true;
-}
-
-static bool srvRecv(uint8_t &cmd, uint8_t *data = NULL, uint16_t sz = 0) {
-    static phdr_t p = { .mgc = '\0', .cmd = 0 };
-    if (data == NULL) sz = 0;
-    
-    // ожидание и чтение заголовка
-    if ((p.mgc == '\0') && (p.cmd == 0)) {
-        if (!srvWaitHdr(p))
-            return false;
-        if (p.len < sz) // стираем хвост data, который не будет переписан принимаемыми данными,
-                        // Удобно, если после изменения протокола, данные по требуемой команде
-                        // от сервера будут более короткими.
-                        // Но так же это и лишняя процедура, если буфер подаётся с запасом
-            bzero(data+p.len, sz-p.len);
-    }
-    
-    cmd = p.cmd;
-    
-    // Ожидание данных
-    if ((p.len > 0) && !srvWait(p.len))
-        return false;
-    
-    // чтение данных
-    if (!srvReadData(data, p.len <= sz ? p.len : sz))
-        return false;
-    
-    // И дочитываем буфер, если это требуется
-    if (p.len > sz) {
-        uint16_t sz1 = p.len - sz;
-        uint8_t buf[sz1];
-        if (!srvReadData(buf, sz1))
-            return false;
-    }
-    
-    // Обозначаем, что дальше надо принимать заголовок
-    p.mgc = '\0';
-    p.cmd = 0;
-    
-    return true;
-}
-
-template <typename T>
-static bool srvRecv(uint8_t &cmd, T &data) {
-    return srvRecv(cmd, reinterpret_cast<uint8_t *>(&data), sizeof(T));
-}
-
-/* ------------------------------------------------------------------------------------------- *
- *  отправка на сервер
- * ------------------------------------------------------------------------------------------- */
-static bool srvSend(uint8_t cmd, const uint8_t *data = NULL, uint16_t sz = 0) {
-    if (!cli.connected()) {
-        ERR("server connect lost");
-        return false;
-    }
-    
-    uint8_t d[4 + sz] = { '%', cmd };
-    uint16_t sz1 = htons(sz);
-    memcpy(d+2, &sz1, sizeof(sz1));
-    if (sz > 0)
-        memcpy(d+4, data, sz);
-    
-    auto sz2 = cli.write(d, 4 + sz);
-    if (sz2 != (4 + sz)) {
-        ERR("server send fail");
-        return false;
-    }
-    return true;
-}
-
-template <typename T>
-static bool srvSend(uint8_t cmd, const T &data) {
-    return srvSend(cmd, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -317,9 +208,13 @@ static void waitHello() {
     Serial.printf("[waitHello] cmd: %02x\r\n", cmd);
     
     switch (cmd) {
-        case 0x10:
+        case 0x10: // rejoin
             joinnum = ntohl(num);
             msg(NULL, waitJoin, 120000);
+            return;
+        
+        case 0x20: // accept
+            dataToServer();
             return;
     }
     
@@ -336,6 +231,8 @@ static void authStart() {
         return;
     }
     
+    Serial.printf("[authStart] authid: %lu\r\n", wjoin.authid());
+    
     uint32_t id = htonl(wjoin.authid());
     if (!srvSend(0x01, id))
         return;
@@ -347,7 +244,7 @@ static void authStart() {
  *  Соединение к серверу
  * ------------------------------------------------------------------------------------------- */
 static void hndConnecting() {
-    if (!cli.connect("gpstat.dev.cliffa.net", 9971)) {
+    if (!srvConnect()) {
         ERR("server can't connect");
         return;
     }

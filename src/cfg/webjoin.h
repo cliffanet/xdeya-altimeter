@@ -30,7 +30,7 @@ class ConfigWebJoin : public Config<cfg_webjoin_t> {
         ConfigWebJoin();
         ConfigWebJoin(uint32_t authid, uint32_t secnum);
         
-        uint8_t authid() const { return data.authid; }
+        uint32_t authid() const { return data.authid; }
 };
 
 
