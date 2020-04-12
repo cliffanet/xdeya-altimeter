@@ -61,6 +61,8 @@ class Config {
         bool save(bool force = false);
         void reset();
         
+        uint32_t chksum() const;
+        
         const T &d() const { return data; }
         T &set() { _modifed = true; return data; }
         bool modifed() { return _modifed; }

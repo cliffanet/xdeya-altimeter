@@ -141,6 +141,7 @@ bool sendCfg() {
     const auto cfg_d = cfg.d();
     
     struct __attribute__((__packed__)) { // Для передачи по сети
+        uint32_t chksum;
         uint8_t contrast;
         int16_t timezone;
         
@@ -153,6 +154,7 @@ bool sendCfg() {
         char    dsplgnd;
         char    dsplpwron;
     } d = {
+        .chksum     = htonl(cfg.chksum()),
         .contrast   = cfg_d.contrast,
         .timezone   = htons(cfg_d.timezone),
         .gndmanual  = bton(cfg_d.gndmanual),
@@ -171,8 +173,10 @@ bool sendJump() {
     const auto jmp_d = jmp.d();
     
     struct __attribute__((__packed__)) { // Для передачи по сети
+        uint32_t chksum;
         uint32_t count;
     } d = {
+        .chksum     = htonl(jmp.chksum()),
         .count      = htonl(jmp_d.count),
     };
     
@@ -189,6 +193,10 @@ bool sendPoint() {
         dnet_t      lng;
     } d;
     
+    uint32_t chksum = htonl(pnt.chksum());
+    if (!srvSend(0x23, chksum))
+        return false;
+    
     for (uint8_t i=0; i<PNT_COUNT; i++) {
         auto p = pnt_d.all[i];
         
@@ -197,7 +205,7 @@ bool sendPoint() {
         d.lat   = dton(p.lat);
         d.lng   = dton(p.lng);
         
-        if (!srvSend(0x23, d))
+        if (!srvSend(0x24, d))
             return false;
     }
     
@@ -229,7 +237,11 @@ bool sendLogBook() {
     
     bool ok = logFileRead(sendLogBookItem, PSTR(JMPLOG_SIMPLE_NAME), 1);
     
-    return srvSend(0x33) && ok;
+    auto cks = logChkSum(sizeof(struct log_item_s<log_jmp_t>), PSTR(JMPLOG_SIMPLE_NAME), 1);
+    cks.cs = htonl(cks.cs);
+    cks.sz = htonl(cks.sz);
+    
+    return srvSend(0x33, cks) && ok;
 }
 
 static bool sendTrackItem(const struct log_item_s <log_item_t> *r) {
@@ -249,8 +261,11 @@ bool sendTrack() {
             return false;
         
         bool ok = logFileRead(sendTrackItem, PSTR(TRK_FILE_NAME), num);
+        auto cks = logChkSum(sizeof(struct log_item_s<log_jmp_t>), PSTR(TRK_FILE_NAME), num);
+        cks.cs = htonl(cks.cs);
+        cks.sz = htonl(cks.sz);
         
-        if (!srvSend(0x36) || !ok)
+        if (!srvSend(0x36, cks) || !ok)
             return false;
         Serial.printf("track sended ok: %d\r\n", n);
     }

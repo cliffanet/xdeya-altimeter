@@ -106,6 +106,17 @@ void Config<T>::reset() {
     _modifed = true;
 }
 
+template <typename T>
+uint32_t Config<T>::chksum() const {
+    uint32_t sz = sizeof(data);
+    const uint8_t *d = reinterpret_cast<const uint8_t *>(&data);
+    
+    uint16_t sum = 0;
+    for (int i=0; i<sz; i++)
+        sum += d[i];
+    
+    return (sum << 16) | (sz & 0xffff);
+}
 
 bool cfgLoad(bool apply) {
     if (!cfg.load() ||

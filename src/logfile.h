@@ -81,6 +81,17 @@ bool logFileRead(bool (*hnd)(const T *data), const char *_fname, uint16_t fnum =
 
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Контрольная сумма файла
+ * ------------------------------------------------------------------------------------------- */
+typedef struct __attribute__((__packed__)) {
+    uint32_t    cs;
+    uint32_t    sz;
+} logchs_t;
+logchs_t logChkSum(size_t dsz, const char *_fname, uint8_t num = 1);
+uint8_t logFind(const char *_fname, size_t dsz, const logchs_t &cks);
+
+
+/* ------------------------------------------------------------------------------------------- *
  *  Удаление файла
  * ------------------------------------------------------------------------------------------- */
 int logRemoveLast(const char *_fname, bool removeFirst = false);

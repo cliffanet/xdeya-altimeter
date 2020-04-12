@@ -150,6 +150,7 @@ bool logRotate(const char *_fname, uint8_t count) {
     return true;
 }
 
+
 /* ------------------------------------------------------------------------------------------- *
  *  Дописывание в конец
  * ------------------------------------------------------------------------------------------- */
@@ -256,6 +257,61 @@ bool logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fn
     
     return true;
 }
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Контрольная сумма файла
+ * ------------------------------------------------------------------------------------------- */
+logchs_t logChkSum(size_t dsz, const char *_fname, uint8_t num) {
+    char fname[36];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    logchs_t cks = { 0, 0 };
+    uint8_t data[dsz];
+    
+    logFSuffix(fname+flen, num);
+    File fh = DISKFS.open(fname);
+    if (!fh) return cks;
+    
+    if (fh.read(data, dsz) != dsz) {
+        fh.close();
+        return cks;
+    }
+    cks.sz = fh.size();
+    
+    for (size_t i=0; i<dsz; i++)
+        cks.cs += data[i];
+    
+    fh.seek(cks.sz - dsz);
+    if (fh.read(data, dsz) != dsz) {
+        cks.cs = 0;
+        cks.sz = 0;
+        fh.close();
+        return cks;
+    }
+    
+    for (size_t i=0; i<dsz; i++)
+        cks.cs += data[i];
+    
+    fh.close();
+    return cks;
+}
+
+uint8_t logFind(const char *_fname, size_t dsz, const logchs_t &cks) {
+    char fname[36];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    
+    for (uint8_t n = 1; n <= 99; n++) {
+        logFSuffix(fname+flen, n);
+        if (!DISKFS.exists(fname))
+            break;
+        
+        auto cks1 = logChkSum(dsz, _fname, n);
+        if ((cks1.cs == cks.cs) && (cks1.sz == cks.sz))
+            return n;
+    }
+    
+    return 0;
+}
+
 
 /* ------------------------------------------------------------------------------------------- *
  *  Удаление самого старшего файла, возвращает номер удалённого файла
