@@ -139,6 +139,25 @@ static void msg(const char *_title = NULL, void (*hnd)() = NULL, int32_t _timeou
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Ожидание завершения
+ * ------------------------------------------------------------------------------------------- */
+static void waitFin() {
+    uint8_t cmd;
+    if (!srvRecv(cmd))
+        return;
+    
+    Serial.printf("[waitFin] cmd: %02x\r\n", cmd);
+    
+    switch (cmd) {
+        case 0x0f: // bye
+            toExit(PSTR("Sync finished"));
+            return;
+    }
+    
+    ERR("recv unknown cmd");
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  Пересылка на сервер данных
  * ------------------------------------------------------------------------------------------- */
 static void dataToServer() {
@@ -148,6 +167,33 @@ static void dataToServer() {
         ERR("send cfg fail");
         return;
     }
+    
+    msg(PSTR("Sending jump count..."));
+    if (!sendJump()) {
+        ERR("send cmp count fail");
+        return;
+    }
+    
+    msg(PSTR("Sending point..."));
+    if (!sendPoint()) {
+        ERR("send pnt fail");
+        return;
+    }
+    
+    msg(PSTR("Sending LogBook..."));
+    if (!sendLogBook()) {
+        ERR("send LogBook fail");
+        return;
+    }
+    
+    msg(PSTR("Sending Tracks..."));
+    if (!sendTrack()) {
+        ERR("send Tracks fail");
+        return;
+    }
+    
+    MSG("Wait server confirm...", waitFin, 30000);
+    srvSend(0x3f);
 }
 
 /* ------------------------------------------------------------------------------------------- *

@@ -11,6 +11,10 @@
  *  
  * ------------------------------------------------------------------------------------------- */
 bool sendCfg();
+bool sendJump();
+bool sendPoint();
+bool sendLogBook();
+bool sendTrack();
 
 
 #endif // _net_data_H

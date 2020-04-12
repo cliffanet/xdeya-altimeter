@@ -68,6 +68,19 @@ bool logRead(T &data, const char *_fname, size_t index = 0) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Чтение всех записей, начиная с индекса i с конца (при i=0 - самая последняя запись, при i=1 - предпоследняя, при i=-1 - читать весь файл)
+ * ------------------------------------------------------------------------------------------- */
+bool logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fname, uint16_t fnum = 1, int32_t ibeg = -1);
+
+
+template <typename T>
+bool logFileRead(bool (*hnd)(const T *data), const char *_fname, uint16_t fnum = 1, int32_t ibeg = -1) {
+    return
+        logFileRead(reinterpret_cast<bool (*)(const uint8_t *data)>(hnd), sizeof(T), _fname, fnum, ibeg);
+}
+
+
+/* ------------------------------------------------------------------------------------------- *
  *  Удаление файла
  * ------------------------------------------------------------------------------------------- */
 int logRemoveLast(const char *_fname, bool removeFirst = false);

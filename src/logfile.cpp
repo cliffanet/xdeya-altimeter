@@ -215,6 +215,49 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Чтение всех записей, начиная с индекса i с конца (при i=0 - самая последняя запись, при i=1 - предпоследняя, при i=-1 - читать весь файл)
+ * ------------------------------------------------------------------------------------------- */
+bool logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fname, uint16_t fnum, int32_t ibeg) {
+    char fname[36];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    
+    logFSuffix(fname+flen, fnum);
+    if (!DISKFS.exists(fname))
+        return false;
+    
+    File fh = DISKFS.open(fname);
+    if (!fh) return false;
+    
+        Serial.printf("logFileRead open: %s (%d)\r\n", fname, ibeg);
+    
+    if (ibeg >= 0) {
+        auto sz = fh.size();
+        auto count = sz / dsz;
+        if (count > ibeg+1)
+            fh.seek(sz - (ibeg * dsz) - dsz);
+    }
+    
+    uint8_t data[dsz];
+    
+    while (fh.available() >= dsz) {
+        auto sz = fh.read(data, dsz);
+        if (
+                (sz != dsz) ||
+                (data[0] != LOG_MGC1) ||
+                (data[dsz-1] != LOG_MGC2) ||
+                !hnd(data)
+            ) {
+            fh.close();
+            return false;
+        }
+    }
+    
+    fh.close();
+    
+    return true;
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  Удаление самого старшего файла, возвращает номер удалённого файла
  * ------------------------------------------------------------------------------------------- */
 int logRemoveLast(const char *_fname, bool removeFirst) {
