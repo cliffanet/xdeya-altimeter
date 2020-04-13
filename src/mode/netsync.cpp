@@ -4,6 +4,7 @@
 
 #include "../mode.h"
 #include "../cfg/webjoin.h"
+#include "../cfg/point.h"
 #include "../menu/base.h"
 #include "../button.h"
 #include "../display.h"
@@ -112,6 +113,7 @@ void toExit(const char *_title) {
     else {
         strncpy_P(title, _title, sizeof(title));
         title[sizeof(title)-1] = '\0';
+        Serial.printf("toExit: %s\r\n", title);
     }
     srvStop();
     WiFi.mode(WIFI_OFF);
@@ -129,6 +131,7 @@ static void msg(const char *_title = NULL, void (*hnd)() = NULL, int32_t _timeou
     else {
         strncpy_P(title, _title, sizeof(title));
         title[sizeof(title)-1] = '\0';
+        Serial.printf("msg: %s\r\n", title);
     }
     if (hnd != NULL)
         hndProcess = hnd;
@@ -160,34 +163,41 @@ static void waitFin() {
 /* ------------------------------------------------------------------------------------------- *
  *  Пересылка на сервер данных
  * ------------------------------------------------------------------------------------------- */
-static void dataToServer() {
+static void dataToServer(const daccept_t &acc) {
     Serial.println("dataToServer");
-    msg(PSTR("Sending config..."));
-    if (!sendCfg()) {
-        ERR("send cfg fail");
-        return;
+    
+    if ((acc.ckscfg == 0) || (acc.ckscfg != cfg.chksum())) {
+        msg(PSTR("Sending config..."));
+        if (!sendCfg()) {
+            ERR("send cfg fail");
+            return;
+        }
     }
     
-    msg(PSTR("Sending jump count..."));
-    if (!sendJump()) {
-        ERR("send cmp count fail");
-        return;
+    if ((acc.cksjmp == 0) || (acc.cksjmp != jmp.chksum())) {
+        msg(PSTR("Sending jump count..."));
+        if (!sendJump()) {
+            ERR("send cmp count fail");
+            return;
+        }
     }
     
-    msg(PSTR("Sending point..."));
-    if (!sendPoint()) {
-        ERR("send pnt fail");
-        return;
+    if ((acc.ckspnt == 0) || (acc.ckspnt != pnt.chksum())) {
+        msg(PSTR("Sending point..."));
+        if (!sendPoint()) {
+            ERR("send pnt fail");
+            return;
+        }
     }
     
     msg(PSTR("Sending LogBook..."));
-    if (!sendLogBook()) {
+    if (!sendLogBook(acc.ckslog, acc.poslog)) {
         ERR("send LogBook fail");
         return;
     }
     
     msg(PSTR("Sending Tracks..."));
-    if (!sendTrack()) {
+    if (!sendTrack(acc.ckstrack)) {
         ERR("send Tracks fail");
         return;
     }
@@ -247,20 +257,29 @@ static void waitJoin() {
  * ------------------------------------------------------------------------------------------- */
 static void waitHello() {
     uint8_t cmd;
-    uint32_t num;
-    if (!srvRecv(cmd, num))
+    union {
+        uint32_t num;
+        daccept_t acc;
+    } d;
+    if (!srvRecv(cmd, d))
         return;
     
     Serial.printf("[waitHello] cmd: %02x\r\n", cmd);
     
     switch (cmd) {
         case 0x10: // rejoin
-            joinnum = ntohl(num);
+            joinnum = ntohl(d.num);
             msg(NULL, waitJoin, 120000);
             return;
         
         case 0x20: // accept
-            dataToServer();
+            d.acc.ckscfg = ntohl(d.acc.ckscfg);
+            d.acc.cksjmp = ntohl(d.acc.cksjmp);
+            d.acc.ckspnt = ntohl(d.acc.ckspnt);
+            d.acc.ckslog = ntocks(d.acc.ckslog);
+            d.acc.poslog = ntohl(d.acc.poslog);
+            d.acc.ckstrack = ntocks(d.acc.ckstrack);
+            dataToServer(d.acc);
             return;
     }
     

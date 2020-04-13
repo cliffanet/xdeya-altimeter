@@ -218,24 +218,24 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
 /* ------------------------------------------------------------------------------------------- *
  *  Чтение всех записей, начиная с индекса i с конца (при i=0 - самая последняя запись, при i=1 - предпоследняя, при i=-1 - читать весь файл)
  * ------------------------------------------------------------------------------------------- */
-bool logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fname, uint16_t fnum, int32_t ibeg) {
+int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fname, uint16_t fnum, size_t ibeg) {
     char fname[36];
     const byte flen = logFName(fname, sizeof(fname), _fname);
     
     logFSuffix(fname+flen, fnum);
     if (!DISKFS.exists(fname))
-        return false;
+        return -1;
     
     File fh = DISKFS.open(fname);
-    if (!fh) return false;
+    if (!fh) return -1;
     
         Serial.printf("logFileRead open: %s (%d)\r\n", fname, ibeg);
     
-    if (ibeg >= 0) {
-        auto sz = fh.size();
-        auto count = sz / dsz;
-        if (count > ibeg+1)
-            fh.seek(sz - (ibeg * dsz) - dsz);
+    if (ibeg > 0) {
+        size_t sz = dsz * ibeg;
+        if (sz >= fh.size())
+            return fh.size() / dsz;
+        fh.seek(sz);
     }
     
     uint8_t data[dsz];
@@ -251,11 +251,12 @@ bool logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fn
             fh.close();
             return false;
         }
+        ibeg++;
     }
     
     fh.close();
     
-    return true;
+    return ibeg;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -305,7 +306,7 @@ uint8_t logFind(const char *_fname, size_t dsz, const logchs_t &cks) {
             break;
         
         auto cks1 = logChkSum(dsz, _fname, n);
-        if ((cks1.cs == cks.cs) && (cks1.sz == cks.sz))
+        if (cks1 == cks)
             return n;
     }
     

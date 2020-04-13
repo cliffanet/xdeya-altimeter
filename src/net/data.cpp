@@ -5,9 +5,7 @@
 #include "data.h"
 #include "srv.h"
 #include "../cfg/main.h"
-#include "../cfg/jump.h"
 #include "../cfg/point.h"
-#include "../logfile.h"
 #include "../track.h"
 
 #include <WiFi.h> // htonl
@@ -15,26 +13,22 @@
 /* ------------------------------------------------------------------------------------------- *
  *  простые преобразования данных
  * ------------------------------------------------------------------------------------------- */
-static uint8_t bton(bool val) {
+uint8_t bton(bool val) {
     return val ? 1 : 0;
 }
-static bool ntob(uint8_t n) {
+bool ntob(uint8_t n) {
     return n != 0;
 }
 
-static uint16_t fton(float val) {
+uint16_t fton(float val) {
     return htons(round(val*100));
 }
-static float ntof(uint16_t n) {
+float ntof(uint16_t n) {
     float val = ntohs(n);
     return val / 100;
 }
 
-typedef struct __attribute__((__packed__)) {
-    uint32_t i;
-    uint32_t d;
-} dnet_t;
-static dnet_t dton(double val) {
+dnet_t dton(double val) {
     int32_t i = val;
     double d = val-i;
     dnet_t n = { i };
@@ -48,15 +42,28 @@ static dnet_t dton(double val) {
     return n;
 }
 
-static dt_t dtton(const dt_t &dt) {
+dt_t dtton(const dt_t &dt) {
     auto n = dt;
     n.y = htons(n.y);
     return n;
 }
-static dt_t ntodt(const dt_t &n) {
+dt_t ntodt(const dt_t &n) {
     auto dt = n;
     dt.y = htons(dt.y);
     return dt;
+}
+
+logchs_t ckston(const logchs_t &cks) {
+    logchs_t n;
+    n.cs = htonl(cks.cs);
+    n.sz = htonl(cks.sz);
+    return n;
+}
+logchs_t ntocks(const logchs_t &n) {
+    logchs_t cks;
+    cks.cs = ntohl(n.cs);
+    cks.sz = ntohl(n.sz);
+    return cks;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -193,10 +200,6 @@ bool sendPoint() {
         dnet_t      lng;
     } d;
     
-    uint32_t chksum = htonl(pnt.chksum());
-    if (!srvSend(0x23, chksum))
-        return false;
-    
     for (uint8_t i=0; i<PNT_COUNT; i++) {
         auto p = pnt_d.all[i];
         
@@ -208,6 +211,10 @@ bool sendPoint() {
         if (!srvSend(0x24, d))
             return false;
     }
+    
+    uint32_t chksum = htonl(pnt.chksum());
+    if (!srvSend(0x23, chksum))
+        return false;
     
     return true;
 }
@@ -231,17 +238,56 @@ static bool sendLogBookItem(const struct log_item_s<log_jmp_t> *r) {
     return srvSend(0x32, d);
 }
 
-bool sendLogBook() {
+bool sendLogBook(logchs_t _cks, uint32_t _pos) {
+    int max;
+    int32_t ibeg = 0;
+    
+    Serial.printf("sendLogBook: chksum: %08x%08x, pos: %d\r\n", _cks.cs, _cks.sz, _pos);
+    
+    if (_cks) {
+        max = logFind(PSTR(JMPLOG_SIMPLE_NAME), sizeof(struct log_item_s<log_jmp_t>), _cks);
+        if (max > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
+            Serial.printf("sendLogBook: by chksum finded num: %d; start by pos: %d\r\n", max, _pos);
+            ibeg = _pos;
+            if ((max == 1) && (_pos*sizeof(struct log_item_s<log_jmp_t>) >= logSize(PSTR(JMPLOG_SIMPLE_NAME)))) {
+                Serial.println("sendLogBook: by chksum finded num 1 and pos is last; no need send");
+                return true;
+            }
+        }
+        if (max <= 0) {// тот, что мы раньше передавали уже не найден, будем передавать всё заного
+            Serial.println("sendLogBook: nothing finded by chksum");
+            max = logCount(PSTR(JMPLOG_SIMPLE_NAME));
+        }
+    }
+    else { // ещё ничего не передавали, передаём всё заного
+        max = logCount(PSTR(JMPLOG_SIMPLE_NAME));
+    }
+    
+    if (max <= 0) // либо ошибка, либо вообще файлов нет - в любом случае выходим
+        return max == 0;
+    
     if (!srvSend(0x31))
         return false;
     
-    bool ok = logFileRead(sendLogBookItem, PSTR(JMPLOG_SIMPLE_NAME), 1);
-    
+    int32_t pos = 0;
+    for (int num = max; num > 0; num--) {
+        pos = logFileRead(sendLogBookItem, PSTR(JMPLOG_SIMPLE_NAME), num, ibeg);
+        if (pos < 0)
+            break;
+        Serial.printf("logbook sended ok: %d (ibeg: %d, pos: %d)\r\n", num, ibeg, pos);
+        ibeg = 0;
+    }
     auto cks = logChkSum(sizeof(struct log_item_s<log_jmp_t>), PSTR(JMPLOG_SIMPLE_NAME), 1);
-    cks.cs = htonl(cks.cs);
-    cks.sz = htonl(cks.sz);
     
-    return srvSend(0x33, cks) && ok;
+    struct __attribute__((__packed__)) { // Для передачи по сети
+        logchs_t    chksum;
+        uint32_t    pos;
+    } d = {
+        .chksum = ckston(cks),
+        .pos    = pos > 0 ? htonl(pos) : 0,
+    };
+    
+    return srvSend(0x33, d) && (pos > 0);
 }
 
 static bool sendTrackItem(const struct log_item_s <log_item_t> *r) {
@@ -250,22 +296,39 @@ static bool sendTrackItem(const struct log_item_s <log_item_t> *r) {
     return srvSend(0x35, d);
 }
 
-bool sendTrack() {
-    int cnt = logCount(PSTR(TRK_FILE_NAME));
-    if (cnt <= 0)
-        return cnt == 0;
+bool sendTrack(logchs_t _cks) {
+    int max;
+    int32_t ibeg = 0;
     
-    for (int num = cnt; num > 0; num--) {
+    Serial.printf("sendTrack: chksum: %08x%08x\r\n", _cks.cs, _cks.sz);
+    
+    if (_cks) {
+        max = logFind(PSTR(TRK_FILE_NAME), sizeof(struct log_item_s<log_item_t>), _cks);
+        if (max == 1) {// самый свежий и есть тот, который мы уже передавали - больше передавать не надо
+            Serial.println("sendTrack: by chksum finded num 1; no need send");
+            return true;
+        }
+        if (max <= 0) {// тот, что мы раньше передавали уже не найден, будем передавать всё заного
+            Serial.println("sendTrack: nothing finded by chksum");
+            max = logCount(PSTR(TRK_FILE_NAME));
+        }
+    }
+    else { // ещё ничего не передавали, передаём всё заного
+        max = logCount(PSTR(TRK_FILE_NAME));
+    }
+    
+    if (max <= 0) // либо ошибка, либо вообще файлов нет - в любом случае выходим
+        return max == 0;
+    
+    for (int num = max; num > 0; num--) {
         uint8_t n = num;
         if (!srvSend(0x34, n))
             return false;
         
-        bool ok = logFileRead(sendTrackItem, PSTR(TRK_FILE_NAME), num);
-        auto cks = logChkSum(sizeof(struct log_item_s<log_jmp_t>), PSTR(TRK_FILE_NAME), num);
-        cks.cs = htonl(cks.cs);
-        cks.sz = htonl(cks.sz);
+        bool ok = logFileRead(sendTrackItem, PSTR(TRK_FILE_NAME), num) >= 0;
+        auto cks = logChkSum(sizeof(struct log_item_s<log_item_t>), PSTR(TRK_FILE_NAME), num);
         
-        if (!srvSend(0x36, cks) || !ok)
+        if (!srvSend(0x36, ckston(cks)) || !ok)
             return false;
         Serial.printf("track sended ok: %d\r\n", n);
     }

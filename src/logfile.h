@@ -68,13 +68,14 @@ bool logRead(T &data, const char *_fname, size_t index = 0) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  Чтение всех записей, начиная с индекса i с конца (при i=0 - самая последняя запись, при i=1 - предпоследняя, при i=-1 - читать весь файл)
+ *  Чтение всех записей, начиная с индекса ibeg (при ibeg=0 - самая первая запись),
+ *  Возвращает индекс следующей позиции после крайней прочитанной
  * ------------------------------------------------------------------------------------------- */
-bool logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fname, uint16_t fnum = 1, int32_t ibeg = -1);
+int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fname, uint16_t fnum = 1, size_t ibeg = 0);
 
 
 template <typename T>
-bool logFileRead(bool (*hnd)(const T *data), const char *_fname, uint16_t fnum = 1, int32_t ibeg = -1) {
+int32_t logFileRead(bool (*hnd)(const T *data), const char *_fname, uint16_t fnum = 1, size_t ibeg = 0) {
     return
         logFileRead(reinterpret_cast<bool (*)(const uint8_t *data)>(hnd), sizeof(T), _fname, fnum, ibeg);
 }
@@ -83,9 +84,14 @@ bool logFileRead(bool (*hnd)(const T *data), const char *_fname, uint16_t fnum =
 /* ------------------------------------------------------------------------------------------- *
  *  Контрольная сумма файла
  * ------------------------------------------------------------------------------------------- */
-typedef struct __attribute__((__packed__)) {
+typedef struct  __attribute__((__packed__)) logchs_s {
     uint32_t    cs;
     uint32_t    sz;
+    
+    bool operator== (const struct logchs_s & cks) {
+        return (this == &cks) || ((this->cs == cks.cs) && (this->sz == cks.sz));
+    };
+    operator bool() { return (cs != 0) && (sz != 0); }
 } logchs_t;
 logchs_t logChkSum(size_t dsz, const char *_fname, uint8_t num = 1);
 uint8_t logFind(const char *_fname, size_t dsz, const logchs_t &cks);
