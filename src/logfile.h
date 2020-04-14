@@ -93,8 +93,12 @@ typedef struct  __attribute__((__packed__)) logchs_s {
     };
     operator bool() { return (cs != 0) && (sz != 0); }
 } logchs_t;
-logchs_t logChkSum(size_t dsz, const char *_fname, uint8_t num = 1);
+
+logchs_t logChkSumFull(size_t dsz, const char *_fname, uint8_t num = 1);
+uint32_t logChkSumBeg(size_t dsz, const char *_fname, uint8_t num = 1);
+
 uint8_t logFind(const char *_fname, size_t dsz, const logchs_t &cks);
+uint8_t logFind(const char *_fname, size_t dsz, const uint32_t &cks);
 
 
 /* ------------------------------------------------------------------------------------------- *

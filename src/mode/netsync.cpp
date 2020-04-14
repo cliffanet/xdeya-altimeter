@@ -276,7 +276,7 @@ static void waitHello() {
             d.acc.ckscfg = ntohl(d.acc.ckscfg);
             d.acc.cksjmp = ntohl(d.acc.cksjmp);
             d.acc.ckspnt = ntohl(d.acc.ckspnt);
-            d.acc.ckslog = ntocks(d.acc.ckslog);
+            d.acc.ckslog = ntohl(d.acc.ckslog);
             d.acc.poslog = ntohl(d.acc.poslog);
             d.acc.ckstrack = ntocks(d.acc.ckstrack);
             dataToServer(d.acc);

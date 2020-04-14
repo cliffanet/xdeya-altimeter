@@ -19,7 +19,7 @@ typedef struct __attribute__((__packed__)) {
     uint32_t ckscfg;
     uint32_t cksjmp;
     uint32_t ckspnt;
-    logchs_t ckslog;
+    uint32_t ckslog;
     uint32_t poslog;
     logchs_t ckstrack;
 } daccept_t;
@@ -47,7 +47,7 @@ logchs_t ntocks(const logchs_t &n);
 bool sendCfg();
 bool sendJump();
 bool sendPoint();
-bool sendLogBook(logchs_t _cks, uint32_t _pos);
+bool sendLogBook(uint32_t _cks, uint32_t _pos);
 bool sendTrack(logchs_t _cks);
 
 

@@ -238,13 +238,13 @@ static bool sendLogBookItem(const struct log_item_s<log_jmp_t> *r) {
     return srvSend(0x32, d);
 }
 
-bool sendLogBook(logchs_t _cks, uint32_t _pos) {
+bool sendLogBook(uint32_t _cks, uint32_t _pos) {
     int max;
     int32_t ibeg = 0;
     
-    Serial.printf("sendLogBook: chksum: %08x%08x, pos: %d\r\n", _cks.cs, _cks.sz, _pos);
+    Serial.printf("sendLogBook: chksum: %08x, pos: %d\r\n", _cks, _pos);
     
-    if (_cks) {
+    if (_cks > 0) {
         max = logFind(PSTR(JMPLOG_SIMPLE_NAME), sizeof(struct log_item_s<log_jmp_t>), _cks);
         if (max > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
             Serial.printf("sendLogBook: by chksum finded num: %d; start by pos: %d\r\n", max, _pos);
@@ -277,13 +277,13 @@ bool sendLogBook(logchs_t _cks, uint32_t _pos) {
         Serial.printf("logbook sended ok: %d (ibeg: %d, pos: %d)\r\n", num, ibeg, pos);
         ibeg = 0;
     }
-    auto cks = logChkSum(sizeof(struct log_item_s<log_jmp_t>), PSTR(JMPLOG_SIMPLE_NAME), 1);
+    auto cks = logChkSumBeg(sizeof(struct log_item_s<log_jmp_t>), PSTR(JMPLOG_SIMPLE_NAME), 1);
     
     struct __attribute__((__packed__)) { // Для передачи по сети
-        logchs_t    chksum;
+        uint32_t    chksum;
         uint32_t    pos;
     } d = {
-        .chksum = ckston(cks),
+        .chksum = htonl(cks),
         .pos    = pos > 0 ? htonl(pos) : 0,
     };
     
@@ -326,7 +326,7 @@ bool sendTrack(logchs_t _cks) {
             return false;
         
         bool ok = logFileRead(sendTrackItem, PSTR(TRK_FILE_NAME), num) >= 0;
-        auto cks = logChkSum(sizeof(struct log_item_s<log_item_t>), PSTR(TRK_FILE_NAME), num);
+        auto cks = logChkSumFull(sizeof(struct log_item_s<log_item_t>), PSTR(TRK_FILE_NAME), num);
         
         if (!srvSend(0x36, ckston(cks)) || !ok)
             return false;

@@ -262,7 +262,9 @@ int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *
 /* ------------------------------------------------------------------------------------------- *
  *  Контрольная сумма файла
  * ------------------------------------------------------------------------------------------- */
-logchs_t logChkSum(size_t dsz, const char *_fname, uint8_t num) {
+// Контрольная сумма по участку в начале файла, конце и размеру файла
+// Подходит для недополняемых файлов, возвращает logchs_t
+logchs_t logChkSumFull(size_t dsz, const char *_fname, uint8_t num) {
     char fname[36];
     const byte flen = logFName(fname, sizeof(fname), _fname);
     logchs_t cks = { 0, 0 };
@@ -296,6 +298,30 @@ logchs_t logChkSum(size_t dsz, const char *_fname, uint8_t num) {
     return cks;
 }
 
+// Более простая проверка контрольной суммы только по началу файлов.
+// Для постоянно дополняемых файлов годится только такой вариант
+uint32_t logChkSumBeg(size_t dsz, const char *_fname, uint8_t num) {
+    char fname[36];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    uint8_t data[dsz];
+    
+    logFSuffix(fname+flen, num);
+    File fh = DISKFS.open(fname);
+    if (!fh) return 0;
+    
+    if (fh.read(data, dsz) != dsz) {
+        fh.close();
+        return 0;
+    }
+    
+    uint16_t cs = 0;
+    for (size_t i=0; i<dsz; i++)
+        cs += data[i];
+    
+    fh.close();
+    return (cs << 16) | (dsz & 0xff);
+}
+
 uint8_t logFind(const char *_fname, size_t dsz, const logchs_t &cks) {
     char fname[36];
     const byte flen = logFName(fname, sizeof(fname), _fname);
@@ -305,7 +331,24 @@ uint8_t logFind(const char *_fname, size_t dsz, const logchs_t &cks) {
         if (!DISKFS.exists(fname))
             break;
         
-        auto cks1 = logChkSum(dsz, _fname, n);
+        auto cks1 = logChkSumFull(dsz, _fname, n);
+        if (cks1 == cks)
+            return n;
+    }
+    
+    return 0;
+}
+
+uint8_t logFind(const char *_fname, size_t dsz, const uint32_t &cks) {
+    char fname[36];
+    const byte flen = logFName(fname, sizeof(fname), _fname);
+    
+    for (uint8_t n = 1; n <= 99; n++) {
+        logFSuffix(fname+flen, n);
+        if (!DISKFS.exists(fname))
+            break;
+        
+        auto cks1 = logChkSumBeg(dsz, _fname, n);
         if (cks1 == cks)
             return n;
     }
