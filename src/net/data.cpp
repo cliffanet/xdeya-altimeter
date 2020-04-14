@@ -308,6 +308,8 @@ bool sendTrack(logchs_t _cks) {
             Serial.println("sendTrack: by chksum finded num 1; no need send");
             return true;
         }
+        if (max > 1) // Этот трек мы уже отправили, надо начинать со следующего
+            max--;
         if (max <= 0) {// тот, что мы раньше передавали уже не найден, будем передавать всё заного
             Serial.println("sendTrack: nothing finded by chksum");
             max = logCount(PSTR(TRK_FILE_NAME));
