@@ -1,6 +1,7 @@
 
 #include "wifi.h"
 #include "../mode.h"
+#include "../file/wifi.h"
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -54,11 +55,25 @@ void MenuWiFi::updStr(menu_dspl_el_t &str, int16_t i) {
     auto const &w = wifiall[i];
     strncpy(str.name, w.txt, sizeof(str.name));
     str.name[sizeof(str.name)-1] = '\0';
-    str.val[0] = w.isopen ? '\0' : '*';
+    if (w.isopen) {
+        str.val[0] = '\0';
+    }
+    else {
+        str.val[0] = wifiPassFind(w.name) ? '+' : 'x';
+    }
     str.val[1] = '\0';
 }
 
 void MenuWiFi::btnSmp() {
     auto const &w = wifiall[sel()];
-    modeNetSync(w.name);
+    if (w.isopen)
+        modeNetSync(w.name);
+    else {
+        char pass[64];
+        if (!wifiPassFind(w.name, pass)) {
+            menuFlashP(PSTR("Password required!"));
+            return;
+        }
+        modeNetSync(w.name, pass);
+    }
 }

@@ -10,6 +10,7 @@
 #include "../display.h"
 #include "../net/srv.h"
 #include "../net/data.h"
+#include "../file/wifi.h"
 
 #include <WiFi.h> // htonl
 
@@ -120,6 +121,10 @@ void toExit(const char *_title) {
     hndProcess = waitToExit;
     timeout = millis() + 5000;
     joinnum = 0;
+    
+    btnHnd(BTN_SEL,     BTN_SIMPLE, syncExit);
+    btnHnd(BTN_UP,      BTN_SIMPLE, syncExit);
+    btnHnd(BTN_DOWN,    BTN_SIMPLE, syncExit);
 }
 
 //#define MSG(s) msg(PSTR(s))
@@ -144,6 +149,7 @@ static void msg(const char *_title = NULL, void (*hnd)() = NULL, int32_t _timeou
 /* ------------------------------------------------------------------------------------------- *
  *  Ожидание завершения
  * ------------------------------------------------------------------------------------------- */
+static void recvWiFi();
 static void waitFin() {
     uint8_t cmd;
     if (!srvRecv(cmd))
@@ -152,12 +158,57 @@ static void waitFin() {
     Serial.printf("[waitFin] cmd: %02x\r\n", cmd);
     
     switch (cmd) {
+        case 0x41: // wifi beg
+            if (!wifiPassClear()) {
+                ERR("WiFi clear Fail");
+                return;
+            }
+            MSG("Recv wifi pass", recvWiFi, 3000);
+            return;
+        
         case 0x0f: // bye
             toExit(PSTR("Sync finished"));
             return;
     }
     
     ERR("recv unknown cmd");
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Приём wifi-сетей
+ * ------------------------------------------------------------------------------------------- */
+static void recvWiFi() {
+    uint8_t cmd;
+    struct __attribute__((__packed__)) {
+        uint8_t s[512];
+    } d;
+    char ssid[33], pass[33];
+    uint8_t *snext = NULL;
+    uint32_t cks;
+    
+    while (srvRecv(cmd, d)) {
+        switch (cmd) {
+            case 0x42: // wifi net
+                ntostrs(ssid, sizeof(ssid), d.s, &snext);
+                ntostrs(pass, sizeof(pass), snext);
+                if (!wifiPassAdd(ssid, pass)) {
+                    ERR("WiFi add Fail");
+                    return;
+                }
+                break;
+            
+            case 0x43: // wifi end
+                cks = wifiPassChkSum();
+                cks = htonl(cks);
+                MSG("Wait server fin...", waitFin, 3000);
+                srvSend(0x4a, cks); // wifiok
+                return;
+            
+            default:
+                ERR("recv unknown cmd");
+                return;
+        }
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -202,8 +253,11 @@ static void dataToServer(const daccept_t &acc) {
         return;
     }
     
+    uint32_t ckswifi = wifiPassChkSum();
+    ckswifi = htonl(ckswifi);
+    
     MSG("Wait server confirm...", waitFin, 30000);
-    srvSend(0x3f);
+    srvSend(0x3f, ckswifi); // datafin
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -339,15 +393,18 @@ static void waitWiFiConnect() {
 /* ------------------------------------------------------------------------------------------- *
  *  Старт синхронизации - меняем обработчики экрана и кнопок
  * ------------------------------------------------------------------------------------------- */
-void modeNetSync(const char *net) {
+void modeNetSync(const char *_ssid, const char *_pass) {
     displayHnd(displayNetSync);    // обработчик отрисовки на экране
     btnHndClear();              // Назначаем обработчики кнопок (средняя кнопка назначается в menuSubMain() через menuHnd())
     btnHnd(BTN_SEL,     BTN_LONG, syncExit);
     
-    char ssid[40];
-    strcpy(ssid, net);  // Приходится временно копировать ssid, т.к. оно находится внутри класса menuWifi
-                        // а menuClear() удаляет этот класс. Перед этим запускать соединение wifi
-                        // тоже нельзя, т.к. при удалении меню модуль вифи отключается.
+    char ssid[40], pass[40];
+    strcpy(ssid, _ssid);        // Приходится временно копировать ssid, т.к. оно находится внутри класса menuWifi
+    if (_pass == NULL)          // а menuClear() удаляет этот класс. Перед этим запускать соединение wifi
+        pass[0] = '\0';         // тоже нельзя, т.к. при удалении меню модуль вифи отключается.
+    else
+        strcpy(pass, _pass);
+                        
     menuClear();
     
     snprintf_P(title, sizeof(title), PSTR("wifi to %s"), ssid);
@@ -355,6 +412,10 @@ void modeNetSync(const char *net) {
     timeout = millis() + 10000;
     joinnum = 0;
     
+    Serial.printf("wifi to: %s; pass: %s\r\n", ssid, pass);
     WiFi.mode(WIFI_STA);
-    WiFi.begin((const char *)ssid, "12344321");
+    if (_pass == NULL)
+        WiFi.begin((const char *)ssid);
+    else
+        WiFi.begin((const char *)ssid, pass);
 }

@@ -41,7 +41,7 @@ void modeMenu();
 void modeWifi();
 
 // Режим синхронизации с сервером
-void modeNetSync(const char *net);
+void modeNetSync(const char *_ssid, const char *_pass = NULL);
 
 // Режим выбора LogBook
 void modeLogBook(size_t i = 0);
