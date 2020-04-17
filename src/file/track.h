@@ -1,12 +1,12 @@
 /*
-    Altimeter
+    Save Track to file
 */
 
-#ifndef _track_H
-#define _track_H
+#ifndef _file_track_H
+#define _file_track_H
 
 #include <Arduino.h>
-#include "cfg/jump.h"
+#include "../cfg/jump.h"
 
 #define TRK_FILE_NAME       "track"
 #define TRK_PRESERV_COUNT   32
@@ -27,4 +27,4 @@ size_t trkCountAvail();
 
 void trkProcess();
 
-#endif // _track_H
+#endif // _file_track_H

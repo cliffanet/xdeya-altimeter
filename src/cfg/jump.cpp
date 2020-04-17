@@ -2,8 +2,8 @@
 #include "jump.h"
 #include "../altimeter.h"
 #include "../gps.h"
-#include "../logfile.h"
-#include "../track.h"
+#include "../file/log.h"
+#include "../file/track.h"
 
 #include <TimeLib.h>
 

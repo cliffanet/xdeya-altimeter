@@ -1,6 +1,6 @@
 
 #include "logbook.h"
-#include "../logfile.h"
+#include "../file/log.h"
 #include "../cfg/jump.h"
 
 /* ------------------------------------------------------------------------------------------- *

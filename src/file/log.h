@@ -2,8 +2,8 @@
     LOG files functions
 */
 
-#ifndef _logfile_H
-#define _logfile_H
+#ifndef _file_log_H
+#define _file_log_H
 
 #include <Arduino.h>
 
@@ -107,4 +107,4 @@ uint8_t logFind(const char *_fname, size_t dsz, const uint32_t &cks);
 int logRemoveLast(const char *_fname, bool removeFirst = false);
 int logRemoveAll(const char *_fname, bool removeFirst = false);
 
-#endif // _logfile_H
+#endif // _file_log_H

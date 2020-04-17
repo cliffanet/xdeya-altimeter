@@ -1,8 +1,8 @@
 
 #include "track.h"
-#include "altimeter.h"
-#include "gps.h"
-#include "logfile.h"
+#include "../altimeter.h"
+#include "../gps.h"
+#include "log.h"
 
 static trk_running_t state = TRKRUN_NONE;
 File fh;

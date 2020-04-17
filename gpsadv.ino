@@ -9,7 +9,7 @@
 #include "src/gps.h"
 #include "src/altcalc.h"
 #include "src/altimeter.h"
-#include "src/track.h"
+#include "src/file/track.h"
 #include "src/cfg/main.h"
 #include "src/cfg/point.h"
 #include "src/cfg/jump.h"

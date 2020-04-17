@@ -2,7 +2,7 @@
 #include "../menu/base.h"
 #include "../display.h"
 #include "../button.h"
-#include "../logfile.h"
+#include "../file/log.h"
 #include "../cfg/jump.h"
 
 // индекс выбранного пункта меню и самого верхнего видимого на экране

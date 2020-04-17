@@ -7,7 +7,7 @@
 
 #include <Arduino.h>
 
-#include "../logfile.h"
+#include "../file/log.h"
 #include "../cfg/jump.h"
 
 typedef struct __attribute__((__packed__)) {

@@ -1,5 +1,5 @@
 
-#include "logfile.h"
+#include "log.h"
 
 static const byte logFName(char *fname, size_t sz, const char *_fnamesrc) {
     if (sz <= 7) return 0;
