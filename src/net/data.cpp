@@ -117,6 +117,8 @@ static int8_t ntomode(char n) {
  * ------------------------------------------------------------------------------------------- */
 typedef struct __attribute__((__packed__)) {
     uint32_t    mill;
+    dnet_t      press;
+    dnet_t      altorig;
     dnet_t      alt;
     dnet_t      vspeed;
     char        state;
@@ -131,6 +133,8 @@ typedef struct __attribute__((__packed__)) {
 static net_jmp_t jmpton(const log_item_t &j) {
     net_jmp_t n = {
         .mill       = htonl(j.mill),
+        .press      = dton(j.press),
+        .altorig    = dton(j.altorig),
         .alt        = dton(j.alt),
         .vspeed     = dton(j.vspeed),
         .state      = 'U',

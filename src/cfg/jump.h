@@ -22,6 +22,8 @@
 // Один из элементов в длинном логбуке (несколько раз в сек)
 typedef struct __attribute__((__packed__)) {
     uint32_t    mill;
+    float       press;
+    float       altorig;
     float       alt;
     float       vspeed;
     ac_state_t  state;

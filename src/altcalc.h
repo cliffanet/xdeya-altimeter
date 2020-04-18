@@ -41,6 +41,8 @@ class altcalc
         void tick(float press);
         // Текущее давление у земли
         const float         pressgnd()  const { return _pressgnd; }
+        // Текущее давление
+        const float         presslast() const { return _presslast; }
         // Высота одним тиком ранее
         const float         altprev()   const { return _altprev; }
         // Актуальная высота (без усреднений)
@@ -68,6 +70,7 @@ class altcalc
         float _presstest = 0;
 #endif
         float _pressgnd = 101325;
+        float _presslast = 0;
         float _altlast = 0;
         float _altprev = 0;
         float _altappr = 0;

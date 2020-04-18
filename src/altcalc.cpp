@@ -31,6 +31,7 @@ void altcalc::tick(float press)
     if (_state == ACST_INIT) // Пока не завершилась инициализация, дальше ничего не считаем
         return;
     
+    _presslast = r.press;
     _altlast = r.alt;
     _altprev = _rr[cur].alt;
     uint32_t millprev = _rr[cur].mill;

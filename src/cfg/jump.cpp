@@ -23,6 +23,8 @@ ConfigJump::ConfigJump() :
 {
     log_item_t li = {
         .mill   = 0,
+        .press  = 0,
+        .altorig= 0,
         .alt    = 0,
         .vspeed = 0,
         .state  = ACST_INIT,
@@ -120,6 +122,8 @@ log_item_t jmpLogItem() {
     
     log_item_t li = {
         .mill   = millis(),
+        .press  = ac.presslast(),
+        .altorig= ac.altlast(),
         .alt    = ac.alt(),
         .vspeed = ac.speed(),
         .state  = ac.state(),
