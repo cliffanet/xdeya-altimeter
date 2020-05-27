@@ -126,6 +126,7 @@ bool cfgLoad(bool apply) {
         return false;
     if (apply) {
         displayContrast(cfg.d().contrast);
+        setModeMain(inf.d().mainmode);
     }
     return true;
 }

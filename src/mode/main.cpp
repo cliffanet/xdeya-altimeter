@@ -419,6 +419,10 @@ void initMain(int8_t m) {
     modeMain();
 }
 
+void setModeMain(int8_t m) {
+    mode = m;
+}
+
 void modeFF() {
     altState(ACST_FREEFALL, ACST_FREEFALL);
 }
