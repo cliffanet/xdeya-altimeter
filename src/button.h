@@ -5,15 +5,25 @@
 #ifndef _button_H
 #define _button_H
 
-#include <Arduino.h>
+#include "../def.h"
 
 // Пины кнопок
 //#define BUTTON_PIN_UP     14
 //#define BUTTON_PIN_SEL    27
 //#define BUTTON_PIN_DOWN   26
+#if HWVER <= 1
+
 #define BUTTON_PIN_UP     12
 #define BUTTON_PIN_SEL    14
 #define BUTTON_PIN_DOWN   27
+
+#else
+
+#define BUTTON_PIN_UP     39
+#define BUTTON_PIN_SEL    34
+#define BUTTON_PIN_DOWN   35
+
+#endif
 
 // Коды кнопок
 typedef enum {
@@ -57,5 +67,7 @@ void btnHnd(btn_code_t btn, button_time_t tm, button_hnd_t hnd);
 uint32_t btnIdle();
 // время зажатой одной или более кнопок
 uint32_t btnPressed(uint8_t &btn);
+
+void btnPush(btn_code_t btn, button_time_t tm);
 
 #endif // _button_H

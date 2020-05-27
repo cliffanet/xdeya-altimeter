@@ -8,6 +8,8 @@
 #include <Arduino.h>
 #include <TimeLib.h>
 
+#define HWVER 2
+
 
 // Интервал синхронизации времени
 #define TIME_ADJUST_INTERVAL  1200000

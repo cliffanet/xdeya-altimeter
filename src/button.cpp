@@ -141,3 +141,24 @@ uint32_t btnPressed(uint8_t &btn) {
     btn = _state;
     return millis() - _statelast;
 }
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  отладочная функция, эмулирующая нажатие на кнопку
+ * ------------------------------------------------------------------------------------------- */
+void btnPush(btn_code_t btn, button_time_t tm) {
+    _statelast = millis();
+    
+    btn_t *b;
+    switch (btn) {
+        case BTN_UP:    b = &(btnall[0]); break;
+        case BTN_SEL:   b = &(btnall[1]); break;
+        case BTN_DOWN:  b = &(btnall[2]); break;
+        default: return;
+    }
+    
+    switch (tm) {
+        case BTN_SIMPLE:    if (b->hndsmpl != NULL) (b->hndsmpl)(); break;
+        case BTN_LONG:      if (b->hndlong != NULL) (b->hndlong)(); break;
+    }
+}

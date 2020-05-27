@@ -1,5 +1,6 @@
 
 #include "display.h"
+#include "../def.h"
 
 #ifdef U8X8_HAVE_HW_SPI
 #include <SPI.h>
@@ -53,19 +54,32 @@ void displayUpdate() {
  * Управление дисплеем: вкл/выкл самого дисплея и его подсветки, изменение контрастности
  * ------------------------------------------------------------------------------------------- */
 static bool lght = false;
+static void displayLightUpd();
 void displayOn() {
     u8g2.setPowerSave(false);
     u8g2.clearDisplay();
-    digitalWrite(LIGHT_PIN, lght ? HIGH : LOW);
+    displayLightUpd();
 }
 void displayOff() {
     u8g2.setPowerSave(true);
+#if HWVER == 1
     digitalWrite(LIGHT_PIN, LOW);
+#else
+    digitalWrite(LIGHT_PIN, HIGH);
+#endif
+}
+
+static void displayLightUpd() {
+#if HWVER == 1
+    digitalWrite(LIGHT_PIN, lght ? HIGH : LOW);
+#else
+    digitalWrite(LIGHT_PIN, lght ? LOW : HIGH);
+#endif
 }
 
 void displayLightTgl() {
     lght = not lght;
-    digitalWrite(LIGHT_PIN, lght ? HIGH : LOW);
+    displayLightUpd();
 }
 
 bool displayLight() {

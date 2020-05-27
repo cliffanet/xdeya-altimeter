@@ -1,11 +1,18 @@
 
 #include "altimeter.h"
 #include "cfg/main.h"
+#include "../def.h"
 
 #include <Adafruit_BMP280.h>
 
 bool bmpok = false;
+
+#if HWVER <= 1
 static Adafruit_BMP280 bme; // hardware Wire
+#else
+static Adafruit_BMP280 bme(5); // hardware SPI on IO5
+#endif
+
 static altcalc ac;
 static altimeter_state_hnd_t statehnd = NULL;
 
