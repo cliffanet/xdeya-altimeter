@@ -138,10 +138,27 @@ bool cfgSave(bool force) {
 }
 
 bool cfgFactory() {
+    /*
     cfg.reset();
     pnt.reset();
     jmp.reset();
     inf.reset();
     
     return cfgSave(true);
+    */
+    SPIFFS.end();
+    Serial.println("SPIFFS Unmount ok");
+    if (!SPIFFS.format()) {
+        Serial.println("SPIFFS Format Failed");
+        return false;
+    }
+    Serial.println("SPIFFS Format ok");
+
+    if(!SPIFFS.begin()) {
+        Serial.println("SPIFFS Mount Failed");
+        return false;
+    }
+    Serial.println("SPIFFS begin ok");
+    
+    return cfgLoad(true);
 }

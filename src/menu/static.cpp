@@ -366,12 +366,15 @@ static const menu_el_t menusystem[] {
         .showval = NULL,
         .edit = NULL,
         .hold = [] () {
+            menuFlashP(PSTR("formating eeprom"));
+            displayUpdate(); // чтобы сразу вывести текст на экран
             if (!cfgFactory()) {
                 menuFlashP(PSTR("EEPROM fail"));
                 return;
             }
             menuFlashP(PSTR("Config reseted"));
-            ESP.restart();
+            //displayUpdate(); // чтобы сразу вывести текст на экран
+            //ESP.restart();
         },
     },
 };
