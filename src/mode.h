@@ -28,9 +28,8 @@
 extern bool modemain;
 extern void (*hndProcess)();
 
-// Основной режим - отображается одна из страниц с показаниями
+// Переход в основной режим - отображается одна из страниц с показаниями
 void modeMain();
-void initMain(int8_t m);
 // Изменение текущего экрана в modeMain без включения этого режима, например для cfg apply
 void setModeMain(int8_t m);
 // Принудительный переход в FF-режим

@@ -7,10 +7,13 @@
 
 #include "../def.h"
 
+#if HWVER > 1
+#define HWPOWER_PIN_GPS 27
+#endif
+
 
 bool pwrCheck();
 
-//void pwrOn();
 void pwrOff();
 
 #endif // _power_H

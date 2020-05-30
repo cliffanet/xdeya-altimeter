@@ -17,9 +17,6 @@ template class Config<cfg_jump_t>;
 
 template class Config<cfg_webjoin_t>;
 
-template class Config<cfg_info_t>;
-Config<cfg_info_t> inf(PSTR(CFG_INFO_NAME), CFG_INFO_VER);
-
 /* ------------------------------------------------------------------------------------------- *
  *  Описание методов шаблона класса Config
  * ------------------------------------------------------------------------------------------- */
@@ -121,12 +118,19 @@ uint32_t Config<T>::chksum() const {
 bool cfgLoad(bool apply) {
     if (!cfg.load() ||
         !pnt.load() ||
-        !jmp.load() ||
-        !inf.load())
+        !jmp.load())
         return false;
     if (apply) {
         displayContrast(cfg.d().contrast);
-        setModeMain(inf.d().mainmode);
+        
+        switch (cfg.d().dsplpwron) {
+            case MODE_MAIN_GPS:
+            case MODE_MAIN_ALT:
+            case MODE_MAIN_ALTGPS:
+            case MODE_MAIN_TIME:
+                setModeMain(cfg.d().dsplpwron);
+                break;
+        }
     }
     return true;
 }
@@ -134,8 +138,7 @@ bool cfgSave(bool force) {
     return
         cfg.save(force) &&
         pnt.save(force) &&
-        jmp.save(force) &&
-        inf.save(force);
+        jmp.save(force);
 }
 
 bool cfgFactory() {
@@ -143,7 +146,6 @@ bool cfgFactory() {
     cfg.reset();
     pnt.reset();
     jmp.reset();
-    inf.reset();
     
     return cfgSave(true);
     */

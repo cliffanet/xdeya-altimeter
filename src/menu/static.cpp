@@ -353,7 +353,10 @@ static const menu_el_t menupower[] {
         .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
         .showval = NULL,
         .edit = NULL,
-        .hold = pwrOff
+        .hold = [] () {
+            menuClear();
+            pwrOff();
+        },
     },
 };
 

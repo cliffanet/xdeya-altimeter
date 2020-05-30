@@ -83,16 +83,7 @@ void setup() {
         
     listDir(SPIFFS, "/", 0);
 
-    switch (cfg.d().dsplpwron) {
-        case MODE_MAIN_GPS:
-        case MODE_MAIN_ALT:
-        case MODE_MAIN_ALTGPS:
-        case MODE_MAIN_TIME:
-            if (inf.d().mainmode != cfg.d().dsplpwron)
-                inf.set().mainmode = cfg.d().dsplpwron;
-            break;
-    }
-    initMain(inf.d().mainmode);
+    modeMain();
 }
 
 //------------------------------------------------------------------------------

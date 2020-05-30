@@ -18,8 +18,6 @@
 #define CFG_MAIN_NAME   "cfg"
 #define CFG_JUMP_VER    1
 #define CFG_JUMP_NAME   "jmp"
-#define CFG_INFO_VER    1
-#define CFG_INFO_NAME   "inf"
 
 
 // Основной конфиг
@@ -42,16 +40,6 @@ typedef struct __attribute__((__packed__)) {
     uint32_t _;                                 // Более не используется
     uint8_t mgc2 = CFG_MGC2;
 } cfg_main_t;
-
-// Оперативные данные, которые надо сохранять при уходе в сон и выключении
-typedef struct __attribute__((__packed__)) {
-    uint8_t mgc1 = CFG_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
-    uint8_t ver = CFG_JUMP_VER;
-    
-    bool pwron = true;                          // Включено ли наше устр-во
-    int8_t mainmode = MODE_MAIN_GPS;            // Текущий режим главного экрана
-    uint8_t mgc2 = CFG_MGC2;
-} cfg_info_t;
 
 template <class T>
 class Config {
@@ -79,7 +67,6 @@ bool cfgSave(bool force = false);
 bool cfgFactory();
 
 extern Config<cfg_main_t> cfg;
-extern Config<cfg_info_t> inf;
 
 
 #endif // _cfg_H

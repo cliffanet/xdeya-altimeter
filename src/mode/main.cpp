@@ -18,7 +18,7 @@
 
 bool modemain = true;
 
-static uint8_t mode = MODE_MAIN_GPS; // Текущая страница отображения, сохраняется при переходе в меню
+static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_GPS; // Текущая страница отображения, сохраняется при переходе в меню
 
 
 /* ------------------------------------------------------------------------------------------- *
@@ -319,8 +319,6 @@ static void btnSelSmpl() {  // Обработка нажатия на средн
     if (mode > MODE_MAIN_MAX) mode = MODE_MAIN_MIN;
     Serial.print(F("main next: "));
     Serial.println(mode);
-    inf.set().mainmode = mode;
-    inf.save();
     displayHnd();
     timerUpdate(MAIN_TIMEOUT);
 }
@@ -359,10 +357,6 @@ static void mainTimeout() {
     if (altCalc().state() != ACST_GROUND)
         return;
     autoChgMode(cfg.d().dsplgnd);
-    if (inf.d().mainmode != mode) {
-        inf.set().mainmode = mode;
-        inf.save();
-    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -414,12 +408,8 @@ void modeMain() {
     Serial.println(F("mode main"));
 }
 
-void initMain(int8_t m) {
-    mode = m;
-    modeMain();
-}
-
 void setModeMain(int8_t m) {
+    if ((m>=MODE_MAIN_MIN) && (m<=MODE_MAIN_MAX)) mode = m;
     mode = m;
 }
 

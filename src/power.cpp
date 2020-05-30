@@ -9,40 +9,14 @@
 /* ------------------------------------------------------------------------------------------- *
  *  работа с eeprom
  * ------------------------------------------------------------------------------------------- */
-typedef struct __attribute__((__packed__)) {
-    uint8_t     isoff;
-} pwr_state_t;
-
-static bool getState() {
-    EEPROMClass eepmy("pwr", 0);
-    if (!eepmy.begin(sizeof(pwr_state_t)))
-        return false;
-    
-    pwr_state_t pwr;
-    eepmy.get(0, pwr);
-    eepmy.end();
-    
-    if (pwr.isoff == 0xFF)
-        pwr.isoff = 1;
-    
-    return pwr.isoff != 1;
-}
-
-static bool setState(bool ison) {
-    EEPROMClass eepmy("pwr", 0);
-    if (!eepmy.begin(sizeof(pwr_state_t)))
-        return false;
-    
-    pwr_state_t pwr = { .isoff = ison ? 0 : 1 };
-    eepmy.put(0, pwr);
-    bool ok = eepmy.commit();
-    eepmy.end();
-    
-    return ok;
-}
+static RTC_DATA_ATTR bool isoff = false;
 
 static void hwOff() {
     displayOff();
+#if HWVER > 1
+    digitalWrite(HWPOWER_PIN_GPS, HIGH);
+    pinMode(HWPOWER_PIN_GPS, OUTPUT);
+#endif
         Serial.println("hw off");
   /*
     First we configure the wake up source
@@ -70,6 +44,15 @@ static void hwOff() {
     Serial.println("This will never be printed");
 }
 
+static void hwOn() {
+#if HWVER > 1
+    pinMode(HWPOWER_PIN_GPS, OUTPUT);
+    digitalWrite(HWPOWER_PIN_GPS, LOW);
+#endif
+    //displayOn();
+        Serial.println("hw on");
+}
+
 /* ------------------------------------------------------------------------------------------- *
  *  
  * ------------------------------------------------------------------------------------------- */
@@ -86,13 +69,18 @@ bool pwrCheck() {
         default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
     }
     
-    if (wakeup_reason == 0)
+    if (wakeup_reason == 0) {
         // если была перезагрузка по питанию, то просто включаемся
+        isoff = false;
+        hwOn();
         return true;
+    }
 
-    if (getState())
+    if (!isoff) {
         // если при загрузке обнаружили, что текущее состояние - "вкл", то включаемся
+        hwOn();
         return true;
+    }
     
     pinMode(BUTTON_GPIO_PWR, INPUT_PULLUP);
     int n = 0;
@@ -102,7 +90,8 @@ bool pwrCheck() {
             // если кнопка нажата более 2 сек, 
             // сохраняем состояние как "вкл" и выходим с положительной проверкой
         Serial.println("pwrCheck on");
-            setState(true);
+            isoff = false;
+            hwOn();
             return true;
         }
         delay(100);
@@ -114,18 +103,8 @@ bool pwrCheck() {
     return false;
 }
 
-/*
-void pwrOn() {
-    displayOn();
-        Serial.println("pwr on");
-}
-*/
-
 void pwrOff() {
-    if (!setState(false)) {
-        Serial.println("setState fail");
-        return;
-    }
+    isoff = true;
     Serial.println("pwr off");
     hwOff();
 }
