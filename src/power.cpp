@@ -48,6 +48,7 @@ static void hwOn() {
 #if HWVER > 1
     pinMode(HWPOWER_PIN_GPS, OUTPUT);
     digitalWrite(HWPOWER_PIN_GPS, LOW);
+    pinMode(HWPOWER_PIN_BATIN, INPUT);
 #endif
     //displayOn();
         Serial.println("hw on");
@@ -108,3 +109,9 @@ void pwrOff() {
     Serial.println("pwr off");
     hwOff();
 }
+
+#if HWVER > 1
+uint16_t pwrBattValue() {
+    return analogRead(HWPOWER_PIN_BATIN);
+}
+#endif

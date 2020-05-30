@@ -8,7 +8,9 @@
 #include "../timer.h"
 #include "../menu/static.h"
 #include "../file/track.h"
+#include "../power.h" // pwrBattValue()
 #include "../../def.h" //time
+
 
 /* *********************************************************************
  *  Отображение основного режима с показаниями прибора
@@ -24,12 +26,18 @@ static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_GPS; // Текущая стран�
 /* ------------------------------------------------------------------------------------------- *
  * Функция отрисовки состояния записи трека
  * ------------------------------------------------------------------------------------------- */
-void drawTrackState(U8G2 &u8g2) {
-    if (!trkRunning() || ((millis() % 2000) < 1000))
-        return;
+void drawState(U8G2 &u8g2) {
     u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.setDrawColor(1);
-    u8g2.drawGlyph(0, 10, 'R');
+
+#if HWVER > 1
+    char s[10];
+    sprintf_P(s, PSTR("%d"), pwrBattValue());
+    u8g2.drawStr(0, 8, s);
+#endif
+    
+    if (trkRunning() && ((millis() % 2000) >= 1000))
+        u8g2.drawGlyph(0, 16, 'R');
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -131,7 +139,7 @@ static void displayGPS(U8G2 &u8g2) {
     auto &gps = gpsGet();
     char s[50];
     
-    drawTrackState(u8g2);
+    drawState(u8g2);
     
     displayCompasFull(u8g2);
     if (!gps.satellites.isValid() || (gps.satellites.value() == 0))
@@ -180,7 +188,7 @@ static void displayAlt(U8G2 &u8g2) {
     char s[20];
     auto &ac = altCalc();
     
-    drawTrackState(u8g2);
+    drawState(u8g2);
 
     u8g2.setFont(u8g2_font_fub49_tn);
     sprintf_P(s, PSTR("%0.1f"), ac.alt() / 1000);
@@ -204,7 +212,7 @@ static void displayAltGPS(U8G2 &u8g2) {
     auto &gps = gpsGet();
     char s[50];
     
-    drawTrackState(u8g2);
+    drawState(u8g2);
     
     displayCompasFull(u8g2);
     
@@ -279,7 +287,7 @@ static void displayAltGPS(U8G2 &u8g2) {
 static void displayTime(U8G2 &u8g2) {
     char s[20];
     
-    drawTrackState(u8g2);
+    drawState(u8g2);
     
     if (!timeOk()) {
         u8g2.setFont(u8g2_font_ncenB14_tr); 
