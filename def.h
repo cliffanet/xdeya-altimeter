@@ -8,19 +8,12 @@
 #include <Arduino.h>
 #include <TimeLib.h>
 
-#define HWVER 2
+#define HWVER 1
 
 
 // Интервал синхронизации времени
 #define TIME_ADJUST_INTERVAL  1200000
 #define TIME_ADJUST_TIMEOUT   3600000
 bool timeOk();
-
-// Логическое состояние включенности устройства
-extern bool is_on;
-
-
-void pwrOn();
-void pwrOff();
 
 #endif // _def_H

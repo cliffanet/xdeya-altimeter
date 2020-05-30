@@ -17,11 +17,15 @@
 #define BUTTON_PIN_SEL    14
 #define BUTTON_PIN_DOWN   27
 
+#define BUTTON_GPIO_PWR   GPIO_NUM_14
+
 #else
 
 #define BUTTON_PIN_UP     39
 #define BUTTON_PIN_SEL    34
 #define BUTTON_PIN_DOWN   35
+
+#define BUTTON_GPIO_PWR   GPIO_NUM_34
 
 #endif
 

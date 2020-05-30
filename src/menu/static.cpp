@@ -2,6 +2,7 @@
 #include "static.h"
 #include "logbook.h"
 #include "wifi.h"
+#include "../power.h"
 #include "../display.h"
 #include "../gps.h"
 #include "../cfg/main.h"

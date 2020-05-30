@@ -1,6 +1,7 @@
 
 #include "def.h"
 
+#include "src/power.h"
 #include "src/button.h"
 #include "src/display.h"
 #include "src/mode.h"
@@ -20,8 +21,6 @@
 #include <TimeLib.h>
 static uint32_t tmadj = 0;
 bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >= TIME_ADJUST_TIMEOUT)); }
-
-bool is_on = true;
 
 // Обработка процесса текущего режима
 void (*hndProcess)() = NULL;
@@ -60,6 +59,9 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
 //------------------------------------------------------------------------------
 void setup() {
     Serial.begin(115200);
+    if (!pwrCheck())
+        return;
+  
     WiFi.mode(WIFI_OFF);
     
     displayInit();
@@ -94,21 +96,6 @@ void setup() {
 }
 
 //------------------------------------------------------------------------------
-void pwrOn() {
-    if (is_on) return;
-    is_on = true;
-    displayOn();
-        Serial.println("pwr on");
-}
-
-void pwrOff() {
-    if (!is_on) return;
-    is_on = false;
-    displayOff();
-        Serial.println("pwr off");
-}
-
-//------------------------------------------------------------------------------
 
 
 
@@ -117,11 +104,6 @@ uint16_t testDeg() { return _testDeg; }
 
 //------------------------------------------------------------------------------
 void loop() {
-    if (!is_on) {
-        delay(1000); // Использование прерываний позволяет делать более длинный паузы в состоянии Off
-        return;
-    }
-
     gpsProcess();
 
     if (millis() >= tmadj) {
@@ -135,6 +117,32 @@ void loop() {
         }
         //Serial.printf("aft: %ld\r\n", gps.time.age());
     }
+
+/*
+    if (Serial.available()) {
+        char ch = Serial.read();
+        switch (ch) {
+            case '1':
+                btnPush(BTN_UP, BTN_SIMPLE);
+                break;
+            case '2':
+                btnPush(BTN_SEL, BTN_SIMPLE);
+                break;
+            case '3':
+                btnPush(BTN_DOWN, BTN_SIMPLE);
+                break;
+            case '4':
+                btnPush(BTN_UP, BTN_LONG);
+                break;
+            case '5':
+                btnPush(BTN_SEL, BTN_LONG);
+                break;
+            case '6':
+                btnPush(BTN_DOWN, BTN_LONG);
+                break;
+        }
+    }
+    */
 
     altProcess();
     jmpProcess();

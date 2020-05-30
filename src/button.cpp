@@ -75,6 +75,12 @@ void IRAM_ATTR btnChkState2() { btnChkState(btnall[2]); }
 void btnInit() {
     for (auto &b : btnall) {
         pinMode(b.pin, INPUT_PULLUP);
+        if (b.pin == BUTTON_PIN_SEL) {
+            // Если поисле включения питания мы всё ещё держим кнопку,
+            // дальше пока не работаем
+            while (digitalRead(BUTTON_GPIO_PWR) == LOW)
+                delay(100);
+        }
         b.val = digitalRead(b.pin);
     }
     
