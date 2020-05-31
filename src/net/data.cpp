@@ -2,6 +2,7 @@
     Data convert function
 */
 
+#include "../../def.h"
 #include "data.h"
 #include "srv.h"
 #include "../cfg/main.h"
@@ -128,7 +129,12 @@ typedef struct __attribute__((__packed__)) {
     dnet_t      hspeed;
     uint16_t    hang;
     uint8_t     sat;
+#ifdef USE4BUTTON
+    uint8_t     btn4push;
+#else
     uint8_t     _;
+#endif
+    uint16_t    batval;
 } net_jmp_t;
 static net_jmp_t jmpton(const log_item_t &j) {
     net_jmp_t n = {
@@ -143,7 +149,15 @@ static net_jmp_t jmpton(const log_item_t &j) {
         .lng        = dton(j.lng),
         .hspeed     = dton(j.hspeed),
         .hang       = htons(j.hang),
-        .sat        = j.sat
+        .sat        = j.sat,
+#ifdef USE4BUTTON
+        .btn4push   = bton(j.btn4push),
+#else
+        ._          = 0,
+#endif
+#if HWVER > 1
+        .batval     = htons(j.batval),
+#endif
     };
     
     switch (j.state) {

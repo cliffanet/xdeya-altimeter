@@ -229,7 +229,7 @@ int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *
     File fh = DISKFS.open(fname);
     if (!fh) return -1;
     
-        Serial.printf("logFileRead open: %s (%d)\r\n", fname, ibeg);
+        Serial.printf("logFileRead open: %s (%d) avail: %d/%d/%d\r\n", fname, ibeg, fh.size(), fh.available(), dsz);
     
     if (ibeg > 0) {
         size_t sz = dsz * ibeg;
@@ -248,8 +248,9 @@ int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *
                 (data[dsz-1] != LOG_MGC2) ||
                 !hnd(data)
             ) {
+            Serial.printf("logFileRead err: [%d] sz=%d, dsz=%d, MGC1=0x%02X, MGC2=0x%02X\r\n", ibeg, sz, dsz, data[0], data[dsz-1]);
             fh.close();
-            return false;
+            return -1;
         }
         ibeg++;
     }

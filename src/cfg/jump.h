@@ -5,6 +5,7 @@
 #ifndef _cfg_jump_H
 #define _cfg_jump_H
 
+#include "../../def.h"
 #include "main.h"
 #include "../altcalc.h"
 
@@ -20,7 +21,7 @@
 #define JMP_ALTI_DIRDOWN_COUNT  50
 
 // Один из элементов в длинном логбуке (несколько раз в сек)
-typedef struct __attribute__((__packed__)) {
+typedef struct __attribute__((__aligned__(64), __packed__)) {
     uint32_t    mill;
     float       press;
     float       altorig;
@@ -33,7 +34,12 @@ typedef struct __attribute__((__packed__)) {
     double      hspeed;
     uint16_t    hang;
     uint8_t     sat;
+#ifdef USE4BUTTON
+    bool        btn4push;
+#else
     uint8_t     _;
+#endif
+    uint16_t    batval;
 } log_item_t;
 
 

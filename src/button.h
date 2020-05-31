@@ -13,19 +13,27 @@
 //#define BUTTON_PIN_DOWN   26
 #if HWVER <= 1
 
-#define BUTTON_PIN_UP     12
-#define BUTTON_PIN_SEL    14
-#define BUTTON_PIN_DOWN   27
+#define BUTTON_PIN_UP       12
+#define BUTTON_PIN_SEL      14
+#define BUTTON_PIN_DOWN     27
+
+#ifdef USE4BUTTON
+#define BUTTON_PIN_4        13
+#endif
 
 #define BUTTON_GPIO_PWR   GPIO_NUM_14
 
 #else
 
-#define BUTTON_PIN_UP     39
-#define BUTTON_PIN_SEL    34
-#define BUTTON_PIN_DOWN   35
+#define BUTTON_PIN_UP       39
+#define BUTTON_PIN_SEL      34
+#define BUTTON_PIN_DOWN     35
 
 #define BUTTON_GPIO_PWR   GPIO_NUM_34
+
+#ifdef USE4BUTTON
+#define BUTTON_PIN_4        12
+#endif
 
 #endif
 
@@ -73,5 +81,10 @@ uint32_t btnIdle();
 uint32_t btnPressed(uint8_t &btn);
 
 void btnPush(btn_code_t btn, button_time_t tm);
+
+#ifdef USE4BUTTON
+// нажатие на дополнительную 4ую кнопку
+bool btn4Pushed();
+#endif
 
 #endif // _button_H

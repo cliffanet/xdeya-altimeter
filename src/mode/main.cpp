@@ -35,9 +35,21 @@ void drawState(U8G2 &u8g2) {
     sprintf_P(s, PSTR("%d"), pwrBattValue());
     u8g2.drawStr(0, 8, s);
 #endif
+
+#ifdef USE4BUTTON
+// нажатие на дополнительную 4ую кнопку
+    if (btn4Pushed()) {
+        u8g2.drawBox(0, 7, 10, 10);
+        u8g2.setDrawColor(0);
+    }
+#endif
     
     if (trkRunning() && ((millis() % 2000) >= 1000))
         u8g2.drawGlyph(0, 16, 'R');
+    
+#ifdef USE4BUTTON
+    u8g2.setDrawColor(1);
+#endif
 }
 
 /* ------------------------------------------------------------------------------------------- *

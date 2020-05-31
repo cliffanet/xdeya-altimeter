@@ -80,9 +80,17 @@ void setup() {
         Serial.println("SPIFFS Mount Failed");
     cfgLoad(true);
     Serial.println("begin");
-        
+
     listDir(SPIFFS, "/", 0);
 
+    switch (cfg.d().dsplpwron) {
+        case MODE_MAIN_GPS:
+        case MODE_MAIN_ALT:
+        case MODE_MAIN_ALTGPS:
+        case MODE_MAIN_TIME:
+            setModeMain(cfg.d().dsplpwron);
+            break;
+    }
     modeMain();
 }
 

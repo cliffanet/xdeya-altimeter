@@ -5,6 +5,12 @@
 #include "../file/log.h"
 #include "../file/track.h"
 
+#ifdef USE4BUTTON
+#include "../button.h" // btn4Pushed()
+#endif
+
+#include "../power.h" // pwrBattValue()
+
 #include <TimeLib.h>
 
 /* ------------------------------------------------------------------------------------------- *
@@ -133,6 +139,14 @@ log_item_t jmpLogItem() {
         .hspeed = gps.speed.mps(),
         .hang   = gps.course.deg(),
         .sat    = gps.satellites.value(),
+#ifdef USE4BUTTON
+        .btn4push=btn4Pushed(),
+#else
+        ._      = 0,
+#endif
+#if HWVER > 1
+        .batval = pwrBattValue(),
+#endif
     };
     
     return li;

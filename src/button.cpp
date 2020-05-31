@@ -99,6 +99,11 @@ void btnInit() {
         btnChkState2,
         CHANGE
     );
+    
+
+#ifdef USE4BUTTON
+    pinMode(BUTTON_PIN_4, INPUT_PULLUP);
+#endif
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -182,3 +187,12 @@ void btnPush(btn_code_t btn, button_time_t tm) {
         case BTN_LONG:      if (b->hndlong != NULL) (b->hndlong)(); break;
     }
 }
+
+#ifdef USE4BUTTON
+/* ------------------------------------------------------------------------------------------- *
+ *  нажатие на дополнительную 4ую кнопку
+ * ------------------------------------------------------------------------------------------- */
+bool btn4Pushed() {
+    return digitalRead(BUTTON_PIN_4) == LOW;
+}
+#endif
