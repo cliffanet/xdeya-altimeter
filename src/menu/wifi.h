@@ -19,7 +19,7 @@ class MenuWiFi : public MenuBase {
     public:
         MenuWiFi();
         ~MenuWiFi();
-        void updStr(menu_dspl_el_t &str, int16_t i);
+        void getStr(menu_dspl_el_t &str, int16_t i);
         
         void btnSmp();
         

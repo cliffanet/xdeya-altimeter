@@ -2,6 +2,7 @@
 #include "static.h"
 #include "logbook.h"
 #include "wifi.h"
+#include "file.h"
 #include "../power.h"
 #include "../display.h"
 #include "../gps.h"
@@ -436,6 +437,10 @@ static const menu_el_t menumain[] {
         .enter = SUBMENU(menusystem),
     },
     {
+        .name = PSTR("Files"),
+        .enter = [] () { menuEnter(new MenuFile); },
+    },
+    {
         .name = PSTR("Wifi sync"),
         .enter = [] () { menuEnter(new MenuWiFi); },
     },
@@ -450,8 +455,8 @@ MenuStatic::MenuStatic() :
     
 }
 
-void MenuStatic::updStr(menu_dspl_el_t &str, int16_t i) {
-    Serial.printf("MenuStatic::updStr: %d\r\n", i);
+void MenuStatic::getStr(menu_dspl_el_t &str, int16_t i) {
+    Serial.printf("MenuStatic::getStr: %d\r\n", i);
     auto &m = menu[i];
     
     strncpy_P(str.name, m.name, sizeof(str.name));
@@ -483,6 +488,8 @@ bool MenuStatic::useEdit() {
 }
 void MenuStatic::edit(int val) {
     auto &m = menu[sel()];
-    if (m.edit != NULL)
+    if (m.edit != NULL) {
         m.edit(val);
+        updStrSel();
+    }
 }

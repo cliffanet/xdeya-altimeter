@@ -29,11 +29,14 @@ class U8G2;
 class MenuBase {
     public:
         MenuBase(uint16_t _sz, const char *_title = NULL, menu_exit_t _exit = MENUEXIT_TOP);
+        MenuBase(const char *_title, menu_exit_t _exit = MENUEXIT_TOP) : MenuBase(0, _title, _exit) {};
         virtual             // виртуальный деструктор в базовом классе нужен, 
         ~MenuBase() { };    // чтобы корректно уничтожались потомки при выполнении delete
         
+        void setSize(uint16_t _sz);
+        
         virtual     // этот метод обновляет строку в потомке
-        void updStr(menu_dspl_el_t &str, int16_t i) { Serial.println("MenuBase::updStr"); };
+        void getStr(menu_dspl_el_t &str, int16_t i) { Serial.println("MenuBase::getStr"); };
                     // все остальные - это обвязка по обновлению строк меню на экране в базовом классе
         void updStr();
         void updStr(int16_t i);

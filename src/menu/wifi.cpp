@@ -50,8 +50,8 @@ MenuWiFi::~MenuWiFi() {
     
 }
 
-void MenuWiFi::updStr(menu_dspl_el_t &str, int16_t i) {
-    Serial.printf("MenuWiFi::updStr: %d (sz=%d)\r\n", i, wifiall.size());
+void MenuWiFi::getStr(menu_dspl_el_t &str, int16_t i) {
+    Serial.printf("MenuWiFi::getStr: %d (sz=%d)\r\n", i, wifiall.size());
     auto const &w = wifiall[i];
     strncpy(str.name, w.txt, sizeof(str.name));
     str.name[sizeof(str.name)-1] = '\0';

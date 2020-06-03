@@ -12,13 +12,13 @@ typedef void (*menu_hnd_t)();
 typedef void (*menu_edit_t)(int val);
 typedef void (*menu_val_t)(char *txt);
 
-// Элемент меню
+// Р­Р»РµРјРµРЅС‚ РјРµРЅСЋ
 typedef struct {
-    char        *name;      // Текстовое название пункта
-    menu_hnd_t  enter;      // Обраотка нажатия на среднюю кнопку
-    menu_val_t  showval;    // как отображать значение, если требуется
-    menu_edit_t edit;       // в режиме редактирования меняет значения на величину val (функция должна описывать, что и как менять)
-    menu_hnd_t  hold;       // Обработка действия при длинном нажатии на среднюю кнопку
+    char        *name;      // РўРµРєСЃС‚РѕРІРѕРµ РЅР°Р·РІР°РЅРёРµ РїСѓРЅРєС‚Р°
+    menu_hnd_t  enter;      // РћР±СЂР°РѕС‚РєР° РЅР°Р¶Р°С‚РёСЏ РЅР° СЃСЂРµРґРЅСЋСЋ РєРЅРѕРїРєСѓ
+    menu_val_t  showval;    // РєР°Рє РѕС‚РѕР±СЂР°Р¶Р°С‚СЊ Р·РЅР°С‡РµРЅРёРµ, РµСЃР»Рё С‚СЂРµР±СѓРµС‚СЃСЏ
+    menu_edit_t edit;       // РІ СЂРµР¶РёРјРµ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ РјРµРЅСЏРµС‚ Р·РЅР°С‡РµРЅРёСЏ РЅР° РІРµР»РёС‡РёРЅСѓ val (С„СѓРЅРєС†РёСЏ РґРѕР»Р¶РЅР° РѕРїРёСЃС‹РІР°С‚СЊ, С‡С‚Рѕ Рё РєР°Рє РјРµРЅСЏС‚СЊ)
+    menu_hnd_t  hold;       // РћР±СЂР°Р±РѕС‚РєР° РґРµР№СЃС‚РІРёСЏ РїСЂРё РґР»РёРЅРЅРѕРј РЅР°Р¶Р°С‚РёРё РЅР° СЃСЂРµРґРЅСЋСЋ РєРЅРѕРїРєСѓ
 } menu_el_t;
 
 
@@ -26,7 +26,7 @@ class MenuStatic : public MenuBase {
     public:
         MenuStatic();
         MenuStatic(const menu_el_t *m, int16_t sz, const char *_title = NULL) : MenuBase(sz, _title), menu(m) {};
-        void updStr(menu_dspl_el_t &str, int16_t i);
+        void getStr(menu_dspl_el_t &str, int16_t i);
         
         void btnSmp();
         bool useLng();

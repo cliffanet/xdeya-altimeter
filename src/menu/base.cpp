@@ -54,6 +54,16 @@ MenuBase::MenuBase(uint16_t _sz, const char *_title, menu_exit_t _exit) :
         sz++;
 }
 
+void MenuBase::setSize(uint16_t _sz) {
+    sz = _sz;
+    
+    if (elexit != MENUEXIT_NONE)
+        sz++;
+    
+    if (isel >= sz)
+        isel = sz-1;
+}
+
 
 /* ------------------------------------------------------------------------------------------- *
  *  Инициализация меню - обновляем содержимое в строковом варианте
@@ -81,7 +91,7 @@ void MenuBase::updStr(int16_t i) {
         if (elexit == MENUEXIT_TOP)
             i--;
         auto &s = str[n];
-        updStr(s, i);
+        getStr(s, i);
         s.name[sizeof(s.name)-1] = '\0';
         s.val[sizeof(s.val)-1] = '\0';
     }
@@ -230,15 +240,11 @@ static void menuSmp() {
     if (mtree.size() == 0) return;
     auto m = mtree.back();
     m->btnSmp();
-    if ((mtree.size() > 0) && (mtree.back() == m))
-        m->updStrSel();
 }
 static void menuLng() {
     if (mtree.size() == 0) return;
     auto m = mtree.back();
     m->btnLng();
-    if ((mtree.size() > 0) && (mtree.back() == m))
-        m->updStrSel();
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -249,7 +255,6 @@ static void editUp() {      // Вверх
     if (mtree.size() == 0) return;
     auto m = mtree.back();
     m->edit(+1);
-    m->updStrSel();
 }
 
 static void editDown() {    // вниз
@@ -257,7 +262,6 @@ static void editDown() {    // вниз
     if (mtree.size() == 0) return;
     auto m = mtree.back();
     m->edit(-1);
-    m->updStrSel();
 }
 
 static void menuEditOff() {     // Выход из режима редактирования

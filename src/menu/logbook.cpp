@@ -15,8 +15,8 @@ MenuLogBook::MenuLogBook() :
 {
 }
 
-void MenuLogBook::updStr(menu_dspl_el_t &str, int16_t i) {
-    Serial.printf("MenuStatic::updStr: %d\r\n", i);
+void MenuLogBook::getStr(menu_dspl_el_t &str, int16_t i) {
+    Serial.printf("MenuStatic::getStr: %d\r\n", i);
     
     struct log_item_s<log_jmp_t> r;
     if (logRead(r, PSTR(JMPLOG_SIMPLE_NAME), i)) {
