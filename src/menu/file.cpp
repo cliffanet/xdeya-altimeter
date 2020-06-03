@@ -1,8 +1,11 @@
 
 #include "file.h"
+#include "../file/log.h"
+#include "../file/track.h"
 
 #include <Arduino.h>
 #include <SPIFFS.h>
+
 
 /* ------------------------------------------------------------------------------------------- *
  *  Описание методов шаблона класса MenuFile
@@ -47,19 +50,27 @@ MenuFile::MenuFile() :
         fileall.push_back(f);
     }
     
-    setSize(fileall.size());
+    updSize();
     
     Serial.printf("fileall: %d\r\n", fileall.size());
 }
 
-MenuFile::~MenuFile() {
-    Serial.println("file end");
-    
+void MenuFile::updSize() {
+    setSize(fileall.size()+2);
 }
 
 void MenuFile::getStr(menu_dspl_el_t &str, int16_t i) {
     Serial.printf("MenuFile::getStr: %d (sz=%d)\r\n", i, fileall.size());
-    auto const &f = fileall[i];
+    switch (i) {
+        case 0:
+            strncpy_P(str.name, PSTR("LogBook ReNum"), sizeof(str.name));
+            return;
+        case 1:
+            strncpy_P(str.name, PSTR("Track ReNum"), sizeof(str.name));
+            return;
+    }
+    
+    auto const &f = fileall[i-2];
     strncpy(str.name, f.name, sizeof(str.name));
     str.name[sizeof(str.name)-1] = '\0';
     
@@ -70,21 +81,41 @@ void MenuFile::getStr(menu_dspl_el_t &str, int16_t i) {
 }
 
 void MenuFile::btnSmp() {
-    if (sel() >= 0)
-        menuFlashP(PSTR("Hold to remove"));
+    switch (sel()) {
+        case 0:
+        case 1:
+            menuFlashP(PSTR("Hold to ReNum"));
+            return;
+        default:
+            menuFlashP(PSTR("Hold to remove"));
+    }
 }
 void MenuFile::btnLng() {
-    if (sel() >= 0) {
-        auto i = sel();
-        auto f = fileall[i];
-        if (!SPIFFS.remove(f.name)) {
-            menuFlashP(PSTR("Remove fail"));
+    switch (sel()) {
+        case 0:
+            if (!logRenum(PSTR(JMPLOG_SIMPLE_NAME)))
+                menuFlashP(PSTR("ReNum fail"));
+            menuFlashP(PSTR("ReNum OK"));
+            updStr();
             return;
-        }
-        fileall.erase(fileall.begin() + i);
-        setSize(fileall.size());
-        
-        menuFlashP(PSTR("Remove OK"));
-        updStr();
+        case 1:
+            if (!logRenum(PSTR(TRK_FILE_NAME)))
+                menuFlashP(PSTR("ReNum fail"));
+            menuFlashP(PSTR("ReNum OK"));
+            updStr();
+            return;
     }
+    
+    auto i = sel()-2;
+    auto f = fileall[i];
+    Serial.printf("MenuFile::btnLng: removing: %s\r\n", f.name);
+    if (!SPIFFS.remove(f.name)) {
+        menuFlashP(PSTR("Remove fail"));
+        return;
+    }
+    fileall.erase(fileall.begin() + i);
+    updSize();
+    
+    menuFlashP(PSTR("Remove OK"));
+    updStr();
 }

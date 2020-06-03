@@ -357,6 +357,44 @@ uint8_t logFind(const char *_fname, size_t dsz, const uint32_t &cks) {
     return 0;
 }
 
+/* ------------------------------------------------------------------------------------------- *
+ *  Ренумерация файлов
+ * ------------------------------------------------------------------------------------------- */
+bool logRenum(const char *_fname) {
+    int n = 1, nn;
+    char dst[37], src[37];
+    const byte flen = logFName(dst, sizeof(dst), _fname);
+    strcpy(src, dst);
+
+    // сначала ищем свободный слот dst
+    while (n < 255) {
+        logFSuffix(dst+flen, n);
+        if (!DISKFS.exists(dst)) break;
+        Serial.printf("Renuming find, exists: %s\r\n", dst);
+        n++;
+    }
+    
+    // теперь ищем пробел и первый занятый номер - src
+    if (nn <= n) nn = n+1;
+    nn=n+1;
+    
+    while (nn < 256) {
+        logFSuffix(src+flen, nn);
+        if (DISKFS.exists(src)) {
+            if (!DISKFS.rename(src, dst)) {
+                Serial.printf("Rename fail: %s -> %s\r\n", src, dst);
+                return false;
+            }
+            Serial.printf("Renum OK: %s -> %s\r\n", src, dst);
+            n++;
+            logFSuffix(dst+flen, n);
+        }
+        nn++;
+    }
+    
+    return true;
+}
+
 
 /* ------------------------------------------------------------------------------------------- *
  *  Удаление самого старшего файла, возвращает номер удалённого файла

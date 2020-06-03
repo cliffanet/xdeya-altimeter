@@ -17,7 +17,7 @@ typedef struct {
 class MenuFile : public MenuBase {
     public:
         MenuFile();
-        ~MenuFile();
+        void updSize();
         void getStr(menu_dspl_el_t &str, int16_t i);
         
         void btnSmp();
