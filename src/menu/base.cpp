@@ -69,6 +69,8 @@ void MenuBase::setSize(uint16_t _sz) {
  *  Инициализация меню - обновляем содержимое в строковом варианте
  * ------------------------------------------------------------------------------------------- */
 void MenuBase::updStr() {
+    if (!isvisible)
+        return;
     for (int16_t i=itop, n=0; n<MENU_STR_COUNT; i++, n++)
         if (i<sz)
             updStr(i);
@@ -79,6 +81,9 @@ void MenuBase::updStr() {
 }
 
 void MenuBase::updStr(int16_t i) {
+    if (!isvisible)
+        return;
+    
     int16_t n = i-itop;
     if ((n < 0) || (n >= MENU_STR_COUNT))
         return;
@@ -102,6 +107,9 @@ void MenuBase::updStr(int16_t i) {
  *  Обновление обработчиков кнопок при каждом нажатии
  * ------------------------------------------------------------------------------------------- */
 void MenuBase::updHnd() {
+    if (!isvisible)
+        return;
+    
     if (((elexit == MENUEXIT_TOP) && (isel == 0)) ||
         ((elexit == MENUEXIT_BOTTOM) && ((isel+1) == sz))) {
         btnHnd(BTN_SEL, BTN_SIMPLE, menuLevelUp);
@@ -307,6 +315,7 @@ static void menuLevelUp() {
     delete m;
     menuFlashClear();
     m = mtree.back();
+    m->setVisible(true);
     m->updStr();
     m->updHnd();
 }
@@ -365,7 +374,10 @@ static void menuProcess() {
  *  Вход в меню
  * ------------------------------------------------------------------------------------------- */
 void menuEnter(MenuBase *menu) {
+    if (!mtree.empty())
+        mtree.back()->setVisible(false);
     mtree.push_back(menu);
+    menu->setVisible(true);
     menu->updStr();
     menu->updHnd();
 }
@@ -390,6 +402,7 @@ void modeMenu() {
     }
     else {
         auto m = mtree.back();
+        m->setVisible(true);
         m->updStr();
         m->updHnd();
     }

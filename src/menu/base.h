@@ -70,8 +70,11 @@ class MenuBase {
         int16_t sel() const { return elexit == MENUEXIT_TOP ? isel-1 : isel; }
         int16_t size() const { return (elexit == MENUEXIT_NONE) || (sz <= 0) ? sz : sz-1; }
         
+        void setVisible(bool _isvisible) { isvisible = _isvisible; }
+        
     private:
         int16_t itop = 0, isel = 0, sz = 0;
+        bool isvisible = false;
         menu_exit_t elexit;
         char _uptitle[MENUSZ_NAME] = { '\0' };
 };

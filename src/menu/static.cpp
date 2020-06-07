@@ -472,6 +472,7 @@ void MenuStatic::btnSmp() {
     auto &m = menu[sel()];
     if (m.enter != NULL)
         m.enter();
+    updStr(); // полностью обновляем экран после клика
 }
 
 bool MenuStatic::useLng() {
@@ -482,6 +483,7 @@ void MenuStatic::btnLng() {
     auto &m = menu[sel()];
     if (m.hold != NULL)
         m.hold();
+    updStr(); // полностью обновляем экран после клика
 }
 bool MenuStatic::useEdit() {
     return menu[sel()].edit != NULL;
