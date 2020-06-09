@@ -64,9 +64,11 @@ void MenuFile::getStr(menu_dspl_el_t &str, int16_t i) {
     switch (i) {
         case 0:
             strncpy_P(str.name, PSTR("LogBook ReNum"), sizeof(str.name));
+            str.val[0] = '\0';
             return;
         case 1:
             strncpy_P(str.name, PSTR("Track ReNum"), sizeof(str.name));
+            str.val[0] = '\0';
             return;
     }
     
@@ -93,15 +95,17 @@ void MenuFile::btnSmp() {
 void MenuFile::btnLng() {
     switch (sel()) {
         case 0:
-            if (!logRenum(PSTR(JMPLOG_SIMPLE_NAME)))
+            if (logRenum(PSTR(JMPLOG_SIMPLE_NAME)))
+                menuFlashP(PSTR("ReNum OK"));
+            else
                 menuFlashP(PSTR("ReNum fail"));
-            menuFlashP(PSTR("ReNum OK"));
             updStr();
             return;
         case 1:
             if (!logRenum(PSTR(TRK_FILE_NAME)))
+                menuFlashP(PSTR("ReNum OK"));
+            else
                 menuFlashP(PSTR("ReNum fail"));
-            menuFlashP(PSTR("ReNum OK"));
             updStr();
             return;
     }

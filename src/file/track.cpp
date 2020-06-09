@@ -10,9 +10,13 @@ File fh;
 /* ------------------------------------------------------------------------------------------- *
  *  Запуск трекинга
  * ------------------------------------------------------------------------------------------- */
+static bool trkCheckAvail(bool removeFirst = false);
 bool trkStart(bool force) {
     if (state != TRKRUN_NONE)
         trkStop();
+    
+    if (!trkCheckAvail(true))
+        return false;
     
     const auto *_fname = PSTR(TRK_FILE_NAME);
     if (!logRotate(_fname, 0))
@@ -66,9 +70,28 @@ int trkFileCount() {
  *  Под сколько ещё записей доступно место
  * ------------------------------------------------------------------------------------------- */
 size_t trkCountAvail() {
-    size_t avail = (DISKFS.totalBytes()-DISKFS.usedBytes()) / sizeof(struct log_item_s <log_item_t>);
-    avail -= TRK_PRESERV_COUNT; // учтём пре-резерв, который не будет занят записью трэков
-    return avail;
+    size_t used = DISKFS.usedBytes();
+    if (used >= ALL_SIZE_MAX)
+        return 0;
+    return (ALL_SIZE_MAX - used) / sizeof(struct log_item_s <log_item_t>);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Проверка и освобождение места (удаление старых записей)
+ * ------------------------------------------------------------------------------------------- */
+static bool trkCheckAvail(bool removeFirst) {
+    auto av = trkCountAvail();
+    Serial.printf("avail: %d records\r\n", av);
+    while (av < TRK_PRESERV_COUNT) {
+        int avail = logRemoveLast(PSTR(TRK_FILE_NAME), removeFirst);
+        if (avail <= 0) {
+            Serial.println(F("track nothing to remove"));
+            return false;
+        }
+        av = trkCountAvail();
+    }
+    
+    return true;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -85,17 +108,9 @@ void trkProcess() {
     log.data = jmpLogItem();
     
     static uint8_t cnt = 0;
-    cnt++;
-    if ((cnt & 0b111) == 0) {
-        Serial.printf("avail: %d bytes\r\n", DISKFS.totalBytes()-DISKFS.usedBytes());
-        while ((DISKFS.totalBytes()-DISKFS.usedBytes()) < (sizeof(log) * TRK_PRESERV_COUNT)) {
-            int avail = logRemoveLast(PSTR(LOGFILE_SUFFIX));
-            if (avail <= 0) {
-                Serial.println(F("track nothing to remove"));
-                trkStop();
-                return;
-            }
-        }
+    if ((((cnt++) & 0b111) == 0) && !trkCheckAvail()) {
+        trkStop();
+        return;
     }
     
     auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));

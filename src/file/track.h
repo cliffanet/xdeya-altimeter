@@ -10,6 +10,7 @@
 
 #define TRK_FILE_NAME       "track"
 #define TRK_PRESERV_COUNT   32
+#define ALL_SIZE_MAX        786432
 
 typedef enum {
     TRKRUN_NONE = 0,

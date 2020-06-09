@@ -367,7 +367,7 @@ bool logRenum(const char *_fname) {
     strcpy(src, dst);
 
     // сначала ищем свободный слот dst
-    while (n < 255) {
+    while (n < 99) {
         logFSuffix(dst+flen, n);
         if (!DISKFS.exists(dst)) break;
         Serial.printf("Renuming find, exists: %s\r\n", dst);
@@ -378,11 +378,19 @@ bool logRenum(const char *_fname) {
     if (nn <= n) nn = n+1;
     nn=n+1;
     
-    while (nn < 256) {
+    while (nn < 100) {
         logFSuffix(src+flen, nn);
-        if (DISKFS.exists(src)) {
-            if (!DISKFS.rename(src, dst)) {
-                Serial.printf("Rename fail: %s -> %s\r\n", src, dst);
+        bool ex = DISKFS.exists(src);
+        if (ex) {
+            File fh = DISKFS.open(src);
+            Serial.printf("Rename preopen: %s - %d\r\n", src, fh == true);
+            fh.close();
+            if (!DISKFS.rename(src, "/tmp")) {
+                Serial.printf("Rename fail1: %s -> %s\r\n", src, dst);
+                return false;
+            }
+            if (!DISKFS.rename("/tmp", dst)) {
+                Serial.printf("Rename fail2: %s -> %s\r\n", src, dst);
                 return false;
             }
             Serial.printf("Renum OK: %s -> %s\r\n", src, dst);
