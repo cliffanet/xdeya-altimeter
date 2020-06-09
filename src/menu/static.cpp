@@ -146,7 +146,10 @@ static const menu_el_t menutrack[] {
         .showval = [] (char *txt) {
             // сколько записей ещё влезет
             size_t avail = trkCountAvail() / 5; // количество секунд
-            sprintf_P(txt, PSTR("%d s"), avail);
+            if (avail >= 60)
+                sprintf_P(txt, PSTR("%d:%02d"), avail/60, avail%60);
+            else
+                sprintf_P(txt, PSTR("%d s"), avail);
         },
     },
 };
