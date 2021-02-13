@@ -391,7 +391,7 @@ Wire Wire Line
 	3150 3450 3550 3450
 Wire Wire Line
 	3150 3550 3550 3550
-Text GLabel 3650 2650 1    50   Input ~ 0
+Text GLabel 3700 2750 2    50   Input ~ 0
 display
 $Comp
 L Mechanical:MountingHole H3
@@ -893,10 +893,10 @@ Wire Wire Line
 Wire Wire Line
 	3150 2050 3250 2050
 $Comp
-L Sensor_Pressure:BMP280 U?
+L Sensor_Pressure:BMP280 U4
 U 1 1 602FC2DB
 P 9050 1200
-F 0 "U?" H 9280 1296 50  0000 L CNN
+F 0 "U4" H 9280 1296 50  0000 L CNN
 F 1 "BMP280" H 9280 1205 50  0000 L CNN
 F 2 "Package_LGA:Bosch_LGA-8_2x2.5mm_P0.65mm_ClockwisePinNumbering" H 9050 500 50  0001 C CNN
 F 3 "https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001.pdf" H 9050 1200 50  0001 C CNN
@@ -904,10 +904,10 @@ F 3 "https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-D
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR?
+L power:GND #PWR0101
 U 1 1 602FD661
 P 9050 1600
-F 0 "#PWR?" H 9050 1350 50  0001 C CNN
+F 0 "#PWR0101" H 9050 1350 50  0001 C CNN
 F 1 "GND" H 9055 1427 50  0000 C CNN
 F 2 "" H 9050 1600 50  0001 C CNN
 F 3 "" H 9050 1600 50  0001 C CNN
@@ -920,10 +920,10 @@ Wire Wire Line
 	9150 1500 9050 1500
 Connection ~ 9050 1500
 $Comp
-L power:+3.3V #PWR?
+L power:+3.3V #PWR0102
 U 1 1 60304B5F
 P 9250 700
-F 0 "#PWR?" H 9250 550 50  0001 C CNN
+F 0 "#PWR0102" H 9250 550 50  0001 C CNN
 F 1 "+3.3V" V 9265 828 50  0000 L CNN
 F 2 "" H 9250 700 50  0001 C CNN
 F 3 "" H 9250 700 50  0001 C CNN
@@ -940,26 +940,18 @@ Connection ~ 9150 700
 Wire Wire Line
 	9150 700  9250 700 
 Entry Wire Line
-	3850 3050 3950 3150
+	4050 3050 4150 3150
 Entry Wire Line
-	3850 2650 3950 2750
+	4050 2650 4150 2750
 Entry Wire Line
-	3850 2850 3950 2950
+	4050 2850 4150 2950
 Entry Wire Line
-	3850 1950 3950 2050
+	4050 1950 4150 2050
 Text Label 3200 2750 0    50   ~ 0
 spi-miso
 Text Label 3200 1950 0    50   ~ 0
 bmp280-cs
-Wire Wire Line
-	3150 1950 3850 1950
-Wire Wire Line
-	3150 2750 3550 2750
-Wire Wire Line
-	3550 2750 3550 2850
-Wire Wire Line
-	3550 2850 3850 2850
-Text GLabel 3950 3200 3    50   Input ~ 0
+Text GLabel 4150 3200 3    50   Input ~ 0
 bmp280
 Text GLabel 8100 1550 3    50   Input ~ 0
 bmp280
@@ -987,16 +979,274 @@ Wire Wire Line
 	8200 1200 8650 1200
 Wire Wire Line
 	8650 1300 8200 1300
+$Comp
+L Timer_RTC:PCF8563T U5
+U 1 1 6035491E
+P 9850 2700
+F 0 "U5" H 9850 3281 50  0000 C CNN
+F 1 "PCF8563T" H 9850 3190 50  0000 C CNN
+F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 9850 2700 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/PCF8563.pdf" H 9850 2700 50  0001 C CNN
+	1    9850 2700
+	1    0    0    -1  
+$EndComp
+Text GLabel 3200 2950 2    50   Input ~ 0
+i2c-scl
+Text GLabel 3200 2850 2    50   Input ~ 0
+i2c-sda
 Wire Wire Line
-	3150 3050 3850 3050
+	3150 2850 3200 2850
 Wire Wire Line
-	3150 2650 3850 2650
+	3200 2950 3150 2950
+Text GLabel 10350 2600 2    50   Input ~ 0
+i2c-sda
+Text GLabel 10350 2500 2    50   Input ~ 0
+i2c-scl
+Wire Wire Line
+	10250 2500 10350 2500
+Wire Wire Line
+	10350 2600 10250 2600
+$Comp
+L Device:Crystal Y1
+U 1 1 60369F06
+P 9100 2700
+F 0 "Y1" V 9054 2831 50  0000 L CNN
+F 1 "32768" V 9145 2831 50  0000 L CNN
+F 2 "Crystal:Crystal_AT310_D3.0mm_L10.0mm_Vertical" H 9100 2700 50  0001 C CNN
+F 3 "~" H 9100 2700 50  0001 C CNN
+	1    9100 2700
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9100 2550 9100 2500
+Wire Wire Line
+	9100 2500 9450 2500
+Wire Wire Line
+	9100 2850 9100 2900
+Wire Wire Line
+	9100 2900 9450 2900
+$Comp
+L Device:C C5
+U 1 1 60381111
+P 8650 2700
+F 0 "C5" H 8765 2746 50  0000 L CNN
+F 1 "22pF" H 8765 2655 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 8688 2550 50  0001 C CNN
+F 3 "~" H 8650 2700 50  0001 C CNN
+	1    8650 2700
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0103
+U 1 1 603818E1
+P 8650 2950
+F 0 "#PWR0103" H 8650 2700 50  0001 C CNN
+F 1 "GND" H 8655 2777 50  0000 C CNN
+F 2 "" H 8650 2950 50  0001 C CNN
+F 3 "" H 8650 2950 50  0001 C CNN
+	1    8650 2950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8650 2950 8650 2850
+Wire Wire Line
+	8650 2550 8650 2500
+Wire Wire Line
+	8650 2500 9100 2500
+Connection ~ 9100 2500
+$Comp
+L power:+3.3V #PWR0104
+U 1 1 60393514
+P 10050 2250
+F 0 "#PWR0104" H 10050 2100 50  0001 C CNN
+F 1 "+3.3V" V 10065 2378 50  0000 L CNN
+F 2 "" H 10050 2250 50  0001 C CNN
+F 3 "" H 10050 2250 50  0001 C CNN
+	1    10050 2250
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9850 2300 9850 2250
+Wire Wire Line
+	9850 2250 10050 2250
+Wire Wire Line
+	10250 2800 10450 2800
+Wire Wire Line
+	10450 2800 10450 2900
+Wire Wire Line
+	10450 2900 10250 2900
+Text GLabel 10500 2800 2    50   Input ~ 0
+clk-int
+Wire Wire Line
+	10500 2800 10450 2800
+Connection ~ 10450 2800
+$Comp
+L power:GND #PWR0105
+U 1 1 603A4A02
+P 9850 3200
+F 0 "#PWR0105" H 9850 2950 50  0001 C CNN
+F 1 "GND" H 9855 3027 50  0000 C CNN
+F 2 "" H 9850 3200 50  0001 C CNN
+F 3 "" H 9850 3200 50  0001 C CNN
+	1    9850 3200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9850 3100 9850 3200
+Text GLabel 3250 2250 2    50   Input ~ 0
+clk-int
+Wire Wire Line
+	3150 2250 3250 2250
 Wire Bus Line
-	3650 2650 3650 3700
+	3700 2750 3650 2750
+Wire Wire Line
+	3600 2750 3600 2850
+Wire Wire Line
+	3150 2750 3600 2750
+Wire Wire Line
+	3600 2850 4050 2850
+Wire Wire Line
+	3150 1950 4050 1950
+$Comp
+L RF_GPS:NEO-M8N U6
+U 1 1 603E1709
+P 2650 6150
+F 0 "U6" H 2650 5161 50  0000 C CNN
+F 1 "NEO-M8N" H 2650 5070 50  0000 C CNN
+F 2 "RF_GPS:ublox_NEO" H 3050 5300 50  0001 C CNN
+F 3 "https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf" H 2650 6150 50  0001 C CNN
+	1    2650 6150
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0106
+U 1 1 603E33EF
+P 2650 7300
+F 0 "#PWR0106" H 2650 7050 50  0001 C CNN
+F 1 "GND" H 2655 7127 50  0000 C CNN
+F 2 "" H 2650 7300 50  0001 C CNN
+F 3 "" H 2650 7300 50  0001 C CNN
+	1    2650 7300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2650 7300 2650 7050
+$Comp
+L power:+3.3V #PWR0107
+U 1 1 603E9E2F
+P 2550 5050
+F 0 "#PWR0107" H 2550 4900 50  0001 C CNN
+F 1 "+3.3V" V 2565 5178 50  0000 L CNN
+F 2 "" H 2550 5050 50  0001 C CNN
+F 3 "" H 2550 5050 50  0001 C CNN
+	1    2550 5050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2550 5050 2550 5250
+Text GLabel 2450 5150 1    50   Input ~ 0
+hwpwr
+Wire Wire Line
+	2450 5150 2450 5250
+$Comp
+L Connector:Conn_Coaxial J3
+U 1 1 603F70B2
+P 3900 6150
+F 0 "J3" H 3980 6142 50  0000 L CNN
+F 1 "antenna" H 3980 6051 50  0000 L CNN
+F 2 "Connector_Coaxial:U.FL_Molex_MCRF_73412-0110_Vertical" H 3900 6150 50  0001 C CNN
+F 3 "~" H 3900 6150 50  0001 C CNN
+	1    3900 6150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3350 6150 3550 6150
+$Comp
+L power:GND #PWR0108
+U 1 1 603FE764
+P 3900 6500
+F 0 "#PWR0108" H 3900 6250 50  0001 C CNN
+F 1 "GND" H 3905 6327 50  0000 C CNN
+F 2 "" H 3900 6500 50  0001 C CNN
+F 3 "" H 3900 6500 50  0001 C CNN
+	1    3900 6500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3900 6350 3900 6500
+$Comp
+L Device:L L1
+U 1 1 6040561D
+P 3550 5900
+F 0 "L1" H 3603 5946 50  0000 L CNN
+F 1 "27nH" H 3603 5855 50  0000 L CNN
+F 2 "Inductor_SMD:L_0805_2012Metric" H 3550 5900 50  0001 C CNN
+F 3 "~" H 3550 5900 50  0001 C CNN
+	1    3550 5900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R14
+U 1 1 60406372
+P 3550 5400
+F 0 "R14" H 3620 5446 50  0000 L CNN
+F 1 "10" H 3620 5355 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 3480 5400 50  0001 C CNN
+F 3 "~" H 3550 5400 50  0001 C CNN
+	1    3550 5400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2850 5250 2850 5200
+Wire Wire Line
+	2850 5200 3550 5200
+Wire Wire Line
+	3550 5200 3550 5250
+Wire Wire Line
+	3550 5550 3550 5750
+Wire Wire Line
+	3550 6050 3550 6150
+Connection ~ 3550 6150
+Wire Wire Line
+	3550 6150 3700 6150
+$Comp
+L power:GND #PWR0109
+U 1 1 6041AF7D
+P 2650 5150
+F 0 "#PWR0109" H 2650 4900 50  0001 C CNN
+F 1 "GND" H 2655 4977 50  0000 C CNN
+F 2 "" H 2650 5150 50  0001 C CNN
+F 3 "" H 2650 5150 50  0001 C CNN
+	1    2650 5150
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	2650 5150 2650 5250
+$Comp
+L power:GND #PWR0110
+U 1 1 60422787
+P 1750 6000
+F 0 "#PWR0110" H 1750 5750 50  0001 C CNN
+F 1 "GND" H 1755 5827 50  0000 C CNN
+F 2 "" H 1750 6000 50  0001 C CNN
+F 3 "" H 1750 6000 50  0001 C CNN
+	1    1750 6000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1950 5950 1750 5950
+Wire Wire Line
+	1750 5950 1750 6000
+Wire Wire Line
+	3150 2650 4050 2650
+Wire Wire Line
+	3150 3050 4050 3050
 Wire Bus Line
 	8100 850  8100 1550
 Wire Bus Line
+	3650 2750 3650 3700
+Wire Bus Line
 	5650 1200 5650 2300
 Wire Bus Line
-	3950 2000 3950 3200
+	4150 2000 4150 3200
 $EndSCHEMATC
