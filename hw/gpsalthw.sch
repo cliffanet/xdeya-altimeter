@@ -517,10 +517,6 @@ Wire Wire Line
 	1000 2850 1000 2900
 Text Label 1950 1650 2    50   ~ 0
 batt-chk
-Wire Bus Line
-	3650 2650 3650 3700
-Wire Bus Line
-	5650 1200 5650 2300
 Text Label 5750 2350 0    50   ~ 0
 d-cs
 Text Label 5750 2250 0    50   ~ 0
@@ -656,4 +652,112 @@ F 3 "~" H 6900 1950 50  0001 C CNN
 $EndComp
 Text Label 5750 1350 0    50   ~ 0
 d-led
+$Comp
+L Battery_Management:MCP73831-2-OT U?
+U 1 1 60281616
+P 6700 3200
+F 0 "U?" H 6700 3681 50  0000 C CNN
+F 1 "MCP73831-2-OT" H 6700 3590 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23-5" H 6750 2950 50  0001 L CIN
+F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/20001984g.pdf" H 6550 3150 50  0001 C CNN
+	1    6700 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C?
+U 1 1 602821D6
+P 5750 3200
+F 0 "C?" H 5865 3246 50  0000 L CNN
+F 1 "4,7μF" H 5865 3155 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 5788 3050 50  0001 C CNN
+F 3 "~" H 5750 3200 50  0001 C CNN
+	1    5750 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C?
+U 1 1 60283E0F
+P 7700 3250
+F 0 "C?" H 7815 3296 50  0000 L CNN
+F 1 "4,7μF" H 7815 3205 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 7738 3100 50  0001 C CNN
+F 3 "~" H 7700 3250 50  0001 C CNN
+	1    7700 3250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 602845AA
+P 6150 3450
+F 0 "R?" H 6220 3496 50  0000 L CNN
+F 1 "4k7" H 6220 3405 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 6080 3450 50  0001 C CNN
+F 3 "~" H 6150 3450 50  0001 C CNN
+	1    6150 3450
+	1    0    0    -1  
+$EndComp
+Text GLabel 7200 3300 2    50   Input ~ 0
+chg-ind
+Wire Wire Line
+	7100 3300 7200 3300
+$Comp
+L power:+BATT #PWR?
+U 1 1 60287567
+P 7950 3100
+F 0 "#PWR?" H 7950 2950 50  0001 C CNN
+F 1 "+BATT" H 7965 3273 50  0000 C CNN
+F 2 "" H 7950 3100 50  0001 C CNN
+F 3 "" H 7950 3100 50  0001 C CNN
+	1    7950 3100
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	7100 3100 7700 3100
+Connection ~ 7700 3100
+Wire Wire Line
+	7700 3100 7950 3100
+Wire Wire Line
+	5750 3050 5750 2900
+Wire Wire Line
+	5750 2900 6700 2900
+Wire Wire Line
+	5750 3350 5750 3600
+Wire Wire Line
+	5750 3600 6150 3600
+Wire Wire Line
+	6700 3600 6700 3500
+Connection ~ 6150 3600
+Wire Wire Line
+	6150 3600 6700 3600
+$Comp
+L power:GND #PWR?
+U 1 1 6028E77B
+P 6700 3600
+F 0 "#PWR?" H 6700 3350 50  0001 C CNN
+F 1 "GND" H 6705 3427 50  0000 C CNN
+F 2 "" H 6700 3600 50  0001 C CNN
+F 3 "" H 6700 3600 50  0001 C CNN
+	1    6700 3600
+	1    0    0    -1  
+$EndComp
+Connection ~ 6700 3600
+Wire Wire Line
+	7700 3400 7700 3600
+Wire Wire Line
+	7700 3600 6700 3600
+Wire Wire Line
+	6150 3300 6300 3300
+Text GLabel 5650 2900 0    50   Input ~ 0
+usb-5v
+Wire Wire Line
+	5650 2900 5750 2900
+Connection ~ 5750 2900
+Text GLabel 3300 2050 2    50   Input ~ 0
+chg-ind
+Wire Wire Line
+	3150 2050 3300 2050
+Wire Bus Line
+	3650 2650 3650 3700
+Wire Bus Line
+	5650 1200 5650 2300
 $EndSCHEMATC
