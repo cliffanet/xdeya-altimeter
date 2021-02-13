@@ -384,10 +384,6 @@ Entry Wire Line
 Entry Wire Line
 	3550 3550 3650 3650
 Wire Wire Line
-	3150 2650 3550 2650
-Wire Wire Line
-	3150 3050 3550 3050
-Wire Wire Line
 	3150 3150 3550 3150
 Wire Wire Line
 	3150 3250 3550 3250
@@ -896,8 +892,111 @@ Wire Wire Line
 	3150 3350 3250 3350
 Wire Wire Line
 	3150 2050 3250 2050
+$Comp
+L Sensor_Pressure:BMP280 U?
+U 1 1 602FC2DB
+P 9050 1200
+F 0 "U?" H 9280 1296 50  0000 L CNN
+F 1 "BMP280" H 9280 1205 50  0000 L CNN
+F 2 "Package_LGA:Bosch_LGA-8_2x2.5mm_P0.65mm_ClockwisePinNumbering" H 9050 500 50  0001 C CNN
+F 3 "https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001.pdf" H 9050 1200 50  0001 C CNN
+	1    9050 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 602FD661
+P 9050 1600
+F 0 "#PWR?" H 9050 1350 50  0001 C CNN
+F 1 "GND" H 9055 1427 50  0000 C CNN
+F 2 "" H 9050 1600 50  0001 C CNN
+F 3 "" H 9050 1600 50  0001 C CNN
+	1    9050 1600
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9050 1600 9050 1500
+Wire Wire Line
+	9150 1500 9050 1500
+Connection ~ 9050 1500
+$Comp
+L power:+3.3V #PWR?
+U 1 1 60304B5F
+P 9250 700
+F 0 "#PWR?" H 9250 550 50  0001 C CNN
+F 1 "+3.3V" V 9265 828 50  0000 L CNN
+F 2 "" H 9250 700 50  0001 C CNN
+F 3 "" H 9250 700 50  0001 C CNN
+	1    9250 700 
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9050 800  9050 700 
+Wire Wire Line
+	9050 700  9150 700 
+Wire Wire Line
+	9150 800  9150 700 
+Connection ~ 9150 700 
+Wire Wire Line
+	9150 700  9250 700 
+Entry Wire Line
+	3850 3050 3950 3150
+Entry Wire Line
+	3850 2650 3950 2750
+Entry Wire Line
+	3850 2850 3950 2950
+Entry Wire Line
+	3850 1950 3950 2050
+Text Label 3200 2750 0    50   ~ 0
+spi-miso
+Text Label 3200 1950 0    50   ~ 0
+bmp280-cs
+Wire Wire Line
+	3150 1950 3850 1950
+Wire Wire Line
+	3150 2750 3550 2750
+Wire Wire Line
+	3550 2750 3550 2850
+Wire Wire Line
+	3550 2850 3850 2850
+Text GLabel 3950 3200 3    50   Input ~ 0
+bmp280
+Text GLabel 8100 1550 3    50   Input ~ 0
+bmp280
+Entry Wire Line
+	8100 900  8200 1000
+Entry Wire Line
+	8100 1000 8200 1100
+Entry Wire Line
+	8100 1100 8200 1200
+Entry Wire Line
+	8100 1200 8200 1300
+Text Label 8200 1300 0    50   ~ 0
+bmp280-cs
+Text Label 8200 1200 0    50   ~ 0
+spi-miso
+Text Label 8200 1100 0    50   ~ 0
+spi-mosi
+Text Label 8200 1000 0    50   ~ 0
+spi-clk
+Wire Wire Line
+	8200 1000 8650 1000
+Wire Wire Line
+	8650 1100 8200 1100
+Wire Wire Line
+	8200 1200 8650 1200
+Wire Wire Line
+	8650 1300 8200 1300
+Wire Wire Line
+	3150 3050 3850 3050
+Wire Wire Line
+	3150 2650 3850 2650
 Wire Bus Line
 	3650 2650 3650 3700
 Wire Bus Line
+	8100 850  8100 1550
+Wire Bus Line
 	5650 1200 5650 2300
+Wire Bus Line
+	3950 2000 3950 3200
 $EndSCHEMATC
