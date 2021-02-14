@@ -743,10 +743,6 @@ Wire Wire Line
 	7700 3600 6700 3600
 Wire Wire Line
 	6150 3300 6300 3300
-Text GLabel 5650 2900 0    50   Input ~ 0
-usb-5v
-Wire Wire Line
-	5650 2900 5750 2900
 Connection ~ 5750 2900
 Text GLabel 3200 2050 2    50   Input ~ 0
 chg-ind
@@ -1246,6 +1242,26 @@ Wire Wire Line
 	3150 2050 3200 2050
 Wire Wire Line
 	3200 2250 3150 2250
+$Comp
+L Connector:USB_B_Micro J4
+U 1 1 60356B09
+P 5200 3100
+F 0 "J4" H 5257 3567 50  0000 C CNN
+F 1 "USB_B_Micro" H 5257 3476 50  0000 C CNN
+F 2 "Connector_USB:USB_Micro-B_Molex-105017-0001" H 5350 3050 50  0001 C CNN
+F 3 "~" H 5350 3050 50  0001 C CNN
+	1    5200 3100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5500 2900 5750 2900
+Text Label 5850 2900 0    50   ~ 0
+usb-5v
+Wire Wire Line
+	5200 3500 5200 3600
+Wire Wire Line
+	5200 3600 5750 3600
+Connection ~ 5750 3600
 Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
@@ -1257,9 +1273,9 @@ Wire Bus Line
 Wire Bus Line
 	8100 850  8100 1550
 Wire Bus Line
-	3650 2300 3650 3700
-Wire Bus Line
 	5650 1200 5650 2300
 Wire Bus Line
 	4150 2000 4150 3200
+Wire Bus Line
+	3650 2300 3650 3700
 $EndSCHEMATC
