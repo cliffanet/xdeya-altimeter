@@ -871,25 +871,17 @@ F 3 "~" H 8200 4800 50  0001 C CNN
 	1    8200 4800
 	1    0    0    1   
 $EndComp
-Text Label 7400 4800 0    50   ~ 0
-d-led
 Wire Wire Line
 	7150 4300 7900 4300
 Connection ~ 7900 4300
-Text GLabel 7300 4800 0    50   Input ~ 0
+Text GLabel 7500 4800 0    50   Input ~ 0
 hwen
-Wire Wire Line
-	7300 4800 7600 4800
 Text GLabel 8400 5100 2    50   Input ~ 0
 hwpwr
 Wire Wire Line
 	8300 5000 8300 5100
 Wire Wire Line
 	8300 5100 8400 5100
-Text GLabel 3250 3350 2    50   Input ~ 0
-hwen
-Wire Wire Line
-	3150 3350 3250 3350
 $Comp
 L Sensor_Pressure:BMP280 U4
 U 1 1 602FC2DB
@@ -1244,6 +1236,16 @@ Wire Wire Line
 	1550 5850 1950 5850
 Wire Wire Line
 	1950 5950 1550 5950
+Text GLabel 3200 3350 2    50   Input ~ 0
+hwen
+Wire Wire Line
+	3150 3350 3200 3350
+Wire Wire Line
+	7500 4800 7600 4800
+Wire Wire Line
+	3150 2050 3200 2050
+Wire Wire Line
+	3200 2250 3150 2250
 Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
