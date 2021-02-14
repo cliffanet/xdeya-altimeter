@@ -391,7 +391,7 @@ Wire Wire Line
 	3150 3450 3550 3450
 Wire Wire Line
 	3150 3550 3550 3550
-Text GLabel 3700 2750 2    50   Input ~ 0
+Text GLabel 3650 2300 1    50   Input ~ 0
 display
 $Comp
 L Mechanical:MountingHole H3
@@ -748,7 +748,7 @@ usb-5v
 Wire Wire Line
 	5650 2900 5750 2900
 Connection ~ 5750 2900
-Text GLabel 3250 2050 2    50   Input ~ 0
+Text GLabel 3200 2050 2    50   Input ~ 0
 chg-ind
 $Comp
 L Regulator_Linear:MIC5219-3.3YM5 U3
@@ -890,8 +890,6 @@ Text GLabel 3250 3350 2    50   Input ~ 0
 hwen
 Wire Wire Line
 	3150 3350 3250 3350
-Wire Wire Line
-	3150 2050 3250 2050
 $Comp
 L Sensor_Pressure:BMP280 U4
 U 1 1 602FC2DB
@@ -1093,12 +1091,8 @@ F 3 "" H 9850 3200 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	9850 3100 9850 3200
-Text GLabel 3250 2250 2    50   Input ~ 0
+Text GLabel 3200 2250 2    50   Input ~ 0
 clk-int
-Wire Wire Line
-	3150 2250 3250 2250
-Wire Bus Line
-	3700 2750 3650 2750
 Wire Wire Line
 	3600 2750 3600 2850
 Wire Wire Line
@@ -1222,29 +1216,46 @@ F 3 "" H 2650 5150 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2650 5150 2650 5250
-$Comp
-L power:GND #PWR0110
-U 1 1 60422787
-P 1750 6000
-F 0 "#PWR0110" H 1750 5750 50  0001 C CNN
-F 1 "GND" H 1755 5827 50  0000 C CNN
-F 2 "" H 1750 6000 50  0001 C CNN
-F 3 "" H 1750 6000 50  0001 C CNN
-	1    1750 6000
-	1    0    0    -1  
-$EndComp
+Text GLabel 4400 2250 1    50   Input ~ 0
+gps-ctrl
+Text Label 3200 2550 0    50   ~ 0
+gps-rx
+Text Label 3200 2450 0    50   ~ 0
+gps-tx
+Entry Wire Line
+	4300 2550 4400 2650
+Entry Wire Line
+	4300 2450 4400 2550
 Wire Wire Line
-	1950 5950 1750 5950
+	3150 2450 4300 2450
 Wire Wire Line
-	1750 5950 1750 6000
+	4300 2550 3150 2550
+Text GLabel 1450 5500 1    50   Input ~ 0
+gps-ctrl
+Text Label 1900 5950 2    50   ~ 0
+gps-rx
+Text Label 1900 5850 2    50   ~ 0
+gps-tx
+Entry Wire Line
+	1450 5750 1550 5850
+Entry Wire Line
+	1450 5850 1550 5950
+Wire Wire Line
+	1550 5850 1950 5850
+Wire Wire Line
+	1950 5950 1550 5950
 Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
 	3150 3050 4050 3050
 Wire Bus Line
+	4400 2250 4400 2700
+Wire Bus Line
+	1450 5500 1450 5950
+Wire Bus Line
 	8100 850  8100 1550
 Wire Bus Line
-	3650 2750 3650 3700
+	3650 2300 3650 3700
 Wire Bus Line
 	5650 1200 5650 2300
 Wire Bus Line
