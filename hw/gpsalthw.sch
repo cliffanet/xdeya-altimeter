@@ -137,7 +137,7 @@ U 1 1 601B05C3
 P 4300 1550
 F 0 "J1" H 4380 1542 50  0000 L CNN
 F 1 "serial" H 4380 1451 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 4300 1550 50  0001 C CNN
+F 2 "Connector_JST:JST_GH_BM04B-GHS-TBT_1x04-1MP_P1.25mm_Vertical" H 4300 1550 50  0001 C CNN
 F 3 "~" H 4300 1550 50  0001 C CNN
 	1    4300 1550
 	1    0    0    -1  
@@ -699,19 +699,17 @@ Wire Wire Line
 $Comp
 L power:+BATT #PWR013
 U 1 1 60287567
-P 7950 3100
-F 0 "#PWR013" H 7950 2950 50  0001 C CNN
-F 1 "+BATT" V 7900 3250 50  0000 C CNN
-F 2 "" H 7950 3100 50  0001 C CNN
-F 3 "" H 7950 3100 50  0001 C CNN
-	1    7950 3100
+P 8200 3100
+F 0 "#PWR013" H 8200 2950 50  0001 C CNN
+F 1 "+BATT" V 8150 3250 50  0000 C CNN
+F 2 "" H 8200 3100 50  0001 C CNN
+F 3 "" H 8200 3100 50  0001 C CNN
+	1    8200 3100
 	0    1    1    0   
 $EndComp
 Wire Wire Line
 	7100 3100 7700 3100
 Connection ~ 7700 3100
-Wire Wire Line
-	7700 3100 7950 3100
 Wire Wire Line
 	5750 3050 5750 2900
 Wire Wire Line
@@ -1266,6 +1264,34 @@ Wire Wire Line
 	5100 3500 5100 3600
 Wire Wire Line
 	5100 3600 5200 3600
+Connection ~ 5200 3600
+$Comp
+L Connector_Generic:Conn_01x02 J5
+U 1 1 603465D8
+P 8400 3300
+F 0 "J5" H 8480 3292 50  0000 L CNN
+F 1 "battery" H 8480 3201 50  0000 L CNN
+F 2 "Connector_JST:JST_GH_SM02B-GHS-TB_1x02-1MP_P1.25mm_Horizontal" H 8400 3300 50  0001 C CNN
+F 3 "~" H 8400 3300 50  0001 C CNN
+	1    8400 3300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7700 3100 8150 3100
+Wire Wire Line
+	8200 3300 8150 3300
+Wire Wire Line
+	8150 3300 8150 3100
+Connection ~ 8150 3100
+Wire Wire Line
+	8150 3100 8200 3100
+Wire Wire Line
+	7700 3600 8150 3600
+Wire Wire Line
+	8150 3600 8150 3400
+Wire Wire Line
+	8150 3400 8200 3400
+Connection ~ 7700 3600
 Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
@@ -1277,10 +1303,9 @@ Wire Bus Line
 Wire Bus Line
 	8100 850  8100 1550
 Wire Bus Line
-	3650 2300 3650 3700
-Wire Bus Line
 	5650 1200 5650 2300
 Wire Bus Line
 	4150 2000 4150 3200
-Connection ~ 5200 3600
+Wire Bus Line
+	3650 2300 3650 3700
 $EndSCHEMATC
