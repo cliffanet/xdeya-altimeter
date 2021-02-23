@@ -69,14 +69,6 @@ Wire Wire Line
 Connection ~ 3300 1450
 Wire Wire Line
 	3300 1450 3400 1450
-Wire Wire Line
-	4100 1450 4050 1450
-Wire Wire Line
-	3150 1550 3400 1550
-Wire Wire Line
-	3400 1550 3400 1650
-Wire Wire Line
-	4050 850  4050 1450
 $Comp
 L Switch:SW_SPST SW5
 U 1 1 601C1342
@@ -129,24 +121,24 @@ Wire Wire Line
 Wire Wire Line
 	1900 1350 1900 1450
 Connection ~ 1900 1450
-Text Label 4100 1550 2    50   ~ 0
+Text Label 4100 1450 2    50   ~ 0
 GND
 $Comp
-L Connector_Generic:Conn_01x04 J1
+L Connector_Generic_MountingPin:Conn_01x04_MountingPin J1
 U 1 1 601B05C3
-P 4300 1550
-F 0 "J1" H 4380 1542 50  0000 L CNN
-F 1 "serial" H 4380 1451 50  0000 L CNN
-F 2 "Connector_JST:JST_GH_BM04B-GHS-TBT_1x04-1MP_P1.25mm_Vertical" H 4300 1550 50  0001 C CNN
-F 3 "~" H 4300 1550 50  0001 C CNN
-	1    4300 1550
+P 4300 1450
+F 0 "J1" H 4380 1442 50  0000 L CNN
+F 1 "serial" H 4380 1351 50  0000 L CNN
+F 2 "Connector_JST:JST_GH_BM04B-GHS-TBT_1x04-1MP_P1.25mm_Vertical" H 4300 1450 50  0001 C CNN
+F 3 "~" H 4300 1450 50  0001 C CNN
+	1    4300 1450
 	1    0    0    -1  
 $EndComp
-Text Label 4100 1450 2    50   ~ 0
+Text Label 4100 1350 2    50   ~ 0
 +3,3v
-Text Label 4100 1650 2    50   ~ 0
+Text Label 4100 1550 2    50   ~ 0
 TX
-Text Label 4100 1750 2    50   ~ 0
+Text Label 4100 1650 2    50   ~ 0
 RX
 $Comp
 L Switch:SW_SPST SW3
@@ -214,13 +206,6 @@ F 3 "" H 4150 850 50  0001 C CNN
 	1    4150 850 
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	4050 850  4150 850 
-Connection ~ 4050 850 
-Wire Wire Line
-	4100 1750 3150 1750
-Wire Wire Line
-	3400 1650 4100 1650
 $Comp
 L RF_Module:ESP32-WROOM-32 U1
 U 1 1 60195FE6
@@ -325,28 +310,17 @@ Wire Wire Line
 Wire Wire Line
 	3300 1050 3300 850 
 Connection ~ 3300 850 
-Wire Wire Line
-	3300 850  4050 850 
-Wire Wire Line
-	3950 1550 4100 1550
-Wire Wire Line
-	3800 1450 3850 1450
 $Comp
 L power:GND #PWR03
 U 1 1 602BF30C
-P 3850 1450
-F 0 "#PWR03" H 3850 1200 50  0001 C CNN
-F 1 "GND" H 3855 1277 50  0000 C CNN
-F 2 "" H 3850 1450 50  0001 C CNN
-F 3 "" H 3850 1450 50  0001 C CNN
-	1    3850 1450
+P 4600 1850
+F 0 "#PWR03" H 4600 1600 50  0001 C CNN
+F 1 "GND" H 4605 1677 50  0000 C CNN
+F 2 "" H 4600 1850 50  0001 C CNN
+F 3 "" H 4600 1850 50  0001 C CNN
+	1    4600 1850
 	1    0    0    -1  
 $EndComp
-Connection ~ 3850 1450
-Wire Wire Line
-	3850 1450 3950 1450
-Wire Wire Line
-	3950 1450 3950 1550
 Wire Wire Line
 	3150 3650 3500 3650
 Wire Wire Line
@@ -1200,7 +1174,7 @@ F 3 "" H 2650 5150 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2650 5150 2650 5250
-Text GLabel 4400 2250 1    50   Input ~ 0
+Text GLabel 4400 2350 1    50   Input ~ 0
 gps-ctrl
 Text Label 3200 2550 0    50   ~ 0
 gps-rx
@@ -1264,7 +1238,7 @@ Wire Wire Line
 	5100 3600 5200 3600
 Connection ~ 5200 3600
 $Comp
-L Connector_Generic:Conn_01x02 J5
+L Connector_Generic_MountingPin:Conn_01x02_MountingPin J5
 U 1 1 603465D8
 P 8400 3300
 F 0 "J5" H 8480 3292 50  0000 L CNN
@@ -1293,11 +1267,40 @@ Connection ~ 7700 3600
 Wire Wire Line
 	6600 1750 6700 1750
 Wire Wire Line
+	8150 3600 8400 3600
+Connection ~ 8150 3600
+Wire Wire Line
+	3300 850  3850 850 
+Wire Wire Line
+	3150 1550 4100 1550
+Wire Wire Line
+	3800 1450 3850 1450
+Wire Wire Line
+	3150 1750 3350 1750
+Wire Wire Line
+	3350 1750 3350 1650
+Wire Wire Line
+	3350 1650 4100 1650
+Connection ~ 3850 1450
+Wire Wire Line
+	3850 1450 4100 1450
+Wire Wire Line
+	3850 1850 4300 1850
+Wire Wire Line
+	3850 1450 3850 1850
+Wire Wire Line
+	4300 1850 4600 1850
+Connection ~ 4300 1850
+Wire Wire Line
+	4100 1350 3850 1350
+Wire Wire Line
+	3850 1350 3850 850 
+Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
 	3150 3050 4050 3050
 Wire Bus Line
-	4400 2250 4400 2700
+	4400 2350 4400 2700
 Wire Bus Line
 	1450 5500 1450 5950
 Wire Bus Line
@@ -1308,4 +1311,7 @@ Wire Bus Line
 	5650 1200 5650 2300
 Wire Bus Line
 	4150 2000 4150 3200
+Connection ~ 3850 850 
+Wire Wire Line
+	3850 850  4150 850 
 $EndSCHEMATC
