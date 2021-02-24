@@ -750,37 +750,25 @@ Wire Wire Line
 $Comp
 L power:GND #PWR017
 U 1 1 602AA9F1
-P 6550 4750
-F 0 "#PWR017" H 6550 4500 50  0001 C CNN
-F 1 "GND" H 6555 4577 50  0000 C CNN
-F 2 "" H 6550 4750 50  0001 C CNN
-F 3 "" H 6550 4750 50  0001 C CNN
-	1    6550 4750
+P 6550 4850
+F 0 "#PWR017" H 6550 4600 50  0001 C CNN
+F 1 "GND" H 6555 4677 50  0000 C CNN
+F 2 "" H 6550 4850 50  0001 C CNN
+F 3 "" H 6550 4850 50  0001 C CNN
+	1    6550 4850
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	6550 4700 6550 4750
 $Comp
 L Device:C C4
 U 1 1 602AD9AD
-P 7150 4500
-F 0 "C4" H 7265 4546 50  0000 L CNN
-F 1 "1μF" H 7265 4455 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0805_2012Metric" H 7188 4350 50  0001 C CNN
-F 3 "~" H 7150 4500 50  0001 C CNN
-	1    7150 4500
+P 7400 4600
+F 0 "C4" H 7515 4646 50  0000 L CNN
+F 1 "1μF" H 7515 4555 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 7438 4450 50  0001 C CNN
+F 3 "~" H 7400 4600 50  0001 C CNN
+	1    7400 4600
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	6850 4300 7150 4300
-Wire Wire Line
-	7150 4300 7150 4350
-Connection ~ 7150 4300
-Wire Wire Line
-	6550 4700 7150 4700
-Wire Wire Line
-	7150 4700 7150 4650
-Connection ~ 6550 4700
 Connection ~ 8300 4300
 Wire Wire Line
 	8350 4300 8300 4300
@@ -810,7 +798,6 @@ Wire Wire Line
 	8300 4300 8300 4600
 Wire Wire Line
 	7900 4300 8300 4300
-Connection ~ 7900 4800
 Wire Wire Line
 	7900 4800 7900 4600
 Wire Wire Line
@@ -818,13 +805,13 @@ Wire Wire Line
 $Comp
 L Device:R R13
 U 1 1 602B7BB1
-P 7750 4800
-F 0 "R13" V 7850 4850 50  0000 L CNN
-F 1 "510" V 7850 4700 50  0000 L CNN
-F 2 "Resistor_SMD:R_0805_2012Metric" V 7680 4800 50  0001 C CNN
-F 3 "~" H 7750 4800 50  0001 C CNN
-	1    7750 4800
-	0    -1   -1   0   
+P 7900 4950
+F 0 "R13" H 8000 4900 50  0000 L CNN
+F 1 "510" H 8000 5000 50  0000 L CNN
+F 2 "Resistor_SMD:R_0805_2012Metric" V 7830 4950 50  0001 C CNN
+F 3 "~" H 7900 4950 50  0001 C CNN
+	1    7900 4950
+	-1   0    0    1   
 $EndComp
 $Comp
 L Device:Q_PMOS_GSD Q2
@@ -837,10 +824,8 @@ F 3 "~" H 8200 4800 50  0001 C CNN
 	1    8200 4800
 	1    0    0    1   
 $EndComp
-Wire Wire Line
-	7150 4300 7900 4300
 Connection ~ 7900 4300
-Text GLabel 7500 4800 0    50   Input ~ 0
+Text GLabel 7850 5200 0    50   Input ~ 0
 hwen
 Text GLabel 8400 5100 2    50   Input ~ 0
 hwpwr
@@ -1207,8 +1192,6 @@ hwen
 Wire Wire Line
 	3150 3350 3200 3350
 Wire Wire Line
-	7500 4800 7600 4800
-Wire Wire Line
 	3150 2050 3200 2050
 Wire Wire Line
 	3200 2250 3150 2250
@@ -1295,6 +1278,77 @@ Wire Wire Line
 	4100 1350 3850 1350
 Wire Wire Line
 	3850 1350 3850 850 
+Connection ~ 3850 850 
+Wire Wire Line
+	3850 850  4150 850 
+Connection ~ 7900 4800
+Wire Wire Line
+	6850 4300 7400 4300
+$Comp
+L Device:C C6
+U 1 1 6042C5A5
+P 6950 4600
+F 0 "C6" H 7050 4600 50  0000 L CNN
+F 1 "470 pF" H 7050 4500 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 6988 4450 50  0001 C CNN
+F 3 "~" H 6950 4600 50  0001 C CNN
+	1    6950 4600
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7400 4450 7400 4300
+Connection ~ 7400 4300
+Wire Wire Line
+	7400 4300 7900 4300
+Wire Wire Line
+	6850 4400 6950 4400
+Wire Wire Line
+	6950 4400 6950 4450
+Wire Wire Line
+	6550 4700 6550 4800
+Wire Wire Line
+	6550 4800 6950 4800
+Wire Wire Line
+	7400 4800 7400 4750
+Connection ~ 6550 4800
+Wire Wire Line
+	6550 4800 6550 4850
+Wire Wire Line
+	6950 4750 6950 4800
+Connection ~ 6950 4800
+Wire Wire Line
+	6950 4800 7400 4800
+Wire Wire Line
+	7850 5200 7900 5200
+Wire Wire Line
+	7900 5200 7900 5100
+$Comp
+L Device:C C7
+U 1 1 60462C99
+P 8300 5300
+F 0 "C7" H 8415 5346 50  0000 L CNN
+F 1 "1μF" H 8415 5255 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0805_2012Metric" H 8338 5150 50  0001 C CNN
+F 3 "~" H 8300 5300 50  0001 C CNN
+	1    8300 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0110
+U 1 1 60463517
+P 8300 5550
+F 0 "#PWR0110" H 8300 5300 50  0001 C CNN
+F 1 "GND" H 8305 5377 50  0000 C CNN
+F 2 "" H 8300 5550 50  0001 C CNN
+F 3 "" H 8300 5550 50  0001 C CNN
+	1    8300 5550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8300 5100 8300 5150
+Connection ~ 8300 5100
+Wire Wire Line
+	8300 5450 8300 5550
 Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
@@ -1311,7 +1365,4 @@ Wire Bus Line
 	5650 1200 5650 2300
 Wire Bus Line
 	4150 2000 4150 3200
-Connection ~ 3850 850 
-Wire Wire Line
-	3850 850  4150 850 
 $EndSCHEMATC
