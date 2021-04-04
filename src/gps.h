@@ -11,5 +11,6 @@
 TinyGPSPlus &gpsGet();
 void gpsInit();
 void gpsProcess();
+void gpsDirect();
 
 #endif // _gps_H

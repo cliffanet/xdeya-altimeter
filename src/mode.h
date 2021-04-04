@@ -25,6 +25,8 @@
 // Экран отображения времени
 #define MODE_MAIN_TIME      4
 
+extern void (*loopMain)();
+
 extern bool modemain;
 extern void (*hndProcess)();
 

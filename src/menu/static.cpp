@@ -385,6 +385,13 @@ static const menu_el_t menusystem[] {
             //ESP.restart();
         },
     },
+    {
+        .name = PSTR("GPS serial"),
+        .enter = menuFlashHold,     // Сброс настроек только по длинному нажатию
+        .showval = NULL,
+        .edit = NULL,
+        .hold = &gpsDirect
+    },
 };
 
 /* ------------------------------------------------------------------------------------------- *

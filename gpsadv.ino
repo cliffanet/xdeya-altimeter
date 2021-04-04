@@ -22,6 +22,9 @@
 static uint32_t tmadj = 0;
 bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >= TIME_ADJUST_TIMEOUT)); }
 
+// Центральный цикл, иногда надо и его подменить
+void (*loopMain)() = NULL;
+
 // Обработка процесса текущего режима
 void (*hndProcess)() = NULL;
 
@@ -69,7 +72,7 @@ uint16_t _testDeg = 0;
 uint16_t testDeg() { return _testDeg; }
 
 //------------------------------------------------------------------------------
-void loop() {
+static void loopDefault() {
     gpsProcess();
 
     if (millis() >= tmadj) {
@@ -127,4 +130,11 @@ void loop() {
     timerProcess();
     trkProcess();
     delay(100);
+}
+
+void loop() {
+    if (loopMain == NULL)
+        loopDefault();
+    else
+        loopMain();
 }
