@@ -59,7 +59,7 @@ class UbloxGpsProto
         void uart(Stream *__uart) { _uart = __uart; }
         Stream *uart() const { return _uart; }
         
-        bool recv(char c);
+        bool recv(uint8_t c, bool clearonfail = true);
         bool recv() { return (_uart != NULL) && _uart->available() ? recv(_uart->read()) : false; }
         void rcvclear();
         bool tick();
@@ -81,12 +81,12 @@ class UbloxGpsProto
         Stream *_uart;
         ubloxgps_bytewait_t rcv_bytewait;
         uint8_t rcv_class, rcv_ident, rcv_cka, rcv_ckb;
-        uint16_t rcv_plen;
-        uint8_t buf[128], bufi;
+        uint16_t rcv_plen, bufi;
+        uint8_t buf[128];
         uint16_t sndcnt;
         uint32_t cnftimeout;
         
-        void rcvcks(char c);
+        void rcvcks(uint8_t c);
         bool rcvconfirm(bool isok);
 };
 

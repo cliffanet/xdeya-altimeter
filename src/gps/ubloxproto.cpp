@@ -6,7 +6,7 @@
 #include <Arduino.h>
 
 
-bool UbloxGpsProto::recv(char c) {
+bool UbloxGpsProto::recv(uint8_t c, bool clearonfail) {
     switch (rcv_bytewait) {
         case UBXWB_SYNC1:
     		if (c == UBX_SYNC1)
@@ -39,20 +39,18 @@ bool UbloxGpsProto::recv(char c) {
             return true;
             
         case UBXWB_PLEN2:
-            rcv_plen += c << 8;
+            rcv_plen |= c << 8;
             rcvcks(c);
             rcv_bytewait = rcv_plen > 0 ? UBXWB_PAYLOAD : UBXWB_CKA;
             return true;
             
         case UBXWB_PAYLOAD:
             if (rcv_plen > 0) {
-                rcv_plen --;
-                if (bufi < sizeof(buf)) {
+                if (bufi < sizeof(buf))
                     buf[bufi] = c;
-                    bufi++;
-                }
+                bufi++;
                 rcvcks(c);
-                if (rcv_plen == 0)
+                if (bufi >= rcv_plen)
                     rcv_bytewait = UBXWB_CKA;
                 return true;
             }
@@ -74,7 +72,7 @@ bool UbloxGpsProto::recv(char c) {
             break;
     }
 
-    rcvclear();
+    if (clearonfail) rcvclear();
     return false;
 }
 
@@ -92,13 +90,15 @@ bool UbloxGpsProto::tick() {
     if (_uart == NULL)
         return false;
     
-    char c;
-    while (_uart->available())
-        if (!recv(c = _uart->read())) {
-            _uart->flush();
-            Serial.printf("gps recv proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x\n", c, rcv_bytewait, rcv_class, rcv_ident);
+    while (_uart->available()) {
+        uint8_t c = _uart->read();
+        if (!recv(c, false)) {
+            Serial.printf("gps recv proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x, rcv_plen=%d\n", 
+                                c, rcv_bytewait, rcv_class, rcv_ident, rcv_plen);
+            rcvclear();
             return false;
         }
+    }
     
     if ((cnftimeout > 0) && (cnftimeout <= millis())) {
         Serial.printf("gps timeout on wait confirm (sndcnt=%d)\n", sndcnt);
@@ -109,7 +109,7 @@ bool UbloxGpsProto::tick() {
 }
 
 bool UbloxGpsProto::docmd() {
-    if ((rcv_class == UBX_ACK) && (rcv_plen == 0))
+    if ((rcv_class == UBX_ACK) && (rcv_plen == 2))
         return rcvconfirm(rcv_ident == UBX_ACK_ACK);
     
     Serial.printf("gps recv unknown cmd class=0x%02X, id=0x%02X, len=%d\n", rcv_class, rcv_ident, rcv_plen);
@@ -130,7 +130,8 @@ bool UbloxGpsProto::waitcnf() {
         char c;
         if (!recv(c = _uart->read())) {
             _uart->flush();
-            Serial.printf("gps on waitcnf proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x\n", c, rcv_bytewait, rcv_class, rcv_ident);
+            Serial.printf("gps on waitcnf proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x, rcv_plen=%d\n",
+                                c, rcv_bytewait, rcv_class, rcv_ident);
             return false;
         }
         
@@ -149,7 +150,7 @@ void UbloxGpsProto::cnfclear() {
     cnftimeout = 0;
 }
 
-void UbloxGpsProto::rcvcks(char c) {
+void UbloxGpsProto::rcvcks(uint8_t c) {
     rcv_cka += c;
     rcv_ckb += rcv_cka;
 }
