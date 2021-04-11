@@ -55,13 +55,18 @@ class UbloxGpsProto
 {
     public:
         UbloxGpsProto() { rcvclear(); cnfclear(); _uart = NULL; }
-        UbloxGpsProto(Stream &uart) { rcvclear(); cnfclear(); _uart = &uart; }
+        UbloxGpsProto(Stream &__uart) { rcvclear(); cnfclear(); _uart = &__uart; }
+        void uart(Stream *__uart) { _uart = __uart; }
+        Stream *uart() const { return _uart; }
+        
         bool recv(char c);
         bool recv() { return (_uart != NULL) && _uart->available() ? recv(_uart->read()) : false; }
         void rcvclear();
         bool tick();
         
         bool docmd();
+        void cnfclear();
+        bool waitcnf();
         
         UbloxGpsProto& operator << (const char &c) { recv(c); return *this; }
         
@@ -71,7 +76,6 @@ class UbloxGpsProto
             return send(cl, id, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
         }
         
-        void cnfclear();
   
     private:
         Stream *_uart;
@@ -83,7 +87,7 @@ class UbloxGpsProto
         uint32_t cnftimeout;
         
         void rcvcks(char c);
-        bool sndconfirm(bool isok);
+        bool rcvconfirm(bool isok);
 };
 
 #endif // __gps_ubloxproto_H
