@@ -12,6 +12,10 @@
 #define UBX_SYNC1           0xb5
 #define UBX_SYNC2           0x62
 
+#define UBX_ACK             0x05
+#define UBX_ACK_NAK         0x00
+#define UBX_ACK_ACK         0x01
+
 #define UBX_CFG             0x06
 #define UBX_CFG_PRT         0x00
 #define UBX_CFG_MSG         0x01
@@ -50,12 +54,14 @@ typedef enum {
 class UbloxGpsProto
 {
     public:
-        UbloxGpsProto() { rcvclear(); _uart = NULL; }
-        UbloxGpsProto(Stream &uart) { rcvclear(); _uart = &uart; }
+        UbloxGpsProto() { rcvclear(); cnfclear(); _uart = NULL; }
+        UbloxGpsProto(Stream &uart) { rcvclear(); cnfclear(); _uart = &uart; }
         bool recv(char c);
         bool recv() { return (_uart != NULL) && _uart->available() ? recv(_uart->read()) : false; }
         void rcvclear();
         bool tick();
+        
+        bool docmd();
         
         UbloxGpsProto& operator << (const char &c) { recv(c); return *this; }
         
@@ -64,6 +70,8 @@ class UbloxGpsProto
         bool send(uint8_t cl, uint8_t id, const T &data) {
             return send(cl, id, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
         }
+        
+        void cnfclear();
   
     private:
         Stream *_uart;
@@ -71,8 +79,11 @@ class UbloxGpsProto
         uint8_t rcv_class, rcv_ident, rcv_cka, rcv_ckb;
         uint16_t rcv_plen;
         uint8_t buf[128], bufi;
+        uint16_t sndcnt;
+        uint32_t cnftimeout;
         
         void rcvcks(char c);
+        bool sndconfirm(bool isok);
 };
 
 #endif // __gps_ubloxproto_H
