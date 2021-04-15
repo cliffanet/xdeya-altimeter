@@ -111,6 +111,9 @@ bool UbloxGpsProto::tick() {
 bool UbloxGpsProto::docmd() {
     if ((rcv_class == UBX_ACK) && (rcv_plen == 2))
         return rcvconfirm(rcv_ident == UBX_ACK_ACK);
+    else
+    if (hndcall(rcv_class, rcv_ident) > 0)
+        return true;
     
     Serial.printf("gps recv unknown cmd class=0x%02X, id=0x%02X, len=%d\n", rcv_class, rcv_ident, rcv_plen);
     
@@ -169,6 +172,31 @@ bool UbloxGpsProto::rcvconfirm(bool isok) {
     return true;
 }
 
+bool UbloxGpsProto::bufcopy(uint8_t *data, uint16_t dsz) {
+    if (rcv_bytewait != UBXWB_CKB)
+        return false;
+    
+    uint8_t *d = data, *b = buf;
+    uint16_t bsz = sizeof(buf);
+    if (bsz > rcv_plen)
+        bsz = rcv_plen;
+    
+    while ((dsz > 0) && (bsz > 0)) {
+        *d = *b;
+        d++;
+        b++;
+        dsz--;
+        bsz--;
+    }
+    
+    while (dsz > 0) {
+        *d = 0;
+        dsz--;
+    }
+    
+    return true;
+}
+
 bool UbloxGpsProto::send(uint8_t cl, uint8_t id, const uint8_t *data, uint16_t dlen) {
     if (_uart == NULL)
         return false;
@@ -213,4 +241,53 @@ bool UbloxGpsProto::send(uint8_t cl, uint8_t id, const uint8_t *data, uint16_t d
     cnftimeout = millis()+1000;
     
     return true;
+}
+        
+bool UbloxGpsProto::hndadd(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd, bool istmp) {
+    for (auto &h : hndall)
+        if ((h.cl == 0) && (h.id == 0)) {
+            h.cl = cl;
+            h.id = id;
+            h.istmp = istmp;
+            h.hnd = hnd;
+            
+            return true;
+        }
+            
+    return false;
+}
+
+bool UbloxGpsProto::hnddel(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd) {
+    for (auto &h : hndall)
+        if ((h.cl == cl) && (h.id == id)) {
+            hndzero(h);
+            return true;
+        }
+            
+    return false;
+}
+
+void UbloxGpsProto::hndclear() {
+    for (auto &h : hndall)
+        hndzero(h);
+}
+
+void UbloxGpsProto::hndzero(ubloxgps_hnditem_t &h) {
+    h.cl = 0;
+    h.id = 0;
+    h.istmp = false;
+    h.hnd = NULL;
+}
+
+uint8_t UbloxGpsProto::hndcall(uint8_t cl, uint8_t id) {
+    uint8_t cnt = 0;
+    for (auto &h : hndall)
+        if ((h.cl == cl) && (h.id == id)) {
+            if (h.hnd != NULL)
+                h.hnd(*this);
+            if (h.istmp)
+                hndzero(h);
+            cnt++;
+        }
+    return cnt;
 }

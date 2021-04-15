@@ -51,11 +51,22 @@ typedef enum {
     UBXWB_CKB
 } ubloxgps_bytewait_t;
 
+class UbloxGpsProto;
+typedef void (*ubloxgps_hnd_t)(UbloxGpsProto &gps);
+typedef struct {
+    uint8_t         cl;
+    uint8_t         id;
+    bool            istmp;
+    ubloxgps_hnd_t  hnd;
+} ubloxgps_hnditem_t;
+
+#define UBX_HND_SIZE    10
+
 class UbloxGpsProto
 {
     public:
-        UbloxGpsProto() { rcvclear(); cnfclear(); _uart = NULL; }
-        UbloxGpsProto(Stream &__uart) { rcvclear(); cnfclear(); _uart = &__uart; }
+        UbloxGpsProto() { rcvclear(); cnfclear(); hndclear(); _uart = NULL; }
+        UbloxGpsProto(Stream &__uart) { rcvclear(); cnfclear(); hndclear(); _uart = &__uart; }
         void uart(Stream *__uart) { _uart = __uart; }
         Stream *uart() const { return _uart; }
         
@@ -70,12 +81,23 @@ class UbloxGpsProto
         
         UbloxGpsProto& operator << (const char &c) { recv(c); return *this; }
         
+        bool bufcopy(uint8_t *data, uint16_t dsz);
+        template <typename T>
+        bool bufcopy(T &data) {
+            return bufcopy(reinterpret_cast<uint8_t *>(&data), sizeof(T));
+        }
+        
         bool send(uint8_t cl, uint8_t id, const uint8_t *data = NULL, uint16_t len = 0);
         template <typename T>
         bool send(uint8_t cl, uint8_t id, const T &data) {
             return send(cl, id, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
         }
         
+        bool hndadd(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd, bool istmp = false);
+        bool hnddel(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd);
+        void hndclear();
+        void hndzero(ubloxgps_hnditem_t &h);
+        uint8_t hndcall(uint8_t cl, uint8_t id);
   
     private:
         Stream *_uart;
@@ -85,6 +107,7 @@ class UbloxGpsProto
         uint8_t buf[128];
         uint16_t sndcnt;
         uint32_t cnftimeout;
+        ubloxgps_hnditem_t hndall[UBX_HND_SIZE];
         
         void rcvcks(uint8_t c);
         bool rcvconfirm(bool isok);

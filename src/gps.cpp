@@ -18,9 +18,39 @@ static TinyGPSPlus gps;
 #include "gps/ubloxproto.h"
 static UbloxGpsProto gps2(ss);
 
+/* ------------------------------------------------------------------------------------------- *
+ *  GPS-получение данных
+ * ------------------------------------------------------------------------------------------- */
+static void gpsRecvPosllh(UbloxGpsProto &gps) {
+    struct {
+    	uint32_t iTOW;     // GPS time of week             (ms)
+    	int32_t  lon;      // Longitude                    (deg)
+    	int32_t  lat;      // Latitude                     (deg)
+    	int32_t  height;   // Height above ellipsoid       (mm)
+    	int32_t  hMSL;     // Height above mean sea level  (mm)
+    	uint32_t hAcc;     // Horizontal accuracy estimate (mm)
+    	uint32_t vAcc;     // Vertical accuracy estimate   (mm)
+    } nav;
+    
+    if (!gps.bufcopy(nav))
+        return;
+    Serial.printf("gpsRecvPosllh: %d\n", nav.iTOW);
+}
+static void gpsRecvVelned(UbloxGpsProto &gps) {
+    Serial.println("gpsRecvVelned");
+}
+static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
+    Serial.println("gpsRecvTimeUtc");
+}
+static void gpsRecvSol(UbloxGpsProto &gps) {
+    Serial.println("gpsRecvSol");
+}
+static void gpsRecvPvt(UbloxGpsProto &gps) {
+    Serial.println("gpsRecvPvt");
+}
 
 /* ------------------------------------------------------------------------------------------- *
- *  GPS-обработчик
+ *  GPS-инициализация
  * ------------------------------------------------------------------------------------------- */
 
 TinyGPSPlus &gpsGet() { return gps; }
@@ -92,6 +122,13 @@ static bool gpsInitCmd() {
         return false;
     }
     Serial.println("GPS-UART baudRate init ok");
+    
+    gps2.hndclear();
+    gps2.hndadd(UBX_NAV,  UBX_NAV_POSLLH,     gpsRecvPosllh);
+    gps2.hndadd(UBX_NAV,  UBX_NAV_VELNED,     gpsRecvVelned);
+    gps2.hndadd(UBX_NAV,  UBX_NAV_TIMEUTC,    gpsRecvTimeUtc);
+    gps2.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
+    gps2.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
     
     struct {
     	uint8_t msgClass;  // Message class
