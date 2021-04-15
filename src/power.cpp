@@ -47,7 +47,10 @@ static void hwOff() {
 static void hwOn() {
 #if HWVER > 1
     pinMode(HWPOWER_PIN_GPS, OUTPUT);
+    digitalWrite(HWPOWER_PIN_GPS, HIGH);
+    delay(200);
     digitalWrite(HWPOWER_PIN_GPS, LOW);
+    delay(200);
     pinMode(HWPOWER_PIN_BATIN, INPUT);
 #endif
     //displayOn();

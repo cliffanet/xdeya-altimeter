@@ -8,8 +8,11 @@
 #include <Arduino.h>
 #include <TimeLib.h>
 
-#define HWVER       2
+#define HWVER       3
+
+#if HWVER < 3
 #define USE4BUTTON  1
+#endif
 
 
 // Интервал синхронизации времени
