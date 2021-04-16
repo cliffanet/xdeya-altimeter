@@ -18,6 +18,8 @@ static TinyGPSPlus gps;
 #include "gps/ubloxproto.h"
 static UbloxGpsProto gps2(ss);
 
+static gps_data_t data = { 0 };
+
 /* ------------------------------------------------------------------------------------------- *
  *  GPS-получение данных
  * ------------------------------------------------------------------------------------------- */
@@ -34,19 +36,132 @@ static void gpsRecvPosllh(UbloxGpsProto &gps) {
     
     if (!gps.bufcopy(nav))
         return;
-    Serial.printf("gpsRecvPosllh: %d\n", nav.iTOW);
+    
+    data.lon    = nav.lon;
+	data.lat    = nav.lat;
+	data.hMSL   = nav.hMSL;
+	data.hAcc   = nav.hAcc;
+	data.vAcc   = nav.vAcc;
 }
 static void gpsRecvVelned(UbloxGpsProto &gps) {
-    Serial.println("gpsRecvVelned");
+    struct {
+    	uint32_t iTOW;     // GPS time of week             (ms)
+    	int32_t  velN;     // North velocity               (cm/s)
+    	int32_t  velE;     // East velocity                (cm/s)
+    	int32_t  velD;     // Down velocity                (cm/s)
+    	uint32_t speed;    // 3D speed                     (cm/s)
+    	uint32_t gSpeed;   // Ground speed                 (cm/s)
+    	int32_t  heading;  // 2D heading                   (deg)
+    	uint32_t sAcc;     // Speed accuracy estimate      (cm/s)
+    	uint32_t cAcc;     // Heading accuracy estimate    (deg)
+    } nav;
+    
+    if (!gps.bufcopy(nav))
+        return;
+    
+    data.velN   = nav.velN;
+    data.velE   = nav.velE;
+    data.velD   = nav.velD;
+    data.speed  = nav.speed;
+    data.gSpeed = nav.gSpeed;
+    data.heading= nav.heading;
+    data.sAcc   = nav.sAcc;
+    data.cAcc   = nav.cAcc;
 }
 static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
-    Serial.println("gpsRecvTimeUtc");
+    struct {
+    	uint32_t iTOW;     // GPS time of week             (ms)
+    	uint32_t tAcc;     // Time accuracy estimate       (ns)
+    	int32_t  nano;     // Nanoseconds of second        (ns)
+    	uint16_t year;     // Year                         (1999..2099)
+    	uint8_t  month;    // Month                        (1..12)
+    	uint8_t  day;      // Day of month                 (1..31)
+    	uint8_t  hour;     // Hour of day                  (0..23)
+    	uint8_t  min;      // Minute of hour               (0..59)
+    	uint8_t  sec;      // Second of minute             (0..59)
+    	uint8_t  valid;    // Validity flags
+    } nav;
+    
+    if (!gps.bufcopy(nav))
+        return;
+    
+    data.tm.nano= nav.nano;
+    data.tm.year= nav.year;
+    data.tm.mon = nav.month;
+    data.tm.day = nav.day;
+    data.tm.h   = nav.hour;
+    data.tm.m   = nav.min;
+    data.tm.s   = nav.sec;
 }
 static void gpsRecvSol(UbloxGpsProto &gps) {
-    Serial.println("gpsRecvSol");
+    struct {
+    	uint32_t iTOW;     // GPS time of week             (ms)
+    	int32_t  fTOW;     // Fractional nanoseconds       (ns)
+    	int16_t  week;     // GPS week
+    	uint8_t  gpsFix;   // GPS fix type
+    	uint8_t  flags;    // Fix status flags
+    	int32_t  ecefX;    // ECEF X coordinate            (cm)
+    	int32_t  ecefY;    // ECEF Y coordinate            (cm)
+    	int32_t  ecefZ;    // ECEF Z coordinate            (cm)
+    	uint32_t pAcc;     // 3D position accuracy         (cm)
+    	int32_t  ecefVX;   // ECEF X velocity              (cm/s)
+    	int32_t  ecefVY;   // ECEF Y velocity              (cm/s)
+    	int32_t  ecefVZ;   // ECEF Z velocity              (cm/s)
+    	uint32_t sAcc;     // Speed accuracy               (cm/s)
+    	uint16_t pDOP;     // Position DOP
+    	uint8_t  res1;     // Reserved
+    	uint8_t  numSV;    // Number of SVs in solution
+    	uint32_t res2;     // Reserved
+    } nav;
+    
+    if (!gps.bufcopy(nav))
+        return;
+    
+    data.gpsFix = nav.gpsFix;
+    data.numSV  = nav.numSV;
 }
 static void gpsRecvPvt(UbloxGpsProto &gps) {
-    Serial.println("gpsRecvPvt");
+    struct {
+    	uint32_t iTOW;         // GPS time of week              (ms)
+    	uint16_t year;         // Year                          (1999..2099)
+    	uint8_t  month;        // Month                         (1..12)
+    	uint8_t  day;          // Day of month                  (1..31)
+    	uint8_t  hour;         // Hour of day                   (0..23)
+    	uint8_t  min;          // Minute of hour                (0..59)
+    	uint8_t  sec;          // Second of minute              (0..59)
+    	uint8_t  valid;        // Validity flags
+    	uint32_t tAcc;         // Time accuracy estimate        (ns)
+    	int32_t  nano;         // Nanoseconds of second         (ns)
+    	uint8_t  gpsFix;       // GPS fix type
+    	uint8_t  flags;        // Fix status flags
+    	uint8_t  flags2;       // Additional flags
+    	uint8_t  numSV;        // Number of SVs in solution
+    	int32_t  lon;          // Longitude                     (deg)
+    	int32_t  lat;          // Latitude                      (deg)
+    	int32_t  height;       // Height above ellipsoid        (mm)
+    	int32_t  hMSL;         // Height above mean sea level   (mm)
+    	uint32_t hAcc;         // Horizontal accuracy estimate  (mm)
+    	uint32_t vAcc;         // Vertical accuracy estimate    (mm)
+    	int32_t  velN;         // North velocity                (mm/s)
+    	int32_t  velE;         // East velocity                 (mm/s)
+    	int32_t  velD;         // Down velocity                 (mm/s)
+    	int32_t  gSpeed;       // Ground speed                  (mm/s)
+    	int32_t  headMot;      // 2D heading of motion          (deg)
+    	uint32_t sAcc;         // Speed accuracy estimate       (mm/s)
+    	uint32_t headAcc;      // Heading accuracy estimate     (deg)
+    	uint16_t pDOP;         // Position DOP
+    	uint8_t  flags3;       // Additional flags
+    	uint8_t  reserved0[5]; // Reserved
+    	int32_t  headVeh;      // 2D heading of vehicle         (deg)
+    	int16_t  magDec;       // Magnetic declination          (deg)
+    	uint16_t magAcc;       // Magnetic declination accuracy (deg)
+    } nav;
+    
+    if (!gps.bufcopy(nav))
+        return;
+    
+	data.gpsFix = nav.gpsFix;
+	data.numSV  = nav.numSV;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -54,6 +169,7 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
  * ------------------------------------------------------------------------------------------- */
 
 TinyGPSPlus &gpsGet() { return gps; }
+const gps_data_t &gpsInf() { return data; };
 
 static void gpsFree() {
     gps2.uart(NULL);
@@ -161,7 +277,7 @@ static bool gpsInitCmd() {
     	uint16_t timeRef;   // Alignment to reference time:
     	                       //   0 = UTC time; 1 = GPS time
     } cfg_mrate = {
-		.measRate   = 1000,      // Measurement rate (ms)
+		.measRate   = 100,      // Measurement rate (ms)
 		.navRate    = 1,        // Navigation rate (cycles)
 		.timeRef    = 0         // UTC time
 	};

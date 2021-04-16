@@ -86,6 +86,7 @@ class UbloxGpsProto
         bool bufcopy(T &data) {
             return bufcopy(reinterpret_cast<uint8_t *>(&data), sizeof(T));
         }
+        uint16_t plen() { return rcv_plen; }
         
         bool send(uint8_t cl, uint8_t id, const uint8_t *data = NULL, uint16_t len = 0);
         template <typename T>

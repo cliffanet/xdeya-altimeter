@@ -90,9 +90,9 @@ inline void drawPointArrow(U8G2 &u8g2, float ang) {
 }
 
 static void displayCompasFull(U8G2 &u8g2) {
-    auto &gps = gpsGet();
+    auto &gps = gpsInf();
 
-    if (!gps.satellites.isValid() || (gps.satellites.value() == 0)) {
+    if (gps.numSV == 0) {
         char s[10];
         u8g2.setFont(u8g2_font_osb26_tr);
         strcpy_P(s, PSTR("NO"));
@@ -103,17 +103,17 @@ static void displayCompasFull(U8G2 &u8g2) {
     }
     
     // Компас и стрелка к точке внутри него
-    if (gps.course.isValid() && gps.location.isValid()) {
+    if (1) { //gps.course.isValid() && gps.location.isValid()) {
         // Компас показывает, куда смещено направление нашего движения 
         // относительно сторон Света,
-        drawCompas(u8g2, DEG_TO_RAD*(360 - gps.course.deg()));
+        drawCompas(u8g2, DEG_TO_RAD*(360 - gps.heading));
         // а стрелка показывает отклонение направления к точке относительно 
         // направления нашего движения
         if (pnt.numValid() && pnt.cur().used) {
             bool in_pnt = 
                 TinyGPSPlus::distanceBetween(
-                    gps.location.lat(),
-                    gps.location.lng(),
+                    gps.lat,
+                    gps.lon,
                     pnt.cur().lat, 
                     pnt.cur().lng
                 ) < 8.0;
@@ -125,12 +125,12 @@ static void displayCompasFull(U8G2 &u8g2) {
             else {
                 double courseto = 
                     TinyGPSPlus::courseTo(
-                        gps.location.lat(),
-                        gps.location.lng(),
+                        gps.lat,
+                        gps.lon,
                         pnt.cur().lat, 
                         pnt.cur().lng
                     );
-                drawPointArrow(u8g2, DEG_TO_RAD*(courseto-gps.course.deg()));
+                drawPointArrow(u8g2, DEG_TO_RAD*(courseto-gps.heading));
             }
             
             u8g2.drawDisc(32, 31, 6);
@@ -148,34 +148,34 @@ static void displayCompasFull(U8G2 &u8g2) {
 //uint16_t testDeg();
 
 static void displayGPS(U8G2 &u8g2) {
-    auto &gps = gpsGet();
+    auto &gps = gpsInf();
     char s[50];
     
     drawState(u8g2);
     
     displayCompasFull(u8g2);
-    if (!gps.satellites.isValid() || (gps.satellites.value() == 0))
+    if (gps.numSV == 0)
         return;
     
     u8g2.setFont(u8g2_font_ncenB08_tr);
     
     // количество спутников в правом верхнем углу
-    sprintf_P(s, PSTR("sat: %d"), gps.satellites.value());
+    sprintf_P(s, PSTR("s: %d/%d"), gps.numSV, gps.gpsFix);
     u8g2.drawStr(65, 8, s);
 
     // Текущие координаты
-    if (gps.location.isValid()) {
-        sprintf_P(s, PSTR("la:%f"), gps.location.lat());
+    if (1) { //gps.location.isValid()) {
+        sprintf_P(s, PSTR("la:%f"), gps.lat);
         u8g2.drawStr(65, 22, s);
-        sprintf_P(s, PSTR("lo:%f"), gps.location.lng());
+        sprintf_P(s, PSTR("lo:%f"), gps.lon);
         u8g2.drawStr(65, 34, s);
     }
 
-    if (gps.location.isValid() && pnt.numValid() && pnt.cur().used) {
+    if (/*gps.location.isValid() && */pnt.numValid() && pnt.cur().used) {
         double dist = 
             TinyGPSPlus::distanceBetween(
-                gps.location.lat(),
-                gps.location.lng(),
+                gps.lat,
+                gps.lon,
                 pnt.cur().lat, 
                 pnt.cur().lng
             );
@@ -221,7 +221,7 @@ static void displayAlt(U8G2 &u8g2) {
 //uint16_t testDeg();
 
 static void displayAltGPS(U8G2 &u8g2) {
-    auto &gps = gpsGet();
+    auto &gps = gpsInf();
     char s[50];
     
     drawState(u8g2);
@@ -261,15 +261,15 @@ static void displayAltGPS(U8G2 &u8g2) {
     u8g2.drawStr(128-u8g2.getStrWidth(s), 30, s);
     
     // Далее жпс данные
-    if (!gps.satellites.isValid() || (gps.satellites.value() == 0))
+    if (gps.numSV == 0)
         return;
     
     // 
-    if (gps.location.isValid() && pnt.numValid() && pnt.cur().used) {
+    if (/* gps.location.isValid() && */ pnt.numValid() && pnt.cur().used) {
         double dist = 
             TinyGPSPlus::distanceBetween(
-                gps.location.lat(),
-                gps.location.lng(),
+                gps.lat,
+                gps.lon,
                 pnt.cur().lat, 
                 pnt.cur().lng
             );
@@ -286,9 +286,9 @@ static void displayAltGPS(U8G2 &u8g2) {
         u8g2.drawStr(128-u8g2.getStrWidth(s), 54, s);
     }
     
-    if (gps.speed.isValid()) {
+    if (1) { //gps.speed.isValid()) {
         u8g2.setFont(u8g2_font_helvB08_tf);
-        sprintf_P(s, PSTR("%0.1f m/s"), gps.speed.mps());
+        sprintf_P(s, PSTR("%0.1f m/s"), gps.gSpeed/100);
         u8g2.drawStr(64, 64, s);
     }
 }
