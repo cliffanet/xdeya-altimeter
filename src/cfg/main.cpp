@@ -3,7 +3,6 @@
 #include "point.h"
 #include "jump.h"
 #include "webjoin.h"
-#include "../display.h"
 
 #include <FS.h>
 #include <SPIFFS.h>
@@ -122,15 +121,7 @@ bool cfgLoad(bool apply) {
         return false;
     if (apply) {
         displayContrast(cfg.d().contrast);
-        
-        switch (cfg.d().dsplpwron) {
-            case MODE_MAIN_GPS:
-            case MODE_MAIN_ALT:
-            case MODE_MAIN_ALTGPS:
-            case MODE_MAIN_TIME:
-                setModeMain(cfg.d().dsplpwron);
-                break;
-        }
+        setViewMain(cfg.d().dsplpwron);
     }
     return true;
 }

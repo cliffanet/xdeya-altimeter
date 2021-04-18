@@ -4,6 +4,7 @@
 #include "src/power.h"
 #include "src/button.h"
 #include "src/display.h"
+#include "src/view/main.h"
 #include "src/mode.h"
 #include "src/menu/base.h"
 #include "src/timer.h"
@@ -35,11 +36,9 @@ void setup() {
         return;
   
     WiFi.mode(WIFI_OFF);
-    
-    displayInit();
 
-    // инициируем кнопки
-    btnInit();
+    // инициируем view
+    viewInit();
     
     // инициализируем высотомер
     altInit();
@@ -52,16 +51,6 @@ void setup() {
         Serial.println("SPIFFS Mount Failed");
     cfgLoad(true);
     Serial.println("begin");
-
-    switch (cfg.d().dsplpwron) {
-        case MODE_MAIN_GPS:
-        case MODE_MAIN_ALT:
-        case MODE_MAIN_ALTGPS:
-        case MODE_MAIN_TIME:
-            setModeMain(cfg.d().dsplpwron);
-            break;
-    }
-    modeMain();
 }
 
 //------------------------------------------------------------------------------
@@ -116,7 +105,7 @@ static void loopDefault() {
     altProcess();
     jmpProcess();
     
-    btnProcess();
+    viewProcess();
     if (hndProcess != NULL)
         hndProcess();
     timerProcess();
@@ -124,7 +113,7 @@ static void loopDefault() {
     
     delay(100);
     altProcess();
-    btnProcess();
+    viewProcess();
     if (hndProcess != NULL)
         hndProcess();
     timerProcess();

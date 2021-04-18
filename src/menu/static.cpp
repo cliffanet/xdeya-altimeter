@@ -5,6 +5,7 @@
 #include "file.h"
 #include "../power.h"
 #include "../display.h"
+#include "../view/base.h"
 #include "../gps.h"
 #include "../cfg/main.h"
 #include "../cfg/point.h"
@@ -32,7 +33,7 @@ static void valDsplAuto(char *txt, int8_t val) {
         case MODE_MAIN_LAST:    strcpy_P(txt, PSTR("Last")); break;
         case MODE_MAIN_GPS:     strcpy_P(txt, PSTR("GPS")); break;
         case MODE_MAIN_ALT:     strcpy_P(txt, PSTR("Alti")); break;
-        case MODE_MAIN_ALTGPS:  strcpy_P(txt, PSTR("Alt+GPS")); break;
+        case MODE_MAIN_GPSALT:  strcpy_P(txt, PSTR("GPS+Alt")); break;
         case MODE_MAIN_TIME:    strcpy_P(txt, PSTR("Clock")); break;
     }
 }

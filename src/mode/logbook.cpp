@@ -79,7 +79,6 @@ static void btnDown() {    // вниз
  *  Вход в меню
  * ------------------------------------------------------------------------------------------- */
 void modeLogBook(size_t i) {
-    modemain = false;
     displayHnd(displayLogBook);    // обработчик отрисовки на экране
     btnHndClear();              // Назначаем обработчики кнопок (средняя кнопка назначается в menuSubMain() через menuHnd())
     btnHnd(BTN_UP,      BTN_SIMPLE, btnUp);

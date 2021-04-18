@@ -9,22 +9,6 @@
 
 #define MAIN_TIMEOUT    60000
 
-// Вырианты отображения основного режима
-#define MODE_MAIN_MIN       1
-#define MODE_MAIN_MAX       4
-// Использовать текущий экран (не менять)
-#define MODE_MAIN_NONE      0
-// Использовать крайний запомненный (до каких либо автоматических изменений)
-#define MODE_MAIN_LAST      -1
-// Экран отображения только показаний GPS
-#define MODE_MAIN_GPS       1
-// Экран отображения высоты (большими цифрами)
-#define MODE_MAIN_ALT       2
-// Экран отображения высоты и GPS
-#define MODE_MAIN_ALTGPS    3
-// Экран отображения времени
-#define MODE_MAIN_TIME      4
-
 extern void (*loopMain)();
 
 extern bool modemain;
@@ -34,8 +18,6 @@ extern void (*hndProcess)();
 void modeMain();
 // Изменение текущего экрана в modeMain без включения этого режима, например для cfg apply
 void setModeMain(int8_t m);
-// Принудительный переход в FF-режим
-void modeFF();
 
 // Режим меню настроек
 void modeMenu();
