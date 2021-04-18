@@ -31,31 +31,6 @@ class ViewMain : public ViewBase {
         void drawState(U8G2 &u8g2);
 };
 
-
-class ViewMainGps : public ViewMain {
-    public:
-        void btnSmpl(btn_code_t btn);
-        void draw(U8G2 &u8g2);
-};
-
-class ViewMainGpsAlt : public ViewMain {
-    public:
-        void btnSmpl(btn_code_t btn);
-        void draw(U8G2 &u8g2);
-};
-
-class ViewMainAlt : public ViewMain {
-    public:
-        void btnSmpl(btn_code_t btn);
-        void draw(U8G2 &u8g2);
-};
-
-class ViewMainTime : public ViewMain {
-    public:
-        void btnSmpl(btn_code_t btn);
-        void draw(U8G2 &u8g2);
-};
-
 void setViewMain(int8_t mode = MODE_MAIN_LAST, bool save = true);
 
 void setViewMainGps();
