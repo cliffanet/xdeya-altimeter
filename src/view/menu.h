@@ -39,7 +39,7 @@ class ViewMenu : public ViewBase {
         bool isExit(int16_t i) { return ((elexit == MENUEXIT_TOP) && (i == 0)) || ((elexit == MENUEXIT_BOTTOM) && (i+1 >= sz)); }
 
         virtual     // этот метод обновляет строку в потомке
-        void getStr(menu_dspl_el_t &str, int16_t i) { Serial.println("ViewMenu::getStr"); };
+        void getStr(menu_dspl_el_t &str, int16_t i) { };
         virtual     // указывает, надо ли моргать текущему значению (режим редактирования)
         bool valFlash() { return false; }
                     // все остальные - это обвязка по обновлению строк меню на экране в базовом классе

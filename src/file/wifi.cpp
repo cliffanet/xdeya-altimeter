@@ -1,6 +1,7 @@
 
 #include "log.h"
 #include "wifi.h"
+#include "../log.h"
 
 #define FNAMEINIT   \
     char fname[20]; \
@@ -28,7 +29,7 @@ bool wifiPassAdd(const char *ssid, const char *pass) {
     if (!fh)
         return false;
     
-    Serial.printf("save wifi: %s; pass: %s\r\n", ssid, pass);
+    CONSOLE("save wifi: %s; pass: |%s|", ssid, pass);
     
     fh.print(F("ssid "));
     fh.println(ssid);
@@ -93,7 +94,7 @@ bool wifiPassFind(const char *ssid, char *pass) {
     int sz;
     bool founded = false;
     
-        Serial.printf("wifiPassFind search: %s|\r\n", ssid);
+    CONSOLE("wifiPassFind search: |%s|", ssid);
     
     while (fh.available() > 0) {
         ss = s;
@@ -138,12 +139,12 @@ bool wifiPassFind(const char *ssid, char *pass) {
         else
         if (strncmp_P(s, PSTR("pass "), 5) == 0) {
             ss = s + 5;
-            Serial.printf("wifiPassFind found pass: %s|\r\n", ss);
+            CONSOLE("wifiPassFind found pass: |%s|", ss);
             if (pass != NULL) {
                 while (*ss && ISSPACE(*ss)) ss++; // пропускаем пробелы
                 strncpy(pass, ss, 32);
                 pass[32] = '\0';
-                Serial.printf("wifiPassFind return: %s|\r\n", pass);
+                CONSOLE("wifiPassFind return: |%s|", pass);
             }
             fh.close();
             return true;
@@ -152,7 +153,7 @@ bool wifiPassFind(const char *ssid, char *pass) {
     
     fh.close();
     
-    Serial.println("wifiPassFind not found");
+    CONSOLE("wifiPassFind not found");
     
     return false;
 }

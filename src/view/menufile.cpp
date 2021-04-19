@@ -2,6 +2,7 @@
 #include "menu.h"
 #include "main.h"
 
+#include "../log.h"
 #include "../file/log.h"
 #include "../file/track.h"
 
@@ -26,15 +27,15 @@ class ViewMenuFile : public ViewMenu {
             char dirname[10];
     
             strcpy_P(dirname, dir);
-            Serial.printf("Listing directory: %s\r\n", dirname);
+            CONSOLE("Listing directory: %s", dirname);
 
             File root = fs.open(dirname);
             if(!root){
-                Serial.println("- failed to open directory");
+                CONSOLE("- failed to open directory");
                 return;
             }
             if(!root.isDirectory()){
-                Serial.println(" - not a directory");
+                CONSOLE(" - not a directory");
                 return;
             }
 
@@ -43,8 +44,7 @@ class ViewMenuFile : public ViewMenu {
                 if (fh.isDirectory())
                     continue;
                 /*
-                    Serial.print("  DIR : ");
-                    Serial.println(file.name());
+                    CONSOLE("  DIR : %s", file.name());
                     if(levels){
                         listDir(fs, file.name(), levels -1);
                     }
@@ -60,7 +60,7 @@ class ViewMenuFile : public ViewMenu {
     
             setSize(fileall.size()+2);
     
-            Serial.printf("fileall: %d\r\n", fileall.size());
+            CONSOLE("fileall: %d", fileall.size());
             
             ViewMenu::restore();
         }
@@ -71,7 +71,7 @@ class ViewMenuFile : public ViewMenu {
         }
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
-            Serial.printf("ViewMenuFile::getStr: %d (sz=%d)\r\n", i, fileall.size());
+            CONSOLE("ViewMenuFile::getStr: %d (sz=%d)", i, fileall.size());
             switch (i) {
                 case 0:
                     strncpy_P(str.name, PSTR("LogBook ReNum"), sizeof(str.name));
@@ -141,7 +141,7 @@ class ViewMenuFile : public ViewMenu {
     
             auto i = sel()-2;
             auto f = fileall[i];
-            Serial.printf("ViewMenuFile::btnLng: removing: %s\r\n", f.name);
+            CONSOLE("ViewMenuFile::btnLng: removing: %s", f.name);
             if (!SPIFFS.remove(f.name)) {
                 menuFlashP(PSTR("Remove fail"));
                 return;

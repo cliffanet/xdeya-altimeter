@@ -3,6 +3,7 @@
 #include "../altimeter.h"
 #include "../gps.h"
 #include "log.h"
+#include "../log.h"
 
 static trk_running_t state = TRKRUN_NONE;
 File fh;
@@ -34,8 +35,7 @@ bool trkStart(bool force) {
         return false;
     
     state = force ? TRKRUN_FORCE : TRKRUN_AUTO;
-    Serial.print(F("track started "));
-    Serial.println(force ? F("force") : F("auto"));
+    CONSOLE("track started %s", force ? "force" : "auto");
     return true;
 }
 
@@ -49,7 +49,7 @@ size_t trkStop() {
     fh.close();
     
     state = TRKRUN_NONE;
-    Serial.println(F("track stopped"));
+    CONSOLE("track stopped");
     return 0;
 }
 
@@ -81,11 +81,11 @@ size_t trkCountAvail() {
  * ------------------------------------------------------------------------------------------- */
 static bool trkCheckAvail(bool removeFirst) {
     auto av = trkCountAvail();
-    Serial.printf("avail: %d records\r\n", av);
+    CONSOLE("avail: %d records", av);
     while (av < TRK_PRESERV_COUNT) {
         int avail = logRemoveLast(PSTR(TRK_FILE_NAME), removeFirst);
         if (avail <= 0) {
-            Serial.println(F("track nothing to remove"));
+            CONSOLE("track nothing to remove");
             return false;
         }
         av = trkCountAvail();

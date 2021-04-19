@@ -2,6 +2,7 @@
 #include "menu.h"
 #include "main.h"
 
+#include "../log.h"
 #include "../file/wifi.h"
 #include "../cfg/webjoin.h"
 #include "../cfg/point.h"
@@ -40,7 +41,7 @@ class ViewNetSync : public ViewBase {
             setState(NS_WIFI_CONNECT, 10000);
             joinnum = 0;
     
-            Serial.printf("wifi to: %s; pass: %s\r\n", ssid, pass);
+            CONSOLE("wifi to: %s; pass: %s", ssid, pass);
             WiFi.mode(WIFI_STA);
             if (_pass == NULL)
                 WiFi.begin((const char *)ssid);
@@ -65,7 +66,7 @@ class ViewNetSync : public ViewBase {
             else {
                 strncpy_P(title, _title, sizeof(title));
                 title[sizeof(title)-1] = '\0';
-                Serial.printf("msg: %s\r\n", title);
+                CONSOLE("msg: %s", title);
             }
             displayUpdate();
         }
@@ -116,7 +117,7 @@ class ViewNetSync : public ViewBase {
                 return;
             }
 
-            Serial.printf("[authStart] authid: %lu\r\n", wjoin.authid());
+            CONSOLE("[authStart] authid: %lu", wjoin.authid());
 
             uint32_t id = htonl(wjoin.authid());
             if (!srvSend(0x01, id)) {
@@ -129,7 +130,7 @@ class ViewNetSync : public ViewBase {
         
         // пересылка данных на сервер
         void dataToServer(const daccept_t &acc) {
-            Serial.println("dataToServer");
+            CONSOLE("dataToServer");
     
             if ((acc.ckscfg == 0) || (acc.ckscfg != cfg.chksum())) {
                 MSG("Sending config...");
@@ -214,7 +215,7 @@ class ViewNetSync : public ViewBase {
                             return;
                         }
     
-                        Serial.printf("[waitHello] cmd: %02x\r\n", cmd);
+                        CONSOLE("[waitHello] cmd: %02x", cmd);
     
                         switch (cmd) {
                             case 0x10: // rejoin
@@ -269,7 +270,7 @@ class ViewNetSync : public ViewBase {
                         d.authid = ntohl(d.authid);
                         d.secnum = ntohl(d.secnum);
     
-                        Serial.printf("[waitJoin] cmd: %02x (%lu, %lu)\r\n", cmd, d.authid, d.secnum);
+                        CONSOLE("[waitJoin] cmd: %02x (%lu, %lu)", cmd, d.authid, d.secnum);
     
                         ConfigWebJoin wjoin(d.authid, d.secnum);
                         if (!wjoin.save()) {
@@ -298,7 +299,7 @@ class ViewNetSync : public ViewBase {
                             return;
                         }
     
-                        Serial.printf("[waitFin] cmd: %02x\r\n", cmd);
+                        CONSOLE("[waitFin] cmd: %02x", cmd);
     
                         switch (cmd) {
                             case 0x41: // wifi beg
@@ -478,15 +479,15 @@ typedef struct {
 class ViewMenuWifiSync : public ViewMenu {
     public:
         void restore() {
-            Serial.println("Wifi init begin");
+            CONSOLE("Wifi init begin");
             WiFi.persistent(false);
             WiFi.mode(WIFI_STA);
             WiFi.disconnect();
             delay(100);
 
-            Serial.println("Wifi init done");
+            CONSOLE("Wifi init done");
             int n = WiFi.scanNetworks();
-            Serial.printf("scan: %d\n", n);
+            CONSOLE("scan: %d", n);
             setSize(n);
             
             for (int i = 0; i < n; ++i) {
@@ -497,12 +498,11 @@ class ViewMenuWifiSync : public ViewMenu {
                 snprintf_P(w.txt, sizeof(w.txt), PSTR("%s (%d) %c"), w.name, WiFi.RSSI(i), w.isopen?' ':'*');
                 wifiall.push_back(w);
             }
-    
-            Serial.printf("scan end (%d)\r\n", wifiall.size());
+            CONSOLE("scan end (%d)", wifiall.size());
     
             for(auto const &w : wifiall)
-                Serial.println(w.txt);
-            Serial.printf("wifiall: %d\r\n", wifiall.size());
+                CONSOLE("found: %s", w.txt);
+            CONSOLE("wifiall: %d", wifiall.size());
             
             ViewMenu::restore();
         }
@@ -514,7 +514,7 @@ class ViewMenuWifiSync : public ViewMenu {
         }
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
-            Serial.printf("ViewMenuWifiSync::getStr: %d (sz=%d)\r\n", i, wifiall.size());
+            CONSOLE("ViewMenuWifiSync::getStr: %d (sz=%d)", i, wifiall.size());
             auto const &w = wifiall[i];
             strncpy(str.name, w.txt, sizeof(str.name));
             str.name[sizeof(str.name)-1] = '\0';

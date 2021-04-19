@@ -1,5 +1,6 @@
 
 #include "altimeter.h"
+#include "log.h"
 #include "cfg/main.h"
 #include "../def.h"
 
@@ -50,7 +51,7 @@ altcalc & altCalc() {
 
 void altInit() {
     if (!bme.begin(BMP280_ADDRESS_ALT)) {   
-        Serial.println("Could not find a valid BMP280 sensor, check wiring!");
+        CONSOLE("Could not find a valid BMP280 sensor, check wiring!");
     }
 }
 
@@ -63,7 +64,7 @@ void altProcess() {
         (ac.direct() == ACDIR_NULL) &&
         (ac.dircnt() >= ALT_AUTOGND_INTERVAL)) {
         ac.gndreset();
-        Serial.println("auto GND reseted");
+        CONSOLE("auto GND reseted");
     }
     
     // Обработка изменения режима высотомера

@@ -2,6 +2,7 @@
 #include "menu.h"
 #include "main.h"
 
+#include "../log.h"
 #include "../file/log.h"
 #include "../cfg/jump.h"
 
@@ -118,7 +119,7 @@ class ViewMenuLogBook : public ViewMenu {
         }
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
-            Serial.printf("ViewMenuLogBook::getStr: %d\r\n", i);
+            CONSOLE("ViewMenuLogBook::getStr: %d", i);
     
             struct log_item_s<log_jmp_t> r;
             if (logRead(r, PSTR(JMPLOG_SIMPLE_NAME), i)) {

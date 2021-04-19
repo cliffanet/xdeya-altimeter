@@ -1,8 +1,6 @@
 
 #include "menu.h"
-/*#include "logbook.h"
-#include "wifi.h"
-#include "file.h"*/
+#include "../log.h"
 #include "../power.h"
 #include "../view/base.h"
 #include "../gps.h"
@@ -33,7 +31,7 @@ class ViewMenuStatic : public ViewMenu {
         ViewMenuStatic(const menu_el_t *m, int16_t sz) : ViewMenu(sz), menu(m) {};
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
-            Serial.printf("ViewMenuStatic::getStr: %d\r\n", i);
+            CONSOLE("ViewMenuStatic::getStr: %d", i);
             auto &m = menu[i];
     
             strncpy_P(str.name, m.name, sizeof(str.name));

@@ -1,6 +1,7 @@
 
 #include "def.h"
 
+#include "src/log.h"
 #include "src/power.h"
 #include "src/view/main.h"
 #include "src/mode.h"
@@ -41,9 +42,9 @@ void setup() {
 
     // загружаем сохранённый конфиг
     if(!SPIFFS.begin(true))
-        Serial.println("SPIFFS Mount Failed");
+        CONSOLE("SPIFFS Mount Failed");
     cfgLoad(true);
-    Serial.println("begin");
+    CONSOLE("begin");
 }
 
 //------------------------------------------------------------------------------
@@ -59,14 +60,14 @@ static void loopDefault() {
 
     if (millis() >= tmadj) {
         auto &gps = gpsGet();
-        //Serial.printf("bef: %ld\r\n", gps.time.age());
+        //CONSOLE("bef: %ld", gps.time.age());
         if ((gps.time.age() >= 0) && (gps.time.age() < 500)) {
             // set the Time to the latest GPS reading
             setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
             adjustTime(cfg.d().timezone * 60);
             tmadj = millis() + TIME_ADJUST_INTERVAL;
         }
-        //Serial.printf("aft: %ld\r\n", gps.time.age());
+        //CONSOLE("aft: %ld", gps.time.age());
     }
 
 /*

@@ -1,5 +1,6 @@
 
 #include "main.h"
+#include "../log.h"
 #include "point.h"
 #include "jump.h"
 #include "webjoin.h"
@@ -34,9 +35,7 @@ bool Config<T>::load() {
     if (!SPIFFS.exists(fname)) {
         reset();
         _modifed = false;
-    Serial.print("config ");
-    Serial.print(fname);
-    Serial.println(" not exists: default");
+        CONSOLE("config %s not exists: default", fname);
         return true;
     }
     
@@ -53,10 +52,7 @@ bool Config<T>::load() {
         (data.ver == ver) &&
         (data.mgc2 == CFG_MGC2);
     
-    Serial.print("config ");
-    Serial.print(fname);
-    Serial.print(" read: ");
-    Serial.println(ok);
+    CONSOLE("config %s read: %d", fname, ok);
         
     _modifed = !ok;
     return ok;
@@ -65,9 +61,7 @@ bool Config<T>::load() {
 template <typename T>
 bool Config<T>::save(bool force) {
     if (!force && !_modifed) {
-    Serial.print("config ");
-    Serial.print(fname);
-    Serial.println(" not changed");
+        CONSOLE("config %s not changed", fname);
         return true;
     }
     
@@ -84,9 +78,7 @@ bool Config<T>::save(bool force) {
     if (sz != sizeof(data))
         return false;
     
-    Serial.print("config ");
-    Serial.print(fname);
-    Serial.println(" saved OK");
+    CONSOLE("config %s saved OK", fname);
     
     _modifed = false;
     return true;
@@ -141,18 +133,18 @@ bool cfgFactory() {
     return cfgSave(true);
     */
     SPIFFS.end();
-    Serial.println("SPIFFS Unmount ok");
+    CONSOLE("SPIFFS Unmount ok");
     if (!SPIFFS.format()) {
-        Serial.println("SPIFFS Format Failed");
+        CONSOLE("SPIFFS Format Failed");
         return false;
     }
-    Serial.println("SPIFFS Format ok");
+    CONSOLE("SPIFFS Format ok");
 
     if(!SPIFFS.begin()) {
-        Serial.println("SPIFFS Mount Failed");
+        CONSOLE("SPIFFS Mount Failed");
         return false;
     }
-    Serial.println("SPIFFS begin ok");
+    CONSOLE("SPIFFS begin ok");
     
     return cfgLoad(true);
 }

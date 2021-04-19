@@ -1,6 +1,7 @@
 
 #include "menu.h"
 #include "main.h"
+#include "../log.h"
 
 // заголовок меню
 static char title[MENUSZ_NAME] = { '\0' };
@@ -85,7 +86,7 @@ void ViewMenu::updStr(int16_t i) {
         s.name[sizeof(s.name)-1] = '\0';
         s.val[sizeof(s.val)-1] = '\0';
     }
-    Serial.printf("ViewMenu::updStr: [%d] %d: %s\r\n", i, n, str[n].name);
+    CONSOLE("ViewMenu::updStr: [%d] %d: %s", i, n, str[n].name);
 }
 void ViewMenu::setTop(int16_t _itop) {
     itop = _itop;
@@ -128,7 +129,7 @@ void ViewMenu::btnSmpl(btn_code_t btn) {
                     setTop(sz-MENU_STR_COUNT);
             }
     
-            Serial.printf("selUp: %d (%d) => %s / %s\r\n", isel, sz, str[isel-itop].name, str[isel-itop].val);
+            CONSOLE("selUp: %d (%d) => %s / %s", isel, sz, str[isel-itop].name, str[isel-itop].val);
             break;
             
         case BTN_DOWN:
@@ -145,7 +146,7 @@ void ViewMenu::btnSmpl(btn_code_t btn) {
                     setTop(0);
             }
     
-            Serial.printf("selDn: %d (%d) => %s / %s\r\n", isel, sz, str[isel-itop].name, str[isel-itop].val);
+            CONSOLE("selDn: %d (%d) => %s / %s", isel, sz, str[isel-itop].name, str[isel-itop].val);
             break;
             
         case BTN_SEL:

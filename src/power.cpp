@@ -1,5 +1,6 @@
 
 #include "power.h"
+#include "log.h"
 #include "view/base.h"
 
 #include <EEPROM.h>
@@ -16,7 +17,7 @@ static void hwOff() {
     digitalWrite(HWPOWER_PIN_GPS, HIGH);
     pinMode(HWPOWER_PIN_GPS, OUTPUT);
 #endif
-        Serial.println("hw off");
+    CONSOLE("hw off");
   /*
     First we configure the wake up source
     We set our ESP32 to wake up for an external trigger.
@@ -38,9 +39,9 @@ static void hwOff() {
         delay(100);
 
     //Go to sleep now
-    Serial.println("Going to sleep now");
+    CONSOLE("Going to sleep now");
     esp_deep_sleep_start();
-    Serial.println("This will never be printed");
+    CONSOLE("This will never be printed");
 }
 
 static void hwOn() {
@@ -53,7 +54,7 @@ static void hwOn() {
     pinMode(HWPOWER_PIN_BATIN, INPUT);
 #endif
     //displayOn();
-        Serial.println("hw on");
+    CONSOLE("hw on");
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -64,12 +65,12 @@ static void hwOn() {
 bool pwrCheck() {
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
     switch(wakeup_reason) {
-        case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-        case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-        case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
-        case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-        case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
-        default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+        case ESP_SLEEP_WAKEUP_EXT0 : CONSOLE("Wakeup caused by external signal using RTC_IO"); break;
+        case ESP_SLEEP_WAKEUP_EXT1 : CONSOLE("Wakeup caused by external signal using RTC_CNTL"); break;
+        case ESP_SLEEP_WAKEUP_TIMER : CONSOLE("Wakeup caused by timer"); break;
+        case ESP_SLEEP_WAKEUP_TOUCHPAD : CONSOLE("Wakeup caused by touchpad"); break;
+        case ESP_SLEEP_WAKEUP_ULP : CONSOLE("Wakeup caused by ULP program"); break;
+        default : CONSOLE("Wakeup was not caused by deep sleep: %d", wakeup_reason); break;
     }
     
     if (wakeup_reason == 0) {
@@ -88,11 +89,11 @@ bool pwrCheck() {
     pinMode(BUTTON_GPIO_PWR, INPUT_PULLUP);
     int n = 0;
     while (digitalRead(BUTTON_GPIO_PWR) == LOW) {
-        Serial.printf("Btn power is pushed: %d\r\n", n);
+        CONSOLE("Btn power is pushed: %d", n);
         if (n > 20) {
             // если кнопка нажата более 2 сек, 
             // сохраняем состояние как "вкл" и выходим с положительной проверкой
-        Serial.println("pwrCheck on");
+            CONSOLE("pwrCheck on");
             isoff = false;
             hwOn();
             return true;
@@ -101,14 +102,14 @@ bool pwrCheck() {
         n++;
     }
 
-    Serial.println("pwrCheck off");
+    CONSOLE("pwrCheck off");
     hwOff();
     return false;
 }
 
 void pwrOff() {
     isoff = true;
-    Serial.println("pwr off");
+    CONSOLE("pwr off");
     hwOff();
 }
 

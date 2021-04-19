@@ -3,6 +3,7 @@
 */
 
 #include "../../def.h"
+#include "../log.h"
 #include "data.h"
 #include "srv.h"
 #include "../cfg/main.h"
@@ -280,20 +281,20 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
     int max;
     int32_t ibeg = 0;
     
-    Serial.printf("sendLogBook: chksum: %08x, pos: %d\r\n", _cks, _pos);
+    CONSOLE("sendLogBook: chksum: %08x, pos: %d", _cks, _pos);
     
     if (_cks > 0) {
         max = logFind(PSTR(JMPLOG_SIMPLE_NAME), sizeof(struct log_item_s<log_jmp_t>), _cks);
         if (max > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
-            Serial.printf("sendLogBook: by chksum finded num: %d; start by pos: %d\r\n", max, _pos);
+            CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %d", max, _pos);
             ibeg = _pos;
             if ((max == 1) && (_pos*sizeof(struct log_item_s<log_jmp_t>) >= logSize(PSTR(JMPLOG_SIMPLE_NAME)))) {
-                Serial.println("sendLogBook: by chksum finded num 1 and pos is last; no need send");
+                CONSOLE("sendLogBook: by chksum finded num 1 and pos is last; no need send");
                 return true;
             }
         }
         if (max <= 0) {// тот, что мы раньше передавали уже не найден, будем передавать всё заного
-            Serial.println("sendLogBook: nothing finded by chksum");
+            CONSOLE("sendLogBook: nothing finded by chksum");
             max = logCount(PSTR(JMPLOG_SIMPLE_NAME));
         }
     }
@@ -312,7 +313,7 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
         pos = logFileRead(sendLogBookItem, PSTR(JMPLOG_SIMPLE_NAME), num, ibeg);
         if (pos < 0)
             break;
-        Serial.printf("logbook sended ok: %d (ibeg: %d, pos: %d)\r\n", num, ibeg, pos);
+        CONSOLE("logbook sended ok: %d (ibeg: %d, pos: %d)", num, ibeg, pos);
         ibeg = 0;
     }
     auto cks = logChkSumBeg(sizeof(struct log_item_s<log_jmp_t>), PSTR(JMPLOG_SIMPLE_NAME), 1);
@@ -338,18 +339,18 @@ bool sendTrack(logchs_t _cks) {
     int max;
     int32_t ibeg = 0;
     
-    Serial.printf("sendTrack: chksum: %08x%08x\r\n", _cks.cs, _cks.sz);
+    CONSOLE("sendTrack: chksum: %08x%08x", _cks.cs, _cks.sz);
     
     if (_cks) {
         max = logFind(PSTR(TRK_FILE_NAME), sizeof(struct log_item_s<log_item_t>), _cks);
         if (max == 1) {// самый свежий и есть тот, который мы уже передавали - больше передавать не надо
-            Serial.println("sendTrack: by chksum finded num 1; no need send");
+            CONSOLE("sendTrack: by chksum finded num 1; no need send");
             return true;
         }
         if (max > 1) // Этот трек мы уже отправили, надо начинать со следующего
             max--;
         if (max <= 0) {// тот, что мы раньше передавали уже не найден, будем передавать всё заного
-            Serial.println("sendTrack: nothing finded by chksum");
+            CONSOLE("sendTrack: nothing finded by chksum");
             max = logCount(PSTR(TRK_FILE_NAME));
         }
     }
@@ -370,7 +371,7 @@ bool sendTrack(logchs_t _cks) {
         
         if (!srvSend(0x36, ckston(cks)) || !ok)
             return false;
-        Serial.printf("track sended ok: %d\r\n", n);
+        CONSOLE("track sended ok: %d", n);
     }
     
     return true;

@@ -2,6 +2,7 @@
 #include "main.h"
 
 #include "menu.h"
+#include "../log.h"
 #include "../power.h" // pwrBattValue()
 #include "../file/track.h"
 
@@ -67,22 +68,22 @@ void setViewMain(int8_t m, bool save) {
     
     switch (m) {
         case MODE_MAIN_GPS:
-            Serial.println("click to gps");
+            CONSOLE("click to gps");
             setViewMainGps();
             break;
             
         case MODE_MAIN_ALT:
-            Serial.println("click to alt");
+            CONSOLE("click to alt");
             setViewMainAlt();
             break;
             
         case MODE_MAIN_GPSALT:
-            Serial.println("click to gps-alt");
+            CONSOLE("click to gps-alt");
             setViewMainGpsAlt();
             break;
             
         case MODE_MAIN_TIME:
-            Serial.println("click to time");
+            CONSOLE("click to time");
             setViewMainTime();
             break;
     }

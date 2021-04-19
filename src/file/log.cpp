@@ -1,5 +1,6 @@
 
 #include "log.h"
+#include "../log.h"
 
 static const byte logFName(char *fname, size_t sz, const char *_fnamesrc) {
     if (sz <= 7) return 0;
@@ -114,14 +115,10 @@ bool logRotate(const char *_fname, uint8_t count) {
         // достигнут максимальный номер файла
         // его надо удалить и посчитать первым свободным слотом
         if (!DISKFS.remove(fname)) {
-            Serial.print(F("Can't remove file '"));
-            Serial.print(fname);
-            Serial.println(F("'"));
+            CONSOLE("Can't remove file '%s'", fname);
             return false;
         }
-        Serial.print(F("file '"));
-        Serial.print(fname);
-        Serial.println(F("' removed"));
+        CONSOLE("file '%s' removed", fname);
         break;
     }
 
@@ -131,18 +128,10 @@ bool logRotate(const char *_fname, uint8_t count) {
         logFSuffix(fname1+flen, n);
         
         if (!DISKFS.rename(fname, fname1)) {
-            Serial.print(F("Can't rename file '"));
-            Serial.print(fname);
-            Serial.print(F("' to '"));
-            Serial.print(fname1);
-            Serial.println(F("'"));
+            CONSOLE("Can't rename file '%s' to '%s'", fname, fname1);
             return false;
         }
-        Serial.print(F("file '"));
-        Serial.print(fname);
-        Serial.print(F("' renamed to '"));
-        Serial.print(fname1);
-        Serial.println(F("'"));
+        CONSOLE("file '%s' renamed to '%s'", fname, fname1);
         
         n--;
     }
@@ -229,7 +218,7 @@ int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *
     File fh = DISKFS.open(fname);
     if (!fh) return -1;
     
-        Serial.printf("logFileRead open: %s (%d) avail: %d/%d/%d\r\n", fname, ibeg, fh.size(), fh.available(), dsz);
+    CONSOLE("logFileRead open: %s (%d) avail: %d/%d/%d", fname, ibeg, fh.size(), fh.available(), dsz);
     
     if (ibeg > 0) {
         size_t sz = dsz * ibeg;
@@ -248,7 +237,7 @@ int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *
                 (data[dsz-1] != LOG_MGC2) ||
                 !hnd(data)
             ) {
-            Serial.printf("logFileRead err: [%d] sz=%d, dsz=%d, MGC1=0x%02X, MGC2=0x%02X\r\n", ibeg, sz, dsz, data[0], data[dsz-1]);
+            CONSOLE("logFileRead err: [%d] sz=%d, dsz=%d, MGC1=0x%02X, MGC2=0x%02X", ibeg, sz, dsz, data[0], data[dsz-1]);
             fh.close();
             return -1;
         }
@@ -370,7 +359,7 @@ bool logRenum(const char *_fname) {
     while (n < 99) {
         logFSuffix(dst+flen, n);
         if (!DISKFS.exists(dst)) break;
-        Serial.printf("Renuming find, exists: %s\r\n", dst);
+        CONSOLE("Renuming find, exists: %s", dst);
         n++;
     }
     
@@ -383,17 +372,17 @@ bool logRenum(const char *_fname) {
         bool ex = DISKFS.exists(src);
         if (ex) {
             File fh = DISKFS.open(src);
-            Serial.printf("Rename preopen: %s - %d\r\n", src, fh == true);
+            CONSOLE("Rename preopen: %s - %d", src, fh == true);
             fh.close();
             if (!DISKFS.rename(src, "/tmp")) {
-                Serial.printf("Rename fail1: %s -> %s\r\n", src, dst);
+                CONSOLE("Rename fail1: %s -> %s", src, dst);
                 return false;
             }
             if (!DISKFS.rename("/tmp", dst)) {
-                Serial.printf("Rename fail2: %s -> %s\r\n", src, dst);
+                CONSOLE("Rename fail2: %s -> %s", src, dst);
                 return false;
             }
-            Serial.printf("Renum OK: %s -> %s\r\n", src, dst);
+            CONSOLE("Renum OK: %s -> %s", src, dst);
             n++;
             logFSuffix(dst+flen, n);
         }
@@ -427,14 +416,10 @@ int logRemoveLast(const char *_fname, bool removeFirst) {
     
     logFSuffix(fname+flen, n);
     if (!DISKFS.remove(fname)) {
-        Serial.print(F("Can't remove file '"));
-        Serial.print(fname);
-        Serial.println(F("'"));
+        CONSOLE("Can't remove file '%'", fname);
         return -1;
     }
-    Serial.print(F("file '"));
-    Serial.print(fname);
-    Serial.println(F("' removed"));
+    CONSOLE("file '%s' removed", fname);
     
     return n;
 }
@@ -453,14 +438,10 @@ int logRemoveAll(const char *_fname, bool removeFirst) {
             return n - (removeFirst ? 1 : 2);
         
         if (!DISKFS.remove(fname)) {
-            Serial.print(F("Can't remove file '"));
-            Serial.print(fname);
-            Serial.println(F("'"));
+            CONSOLE("Can't remove file '%s'", fname);
             return -1;
         }
-        Serial.print(F("file '"));
-        Serial.print(fname);
-        Serial.println(F("' removed"));
+        CONSOLE("file '%s' removed", fname);
     
         n++;
     }
