@@ -561,6 +561,11 @@ static const menu_el_t menusystem[] {
 static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Внешние подменю
+ * ------------------------------------------------------------------------------------------- */
+ViewMenu *menuLogBook();
+
+/* ------------------------------------------------------------------------------------------- *
  *  Главное меню конфига, тут в основном только подразделы
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menumain[] {
@@ -582,7 +587,7 @@ static const menu_el_t menumain[] {
     },
     {
         .name       = PSTR("LogBook"),
-//        .enter = [] () { menuEnter(new MenuLogBook); },
+        .submenu    = menuLogBook(),
     },
     {
         .name       = PSTR("Track"),

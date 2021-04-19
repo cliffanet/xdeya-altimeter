@@ -91,6 +91,21 @@ void ViewMenu::setTop(int16_t _itop) {
     updStr();
 }
 
+void ViewMenu::setSel(int16_t i) {
+    if (i < 0)
+        i = 0;
+    if (i >= sz)
+        i = sz-1;
+    isel = i;
+    
+    if (itop > isel)  // если вылезли вверх за видимую область,
+        setTop(isel); // спускаем список ниже, чтобы отобразился выделенный пункт
+    // если вылезли вниз за видимую область,
+    // поднимаем список выше, чтобы отобразился выделенный пункт
+    if ((isel > itop) && ((isel-itop) >= MENU_STR_COUNT))
+        setTop(isel-MENU_STR_COUNT+1);
+}
+
 void ViewMenu::updValFlash() {
     valflash = valFlash() ? 1 : 0;
 }

@@ -30,7 +30,9 @@ class ViewMenu : public ViewBase {
         ViewMenu(menu_exit_t _exit = MENUEXIT_TOP) : ViewMenu(0, _exit) {};
         
         void setSize(uint16_t _sz);
+        virtual
         void open(ViewMenu *_mprev = NULL, const char *_title = NULL);
+        virtual
         void restore();
         
         // детектор, является ли указанный пункт меню "выходом"
@@ -45,6 +47,7 @@ class ViewMenu : public ViewBase {
         void updStr(int16_t i);
         void updStrSel() { updStr(isel); updValFlash(); }
         void setTop(int16_t i);  // установка индекса самого верхнего элемента (когда переместились курсором за пределы экрана)
+        void setSel(int16_t i); // установка выбранного элемента
         void updValFlash();
         
         void btnSmpl(btn_code_t btn);
