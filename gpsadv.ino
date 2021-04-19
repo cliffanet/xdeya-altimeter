@@ -4,7 +4,6 @@
 #include "src/power.h"
 #include "src/view/main.h"
 #include "src/mode.h"
-#include "src/timer.h"
 #include "src/gps.h"
 #include "src/altcalc.h"
 #include "src/altimeter.h"
@@ -22,9 +21,6 @@ bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >
 
 // Центральный цикл, иногда надо и его подменить
 void (*loopMain)() = NULL;
-
-// Обработка процесса текущего режима
-void (*hndProcess)() = NULL;
 
 //------------------------------------------------------------------------------
 void setup() {
@@ -103,16 +99,10 @@ static void loopDefault() {
     jmpProcess();
     
     viewProcess();
-    if (hndProcess != NULL)
-        hndProcess();
-    timerProcess();
     
     delay(100);
     altProcess();
     viewProcess();
-    if (hndProcess != NULL)
-        hndProcess();
-    timerProcess();
     trkProcess();
     delay(100);
 }

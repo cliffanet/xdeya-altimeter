@@ -11,6 +11,4 @@
 
 extern void (*loopMain)();
 
-extern void (*hndProcess)();
-
 #endif // _mode_H
