@@ -104,6 +104,25 @@ class ViewMenuStatic : public ViewMenu {
             updStr(); // полностью обновляем экран после клика
         }
         
+        bool useLong(btn_code_t btn) {
+            // тут обрабатываем только BTN_SEL,
+            // нажатую на любом не-exit пункте
+            if ((btn != BTN_SEL) || isExit(isel))
+                return false;
+            return menu[sel()].hold != NULL;
+        }
+
+        void btnLong(btn_code_t btn) {
+            // тут обрабатываем только BTN_SEL,
+            // нажатую на любом не-exit пункте
+            if ((btn != BTN_SEL) || isExit(isel))
+                return;
+            auto &m = menu[sel()];
+            if (m.hold != NULL)
+                m.hold();
+            updStr(); // полностью обновляем экран после клика
+        }
+        
         void process() {
             if (btnIdle() > MENU_TIMEOUT) {
                 cfgSave(); //  сохраняем конфиг, если изменён, но в случае ошибки игнорим
@@ -241,10 +260,10 @@ static ViewMenuStatic vMenuGpsPoint(menugpsupoint, sizeof(menugpsupoint)/sizeof(
 /* ------------------------------------------------------------------------------------------- *
  *  Меню работы с трэками
  * ------------------------------------------------------------------------------------------- */
-/*
 static const menu_el_t menutrack[] {
     {   // Текущий режим записи трэка
         .name = PSTR("Recording"),
+        .submenu = NULL,
         .enter = menuFlashHold,           // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) {
             switch (trkState()) {
@@ -264,11 +283,13 @@ static const menu_el_t menutrack[] {
     },
     {   // Количество записей
         .name = PSTR("Count"),
+        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, trkFileCount()); },
     },
     {   // Сколько времени доступно
         .name = PSTR("Avail"),
+        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             // сколько записей ещё влезет
@@ -280,19 +301,21 @@ static const menu_el_t menutrack[] {
         },
     },
 };
+static ViewMenuStatic vMenuTrack(menutrack, sizeof(menutrack)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления экраном
  * ------------------------------------------------------------------------------------------- */
-/*
 static const menu_el_t menudisplay[] {
     {   // Включение / выключение подсветки
         .name = PSTR("Light"),
+        .submenu = NULL,
         .enter = displayLightTgl,           // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) { valOn(txt, displayLight()); },
     },
     {   // Уровень контраста
         .name = PSTR("Contrast"),
+        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, cfg.d().contrast); },
         .edit = [] (int val) {
@@ -305,14 +328,15 @@ static const menu_el_t menudisplay[] {
         },
     },
 };
+static ViewMenuStatic vMenuDisplay(menudisplay, sizeof(menudisplay)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню сброса нуля высотомера (на земле)
  * ------------------------------------------------------------------------------------------- */
-/*
 static const menu_el_t menugnd[] {
     {   // принудительная калибровка (On Ground)
         .name = PSTR("Manual set"),
+        .submenu = NULL,
         .enter = menuFlashHold,  // Сброс только по длинному нажатию
         .showval = NULL,
         .edit = NULL,
@@ -329,6 +353,7 @@ static const menu_el_t menugnd[] {
     },
     {   // разрешение принудительной калибровки: нет, "на земле", всегда
         .name = PSTR("Allow mnl set"),
+        .submenu = NULL,
         .enter = [] () {
             cfg.set().gndmanual = !cfg.d().gndmanual;
         },
@@ -336,20 +361,22 @@ static const menu_el_t menugnd[] {
     },
     {   // выбор автоматической калибровки: нет, автоматически на земле
         .name = PSTR("Auto correct"),
+        .submenu = NULL,
         .enter = [] () {
             cfg.set().gndauto = !cfg.d().gndauto;
         },
         .showval = [] (char *txt) { strcpy_P(txt, cfg.d().gndauto ? PSTR("On GND") : PSTR("No")); },
     },
 };
+static ViewMenuStatic vMenuGnd(menugnd, sizeof(menugnd)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню автоматизации экранами с информацией
  * ------------------------------------------------------------------------------------------- */
-/*
 static const menu_el_t menuinfo[] {
     {   // переключать ли экран в падении автоматически в отображение только высоты
         .name = PSTR("Auto FF-screen"),
+        .submenu = NULL,
         .enter = [] () {
             cfg.set().dsplautoff = !cfg.d().dsplautoff;
         },
@@ -357,6 +384,7 @@ static const menu_el_t menuinfo[] {
     },
     {   // куда переключать экран под куполом: не переключать, жпс, часы, жпс+высота (по умолч)
         .name = PSTR("On CNP"),
+        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplcnp); },
         .edit = [] (int val) {
@@ -377,6 +405,7 @@ static const menu_el_t menuinfo[] {
     },
     {   // куда переключать экран после приземления: не переключать, жпс (по умолч), часы, жпс+высота
         .name = PSTR("After Land"),
+        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplland); },
         .edit = [] (int val) {
@@ -397,6 +426,7 @@ static const menu_el_t menuinfo[] {
     },
     {   // куда переключать экран при длительном бездействии на земле
         .name = PSTR("On GND"),
+        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplgnd); },
         .edit = [] (int val) {
@@ -417,6 +447,7 @@ static const menu_el_t menuinfo[] {
     },
     {   // куда переключать экран при включении: запоминать после выключения, все варианты экрана
         .name = PSTR("Power On"),
+        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplpwron); },
         .edit = [] (int val) {
@@ -436,14 +467,15 @@ static const menu_el_t menuinfo[] {
         },
     },
 };
+static ViewMenuStatic vMenuInfo(menuinfo, sizeof(menuinfo)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления часами
  * ------------------------------------------------------------------------------------------- */
-/*
 static const menu_el_t menutime[] {
     {   // Выбор временной зоны, чтобы корректно синхронизироваться с службами времени
         .name = PSTR("Zone"),
+        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             if (cfg.d().timezone == 0) {            // cfg.timezone хранит количество минут в + или - от UTC
@@ -478,31 +510,30 @@ static const menu_el_t menutime[] {
         },
     },
 };
+static ViewMenuStatic vMenuTime(menutime, sizeof(menutime)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления питанием
  * ------------------------------------------------------------------------------------------- */
-/*
 static const menu_el_t menupower[] {
     {
         .name = PSTR("Off"),
+        .submenu = NULL,
         .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
         .showval = NULL,
         .edit = NULL,
-        .hold = [] () {
-            menuClear();
-            pwrOff();
-        },
+        .hold = pwrOff,
     },
 };
+static ViewMenuStatic vMenuPower(menupower, sizeof(menupower)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления остальными системными настройками
  * ------------------------------------------------------------------------------------------- */
-/*
 static const menu_el_t menusystem[] {
     {
         .name = PSTR("Factory reset"),
+        .submenu = NULL,
         .enter = menuFlashHold,     // Сброс настроек только по длинному нажатию
         .showval = NULL,
         .edit = NULL,
@@ -520,12 +551,14 @@ static const menu_el_t menusystem[] {
     },
     {
         .name = PSTR("GPS serial"),
+        .submenu = NULL,
         .enter = menuFlashHold,     // Сброс настроек только по длинному нажатию
         .showval = NULL,
         .edit = NULL,
         .hold = &gpsDirect
     },
 };
+static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Главное меню конфига, тут в основном только подразделы
@@ -536,11 +569,11 @@ static const menu_el_t menumain[] {
         .submenu    = &vMenuGpsPoint,
     },
     {
-        .name = PSTR("Jump count"),
+        .name       = PSTR("Jump count"),
         .submenu    = NULL,
-        .enter = NULL,
-        .showval = [] (char *txt) { valInt(txt, jmp.d().count); },
-        .edit = [] (int val) {
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valInt(txt, jmp.d().count); },
+        .edit       = [] (int val) {
             int32_t c = jmp.d().count + val;
             if (c < 0) c = 0;
             if (c == jmp.d().count) return;
@@ -548,36 +581,36 @@ static const menu_el_t menumain[] {
         },
     },
     {
-        .name = PSTR("LogBook"),
+        .name       = PSTR("LogBook"),
 //        .enter = [] () { menuEnter(new MenuLogBook); },
     },
     {
-        .name = PSTR("Track"),
-//        .enter = SUBMENU(menutrack),
+        .name       = PSTR("Track"),
+        .submenu    = &vMenuTrack,
     },
     {
-        .name = PSTR("Display"),
-//        .enter = SUBMENU(menudisplay),
+        .name       = PSTR("Display"),
+        .submenu    = &vMenuDisplay,
     },
     {
-        .name = PSTR("Gnd Correct"),
-//        .enter = SUBMENU(menugnd),
+        .name       = PSTR("Gnd Correct"),
+        .submenu    = &vMenuGnd,
     },
     {
-        .name = PSTR("Auto Screen-Mode"),
-//        .enter = SUBMENU(menuinfo),
+        .name       = PSTR("Auto Screen-Mode"),
+        .submenu    = &vMenuInfo,
     },
     {
-        .name = PSTR("Time"),
-//        .enter = SUBMENU(menutime),
+        .name       = PSTR("Time"),
+        .submenu    = &vMenuTime,
     },
     {
-        .name = PSTR("Power"),
-//        .enter = SUBMENU(menupower),
+        .name       = PSTR("Power"),
+        .submenu    = &vMenuPower,
     },
     {
-        .name = PSTR("System"),
-//        .enter = SUBMENU(menusystem),
+        .name       = PSTR("System"),
+        .submenu    = &vMenuSystem,
     },
     {
         .name = PSTR("Files"),
@@ -593,39 +626,3 @@ void setViewMenu() {
     viewSet(vMenuMain);
     vMenuMain.open(NULL, PSTR("Configuration"));
 }
-
-/* ------------------------------------------------------------------------------------------- *
- *  Описание методов шаблона класса ViewMenuStatic
- * ------------------------------------------------------------------------------------------- */
-
-
-
-/*
-void MenuStatic::btnSmp() {
-    auto &m = menu[sel()];
-    if (m.enter != NULL)
-        m.enter();
-    updStr(); // полностью обновляем экран после клика
-}
-
-bool MenuStatic::useLng() {
-    return menu[sel()].hold != NULL;
-}
-
-void MenuStatic::btnLng() {
-    auto &m = menu[sel()];
-    if (m.hold != NULL)
-        m.hold();
-    updStr(); // полностью обновляем экран после клика
-}
-bool MenuStatic::useEdit() {
-    return menu[sel()].edit != NULL;
-}
-void MenuStatic::edit(int val) {
-    auto &m = menu[sel()];
-    if (m.edit != NULL) {
-        m.edit(val);
-        updStrSel();
-    }
-}
-*/
