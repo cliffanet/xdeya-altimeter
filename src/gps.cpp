@@ -1,14 +1,9 @@
 
 #include "gps.h"
+#include "log.h"
 
 #include <TinyGPS++.h>
 static TinyGPSPlus gps;
-
-// Доп модули, необходимые для режима DPS-Direct
-#include "display.h"
-#include "button.h"
-#include "mode.h"
-#include "menu/base.h"
 
 // будем использовать стандартный экземпляр класса HardwareSerial, 
 // т.к. он и так в системе уже есть и память под него выделена
@@ -19,6 +14,8 @@ static TinyGPSPlus gps;
 static UbloxGpsProto gps2(ss);
 
 static gps_data_t data = { 0 };
+
+static bool direct = false;
 
 /* ------------------------------------------------------------------------------------------- *
  *  GPS-получение данных
@@ -185,7 +182,7 @@ static bool gpsUartSpeed(uint32_t baudRate) {
     while (cnt > 0) {
         cnt--;
         
-        Serial.println("Set UART(gps) default speed 9600");
+        CONSOLE("Set UART(gps) default speed 9600");
         ss.updateBaudRate(9600);
         
         struct
@@ -218,7 +215,7 @@ static bool gpsUartSpeed(uint32_t baudRate) {
         gps2.cnfclear();
         ss.flush();
         
-        Serial.printf("Set UART(gps) speed %d\n", baudRate);
+        CONSOLE("Set UART(gps) speed %d", baudRate);
         ss.updateBaudRate(baudRate);
         delay(10);
         
@@ -234,10 +231,10 @@ static bool gpsUartSpeed(uint32_t baudRate) {
 
 static bool gpsInitCmd() {
     if (!gpsUartSpeed(34800)) {
-        Serial.println("Can't set GPS-UART baudRate");
+        CONSOLE("Can't set GPS-UART baudRate");
         return false;
     }
-    Serial.println("GPS-UART baudRate init ok");
+    CONSOLE("GPS-UART baudRate init ok");
     
     gps2.hndclear();
     gps2.hndadd(UBX_NAV,  UBX_NAV_POSLLH,     gpsRecvPosllh);
@@ -324,56 +321,27 @@ static bool gpsInitCmd() {
 
 void gpsInit() {
     if (!gpsInitCmd()) {
-        Serial.println("GPS init fail");
+        CONSOLE("GPS init fail");
         gpsFree();
     }
 }
 
+static void gpsDirectToSerial(uint8_t c) {
+    Serial.write( c );
+}
+
 void gpsProcess() {
-    gps2.tick();
+    gps2.tick(direct ? &gpsDirectToSerial : NULL);
+    
+    while (direct && Serial.available())
+        ss.write( Serial.read() );
     //    gps.encode( ss.read() );
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  режим DPS-Direct
  * ------------------------------------------------------------------------------------------- */
-static void gpsDirectExit() {
-    menuClear();
-    modeMain();
-    
-    loopMain = NULL;
+void gpsDirectTgl() {
+    direct = !direct;
 }
-static void gpsDirectProcess() {
-    btnProcess();
-    while (ss.available())
-        Serial.write( ss.read() );
-    while (Serial.available())
-        ss.write( Serial.read() );
-}
-static void gpsDirectDisplay(U8G2 &u8g2) {
-    char txt[128];
-    
-    u8g2.setFont(u8g2_font_ncenB08_tr);
-    
-    // Заголовок
-    strcpy_P(txt, PSTR("GPS -> Serial Direct"));
-    u8g2.drawBox(0,0,128,12);
-    u8g2.setDrawColor(0);
-    u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(txt))/2, 10, txt);
-    
-    u8g2.setDrawColor(1);
-    strcpy_P(txt, PSTR("To continue"));
-    u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(txt))/2, 30+14, txt);
-    strcpy_P(txt, PSTR("press SELECT-button"));
-    u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(txt))/2, 40+14, txt);
-}
-
-void gpsDirect() {
-    btnHndClear();
-    btnHnd(BTN_SEL, BTN_SIMPLE, gpsDirectExit);
-    
-    displayHnd(gpsDirectDisplay);
-    displayUpdate();
-    
-    loopMain = gpsDirectProcess;
-}
+bool gpsDirect() { return direct; }

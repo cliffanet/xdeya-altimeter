@@ -4,7 +4,6 @@
 #include "src/log.h"
 #include "src/power.h"
 #include "src/view/main.h"
-#include "src/mode.h"
 #include "src/gps.h"
 #include "src/altcalc.h"
 #include "src/altimeter.h"
@@ -19,9 +18,6 @@
 #include <TimeLib.h>
 static uint32_t tmadj = 0;
 bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >= TIME_ADJUST_TIMEOUT)); }
-
-// Центральный цикл, иногда надо и его подменить
-void (*loopMain)() = NULL;
 
 //------------------------------------------------------------------------------
 void setup() {
@@ -55,7 +51,8 @@ uint16_t _testDeg = 0;
 uint16_t testDeg() { return _testDeg; }
 
 //------------------------------------------------------------------------------
-static void loopDefault() {
+
+void loop() {
     gpsProcess();
 
     if (millis() >= tmadj) {
@@ -106,11 +103,4 @@ static void loopDefault() {
     viewProcess();
     trkProcess();
     delay(100);
-}
-
-void loop() {
-    if (loopMain == NULL)
-        loopDefault();
-    else
-        loopMain();
 }

@@ -550,10 +550,8 @@ static const menu_el_t menusystem[] {
     {
         .name = PSTR("GPS serial"),
         .submenu = NULL,
-        .enter = menuFlashHold,     // Сброс настроек только по длинному нажатию
-        .showval = NULL,
-        .edit = NULL,
-        .hold = &gpsDirect
+        .enter = gpsDirectTgl,
+        .showval = [] (char *txt) { valOn(txt, gpsDirect()); },
     },
 };
 static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_t));

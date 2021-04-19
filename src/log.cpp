@@ -1,5 +1,6 @@
 
 #include "log.h"
+#include "gps.h"
 #include <Arduino.h>
 
 /* ------------------------------------------------------------------------------------------- *
@@ -17,6 +18,9 @@ const char * pathToFileName_P(const char * path) {
 }
 
 void vtxtlog(const char *s, va_list ap, bool tofile) {
+    if (gpsDirect())
+        return;
+    
     int len = vsnprintf(NULL, 0, s, ap), sbeg = 0;
     char str[len+60]; // +48=dt +12=debug mill/tick
     uint32_t t = millis();

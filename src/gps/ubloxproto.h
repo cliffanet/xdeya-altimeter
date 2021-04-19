@@ -73,7 +73,7 @@ class UbloxGpsProto
         bool recv(uint8_t c, bool clearonfail = true);
         bool recv() { return (_uart != NULL) && _uart->available() ? recv(_uart->read()) : false; }
         void rcvclear();
-        bool tick();
+        bool tick(void (*readhnd)(uint8_t c) = NULL);
         
         bool docmd();
         void cnfclear();

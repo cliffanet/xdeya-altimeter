@@ -42,6 +42,8 @@ TinyGPSPlus &gpsGet();
 const gps_data_t &gpsInf();
 void gpsInit();
 void gpsProcess();
-void gpsDirect();
+
+void gpsDirectTgl();
+bool gpsDirect();
 
 #endif // _gps_H

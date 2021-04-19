@@ -86,12 +86,14 @@ void UbloxGpsProto::rcvclear() {
     bufi = 0;
 }
 
-bool UbloxGpsProto::tick() {
+bool UbloxGpsProto::tick(void (*readhnd)(uint8_t c)) {
     if (_uart == NULL)
         return false;
     
     while (_uart->available()) {
         uint8_t c = _uart->read();
+        if (readhnd != NULL)
+            readhnd(c);
         if (!recv(c, false)) {
             CONSOLE("gps recv proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x, rcv_plen=%d", 
                                 c, rcv_bytewait, rcv_class, rcv_ident, rcv_plen);
