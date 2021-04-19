@@ -1,5 +1,6 @@
 
 #include "menu.h"
+#include "main.h"
 
 #include "../file/log.h"
 #include "../cfg/jump.h"

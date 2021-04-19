@@ -1,5 +1,6 @@
 
 #include "menu.h"
+#include "main.h"
 
 #include "../file/log.h"
 #include "../file/track.h"
@@ -96,6 +97,7 @@ class ViewMenuFile : public ViewMenu {
             // тут обрабатываем только BTN_SEL,
             // нажатую на любом не-exit пункте
             if ((btn != BTN_SEL) || isExit(isel)) {
+                if (btn == BTN_SEL) close();
                 ViewMenu::btnSmpl(btn);
                 return;
             }
@@ -152,8 +154,10 @@ class ViewMenuFile : public ViewMenu {
         }
         
         void process() {
-            if (btnIdle() > MENU_TIMEOUT)
+            if (btnIdle() > MENU_TIMEOUT) {
+                close();
                 setViewMain();
+            }
         }
         
     private:

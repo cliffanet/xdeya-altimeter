@@ -565,6 +565,7 @@ static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_
  * ------------------------------------------------------------------------------------------- */
 ViewMenu *menuLogBook();
 ViewMenu *menuFile();
+ViewMenu *menuWifiSync();
 
 /* ------------------------------------------------------------------------------------------- *
  *  Главное меню конфига, тут в основном только подразделы
@@ -623,8 +624,8 @@ static const menu_el_t menumain[] {
         .submenu    = menuFile(),
     },
     {
-        .name = PSTR("Wifi sync"),
-//        .enter = [] () { menuEnter(new MenuWiFi); },
+        .name       = PSTR("Wifi sync"),
+        .submenu    = menuWifiSync(),
     },
 };
 static ViewMenuStatic vMenuMain(menumain, sizeof(menumain)/sizeof(menu_el_t));

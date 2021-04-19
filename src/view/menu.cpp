@@ -37,6 +37,7 @@ void ViewMenu::open(ViewMenu *_mprev, const char *_title) {
     mprev = _mprev;
     titlep = _title;
     itop = 0;
+    isel = 0;
     restore();
 }
 

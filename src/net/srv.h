@@ -7,6 +7,8 @@
 
 #include <Arduino.h>
 
+const char *srvErr();
+
 bool srvConnect();
 void srvStop();
 

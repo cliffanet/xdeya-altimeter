@@ -28,33 +28,31 @@ void srvStop() {
 /* ------------------------------------------------------------------------------------------- *
  *  Блок из mode/netsync - для отображения ошибок при работе с сервером
  * ------------------------------------------------------------------------------------------- */
-#define ERR(s) toExit(PSTR(s))
-void toExit(const char *_title);
-uint32_t netSyncTimeout();
+const char *last_err = NULL;
+const char *srvErr() { return last_err; }
 
 /* ------------------------------------------------------------------------------------------- *
  *  чтение инфы от сервера, возвращает true, если есть инфа
  * ------------------------------------------------------------------------------------------- */
 static bool srvWait(size_t sz) {
+    last_err = NULL;
     if (cli.available() >= sz)
         return true;
     
     if (!cli.connected())
-        ERR("server connect lost");
-    else
-    if (netSyncTimeout() < millis())
-        ERR("server timeout");
+        last_err = PSTR("server connect lost");
     
     return false;
 }
 
 static bool srvReadData(uint8_t *data, uint16_t sz) {
+    last_err = NULL;
     if (sz == 0)
         return true;
     
     size_t sz1 = cli.read(data, sz);
     if (sz1 != sz) {
-        ERR("fail read from server");
+        last_err = PSTR("fail read from server");
         return false;
     }
     
@@ -68,7 +66,7 @@ static bool srvWaitHdr(phdr_t &p) {
     if (!srvReadData(reinterpret_cast<uint8_t *>(&p), sizeof(phdr_t)))
         return false;
     if ((p.mgc != '#') || (p.cmd == 0)) {
-        ERR("recv proto fail");
+        last_err = PSTR("recv proto fail");
         return false;
     }
     
@@ -122,7 +120,7 @@ bool srvRecv(uint8_t &cmd, uint8_t *data, uint16_t sz) {
  * ------------------------------------------------------------------------------------------- */
 bool srvSend(uint8_t cmd, const uint8_t *data, uint16_t sz) {
     if (!cli.connected()) {
-        ERR("server connect lost");
+        last_err = PSTR("server connect lost");
         return false;
     }
     
@@ -134,7 +132,7 @@ bool srvSend(uint8_t cmd, const uint8_t *data, uint16_t sz) {
     
     auto sz2 = cli.write(d, 4 + sz);
     if (sz2 != (4 + sz)) {
-        ERR("server send fail");
+        last_err = PSTR("server send fail");
         return false;
     }
     return true;
