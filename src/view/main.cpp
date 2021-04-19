@@ -1,6 +1,7 @@
 
 #include "main.h"
 
+#include "menu.h"
 #include "../power.h" // pwrBattValue()
 #include "../file/track.h"
 
@@ -13,7 +14,7 @@ void ViewMain::btnLong(btn_code_t btn) {
             return;
 
         case BTN_SEL:
-            //modeMenu();
+            setViewMenu();
             return;
             
         case BTN_DOWN:
@@ -66,18 +67,22 @@ void setViewMain(int8_t m, bool save) {
     
     switch (m) {
         case MODE_MAIN_GPS:
+            Serial.println("click to gps");
             setViewMainGps();
             break;
             
         case MODE_MAIN_ALT:
+            Serial.println("click to alt");
             setViewMainAlt();
             break;
             
         case MODE_MAIN_GPSALT:
+            Serial.println("click to gps-alt");
             setViewMainGpsAlt();
             break;
             
         case MODE_MAIN_TIME:
+            Serial.println("click to time");
             setViewMainTime();
             break;
     }

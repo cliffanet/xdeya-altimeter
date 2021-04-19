@@ -8,8 +8,7 @@ class ViewMainAlt : public ViewMain {
             if (btn != BTN_SEL)
                 return;
     
-            setViewMainGpsAlt();
-            Serial.println("click to gps-alt");
+            setViewMain(MODE_MAIN_GPSALT);
         }
         
         void draw(U8G2 &u8g2) {

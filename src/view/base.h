@@ -87,6 +87,11 @@ typedef struct {
 #define BTN_PUSHED_SIMPLE   0x01
 #define BTN_PUSHED_LONG     0x02
 
+// время ненажатия ни на одну кнопку
+uint32_t btnIdle();
+// время зажатой одной или более кнопок
+uint32_t btnPressed(uint8_t &btn);
+
 #ifdef USE4BUTTON
 // нажатие на дополнительную 4ую кнопку
 bool btn4Pushed();
@@ -103,6 +108,8 @@ class ViewBase {
         virtual bool useLong(btn_code_t btn) { return false; }
         
         virtual void draw(U8G2 &u8g2) = 0;
+        
+        virtual void process() {}
     private:
 };
 

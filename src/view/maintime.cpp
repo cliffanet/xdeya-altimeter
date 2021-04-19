@@ -6,9 +6,8 @@ class ViewMainTime : public ViewMain {
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL)
                 return;
-    
-            setViewMainGps();
-            Serial.println("click to gps");
+            
+            setViewMain(MODE_MAIN_GPS);
         }
         
         void draw(U8G2 &u8g2) {

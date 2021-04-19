@@ -107,9 +107,8 @@ class ViewMainGps : public ViewMain {
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL)
                 return;
-    
-            setViewMainAlt();
-            Serial.println("click to alt");
+            
+            setViewMain(MODE_MAIN_ALT);
         }
         void draw(U8G2 &u8g2) {
             auto &gps = gpsInf();
@@ -170,8 +169,7 @@ class ViewMainGpsAlt : public ViewMain {
             if (btn != BTN_SEL)
                 return;
     
-            setViewMainTime();
-            Serial.println("click to time");
+            setViewMain(MODE_MAIN_TIME);
         }
         
         void draw(U8G2 &u8g2) {
