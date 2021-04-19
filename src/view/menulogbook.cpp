@@ -92,6 +92,11 @@ class ViewMenuLogBookInfo : public ViewBase {
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
         }
         
+        void process() {
+            if (btnIdle() > MENU_TIMEOUT)
+                setViewMain();
+        }
+        
     private:
         size_t isel=0, sz=0;
         struct log_item_s<log_jmp_t> r;
@@ -112,7 +117,7 @@ class ViewMenuLogBook : public ViewMenu {
         }
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
-            Serial.printf("MenuStatic::getStr: %d\r\n", i);
+            Serial.printf("ViewMenuLogBook::getStr: %d\r\n", i);
     
             struct log_item_s<log_jmp_t> r;
             if (logRead(r, PSTR(JMPLOG_SIMPLE_NAME), i)) {
@@ -137,6 +142,11 @@ class ViewMenuLogBook : public ViewMenu {
             
             viewSet(vLogBookInfo);
             vLogBookInfo.open(sel(), size());
+        }
+        
+        void process() {
+            if (btnIdle() > MENU_TIMEOUT)
+                setViewMain();
         }
 };
 
