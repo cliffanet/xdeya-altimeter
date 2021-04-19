@@ -1,7 +1,6 @@
 
 #include "power.h"
-#include "display.h"
-#include "button.h"
+#include "view/base.h"
 
 #include <EEPROM.h>
 

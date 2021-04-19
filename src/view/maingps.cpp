@@ -1,7 +1,6 @@
 
 #include "main.h"
 
-#include "../display.h"
 #include "../gps.h"
 #include "../altimeter.h"
 #include "../file/track.h"

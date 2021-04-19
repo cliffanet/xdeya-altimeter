@@ -2,11 +2,8 @@
 #include "def.h"
 
 #include "src/power.h"
-#include "src/button.h"
-#include "src/display.h"
 #include "src/view/main.h"
 #include "src/mode.h"
-#include "src/menu/base.h"
 #include "src/timer.h"
 #include "src/gps.h"
 #include "src/altcalc.h"
@@ -109,7 +106,6 @@ static void loopDefault() {
     if (hndProcess != NULL)
         hndProcess();
     timerProcess();
-    displayUpdate();
     
     delay(100);
     altProcess();
