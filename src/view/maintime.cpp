@@ -1,5 +1,6 @@
 
 #include "main.h"
+#include "info.h"
 
 class ViewMainTime : public ViewMain {
     public:
@@ -7,7 +8,8 @@ class ViewMainTime : public ViewMain {
             if (btn != BTN_SEL)
                 return;
             
-            setViewMain(MODE_MAIN_GPS);
+            //setViewMain(MODE_MAIN_GPS);
+            setViewInfoDebug();
         }
         
         void draw(U8G2 &u8g2) {

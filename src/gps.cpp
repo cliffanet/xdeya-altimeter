@@ -168,6 +168,9 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
 TinyGPSPlus &gpsGet() { return gps; }
 const gps_data_t &gpsInf() { return data; };
 
+uint32_t gpsRecvError() { return gps2.cntRecvErr(); }
+uint32_t gpsCmdUnknown() { return gps2.cntCmdUnknown(); }
+
 static void gpsFree() {
     gps2.uart(NULL);
 }

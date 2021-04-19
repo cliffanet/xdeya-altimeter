@@ -95,8 +95,9 @@ bool UbloxGpsProto::tick(void (*readhnd)(uint8_t c)) {
         if (readhnd != NULL)
             readhnd(c);
         if (!recv(c, false)) {
-            CONSOLE("gps recv proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x, rcv_plen=%d", 
-                                c, rcv_bytewait, rcv_class, rcv_ident, rcv_plen);
+            //CONSOLE("gps recv proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x, rcv_plen=%d", 
+            //                    c, rcv_bytewait, rcv_class, rcv_ident, rcv_plen);
+            cntrecverr++;
             rcvclear();
             return false;
         }
@@ -118,6 +119,7 @@ bool UbloxGpsProto::docmd() {
         return true;
     
     CONSOLE("gps recv unknown cmd class=0x%02X, id=0x%02X, len=%d", rcv_class, rcv_ident, rcv_plen);
+    cntcmdunknown++;
     
     return false;
 }

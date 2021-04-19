@@ -17,7 +17,7 @@ const char * pathToFileName_P(const char * path) {
     return pathToFileName_S;
 }
 
-void vtxtlog(const char *s, va_list ap, bool tofile) {
+static void vtxtlog(const char *s, va_list ap) {
     if (gpsDirect())
         return;
     
@@ -45,6 +45,6 @@ void conslog_P(const char *s, ...) {
     strcpy_P(str, s);
     
     va_start (ap, str);
-    vtxtlog(str, ap, false);
+    vtxtlog(str, ap);
     va_end (ap);
 }

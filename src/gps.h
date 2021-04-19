@@ -40,6 +40,8 @@ typedef struct {
 
 TinyGPSPlus &gpsGet();
 const gps_data_t &gpsInf();
+uint32_t gpsRecvError();
+uint32_t gpsCmdUnknown();
 void gpsInit();
 void gpsProcess();
 
