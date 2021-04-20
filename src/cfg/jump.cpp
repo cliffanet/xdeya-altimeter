@@ -124,7 +124,7 @@ bool ConfigJump::end() {
  * ------------------------------------------------------------------------------------------- */
 log_item_t jmpLogItem() {
     auto &ac = altCalc();
-    auto &gps = gpsGet();
+    auto &gps = gpsInf();
     
     log_item_t li = {
         .mill   = millis(),
@@ -134,11 +134,11 @@ log_item_t jmpLogItem() {
         .vspeed = ac.speed(),
         .state  = ac.state(),
         .direct = ac.direct(),
-        .lat    = gps.location.lat(),
-        .lng    = gps.location.lng(),
-        .hspeed = gps.speed.mps(),
-        .hang   = gps.course.deg(),
-        .sat    = gps.satellites.value(),
+        .lat    = GPS_LATLON(gps.lat),
+        .lng    = GPS_LATLON(gps.lon),
+        .hspeed = GPS_CM(gps.gSpeed),
+        .hang   = GPS_DEG(gps.heading),
+        .sat    = gps.numSV,
 #ifdef USE4BUTTON
         .btn4push=btn4Pushed(),
 #else
@@ -146,6 +146,8 @@ log_item_t jmpLogItem() {
 #endif
 #if HWVER > 1
         .batval = pwrBattValue(),
+#else
+        .batval = 0,
 #endif
     };
     

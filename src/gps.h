@@ -5,8 +5,7 @@
 #ifndef _gps_H
 #define _gps_H
 
-#include <stddef.h>
-#include <TinyGPS++.h>
+#include <stdint.h>
 
 #define _GPS_MPH_PER_KNOT 1.15077945
 #define _GPS_MPS_PER_KNOT 0.51444444
@@ -63,7 +62,6 @@ typedef struct {
     bool rcvok;
 } gps_data_t;
 
-TinyGPSPlus &gpsGet();
 const gps_data_t &gpsInf();
 uint32_t gpsRecv();
 uint32_t gpsRecvError();

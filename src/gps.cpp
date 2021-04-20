@@ -2,16 +2,13 @@
 #include "gps.h"
 #include "log.h"
 
-#include <TinyGPS++.h>
-static TinyGPSPlus gps;
-
 // будем использовать стандартный экземпляр класса HardwareSerial, 
 // т.к. он и так в системе уже есть и память под него выделена
 // Стандартные пины для свободного аппаратного Serial2: 16(rx), 17(tx)
 #define ss Serial2
 
 #include "gps/ubloxproto.h"
-static UbloxGpsProto gps2(ss);
+static UbloxGpsProto gps(ss);
 
 static gps_data_t data = { 0 };
 
@@ -175,18 +172,21 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  GPS-инициализация
+ *  Данные о GPS для внешнего использования
  * ------------------------------------------------------------------------------------------- */
 
-TinyGPSPlus &gpsGet() { return gps; }
 const gps_data_t &gpsInf() { return data; };
 
-uint32_t gpsRecv() { return gps2.cntRecv(); }
-uint32_t gpsRecvError() { return gps2.cntRecvErr(); }
-uint32_t gpsCmdUnknown() { return gps2.cntCmdUnknown(); }
+uint32_t gpsRecv() { return gps.cntRecv(); }
+uint32_t gpsRecvError() { return gps.cntRecvErr(); }
+uint32_t gpsCmdUnknown() { return gps.cntCmdUnknown(); }
 
+
+/* ------------------------------------------------------------------------------------------- *
+ *  GPS-инициализация
+ * ------------------------------------------------------------------------------------------- */
 static void gpsFree() {
-    gps2.uart(NULL);
+    gps.uart(NULL);
 }
 
 static bool gpsUartSpeed(uint32_t baudRate) {
@@ -226,19 +226,19 @@ static bool gpsUartSpeed(uint32_t baudRate) {
     		.reserved5    = 0       // Reserved, set to 0
     	};
         
-        if (!gps2.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
+        if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
             return false;
         
-        gps2.cnfclear();
+        gps.cnfclear();
         ss.flush();
         
         CONSOLE("Set UART(gps) speed %d", baudRate);
         ss.updateBaudRate(baudRate);
         delay(10);
         
-        if (!gps2.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
+        if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
             return false;
-        if (gps2.waitcnf()) {
+        if (gps.waitcnf()) {
             return true;
         }
     }
@@ -253,12 +253,12 @@ static bool gpsInitCmd() {
     }
     CONSOLE("GPS-UART baudRate init ok");
     
-    gps2.hndclear();
-    gps2.hndadd(UBX_NAV,  UBX_NAV_POSLLH,     gpsRecvPosllh);
-    gps2.hndadd(UBX_NAV,  UBX_NAV_VELNED,     gpsRecvVelned);
-    gps2.hndadd(UBX_NAV,  UBX_NAV_TIMEUTC,    gpsRecvTimeUtc);
-    gps2.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
-    gps2.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
+    gps.hndclear();
+    gps.hndadd(UBX_NAV,  UBX_NAV_POSLLH,     gpsRecvPosllh);
+    gps.hndadd(UBX_NAV,  UBX_NAV_VELNED,     gpsRecvVelned);
+    gps.hndadd(UBX_NAV,  UBX_NAV_TIMEUTC,    gpsRecvTimeUtc);
+    gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
+    gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
     
     struct {
     	uint8_t msgClass;  // Message class
@@ -281,7 +281,7 @@ static bool gpsInitCmd() {
     };
     
     for (auto r : cfg_rate)
-        if (!gps2.send(UBX_CFG, UBX_CFG_MSG, r) || !gps2.tick())
+        if (!gps.send(UBX_CFG, UBX_CFG_MSG, r) || !gps.tick())
             return false;
 
     struct {
@@ -295,7 +295,7 @@ static bool gpsInitCmd() {
 		.navRate    = 1,        // Navigation rate (cycles)
 		.timeRef    = 0         // UTC time
 	};
-    if (!gps2.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate) || !gps2.tick())
+    if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate) || !gps.tick())
         return false;
 	
     struct {
@@ -319,7 +319,7 @@ static bool gpsInitCmd() {
 		.mask       = 0x0001,       // Apply dynamic model settings
 		.dynModel   = 7             // Airborne with < 1 g acceleration
 	};
-    if (!gps2.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5) || !gps2.tick())
+    if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5) || !gps.tick())
         return false;
     
     struct {
@@ -330,7 +330,7 @@ static bool gpsInitCmd() {
 		.navBbrMask = 0x0000,   // Hot start
 		.resetMode  = 0x09      // Controlled GPS start
 	};
-    if (!gps2.send(UBX_CFG, UBX_CFG_RST, cfg_rst) || !gps2.tick())
+    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst) || !gps.tick())
         return false;
     
     return true;
@@ -348,7 +348,7 @@ static void gpsDirectToSerial(uint8_t c) {
 }
 
 void gpsProcess() {
-    gps2.tick(direct ? &gpsDirectToSerial : NULL);
+    gps.tick(direct ? &gpsDirectToSerial : NULL);
     
     while (direct && Serial.available())
         ss.write( Serial.read() );
@@ -360,7 +360,6 @@ void gpsProcess() {
         ((ageRecv.timeutc + 500) > m) &&
         ((ageRecv.sol     + 500) > m) &&
         ((ageRecv.pvt     + 500) > m);
-    //    gps.encode( ss.read() );
 }
 
 /* ------------------------------------------------------------------------------------------- *
