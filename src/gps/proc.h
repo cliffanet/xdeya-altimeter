@@ -1,5 +1,5 @@
 /*
-    GPS
+    GPS - processing
 */
 
 #ifndef _gps_H

@@ -1,7 +1,7 @@
 
 #include "main.h"
 
-#include "../gps.h"
+#include "../gps/proc.h"
 #include "../altimeter.h"
 #include "../file/track.h"
 #include "../cfg/point.h"

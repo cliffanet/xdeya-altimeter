@@ -4,7 +4,7 @@
 
 #include "../power.h" // pwrBattValue()
 #include "../altimeter.h" // altCalc()
-#include "../gps.h"
+#include "../gps/proc.h"
 
 class ViewInfoDebug : public ViewInfo {
     public:

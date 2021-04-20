@@ -1,13 +1,13 @@
 
-#include "gps.h"
-#include "log.h"
+#include "proc.h"
+#include "../log.h"
 
 // будем использовать стандартный экземпляр класса HardwareSerial, 
 // т.к. он и так в системе уже есть и память под него выделена
 // Стандартные пины для свободного аппаратного Serial2: 16(rx), 17(tx)
 #define ss Serial2
 
-#include "gps/ubloxproto.h"
+#include "ubloxproto.h"
 static UbloxGpsProto gps(ss);
 
 static gps_data_t data = { 0 };

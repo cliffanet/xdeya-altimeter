@@ -1,7 +1,7 @@
 
 #include "jump.h"
 #include "../altimeter.h"
-#include "../gps.h"
+#include "../gps/proc.h"
 #include "../file/log.h"
 #include "../file/track.h"
 

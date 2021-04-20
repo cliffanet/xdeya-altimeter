@@ -4,7 +4,7 @@
 #include "src/log.h"
 #include "src/power.h"
 #include "src/view/main.h"
-#include "src/gps.h"
+#include "src/gps/proc.h"
 #include "src/altcalc.h"
 #include "src/altimeter.h"
 #include "src/file/track.h"

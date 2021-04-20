@@ -3,7 +3,7 @@
 #include "../log.h"
 #include "../power.h"
 #include "../view/base.h"
-#include "../gps.h"
+#include "../gps/proc.h"
 #include "../cfg/main.h"
 #include "../cfg/point.h"
 #include "../cfg/jump.h"
