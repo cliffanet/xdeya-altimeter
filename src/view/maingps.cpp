@@ -47,7 +47,7 @@ inline void drawPointArrow(U8G2 &u8g2, float ang) {
 static void displayCompasFull(U8G2 &u8g2) {
     auto &gps = gpsInf();
 
-    if (gps.numSV == 0) {
+    if (!GPS_VALID(gps)) {
         char s[10];
         u8g2.setFont(u8g2_font_osb26_tr);
         strcpy_P(s, PSTR("NO"));
@@ -58,17 +58,17 @@ static void displayCompasFull(U8G2 &u8g2) {
     }
     
     // Компас и стрелка к точке внутри него
-    if (1) { //gps.course.isValid() && gps.location.isValid()) {
+    if (GPS_LOCATION_VALID(gps) && GPS_HEAD_VALID(gps)) {
         // Компас показывает, куда смещено направление нашего движения 
         // относительно сторон Света,
-        drawCompas(u8g2, DEG_TO_RAD*(360 - gps.heading));
+        drawCompas(u8g2, DEG_TO_RAD*(360 - GPS_DEG(gps.heading)));
         // а стрелка показывает отклонение направления к точке относительно 
         // направления нашего движения
         if (pnt.numValid() && pnt.cur().used) {
             bool in_pnt = 
-                TinyGPSPlus::distanceBetween(
-                    gps.lat,
-                    gps.lon,
+                gpsDistance(
+                    GPS_LATLON(gps.lat),
+                    GPS_LATLON(gps.lon),
                     pnt.cur().lat, 
                     pnt.cur().lng
                 ) < 8.0;
@@ -79,13 +79,13 @@ static void displayCompasFull(U8G2 &u8g2) {
             }
             else {
                 double courseto = 
-                    TinyGPSPlus::courseTo(
-                        gps.lat,
-                        gps.lon,
+                    gpsCourse(
+                        GPS_LATLON(gps.lat),
+                        GPS_LATLON(gps.lon),
                         pnt.cur().lat, 
                         pnt.cur().lng
                     );
-                drawPointArrow(u8g2, DEG_TO_RAD*(courseto-gps.heading));
+                drawPointArrow(u8g2, DEG_TO_RAD*(courseto-GPS_DEG(gps.heading)));
             }
             
             u8g2.drawDisc(32, 31, 6);
@@ -126,18 +126,18 @@ class ViewMainGps : public ViewMain {
             u8g2.drawStr(65, 8, s);
 
             // Текущие координаты
-            if (1) { //gps.location.isValid()) {
-                sprintf_P(s, PSTR("la:%f"), gps.lat);
+            if (GPS_LOCATION_VALID(gps)) {
+                sprintf_P(s, PSTR("la:%f"), GPS_LATLON(gps.lat));
                 u8g2.drawStr(65, 22, s);
-                sprintf_P(s, PSTR("lo:%f"), gps.lon);
+                sprintf_P(s, PSTR("lo:%f"), GPS_LATLON(gps.lon));
                 u8g2.drawStr(65, 34, s);
             }
 
-            if (/*gps.location.isValid() && */pnt.numValid() && pnt.cur().used) {
+            if (GPS_LOCATION_VALID(gps) && pnt.numValid() && pnt.cur().used) {
                 double dist = 
-                    TinyGPSPlus::distanceBetween(
-                        gps.lat,
-                        gps.lon,
+                    gpsDistance(
+                        GPS_LATLON(gps.lat),
+                        GPS_LATLON(gps.lon),
                         pnt.cur().lat, 
                         pnt.cur().lng
                     );
@@ -212,15 +212,15 @@ class ViewMainGpsAlt : public ViewMain {
             u8g2.drawStr(128-u8g2.getStrWidth(s), 30, s);
     
             // Далее жпс данные
-            if (gps.numSV == 0)
+            if (!GPS_VALID(gps))
                 return;
     
             // 
-            if (/* gps.location.isValid() && */ pnt.numValid() && pnt.cur().used) {
+            if (GPS_LOCATION_VALID(gps) && pnt.numValid() && pnt.cur().used) {
                 double dist = 
-                    TinyGPSPlus::distanceBetween(
-                        gps.lat,
-                        gps.lon,
+                    gpsDistance(
+                        GPS_LATLON(gps.lat),
+                        GPS_LATLON(gps.lon),
                         pnt.cur().lat, 
                         pnt.cur().lng
                     );
@@ -237,9 +237,9 @@ class ViewMainGpsAlt : public ViewMain {
                 u8g2.drawStr(128-u8g2.getStrWidth(s), 54, s);
             }
     
-            if (1) { //gps.speed.isValid()) {
+            if (GPS_SPEED_VALID(gps)) {
                 u8g2.setFont(u8g2_font_helvB08_tf);
-                sprintf_P(s, PSTR("%0.1f m/s"), gps.gSpeed/100);
+                sprintf_P(s, PSTR("%0.1f m/s"), GPS_CM(gps.gSpeed));
                 u8g2.drawStr(64, 64, s);
             }
         }

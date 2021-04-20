@@ -20,6 +20,14 @@ static bool direct = false;
 /* ------------------------------------------------------------------------------------------- *
  *  GPS-получение данных
  * ------------------------------------------------------------------------------------------- */
+static struct {
+    uint32_t posllh = 0;
+    uint32_t velned = 0;
+    uint32_t timeutc = 0;
+    uint32_t sol = 0;
+    uint32_t pvt = 0;
+} ageRecv;
+
 static void gpsRecvPosllh(UbloxGpsProto &gps) {
     struct {
     	uint32_t iTOW;     // GPS time of week             (ms)
@@ -39,6 +47,7 @@ static void gpsRecvPosllh(UbloxGpsProto &gps) {
 	data.hMSL   = nav.hMSL;
 	data.hAcc   = nav.hAcc;
 	data.vAcc   = nav.vAcc;
+    ageRecv.posllh = millis();
 }
 static void gpsRecvVelned(UbloxGpsProto &gps) {
     struct {
@@ -64,6 +73,7 @@ static void gpsRecvVelned(UbloxGpsProto &gps) {
     data.heading= nav.heading;
     data.sAcc   = nav.sAcc;
     data.cAcc   = nav.cAcc;
+    ageRecv.velned = millis();
 }
 static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
     struct {
@@ -89,6 +99,7 @@ static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
     data.tm.h   = nav.hour;
     data.tm.m   = nav.min;
     data.tm.s   = nav.sec;
+    ageRecv.timeutc = millis();
 }
 static void gpsRecvSol(UbloxGpsProto &gps) {
     struct {
@@ -116,6 +127,7 @@ static void gpsRecvSol(UbloxGpsProto &gps) {
     
     data.gpsFix = nav.gpsFix;
     data.numSV  = nav.numSV;
+    ageRecv.sol = millis();
 }
 static void gpsRecvPvt(UbloxGpsProto &gps) {
     struct {
@@ -159,6 +171,7 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
     
 	data.gpsFix = nav.gpsFix;
 	data.numSV  = nav.numSV;
+    ageRecv.pvt = millis();
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -168,6 +181,7 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
 TinyGPSPlus &gpsGet() { return gps; }
 const gps_data_t &gpsInf() { return data; };
 
+uint32_t gpsRecv() { return gps2.cntRecv(); }
 uint32_t gpsRecvError() { return gps2.cntRecvErr(); }
 uint32_t gpsCmdUnknown() { return gps2.cntCmdUnknown(); }
 
@@ -277,7 +291,7 @@ static bool gpsInitCmd() {
     	uint16_t timeRef;   // Alignment to reference time:
     	                       //   0 = UTC time; 1 = GPS time
     } cfg_mrate = {
-		.measRate   = 100,      // Measurement rate (ms)
+		.measRate   = 200,      // Measurement rate (ms)
 		.navRate    = 1,        // Navigation rate (cycles)
 		.timeRef    = 0         // UTC time
 	};
@@ -338,6 +352,14 @@ void gpsProcess() {
     
     while (direct && Serial.available())
         ss.write( Serial.read() );
+
+    uint32_t m = millis();
+    data.rcvok =
+        ((ageRecv.posllh  + 500) > m) &&
+        ((ageRecv.velned  + 500) > m) &&
+        ((ageRecv.timeutc + 500) > m) &&
+        ((ageRecv.sol     + 500) > m) &&
+        ((ageRecv.pvt     + 500) > m);
     //    gps.encode( ss.read() );
 }
 
@@ -348,3 +370,52 @@ void gpsDirectTgl() {
     direct = !direct;
 }
 bool gpsDirect() { return direct; }
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Калькуляция
+ * ------------------------------------------------------------------------------------------- */
+double gpsDistance(double lat1, double long1, double lat2, double long2) {
+  // returns distance in meters between two positions, both specified
+  // as signed decimal-degrees latitude and longitude. Uses great-circle
+  // distance computation for hypothetical sphere of radius 6372795 meters.
+  // Because Earth is no exact sphere, rounding errors may be up to 0.5%.
+  // Courtesy of Maarten Lamers
+  double delta = radians(long1-long2);
+  double sdlong = sin(delta);
+  double cdlong = cos(delta);
+  lat1 = radians(lat1);
+  lat2 = radians(lat2);
+  double slat1 = sin(lat1);
+  double clat1 = cos(lat1);
+  double slat2 = sin(lat2);
+  double clat2 = cos(lat2);
+  delta = (clat1 * slat2) - (slat1 * clat2 * cdlong);
+  delta = sq(delta);
+  delta += sq(clat2 * sdlong);
+  delta = sqrt(delta);
+  double denom = (slat1 * slat2) + (clat1 * clat2 * cdlong);
+  delta = atan2(delta, denom);
+  
+  return delta * 6372795;
+}
+
+double gpsCourse(double lat1, double long1, double lat2, double long2) {
+  // returns course in degrees (North=0, West=270) from position 1 to position 2,
+  // both specified as signed decimal-degrees latitude and longitude.
+  // Because Earth is no exact sphere, calculated course may be off by a tiny fraction.
+  // Courtesy of Maarten Lamers
+  double dlon = radians(long2-long1);
+  lat1 = radians(lat1);
+  lat2 = radians(lat2);
+  double a1 = sin(dlon) * cos(lat2);
+  double a2 = sin(lat1) * cos(lat2) * cos(dlon);
+  a2 = cos(lat1) * sin(lat2) - a2;
+  a2 = atan2(a1, a2);
+  if (a2 < 0.0)
+  {
+    a2 += TWO_PI;
+  }
+  
+  return degrees(a2);
+}

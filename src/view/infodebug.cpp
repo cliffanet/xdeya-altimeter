@@ -8,7 +8,7 @@
 
 class ViewInfoDebug : public ViewInfo {
     public:
-        ViewInfoDebug() : ViewInfo(21) {}
+        ViewInfoDebug() : ViewInfo(23) {}
         
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL) {
@@ -32,13 +32,13 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 2:
-                    PRNL("GPS longitude");
-                    PRNR("%d", gpsInf().lon);
+                    PRNL("GPS lon");
+                    PRNR("%f", GPS_LATLON(gpsInf().lon));
                     break;
                 
                 case 3:
-                    PRNL("GPS latitude");
-                    PRNR("%d", gpsInf().lat);
+                    PRNL("GPS lat");
+                    PRNR("%f", GPS_LATLON(gpsInf().lat));
                     break;
                 
                 case 4:
@@ -52,78 +52,94 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 6:
+                    PRNL("GPS recv bytes");
+                    if (gpsRecv() > 1024*1024)
+                        PRNR("%lu M", gpsRecv()/1024/1024);
+                    else
+                    if (gpsRecv() > 1024)
+                        PRNR("%lu k", gpsRecv()/1024);
+                    else
+                        PRNR("%lu b", gpsRecv());
+                    break;
+                
+                case 7:
                     PRNL("GPS recv error");
                     PRNR("%lu", gpsRecvError());
                     break;
                 
-                case 7:
+                case 8:
                     PRNL("GPS cmd unknown");
                     PRNR("%lu", gpsCmdUnknown());
                     break;
                 
-                case 8:
-                    PRNL("GPS hMSL");
-                    PRNR("%ld mm", gpsInf().hMSL);
-                    break;
-                
                 case 9:
-                    PRNL("GPS hAcc");
-                    PRNR("%lu mm", gpsInf().hAcc);
+                    PRNL("GPS hMSL");
+                    PRNR("%.2f m", GPS_MM(gpsInf().hMSL));
                     break;
                 
                 case 10:
-                    PRNL("GPS vAcc");
-                    PRNR("%lu mm", gpsInf().vAcc);
+                    PRNL("GPS hAcc");
+                    PRNR("%.2f m", GPS_MM(gpsInf().hAcc));
                     break;
                 
                 case 11:
-                    PRNL("GPS velN");
-                    PRNR("%ld cm/s", gpsInf().velN);
+                    PRNL("GPS vAcc");
+                    PRNR("%.2f m", GPS_MM(gpsInf().vAcc));
                     break;
                 
                 case 12:
-                    PRNL("GPS velE");
-                    PRNR("%ld cm/s", gpsInf().velE);
+                    PRNL("GPS velN");
+                    PRNR("%.2f m/s", GPS_CM(gpsInf().velN));
                     break;
                 
                 case 13:
-                    PRNL("GPS velD");
-                    PRNR("%ld cm/s", gpsInf().velD);
+                    PRNL("GPS velE");
+                    PRNR("%.2f m/s", GPS_CM(gpsInf().velE));
                     break;
                 
                 case 14:
-                    PRNL("GPS speed");
-                    PRNR("%ld cm/s", gpsInf().speed);
+                    PRNL("GPS velD");
+                    PRNR("%.2f m/s", GPS_CM(gpsInf().velD));
                     break;
                 
                 case 15:
-                    PRNL("GPS gSpeed");
-                    PRNR("%ld cm/s", gpsInf().gSpeed);
+                    PRNL("GPS speed");
+                    PRNR("%.2f m/s", GPS_CM(gpsInf().speed));
                     break;
                 
                 case 16:
-                    PRNL("GPS heading");
-                    PRNR("%ld deg", gpsInf().heading);
+                    PRNL("GPS gSpeed");
+                    PRNR("%.2f m/s", GPS_CM(gpsInf().gSpeed));
                     break;
                 
                 case 17:
-                    PRNL("GPS sAcc");
-                    PRNR("%lu cm/s", gpsInf().sAcc);
+                    PRNL("GPS heading");
+                    PRNR("%.1f deg", GPS_DEG(gpsInf().heading));
                     break;
                 
                 case 18:
-                    PRNL("GPS cAcc");
-                    PRNR("%lu deg", gpsInf().cAcc);
+                    PRNL("GPS sAcc");
+                    PRNR("%.2f m/s", GPS_CM(gpsInf().sAcc));
                     break;
                 
                 case 19:
+                    PRNL("GPS cAcc");
+                    PRNR("%.1f deg", GPS_DEG(gpsInf().cAcc));
+                    break;
+                
+                case 20:
                     PRNL("GPS date");
                     PRNR("%d.%02d.%02d", gpsInf().tm.day, gpsInf().tm.mon, gpsInf().tm.year);
                     break;
                 
-                case 20:
+                case 21:
                     PRNL("GPS time");
                     PRNR("%d:%02d:%02d", gpsInf().tm.h, gpsInf().tm.m, gpsInf().tm.s);
+                    break;
+                
+                case 22:
+                    PRNL("GPS nano");
+                    PRNR("%.1f", (double)(gpsInf().tm.nano) / 1000);
                     break;
             }
         }

@@ -92,6 +92,7 @@ bool UbloxGpsProto::tick(void (*readhnd)(uint8_t c)) {
     
     while (_uart->available()) {
         uint8_t c = _uart->read();
+        cntrecv++;
         if (readhnd != NULL)
             readhnd(c);
         if (!recv(c, false)) {

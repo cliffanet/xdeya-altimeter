@@ -56,11 +56,11 @@ void loop() {
     gpsProcess();
 
     if (millis() >= tmadj) {
-        auto &gps = gpsGet();
+        auto &gps = gpsInf();
         //CONSOLE("bef: %ld", gps.time.age());
-        if ((gps.time.age() >= 0) && (gps.time.age() < 500)) {
+        if (GPS_TIME_VALID(gps)) {
             // set the Time to the latest GPS reading
-            setTime(gps.time.hour(), gps.time.minute(), gps.time.second(), gps.date.day(), gps.date.month(), gps.date.year());
+            setTime(gps.tm.h, gps.tm.m, gps.tm.s, gps.tm.day, gps.tm.mon, gps.tm.year);
             adjustTime(cfg.d().timezone * 60);
             tmadj = millis() + TIME_ADJUST_INTERVAL;
         }

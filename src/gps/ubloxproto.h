@@ -100,6 +100,7 @@ class UbloxGpsProto
         void hndzero(ubloxgps_hnditem_t &h);
         uint8_t hndcall(uint8_t cl, uint8_t id);
         
+        uint32_t cntRecv() const { return cntrecv; }
         uint32_t cntRecvErr() const { return cntrecverr; }
         uint32_t cntCmdUnknown() const { return cntcmdunknown; }
   
@@ -113,7 +114,7 @@ class UbloxGpsProto
         uint32_t cnftimeout;
         ubloxgps_hnditem_t hndall[UBX_HND_SIZE];
         
-        uint32_t cntrecverr=0, cntcmdunknown=0;
+        uint32_t cntrecv=0, cntrecverr=0, cntcmdunknown=0;
         
         void rcvcks(uint8_t c);
         bool rcvconfirm(bool isok);

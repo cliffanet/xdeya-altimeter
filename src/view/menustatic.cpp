@@ -213,15 +213,15 @@ static const menu_el_t menugpsupoint[] {
                 return;
             }
             
-            TinyGPSPlus &gps = gpsGet();
-            if ((gps.satellites.value() == 0) || !gps.location.isValid()) {
+            auto &gps = gpsInf();
+            if (!GPS_LOCATION_VALID(gps)) {
                 // Или к моменту срабатывания длинного нажатия может не быть валидных координат (потеряны спутники)
                 menuFlashP(PSTR("GPS not valid"));
                 return;
             }
             
             // Сохраняем
-            pnt.locSet(gps.location.lat(), gps.location.lng());
+            pnt.locSet(GPS_LATLON(gps.lat), GPS_LATLON(gps.lon));
             if (!pnt.save()) {
                 menuFlashP(PSTR("EEPROM fail"));
                 return;
