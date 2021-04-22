@@ -48,12 +48,8 @@ static void displayCompasFull(U8G2 &u8g2) {
     auto &gps = gpsInf();
 
     if (!GPS_VALID(gps)) {
-        char s[10];
-        u8g2.setFont(u8g2_font_osb26_tr);
-        strcpy_P(s, PSTR("NO"));
-        u8g2.drawStr((62-u8g2.getStrWidth(s))/2, 28, s);
-        strcpy_P(s, PSTR("SAT"));
-        u8g2.drawStr((62-u8g2.getStrWidth(s))/2, 60, s);
+        u8g2.setFont(u8g2_font_open_iconic_www_4x_t);
+        u8g2.drawGlyph(16, 48, 'J');
         return;
     }
     

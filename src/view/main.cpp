@@ -28,10 +28,29 @@ void ViewMain::btnLong(btn_code_t btn) {
 }
 
 void ViewMain::drawState(U8G2 &u8g2) {
-    u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.setDrawColor(1);
+#if HWVER >= 3
+    uint16_t bv = pwrBattValue();
+    if ((bv > 2600) || ((millis() % 2000) >= 1000)) {
+        u8g2.setFont(u8g2_font_battery19_tn);
+        char b = 
+                bv > 3400 ? '5' :
+                bv > 3300 ? '4' :
+                bv > 3200 ? '3' :
+                bv > 3000 ? '2' :
+                bv > 2800 ? '1' :
+                '0';
+        u8g2.drawGlyph(0, 20, b);
+    }
+    if (pwrBattCharge()) {
+        u8g2.setFont(u8g2_font_open_iconic_embedded_1x_t);
+        u8g2.drawGlyph(10, 9, 'C');
+    }
+#endif
+    
+    u8g2.setFont(u8g2_font_helvB08_tr);
 
-#if HWVER > 1
+#if HWVER == 2
     char s[10];
     sprintf_P(s, PSTR("%d"), pwrBattValue());
     u8g2.drawStr(0, 8, s);

@@ -53,6 +53,9 @@ static void hwOn() {
     delay(200);
     pinMode(HWPOWER_PIN_BATIN, INPUT);
 #endif
+#if HWVER >= 3
+    pinMode(HWPOWER_PIN_BATCHRG, INPUT_PULLUP);
+#endif
     //displayOn();
     CONSOLE("hw on");
 }
@@ -116,5 +119,11 @@ void pwrOff() {
 #if HWVER > 1
 uint16_t pwrBattValue() {
     return analogRead(HWPOWER_PIN_BATIN);
+}
+#endif
+
+#if HWVER >= 3
+bool pwrBattCharge() {
+    return digitalRead(HWPOWER_PIN_BATCHRG) == LOW;
 }
 #endif
