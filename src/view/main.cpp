@@ -35,9 +35,9 @@ void ViewMain::drawState(U8G2 &u8g2) {
     if ((bv > 2600) || ((millis() % 2000) >= 1000)) {
         u8g2.setFont(u8g2_font_battery19_tn);
         char b = 
-                bv > 3400 ? '5' :
-                bv > 3300 ? '4' :
-                bv > 3200 ? '3' :
+                bv > 3300 ? '5' :
+                bv > 3250 ? '4' :
+                bv > 3150 ? '3' :
                 bv > 3000 ? '2' :
                 bv > 2800 ? '1' :
                 '0';
