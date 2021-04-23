@@ -1,6 +1,7 @@
 
 #include "main.h"
 #include "info.h"
+#include "../clock.h"
 
 class ViewMainTime : public ViewMain {
     public:
@@ -17,7 +18,7 @@ class ViewMainTime : public ViewMain {
     
             drawState(u8g2);
     
-            if (!timeOk()) {
+            if (!tmNow().valid) {
                 u8g2.setFont(u8g2_font_ncenB14_tr); 
                 strcpy_P(s, PSTR("Clock wait"));
                 u8g2.setCursor((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, 20);
@@ -29,12 +30,12 @@ class ViewMainTime : public ViewMain {
             }
 
             u8g2.setFont(u8g2_font_logisoso38_tn); 
-            sprintf_P(s, PSTR("%2d:%02d"), hour(), minute());
+            sprintf_P(s, PSTR("%2d:%02d"), tmNow().h, tmNow().m);
             u8g2.setCursor((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, 47);
             u8g2.print(s);
 
             u8g2.setFont(u8g2_font_ncenB08_tr); 
-            sprintf_P(s, PSTR("%2d.%02d.%d"), day(), month(), year());
+            sprintf_P(s, PSTR("%2d.%02d.%d"), tmNow().day, tmNow().mon, tmNow().year);
             u8g2.drawStr(0, 64, s);
         }
 };

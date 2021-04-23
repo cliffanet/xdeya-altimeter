@@ -1,5 +1,5 @@
 /*
-    Menu Base class
+    Power functions
 */
 
 #ifndef _power_H

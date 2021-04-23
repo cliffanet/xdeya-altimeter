@@ -4,6 +4,7 @@
 
 #include "ubloxproto.h"
 #include "../log.h"
+#include <Arduino.h> // millis()
 
 
 bool UbloxGpsProto::recv(uint8_t c, bool clearonfail) {

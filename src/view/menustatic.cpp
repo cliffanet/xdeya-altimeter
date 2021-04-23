@@ -2,6 +2,7 @@
 #include "menu.h"
 #include "../log.h"
 #include "../power.h"
+#include "../clock.h"
 #include "../view/base.h"
 #include "../gps/proc.h"
 #include "../cfg/main.h"
@@ -493,17 +494,14 @@ static const menu_el_t menutime[] {
                 if (cfg.d().timezone >= 12*60)      // Ограничение выбора часового пояса
                     return;
                 cfg.set().timezone += 30;             // часовые пояса смещаем по 30 минут
-                adjustTime(30 * 60);            // сразу применяем настройки
-                                            // adjustTime меняет время от текущего,
-                                            // поэтому надо передавать не абсолютное значение,
-                                            // а смещение от текущего значения, т.е. по 30 минут
+                clockForceAdjust();            // сразу применяем настройки
             }
             else
             if (val == 1) {
                 if (cfg.d().timezone <= -12*60)
                     return;
                 cfg.set().timezone -= 30;
-                adjustTime(-30 * 60);
+                clockForceAdjust();
             }
         },
     },

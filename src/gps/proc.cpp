@@ -5,6 +5,7 @@
 // будем использовать стандартный экземпляр класса HardwareSerial, 
 // т.к. он и так в системе уже есть и память под него выделена
 // Стандартные пины для свободного аппаратного Serial2: 16(rx), 17(tx)
+#include <Arduino.h> // Serial, millis()
 #define ss Serial2
 
 #include "ubloxproto.h"

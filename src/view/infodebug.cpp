@@ -3,12 +3,13 @@
 #include "main.h"
 
 #include "../power.h" // pwrBattValue()
+#include "../clock.h" // sys time
 #include "../altimeter.h" // altCalc()
 #include "../gps/proc.h"
 
 class ViewInfoDebug : public ViewInfo {
     public:
-        ViewInfoDebug() : ViewInfo(23) {}
+        ViewInfoDebug() : ViewInfo(26) {}
         
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL) {
@@ -140,6 +141,21 @@ class ViewInfoDebug : public ViewInfo {
                 case 22:
                     PRNL("GPS nano");
                     PRNR("%.1f", (double)(gpsInf().tm.nano) / 1000);
+                    break;
+                
+                case 23:
+                    PRNL("Sys date");
+                    PRNR("%d.%02d.%02d", tmNow().day, tmNow().mon, tmNow().year);
+                    break;
+                
+                case 24:
+                    PRNL("Sys time");
+                    PRNR("%d:%02d:%02d", tmNow().h, tmNow().m, tmNow().s);
+                    break;
+                
+                case 25:
+                    PRNL("Sys tm valid");
+                    PRNR("%d", tmNow().valid);
                     break;
             }
         }
