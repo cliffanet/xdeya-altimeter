@@ -110,6 +110,7 @@ class ViewMainGps : public ViewMain {
             char s[50];
     
             drawState(u8g2);
+            drawClock(u8g2);
     
             displayCompasFull(u8g2);
             if (gps.numSV == 0)
@@ -172,6 +173,7 @@ class ViewMainGpsAlt : public ViewMain {
             char s[50];
     
             drawState(u8g2);
+            drawClock(u8g2);
     
             displayCompasFull(u8g2);
     

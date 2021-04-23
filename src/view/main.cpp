@@ -4,6 +4,7 @@
 #include "menu.h"
 #include "../log.h"
 #include "../power.h" // pwrBattValue()
+#include "../clock.h"
 #include "../file/track.h"
 
 static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_GPS; // Текущая страница отображения, сохраняется при переходе в меню
@@ -70,6 +71,18 @@ void ViewMain::drawState(U8G2 &u8g2) {
 #ifdef USE4BUTTON
     u8g2.setDrawColor(1);
 #endif
+}
+
+void ViewMain::drawClock(U8G2 &u8g2) {
+    if (!tmNow().valid)
+        return;
+    
+    u8g2.setDrawColor(1);
+    u8g2.setFont(u8g2_font_tom_thumb_4x6_mn);
+    
+    char s[10];
+    sprintf_P(s, PSTR("%d:%02d"), tmNow().h, tmNow().m);
+    u8g2.drawStr(53, 6, s);
 }
 
 void setViewMain(int8_t m, bool save) {

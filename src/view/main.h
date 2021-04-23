@@ -29,6 +29,7 @@ class ViewMain : public ViewBase {
         bool useLong(btn_code_t btn) { return true; };
         
         void drawState(U8G2 &u8g2);
+        void drawClock(U8G2 &u8g2);
 };
 
 void setViewMain(int8_t mode = MODE_MAIN_LAST, bool save = true);

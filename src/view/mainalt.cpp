@@ -16,6 +16,7 @@ class ViewMainAlt : public ViewMain {
             auto &ac = altCalc();
     
             drawState(u8g2);
+            drawClock(u8g2);
 
             u8g2.setFont(u8g2_font_fub49_tn);
             sprintf_P(s, PSTR("%0.1f"), ac.alt() / 1000);
