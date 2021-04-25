@@ -86,7 +86,7 @@ void ViewMenu::updStr(int16_t i) {
         s.name[sizeof(s.name)-1] = '\0';
         s.val[sizeof(s.val)-1] = '\0';
     }
-    CONSOLE("ViewMenu::updStr: [%d] %d: %s", i, n, str[n].name);
+    //CONSOLE("ViewMenu::updStr: [%d] %d: %s", i, n, str[n].name);
 }
 void ViewMenu::setTop(int16_t _itop) {
     itop = _itop;

@@ -66,6 +66,7 @@ const gps_data_t &gpsInf();
 uint32_t gpsRecv();
 uint32_t gpsRecvError();
 uint32_t gpsCmdUnknown();
+uint32_t gpsDataAge();
 void gpsInit();
 void gpsProcess();
 

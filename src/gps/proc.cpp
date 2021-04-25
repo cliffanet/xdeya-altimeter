@@ -181,6 +181,18 @@ const gps_data_t &gpsInf() { return data; };
 uint32_t gpsRecv() { return gps.cntRecv(); }
 uint32_t gpsRecvError() { return gps.cntRecvErr(); }
 uint32_t gpsCmdUnknown() { return gps.cntCmdUnknown(); }
+uint32_t gpsDataAge() {
+    uint32_t frst = ageRecv.posllh;
+    if (frst > ageRecv.velned)
+        frst = ageRecv.velned;
+    if (frst > ageRecv.timeutc)
+        frst = ageRecv.timeutc;
+    if (frst > ageRecv.sol)
+        frst = ageRecv.sol;
+    if (frst > ageRecv.pvt)
+        frst = ageRecv.pvt;
+    return millis()-frst;
+}
 
 
 /* ------------------------------------------------------------------------------------------- *

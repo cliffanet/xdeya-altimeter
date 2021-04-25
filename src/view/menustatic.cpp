@@ -29,10 +29,10 @@ typedef struct {
 
 class ViewMenuStatic : public ViewMenu {
     public:
-        ViewMenuStatic(const menu_el_t *m, int16_t sz) : ViewMenu(sz), menu(m) {};
+        ViewMenuStatic(const menu_el_t *m, int16_t sz, bool autoupdate = false) : ViewMenu(sz), menu(m), aupd(autoupdate) {};
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
-            CONSOLE("ViewMenuStatic::getStr: %d", i);
+            //CONSOLE("ViewMenuStatic::getStr: %d", i);
             auto &m = menu[i];
     
             strncpy_P(str.name, m.name, sizeof(str.name));
@@ -147,11 +147,14 @@ class ViewMenuStatic : public ViewMenu {
                     }
                 }
             }
+            
+            if (aupd)
+                updStr();
         }
     
     private:
         const menu_el_t *menu;
-        bool isedit = false;
+        bool isedit = false, aupd = false;
 };
 
 /* ------------------------------------------------------------------------------------------- *
@@ -165,6 +168,9 @@ static void valOn(char *txt, bool val) {    // On/Off
 }
 static void valYes(char *txt, bool val) {   // Yes/No
     strcpy_P(txt, val ? PSTR("Yes") : PSTR("No"));
+}
+static void valOk(char *txt, bool val) {    // On/Off
+    strcpy_P(txt, val ? PSTR("OK") : PSTR("fail"));
 }
 static void valDsplAuto(char *txt, int8_t val) {
     switch (val) {
@@ -524,6 +530,104 @@ static const menu_el_t menupower[] {
 static ViewMenuStatic vMenuPower(menupower, sizeof(menupower)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Меню тестирования оборудования
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menuhwtest[] {
+    {
+        .name = PSTR("Clock"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            sprintf_P(txt, PSTR("%d:%02d:%02d"), tmNow().h, tmNow().m, tmNow().s);
+        },
+    },
+#if HWVER > 1
+    {
+        .name = PSTR("Battery"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            char ok[10];
+            uint16_t bval = pwrBattValue();
+            float vpin = 3.35 * bval / 4095;
+            
+            valOk(ok, (bval > 2400) && (bval < 3450));
+            sprintf_P(txt, PSTR("(%0.2fv) %s"), vpin * 3 / 2, ok);
+        },
+    },
+#endif
+#if HWVER >= 3
+    {
+        .name = PSTR("Batt charge"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) { valYes(txt, pwrBattCharge()); },
+    },
+#endif
+    {
+        .name = PSTR("Pressure"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            char ok[10];
+            float press = altCalc().presslast();
+            
+            valOk(ok, (press > 60000) && (press < 150000));
+            sprintf_P(txt, PSTR("(%0.0fkPa) %s"), press / 1000, ok);
+        },
+    },
+    {
+        .name = PSTR("Light test"),
+        .submenu = NULL,
+        .enter = [] () {
+            displayLightTgl();
+            delay(2000);
+            displayLightTgl();
+        },
+        .showval = [] (char *txt) { valOn(txt, displayLight()); },
+    },
+    {
+        .name = PSTR("GPS data"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            char ok[10];
+            uint32_t dage = gpsDataAge();
+            
+            valOk(ok, dage < 250);
+            if (dage < 1000)
+                sprintf_P(txt, PSTR("(%d ms) %s"), dage, ok);
+            else
+            if (dage < 30000)
+                sprintf_P(txt, PSTR("(%d s) fail"), dage / 1000);
+            else
+                strcpy_P(txt, PSTR("no data"));
+        },
+    },
+#if HWVER > 1
+    {
+        .name = PSTR("GPS power restart"),
+        .submenu = NULL,
+        .enter = [] () {
+            digitalWrite(HWPOWER_PIN_GPS, HIGH);
+            delay(1000);
+            digitalWrite(HWPOWER_PIN_GPS, LOW);
+            menuFlashP(PSTR("GPS restarted"), 10);
+        },
+    },
+#endif
+    {
+        .name = PSTR("GPS init"),
+        .submenu = NULL,
+        .enter = [] () {
+            gpsInit();
+            menuFlashP(PSTR("GPS inited"), 10);
+        },
+    },
+};
+static ViewMenuStatic vMenuHwTest(menuhwtest, sizeof(menuhwtest)/sizeof(menu_el_t), true);
+
+/* ------------------------------------------------------------------------------------------- *
  *  Меню управления остальными системными настройками
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menusystem[] {
@@ -550,6 +654,10 @@ static const menu_el_t menusystem[] {
         .submenu = NULL,
         .enter = gpsDirectTgl,
         .showval = [] (char *txt) { valOn(txt, gpsDirect()); },
+    },
+    {
+        .name       = PSTR("Hardware test"),
+        .submenu    = &vMenuHwTest,
     },
 };
 static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_t));
