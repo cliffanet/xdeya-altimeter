@@ -25,11 +25,11 @@
 #define GPS_CM(x)       ((double)(x) / GPS_KOEF_CM)
 
 #define GPS_VALID(gps)              (gps.rcvok && (gps.numSV > 0) && (gps.gpsFix == 3))
-#define GPS_LOCATION_VALID(gps)     (GPS_VALID(gps) && (gps.hAcc < 30000))
-#define GPS_VERTICAL_VALID(gps)     (GPS_VALID(gps) && (gps.vAcc < 30000))
-#define GPS_SPEED_VALID(gps)        (GPS_LOCATION_VALID(gps) && (gps.sAcc < 1000))
-#define GPS_HEAD_VALID(gps)         (GPS_LOCATION_VALID(gps) && (gps.cAcc < 5000000))
-#define GPS_TIME_VALID(gps)         (GPS_VALID(gps) && (gps.tm.year > 2000))
+#define GPS_VALID_LOCATION(gps)     (GPS_VALID(gps) && (gps.hAcc < 30000))
+#define GPS_VALID_VERTICAL(gps)     (GPS_VALID(gps) && (gps.vAcc < 30000))
+#define GPS_VALID_SPEED(gps)        (GPS_VALID_LOCATION(gps) && (gps.sAcc < 1000))
+#define GPS_VALID_HEAD(gps)         (GPS_VALID_LOCATION(gps) && (gps.cAcc < 5000000))
+#define GPS_VALID_TIME(gps)         (GPS_VALID(gps) && (gps.tm.year > 2000))
 
 typedef struct {
 	int32_t  lon;      // Longitude                    (deg * 10^7)

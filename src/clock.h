@@ -12,8 +12,9 @@
 #endif
 
 // Интервал синхронизации времени
-#define TIME_ADJUST_INTERVAL  1200000
-#define TIME_ADJUST_TIMEOUT   (TIME_ADJUST_INTERVAL*3)
+#define TIME_ADJUST_INTERVAL    1200000
+#define TIME_ADJUST_TIMEOUT     (TIME_ADJUST_INTERVAL*3)
+#define TIME_TICK_INTERVAL      200
 //bool timeOk();
     
 typedef struct {
@@ -26,7 +27,14 @@ typedef struct {
     bool     valid;
 } tm_t;
 
+typedef struct {
+    uint32_t uts;
+    uint16_t ms;
+} tm_val_t;
+
 volatile tm_t &tmNow();
+tm_val_t tmValue();
+int32_t tmInterval(const tm_val_t &tmval);
 
 void clockInit();
 void clockForceAdjust();

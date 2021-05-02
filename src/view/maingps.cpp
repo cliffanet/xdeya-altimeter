@@ -54,7 +54,7 @@ static void displayCompasFull(U8G2 &u8g2) {
     }
     
     // Компас и стрелка к точке внутри него
-    if (GPS_LOCATION_VALID(gps) && GPS_HEAD_VALID(gps)) {
+    if (GPS_VALID_LOCATION(gps) && GPS_VALID_HEAD(gps)) {
         // Компас показывает, куда смещено направление нашего движения 
         // относительно сторон Света,
         drawCompas(u8g2, DEG_TO_RAD*(360 - GPS_DEG(gps.heading)));
@@ -123,14 +123,14 @@ class ViewMainGps : public ViewMain {
             u8g2.drawStr(65, 8, s);
 
             // Текущие координаты
-            if (GPS_LOCATION_VALID(gps)) {
+            if (GPS_VALID_LOCATION(gps)) {
                 sprintf_P(s, PSTR("la:%f"), GPS_LATLON(gps.lat));
                 u8g2.drawStr(65, 22, s);
                 sprintf_P(s, PSTR("lo:%f"), GPS_LATLON(gps.lon));
                 u8g2.drawStr(65, 34, s);
             }
 
-            if (GPS_LOCATION_VALID(gps) && pnt.numValid() && pnt.cur().used) {
+            if (GPS_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used) {
                 double dist = 
                     gpsDistance(
                         GPS_LATLON(gps.lat),
@@ -214,7 +214,7 @@ class ViewMainGpsAlt : public ViewMain {
                 return;
     
             // 
-            if (GPS_LOCATION_VALID(gps) && pnt.numValid() && pnt.cur().used) {
+            if (GPS_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used) {
                 double dist = 
                     gpsDistance(
                         GPS_LATLON(gps.lat),
@@ -235,7 +235,7 @@ class ViewMainGpsAlt : public ViewMain {
                 u8g2.drawStr(128-u8g2.getStrWidth(s), 54, s);
             }
     
-            if (GPS_SPEED_VALID(gps)) {
+            if (GPS_VALID_SPEED(gps)) {
                 u8g2.setFont(u8g2_font_helvB08_tf);
                 sprintf_P(s, PSTR("%0.1f m/s"), GPS_CM(gps.gSpeed));
                 u8g2.drawStr(64, 64, s);

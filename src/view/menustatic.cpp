@@ -221,7 +221,7 @@ static const menu_el_t menugpsupoint[] {
             }
             
             auto &gps = gpsInf();
-            if (!GPS_LOCATION_VALID(gps)) {
+            if (!GPS_VALID_LOCATION(gps)) {
                 // Или к моменту срабатывания длинного нажатия может не быть валидных координат (потеряны спутники)
                 menuFlashP(PSTR("GPS not valid"));
                 return;
