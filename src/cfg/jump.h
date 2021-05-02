@@ -8,6 +8,7 @@
 #include "../../def.h"
 #include "main.h"
 #include "../altcalc.h"
+#include "../clock.h"
 
 // имя файла для хранения простых логов
 #define JMPLOG_SIMPLE_NAME          "logsimple"
@@ -22,25 +23,32 @@
 
 // Один из элементов в длинном логбуке (несколько раз в сек)
 typedef struct __attribute__((__aligned__(64), __packed__)) {
-    uint32_t    mill;
-    float       press;
-    float       altorig;
-    float       alt;
-    float       vspeed;
-    ac_state_t  state;
-    ac_direct_t direct;
-    double      lat;
-    double      lng;
-    double      hspeed;
-    uint16_t    hang;
-    uint8_t     sat;
-#ifdef USE4BUTTON
-    bool        btn4push;
-#else
+    int32_t     tmoffset;   // время от начала измерений        (ms)
+    uint16_t    flags;      // флаги: валидность
+    uint8_t     state;      // статус высотомера (земля, подъём, падение, под куполом)
+    uint8_t     direct;     // направление движения по высоте
+    uint16_t    alt;        // высота по барометру              (m)
+    uint16_t    altspeed;   // скорость падения по барометру    (cm/s)
+    uint32_t    lon;        // Longitude                        (deg * 10^7)
+    uint32_t    lat;        // Latitude                         (deg * 10^7)
+    uint32_t    hspeed;     // Ground speed                     (cm/s)
+    int16_t     heading;    // направление движения             (deg)
+    int16_t     gpsalt;     // высота по GPS (над ур моря)      (m)
+    uint32_t    vspeed;     // 3D speed                         (cm/s)
+    uint8_t     sat;        // количество найденных спутников
     uint8_t     _;
-#endif
-    uint16_t    batval;
+    uint16_t    batval;     // raw-показания напряжения на батарее
 } log_item_t;
+
+#define LI_FLAG_GPS_VALID   0x0001
+#define LI_FLAG_GPS_VLOC    0x0002
+#define LI_FLAG_GPS_VVERT   0x0004
+#define LI_FLAG_GPS_VSPEED  0x0008
+#define LI_FLAG_GPS_VHEAD   0x0010
+#define LI_FLAG_GPS_VTIME   0x0020
+#define LI_FLAG_BTN_UP      0x2000
+#define LI_FLAG_BTN_SEL     0x4000
+#define LI_FLAG_BTN_DOWN    0x8000
 
 
 typedef struct __attribute__((__packed__)) {
@@ -90,9 +98,11 @@ class ConfigJump : public Config<cfg_jump_t> {
         uint8_t         count() const { return data.count; }
         log_jmp_state_t state() const { return data.state; }
         const log_jmp_t & last() const{ return data.last; }
+    private:
+        tm_val_t tmval;
 };
 
-log_item_t jmpLogItem();
+log_item_t jmpLogItem(const tm_val_t &tmval);
 void jmpProcess();
 void jmpReset();
 

@@ -4,8 +4,10 @@
 #include "../gps/proc.h"
 #include "log.h"
 #include "../log.h"
+#include "../clock.h"
 
 static trk_running_t state = TRKRUN_NONE;
+static tm_val_t tmval_start;
 File fh;
 
 /* ------------------------------------------------------------------------------------------- *
@@ -23,6 +25,8 @@ bool trkStart(bool force) {
     if (!logRotate(_fname, 0))
         return false;
     
+    tmval_start = tmValue();
+    
     char fname[36];
     
     fname[0] = '/';
@@ -33,6 +37,16 @@ bool trkStart(bool force) {
     fh = DISKFS.open(fname, FILE_WRITE);
     if (!fh)
         return false;
+    
+    trk_head_t th;
+    th.jmpcount = jmp.count();
+    th.utsbeg = tmval_start.uts;
+    
+    auto sz = fh.write(reinterpret_cast<const uint8_t *>(&th), sizeof(th));
+    if (sz != sizeof(log)) {
+        fh.close();
+        return false;
+    }
     
     state = force ? TRKRUN_FORCE : TRKRUN_AUTO;
     CONSOLE("track started %s", force ? "force" : "auto");
@@ -105,7 +119,7 @@ void trkProcess() {
         return;
     
     struct log_item_s <log_item_t> log;
-    log.data = jmpLogItem();
+    log.data = jmpLogItem(tmval_start);
     
     static uint8_t cnt = 0;
     if ((((cnt++) & 0b111) == 0) && !trkCheckAvail()) {

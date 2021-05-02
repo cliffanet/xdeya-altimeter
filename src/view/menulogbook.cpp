@@ -90,7 +90,7 @@ class ViewMenuLogBookInfo : public ViewBase {
             y += 10;
             strcpy_P(s, PSTR("FF time"));
             u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%d s"), (d.cnp.mill-d.beg.mill)/1000);
+            snprintf_P(s, sizeof(s), PSTR("%d s"), d.cnp.tmoffset/1000);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
         }
         

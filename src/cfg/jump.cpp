@@ -4,12 +4,8 @@
 #include "../gps/proc.h"
 #include "../file/log.h"
 #include "../file/track.h"
-
-#ifdef USE4BUTTON
-#include "../button.h" // btn4Pushed()
-#endif
-
-#include "../power.h" // pwrBattValue()
+#include "../view/base.h"   // btnPushed()
+#include "../power.h"       // pwrBattValue()
 
 #include <TimeLib.h>
 
@@ -27,20 +23,9 @@ ConfigJump jmp;
 ConfigJump::ConfigJump() :
     Config(PSTR(CFG_JUMP_NAME), CFG_JUMP_VER)
 {
-    log_item_t li = {
-        .mill   = 0,
-        .press  = 0,
-        .altorig= 0,
-        .alt    = 0,
-        .vspeed = 0,
-        .state  = ACST_INIT,
-        .direct = ACDIR_INIT,
-        .lat    = 0,
-        .lng    = 0,
-        .hspeed = 0,
-        .hang   = 0,
-        .sat    = 0,
-    };
+    log_item_t li = { 0 };
+    li.state = ACST_INIT;
+    li.direct = ACDIR_INIT;
     dt_t dt = { 0 }; 
     
     data.last.num = 0;
@@ -62,19 +47,9 @@ bool ConfigJump::beg() {
     
     data.last.num = data.count;
     
-    time_t utm = now();
-    dt_t dt = {
-        .y      = year(utm),
-        .m      = month(utm),
-        .d      = day(utm),
-        .hh     = hour(utm),
-        .mm     = minute(utm),
-        .ss     = second(utm),
-        .dow    = weekday(utm),
-    };
-    data.last.dt = dt;
+    tmval = tmValue();
     
-    auto li = jmpLogItem();
+    auto li = jmpLogItem(tmval);
     data.last.beg = li;
     data.last.cnp = li;
     data.last.end = li;
@@ -91,7 +66,7 @@ bool ConfigJump::cnp() {
     
     data.state = LOGJMP_CNP;
     
-    auto li = jmpLogItem();
+    auto li = jmpLogItem(tmval);
     data.last.cnp = li;
     data.last.end = li;
     
@@ -107,7 +82,7 @@ bool ConfigJump::end() {
     
     data.state = LOGJMP_NONE;
     
-    data.last.end = jmpLogItem();
+    data.last.end = jmpLogItem(tmval);
     
     if (!save(true))
         return false;
@@ -122,34 +97,67 @@ bool ConfigJump::end() {
 /* ------------------------------------------------------------------------------------------- *
  *  Сбор текущих данных
  * ------------------------------------------------------------------------------------------- */
-log_item_t jmpLogItem() {
+log_item_t jmpLogItem(const tm_val_t &tmval) {
     auto &ac = altCalc();
     auto &gps = gpsInf();
     
     log_item_t li = {
-        .mill   = millis(),
-        .press  = ac.presslast(),
-        .altorig= ac.altlast(),
-        .alt    = ac.alt(),
-        .vspeed = ac.speed(),
-        .state  = ac.state(),
-        .direct = ac.direct(),
-        .lat    = GPS_LATLON(gps.lat),
-        .lng    = GPS_LATLON(gps.lon),
-        .hspeed = GPS_CM(gps.gSpeed),
-        .hang   = GPS_DEG(gps.heading),
-        .sat    = gps.numSV,
-#ifdef USE4BUTTON
-        .btn4push=btn4Pushed(),
-#else
-        ._      = 0,
-#endif
+        .tmoffset   = tmInterval(tmval),
+        .flags      = 0,
+        .state      = 'U',
+        .direct     = 'U',
+        .alt        = ac.alt(),
+        .altspeed   = ac.speed()*100,
+        .lon        = gps.lon,
+        .lat        = gps.lat,
+        .hspeed     = gps.gSpeed,
+        .heading    = GPS_DEG(gps.heading),
+        .gpsalt     = GPS_MM(gps.hMSL),
+        .vspeed     = gps.speed,
+        .sat        = gps.numSV,
+        ._          = 0,
 #if HWVER > 1
-        .batval = pwrBattValue(),
+        .batval     = pwrBattValue(),
 #else
-        .batval = 0,
+        .batval     = 0,
 #endif
     };
+    
+    if (GPS_VALID(gps))
+        li.flags |= LI_FLAG_GPS_VALID;
+    if (GPS_VALID_LOCATION(gps))
+        li.flags |= LI_FLAG_GPS_VLOC;
+    if (GPS_VALID_VERTICAL(gps))
+        li.flags |= LI_FLAG_GPS_VVERT;
+    if (GPS_VALID_SPEED(gps))
+        li.flags |= LI_FLAG_GPS_VSPEED;
+    if (GPS_VALID_HEAD(gps))
+        li.flags |= LI_FLAG_GPS_VHEAD;
+    if (GPS_VALID_TIME(gps))
+        li.flags |= LI_FLAG_GPS_VTIME;
+    
+    if (btnPushed(BTN_UP))
+        li.flags |= LI_FLAG_BTN_UP;
+    if (btnPushed(BTN_SEL))
+        li.flags |= LI_FLAG_BTN_SEL;
+    if (btnPushed(BTN_DOWN))
+        li.flags |= LI_FLAG_BTN_DOWN;
+    
+    switch (ac.state()) {
+        case ACST_INIT:         li.state = 'i'; break;
+        case ACST_GROUND:       li.state = 'g'; break;
+        case ACST_TAKEOFF40:    li.state = 's'; break;
+        case ACST_TAKEOFF:      li.state = 't'; break;
+        case ACST_FREEFALL:     li.state = 'f'; break;
+        case ACST_CANOPY:       li.state = 'c'; break;
+        case ACST_LANDING:      li.state = 'l'; break;
+    }
+    switch (ac.direct()) {
+        case ACDIR_INIT:        li.direct = 'i'; break;
+        case ACDIR_UP:          li.direct = 'u'; break;
+        case ACDIR_NULL:        li.direct = 'n'; break;
+        case ACDIR_DOWN:        li.direct = 'd'; break;
+    }
     
     return li;
 }

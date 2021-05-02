@@ -91,6 +91,8 @@ typedef struct {
 uint32_t btnIdle();
 // время зажатой одной или более кнопок
 uint32_t btnPressed(uint8_t &btn);
+// нажата ли сейчас кнопка
+bool btnPushed(btn_code_t btn);
 
 #ifdef USE4BUTTON
 // нажатие на дополнительную 4ую кнопку

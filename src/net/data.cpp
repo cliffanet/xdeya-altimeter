@@ -117,65 +117,24 @@ static int8_t ntomode(char n) {
 /* ------------------------------------------------------------------------------------------- *
  *  Преобразования log_item_t
  * ------------------------------------------------------------------------------------------- */
-typedef struct __attribute__((__packed__)) {
-    uint32_t    mill;
-    dnet_t      press;
-    dnet_t      altorig;
-    dnet_t      alt;
-    dnet_t      vspeed;
-    char        state;
-    char        direct;
-    dnet_t      lat;
-    dnet_t      lng;
-    dnet_t      hspeed;
-    uint16_t    hang;
-    uint8_t     sat;
-#ifdef USE4BUTTON
-    uint8_t     btn4push;
-#else
-    uint8_t     _;
-#endif
-    uint16_t    batval;
-} net_jmp_t;
-static net_jmp_t jmpton(const log_item_t &j) {
-    net_jmp_t n = {
-        .mill       = htonl(j.mill),
-        .press      = dton(j.press),
-        .altorig    = dton(j.altorig),
-        .alt        = dton(j.alt),
-        .vspeed     = dton(j.vspeed),
-        .state      = 'U',
-        .direct     = 'U',
-        .lat        = dton(j.lat),
-        .lng        = dton(j.lng),
-        .hspeed     = dton(j.hspeed),
-        .hang       = htons(j.hang),
+static log_item_t jmpton(const log_item_t &j) {
+    log_item_t n = {
+        .tmoffset   = htonl(j.tmoffset),
+        .flags      = htons(j.flags),
+        .state      = j.state,
+        .direct     = j.direct,
+        .alt        = htons(j.alt),
+        .altspeed   = htons(j.altspeed),
+        .lon        = htonl(j.lon),
+        .lat        = htonl(j.lat),
+        .hspeed     = htonl(j.hspeed),
+        .heading    = htons(j.heading),
+        .gpsalt     = htons(j.gpsalt),
+        .vspeed     = htonl(j.vspeed),
         .sat        = j.sat,
-#ifdef USE4BUTTON
-        .btn4push   = bton(j.btn4push),
-#else
         ._          = 0,
-#endif
-#if HWVER > 1
         .batval     = htons(j.batval),
-#endif
     };
-    
-    switch (j.state) {
-        case ACST_INIT:         n.state = 'i'; break;
-        case ACST_GROUND:       n.state = 'g'; break;
-        case ACST_TAKEOFF40:    n.state = 's'; break;
-        case ACST_TAKEOFF:      n.state = 't'; break;
-        case ACST_FREEFALL:     n.state = 'f'; break;
-        case ACST_CANOPY:       n.state = 'c'; break;
-        case ACST_LANDING:      n.state = 'l'; break;
-    }
-    switch (j.direct) {
-        case ACDIR_INIT:        n.direct = 'i'; break;
-        case ACDIR_UP:          n.direct = 'u'; break;
-        case ACDIR_NULL:        n.direct = 'n'; break;
-        case ACDIR_DOWN:        n.direct = 'd'; break;
-    }
     
     return n;
 }
@@ -263,9 +222,9 @@ static bool sendLogBookItem(const struct log_item_s<log_jmp_t> *r) {
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t    num;
         dt_t        dt;
-        net_jmp_t   beg;
-        net_jmp_t   cnp;
-        net_jmp_t   end;
+        log_item_t  beg;
+        log_item_t  cnp;
+        log_item_t  end;
     } d = {
         .num    = htonl(j.num),
         .dt     = dtton(j.dt),
@@ -330,7 +289,7 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
 }
 
 static bool sendTrackItem(const struct log_item_s <log_item_t> *r) {
-    net_jmp_t d = jmpton(r->data);
+    log_item_t d = jmpton(r->data);
     
     return srvSend(0x35, d);
 }
