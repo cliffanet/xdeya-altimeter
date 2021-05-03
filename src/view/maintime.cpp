@@ -18,7 +18,7 @@ class ViewMainTime : public ViewMain {
     
             drawState(u8g2);
     
-            if (!tmNow().valid) {
+            if (!tmValid()) {
                 u8g2.setFont(u8g2_font_ncenB14_tr); 
                 strcpy_P(s, PSTR("Clock wait"));
                 u8g2.setCursor((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, 20);

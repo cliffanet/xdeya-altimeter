@@ -74,7 +74,7 @@ void ViewMain::drawState(U8G2 &u8g2) {
 }
 
 void ViewMain::drawClock(U8G2 &u8g2) {
-    if (!tmNow().valid)
+    if (!tmValid())
         return;
     
     u8g2.setDrawColor(1);

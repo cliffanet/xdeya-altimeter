@@ -90,13 +90,13 @@ static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
     if (!gps.bufcopy(nav))
         return;
     
-    data.tm.nano= nav.nano;
     data.tm.year= nav.year;
     data.tm.mon = nav.month;
     data.tm.day = nav.day;
     data.tm.h   = nav.hour;
     data.tm.m   = nav.min;
     data.tm.s   = nav.sec;
+    data.tm.cs  = nav.nano / 10000000;
     ageRecv.timeutc = millis();
 }
 static void gpsRecvSol(UbloxGpsProto &gps) {

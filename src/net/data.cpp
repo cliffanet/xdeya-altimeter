@@ -51,7 +51,7 @@ tm_t tmton(const tm_t &tm) {
 }
 tm_t ntotm(const tm_t &n) {
     auto tm = n;
-    tm.year = htons(tm.year);
+    tm.year = ntohs(tm.year);
     return tm;
 }
 
@@ -138,7 +138,7 @@ static log_item_t jmpton(const log_item_t &j) {
         .vAcc       = htonl(j.vAcc),
         .sAcc       = htonl(j.sAcc),
         .cAcc       = htonl(j.cAcc),
-        .tm         = j.tm,
+        .tm         = tmton(j.tm),
     };
     
     return n;
@@ -274,7 +274,7 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
     
     int32_t pos = 0;
     for (int num = max; num > 0; num--) {
-        pos = logFileRead(sendLogBookItem, PSTR(JMPLOG_SIMPLE_NAME), num, ibeg);
+        pos = logFileReadMono(sendLogBookItem, PSTR(JMPLOG_SIMPLE_NAME), num, ibeg);
         if (pos < 0)
             break;
         CONSOLE("logbook sended ok: %d (ibeg: %d, pos: %d)", num, ibeg, pos);
@@ -291,6 +291,22 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
     };
     
     return srvSend(0x33, d) && (pos > 0);
+}
+
+static bool sendTrackBeg(const struct log_item_s <trk_head_t> *r) {
+    struct __attribute__((__packed__)) {
+        uint32_t id;
+        uint32_t flags;
+        uint32_t jmpnum;
+        tm_t     tmbeg;
+    } d = {
+        .id         = htonl(r->data.id),
+        .flags      = htonl(r->data.flags),
+        .jmpnum     = htonl(r->data.jmpnum),
+        .tmbeg      = tmton(r->data.tmbeg),
+    };
+    
+    return srvSend(0x34, d);
 }
 
 static bool sendTrackItem(const struct log_item_s <log_item_t> *r) {
@@ -327,10 +343,8 @@ bool sendTrack(logchs_t _cks) {
     
     for (int num = max; num > 0; num--) {
         uint8_t n = num;
-        if (!srvSend(0x34, n))
-            return false;
         
-        bool ok = logFileRead(sendTrackItem, PSTR(TRK_FILE_NAME), num) >= 0;
+        bool ok = logFileRead(sendTrackBeg, sendTrackItem, PSTR(TRK_FILE_NAME), num) >= 0;
         auto cks = logChkSumFull(sizeof(struct log_item_s<log_item_t>), PSTR(TRK_FILE_NAME), num);
         
         if (!srvSend(0x36, ckston(cks)) || !ok)

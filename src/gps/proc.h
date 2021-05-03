@@ -6,6 +6,7 @@
 #define _gps_H
 
 #include <stdint.h>
+#include "../clock.h"
 
 #define _GPS_MPH_PER_KNOT 1.15077945
 #define _GPS_MPS_PER_KNOT 0.51444444
@@ -31,17 +32,6 @@
 #define GPS_VALID_HEAD(gps)         (GPS_VALID_LOCATION(gps) && (gps.cAcc < 5000000))
 #define GPS_VALID_TIME(gps)         (GPS_VALID(gps) && (gps.tm.year > 2000))
 
-
-typedef struct {
-	int32_t  nano;     // Nanoseconds of second        (ns)
-	uint16_t year;     // Year                         (1999..2099)
-	uint8_t  mon;      // Month                        (1..12)
-	uint8_t  day;      // Day of month                 (1..31)
-	uint8_t  h;        // Hour of day                  (0..23)
-	uint8_t  m;        // Minute of hour               (0..59)
-	uint8_t  s;        // Second of minute             (0..59)
-} gps_tm_t;
-
 typedef struct {
 	int32_t  lon;      // Longitude                    (deg * 10^7)
 	int32_t  lat;      // Latitude                     (deg * 10^7)
@@ -61,7 +51,7 @@ typedef struct {
 	uint32_t sAcc;     // Speed accuracy estimate      (cm/s)
 	uint32_t cAcc;     // Heading accuracy estimate    (deg * 10^5)
     
-    gps_tm_t tm;
+    tm_t tm;
     bool rcvok;
 } gps_data_t;
 

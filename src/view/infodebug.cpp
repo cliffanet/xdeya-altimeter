@@ -9,7 +9,7 @@
 
 class ViewInfoDebug : public ViewInfo {
     public:
-        ViewInfoDebug() : ViewInfo(27) {}
+        ViewInfoDebug() : ViewInfo(26) {}
         
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL) {
@@ -139,27 +139,22 @@ class ViewInfoDebug : public ViewInfo {
                 
                 case 22:
                     PRNL("GPS time");
-                    PRNR("%d:%02d:%02d", gpsInf().tm.h, gpsInf().tm.m, gpsInf().tm.s);
+                    PRNR("%d:%02d:%02d.%02d", gpsInf().tm.h, gpsInf().tm.m, gpsInf().tm.s, gpsInf().tm.cs);
                     break;
                 
                 case 23:
-                    PRNL("GPS nano");
-                    PRNR("%.1f", (double)(gpsInf().tm.nano) / 1000);
-                    break;
-                
-                case 24:
                     PRNL("Sys date");
                     PRNR("%d.%02d.%02d", tmNow().day, tmNow().mon, tmNow().year);
                     break;
                 
-                case 25:
+                case 24:
                     PRNL("Sys time");
-                    PRNR("%d:%02d:%02d", tmNow().h, tmNow().m, tmNow().s);
+                    PRNR("%d:%02d:%02d.%02d", tmNow().h, tmNow().m, tmNow().s, tmNow().cs);
                     break;
                 
-                case 26:
+                case 25:
                     PRNL("Sys tm valid");
-                    PRNR("%d", tmNow().valid);
+                    PRNR("%d", tmValid() ? 1 : 0);
                     break;
             }
         }

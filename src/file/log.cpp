@@ -205,9 +205,18 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  Чтение всех записей, начиная с индекса i с конца (при i=0 - самая последняя запись, при i=1 - предпоследняя, при i=-1 - читать весь файл)
+ *  Чтение всех записей, начиная с индекса i:
+ *      при i=0 - с первой записи,
+ *      при i=1 - со второй, 
+ *  если dhsz != 0, то от начала файла будет отступ в dhsz байт, которые ередадутся через hndhead
+ *  
+ *      
  * ------------------------------------------------------------------------------------------- */
-int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *_fname, uint16_t fnum, size_t ibeg) {
+int32_t logFileRead(
+            bool (*hndhead)(const uint8_t *data), uint16_t dhsz, 
+            bool (*hnditem)(const uint8_t *data), uint16_t disz, 
+            const char *_fname, uint16_t fnum, size_t ibeg
+        ) {
     char fname[36];
     const byte flen = logFName(fname, sizeof(fname), _fname);
     
@@ -218,35 +227,55 @@ int32_t logFileRead(bool (*hnd)(const uint8_t *data), uint16_t dsz, const char *
     File fh = DISKFS.open(fname);
     if (!fh) return -1;
     
-    CONSOLE("logFileRead open: %s (%d) avail: %d/%d/%d", fname, ibeg, fh.size(), fh.available(), dsz);
+    CONSOLE("logFileRead open: %s (%d) avail: %d/%d/%d/%d", fname, ibeg, fh.size(), fh.available(), dhsz, disz);
     
-    if (ibeg > 0) {
-        size_t sz = dsz * ibeg;
-        if (sz >= fh.size())
-            return fh.size() / dsz;
-        fh.seek(sz);
+    if (dhsz > 0) {
+        if (fh.available() < dhsz)
+            return 0;
+        if (hndhead != NULL) {
+            uint8_t data[dhsz];
+            auto sz = fh.read(data, dhsz);
+            if (
+                    (sz != dhsz) ||
+                    (data[0] != LOG_MGC1) ||
+                    (data[dhsz-1] != LOG_MGC2) ||
+                    !hndhead(data)
+                ) {
+                CONSOLE("logFileRead head err: sz=%d, dhsz=%d, MGC1=0x%02X, MGC2=0x%02X", sz, dhsz, data[0], data[dhsz-1]);
+                fh.close();
+                return -1;
+            }
+        }
     }
     
-    uint8_t data[dsz];
+    if (ibeg >= 0) {
+        size_t sz = dhsz + (disz * ibeg);
+        if (sz >= fh.size())
+            return (fh.size()-dhsz) / disz;
+        fh.seek(sz, SeekSet);
+    }
     
-    while (fh.available() >= dsz) {
-        auto sz = fh.read(data, dsz);
+    uint8_t data[disz];
+    int32_t cnt = 0;
+    
+    while (fh.available() >= disz) {
+        auto sz = fh.read(data, disz);
         if (
-                (sz != dsz) ||
+                (sz != disz) ||
                 (data[0] != LOG_MGC1) ||
-                (data[dsz-1] != LOG_MGC2) ||
-                !hnd(data)
+                (data[disz-1] != LOG_MGC2) ||
+                !hnditem(data)
             ) {
-            CONSOLE("logFileRead err: [%d] sz=%d, dsz=%d, MGC1=0x%02X, MGC2=0x%02X", ibeg, sz, dsz, data[0], data[dsz-1]);
+            CONSOLE("logFileRead item err: [%d] sz=%d, dsz=%d, MGC1=0x%02X, MGC2=0x%02X", ibeg, sz, disz, data[0], data[disz-1]);
             fh.close();
             return -1;
         }
-        ibeg++;
+        cnt++;
     }
     
     fh.close();
     
-    return ibeg;
+    return cnt;
 }
 
 /* ------------------------------------------------------------------------------------------- *

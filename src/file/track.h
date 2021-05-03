@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include "../cfg/jump.h"
 #include "../cfg/main.h"
+#include "../clock.h"
 
 #define TRK_FILE_NAME       "track"
 #define TRK_PRESERV_COUNT   32
@@ -21,18 +22,14 @@ typedef enum {
 
 // Заголовок трека
 typedef struct __attribute__((__packed__)) {
-    uint8_t mgc1 = CFG_MGC1;                // mgc1 и mgc2 служат для валидации текущих данных в eeprom
-    uint8_t ver = CFG_MAIN_VER;
-    uint16_t __ = 0;                        // резерв
     uint32_t id = 0;                        // пока не ведётся, но нужно запоминать ID в отдельном файле и делать ему inc
                                             // при каждом новом треке,
                                             // чтобы при синхронизации понимать где последний отправленный на веб
     uint32_t flags = 0;                     // флаги - пока не используются
     uint32_t jmpnum;                        // текущий номер прыга на момент старта записи
-    uint32_t utsbeg;                        // дата/время старта записи трека
+    tm_t     tmbeg;                         // дата/время старта записи трека
     
-    uint8_t _[7] = { 0 };                   // резерв
-    uint8_t mgc2 = CFG_MGC2;
+    uint8_t _[8] = { 0 };                   // резерв
 } trk_head_t;
 
 bool trkStart(bool force = true);

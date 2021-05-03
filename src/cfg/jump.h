@@ -9,7 +9,6 @@
 #include "main.h"
 #include "../altcalc.h"
 #include "../clock.h"
-#include "../gps/proc.h"
 
 // имя файла для хранения простых логов
 #define JMPLOG_SIMPLE_NAME          "logsimple"
@@ -28,8 +27,8 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
     uint16_t    flags;      // флаги: валидность
     uint8_t     state;      // статус высотомера (земля, подъём, падение, под куполом)
     uint8_t     direct;     // направление движения по высоте
-    uint16_t    alt;        // высота по барометру              (m)
-    uint16_t    altspeed;   // скорость падения по барометру    (cm/s)
+    int16_t     alt;        // высота по барометру              (m)
+    int16_t     altspeed;   // скорость падения по барометру    (cm/s)
     uint32_t    lon;        // Longitude                        (deg * 10^7)
     uint32_t    lat;        // Latitude                         (deg * 10^7)
     uint32_t    hspeed;     // Ground speed                     (cm/s)
@@ -44,7 +43,7 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
 	uint32_t    vAcc;       // Vertical accuracy estimate   (mm)
 	uint32_t    sAcc;       // Speed accuracy estimate      (cm/s)
 	uint32_t    cAcc;       // Heading accuracy estimate    (deg * 10^5)
-    gps_tm_t    tm;
+    tm_t        tm;
 } log_item_t;
 
 #define LI_FLAG_GPS_VALID   0x0001

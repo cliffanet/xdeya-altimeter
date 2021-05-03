@@ -24,7 +24,7 @@ typedef struct __attribute__((__packed__)) {
 	uint8_t  h;        // Hour of day                  (0..23)
 	uint8_t  m;        // Minute of hour               (0..59)
 	uint8_t  s;        // Second of minute             (0..59)
-    bool     valid;
+    uint8_t  cs;       // cs (1/100 of second)
 } tm_t;
 
 typedef struct {
@@ -32,7 +32,8 @@ typedef struct {
     uint16_t ms;
 } tm_val_t;
 
-tm_t tmNow();
+tm_t &tmNow();
+bool tmValid();
 tm_val_t tmValue();
 int32_t tmInterval(const tm_val_t &tmval);
 

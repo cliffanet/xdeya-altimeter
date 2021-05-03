@@ -10,7 +10,8 @@
  *  работа с часами
  * ------------------------------------------------------------------------------------------- */
 
-static volatile RTC_DATA_ATTR tm_t tm = { 0 };
+static RTC_DATA_ATTR tm_t tm = { 0 };
+static RTC_DATA_ATTR bool tmvalid = false;
 static volatile RTC_DATA_ATTR uint32_t tmcnt = 0;
 
 #if HWVER >= 3
@@ -23,18 +24,8 @@ static RTC_Millis rtc;
  *  
  * ------------------------------------------------------------------------------------------- */
 
-tm_t tmNow() { 
-    tm_t tm1 = {
-        .year   = tm.year,
-	    .mon    = tm.mon,
-	    .day    = tm.day,
-	    .h      = tm.h,
-	    .m      = tm.m,
-	    .s      = tm.s,
-        .valid  = tm.valid,
-    };
-    return tm1;
-}
+tm_t &tmNow() { return tm; }
+bool tmValid() { return tmvalid; }
     //bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >= TIME_ADJUST_TIMEOUT)); }
 tm_val_t tmValue() {
     auto dt = rtc.now();
@@ -66,12 +57,13 @@ static void clockUpd() {
     tm.h    = dt.hour();
     tm.m    = dt.minute();
     tm.s    = dt.second();
-    tm.valid= dt.isValid()
+    tm.cs   = 0;
+    
+    tmvalid = dt.isValid()
 #if HWVER >= 3
                 && !rtc.lostPower()
 #endif
-                    ? 1 : 0;
-    
+    ;
 }
 
 void clockInit() {
@@ -100,7 +92,7 @@ void clockForceAdjust() {
 }
 
 void clockProcess() {
-    if ((millis() >= adj) || !tm.valid) {
+    if ((millis() >= adj) || !tmvalid) {
         auto &gps = gpsInf();
         if (GPS_VALID_TIME(gps)) {
             // set the Time to the latest GPS reading
@@ -108,7 +100,7 @@ void clockProcess() {
             rtc.adjust(DateTime(dtgps.unixtime() + cfg.d().timezone * 60));
             CONSOLE("time ajust - gps: %d.%02d.%d %2d:%02d:%02d, tm: %d.%02d.%d %2d:%02d:%02d / %d", 
                 gps.tm.year, gps.tm.mon, gps.tm.day, gps.tm.h, gps.tm.m, gps.tm.s,
-                tm.year, tm.mon, tm.day, tm.h, tm.m, tm.s, tm.valid);
+                tm.year, tm.mon, tm.day, tm.h, tm.m, tm.s, tmvalid);
             adj = millis() + TIME_ADJUST_INTERVAL;
 #if HWVER >= 3
             istick = true;
@@ -125,5 +117,8 @@ void clockProcess() {
     }
     else
 #endif
+    {
         tmcnt++;
+        tm.cs = tmcnt*TIME_TICK_INTERVAL / 10;
+    }
 }
