@@ -17,7 +17,7 @@
 #define TIME_TICK_INTERVAL      200
 //bool timeOk();
     
-typedef struct {
+typedef struct __attribute__((__packed__)) {
 	uint16_t year;     // Year                         (1999..2099)
 	uint8_t  mon;      // Month                        (1..12)
 	uint8_t  day;      // Day of month                 (1..31)
@@ -32,7 +32,7 @@ typedef struct {
     uint16_t ms;
 } tm_val_t;
 
-volatile tm_t &tmNow();
+tm_t tmNow();
 tm_val_t tmValue();
 int32_t tmInterval(const tm_val_t &tmval);
 

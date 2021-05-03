@@ -39,11 +39,11 @@ bool trkStart(bool force) {
         return false;
     
     trk_head_t th;
-    th.jmpcount = jmp.count();
+    th.jmpnum = jmp.count();
     th.utsbeg = tmval_start.uts;
     
     auto sz = fh.write(reinterpret_cast<const uint8_t *>(&th), sizeof(th));
-    if (sz != sizeof(log)) {
+    if (sz != sizeof(th)) {
         fh.close();
         return false;
     }

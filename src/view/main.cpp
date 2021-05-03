@@ -66,7 +66,7 @@ void ViewMain::drawState(U8G2 &u8g2) {
 #endif
     
     if (trkRunning() && ((millis() % 2000) >= 1000))
-        u8g2.drawGlyph(0, 16, 'R');
+        u8g2.drawGlyph(0, 64, 'R');
     
 #ifdef USE4BUTTON
     u8g2.setDrawColor(1);

@@ -6,6 +6,7 @@
 #include "../file/wifi.h"
 #include "../cfg/webjoin.h"
 #include "../cfg/point.h"
+#include "../cfg/jump.h"
 #include "../net/srv.h"
 #include "../net/data.h"
 

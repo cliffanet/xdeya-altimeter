@@ -23,7 +23,18 @@ static RTC_Millis rtc;
  *  
  * ------------------------------------------------------------------------------------------- */
 
-volatile tm_t &tmNow() { return tm; }
+tm_t tmNow() { 
+    tm_t tm1 = {
+        .year   = tm.year,
+	    .mon    = tm.mon,
+	    .day    = tm.day,
+	    .h      = tm.h,
+	    .m      = tm.m,
+	    .s      = tm.s,
+        .valid  = tm.valid,
+    };
+    return tm1;
+}
     //bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >= TIME_ADJUST_TIMEOUT)); }
 tm_val_t tmValue() {
     auto dt = rtc.now();

@@ -8,7 +8,7 @@
 #include <Arduino.h>
 
 #include "../file/log.h"
-#include "../cfg/jump.h"
+#include "../clock.h"
 
 typedef struct __attribute__((__packed__)) {
     uint32_t i;
@@ -35,8 +35,8 @@ float ntof(uint16_t n);
 
 dnet_t dton(double val);
 
-dt_t dtton(const dt_t &dt);
-dt_t ntodt(const dt_t &n);
+tm_t tmton(const tm_t &tm);
+tm_t ntotm(const tm_t &n);
 
 logchs_t ckston(const logchs_t &cks);
 logchs_t ntocks(const logchs_t &n);

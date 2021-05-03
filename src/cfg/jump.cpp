@@ -26,10 +26,10 @@ ConfigJump::ConfigJump() :
     log_item_t li = { 0 };
     li.state = ACST_INIT;
     li.direct = ACDIR_INIT;
-    dt_t dt = { 0 }; 
+    tm_t tm = { 0 }; 
     
     data.last.num = 0;
-    data.last.dt = dt;
+    data.last.tm = tm;
     data.last.beg = li;
     data.last.cnp = li;
     data.last.end = li;
@@ -46,6 +46,7 @@ bool ConfigJump::beg() {
     data.state = LOGJMP_BEG;
     
     data.last.num = data.count;
+    data.last.tm = tmNow();
     
     tmval = tmValue();
     
@@ -121,6 +122,11 @@ log_item_t jmpLogItem(const tm_val_t &tmval) {
 #else
         .batval     = 0,
 #endif
+        .hAcc       = gps.hAcc,
+        .vAcc       = gps.vAcc,
+        .sAcc       = gps.sAcc,
+        .cAcc       = gps.cAcc,
+        .tm         = gps.tm,
     };
     
     if (GPS_VALID(gps))

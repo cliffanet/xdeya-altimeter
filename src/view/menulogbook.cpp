@@ -69,28 +69,34 @@ class ViewMenuLogBookInfo : public ViewBase {
             u8g2.setDrawColor(1);
             int8_t y = 10-1+14;
     
-            const auto &dt = d.dt;
-            snprintf_P(s, sizeof(s), PSTR("%2d.%02d.%04d"), dt.d, dt.m, dt.y);
+            const auto &tm = d.tm;
+            snprintf_P(s, sizeof(s), PSTR("%2d.%02d.%04d"), tm.day, tm.mon, tm.year);
             u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%2d:%02d"), dt.hh, dt.mm);
+            snprintf_P(s, sizeof(s), PSTR("%2d:%02d"), tm.h, tm.m);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
     
             y += 10;
             strcpy_P(s, PSTR("Alt"));
             u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%.0f"), d.beg.alt);
+            snprintf_P(s, sizeof(s), PSTR("%d"), d.beg.alt);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
     
             y += 10;
             strcpy_P(s, PSTR("Deploy"));
             u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%.0f"), d.cnp.alt);
+            snprintf_P(s, sizeof(s), PSTR("%d"), d.cnp.alt);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
     
             y += 10;
             strcpy_P(s, PSTR("FF time"));
             u8g2.drawStr(0, y, s);
             snprintf_P(s, sizeof(s), PSTR("%d s"), d.cnp.tmoffset/1000);
+            u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+    
+            y += 10;
+            strcpy_P(s, PSTR("CNP time"));
+            u8g2.drawStr(0, y, s);
+            snprintf_P(s, sizeof(s), PSTR("%d s"), (d.end.tmoffset-d.cnp.tmoffset)/1000);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
         }
         
@@ -123,9 +129,9 @@ class ViewMenuLogBook : public ViewMenu {
     
             struct log_item_s<log_jmp_t> r;
             if (logRead(r, PSTR(JMPLOG_SIMPLE_NAME), i)) {
-                auto &dt = r.data.dt;
+                auto &tm = r.data.tm;
                 snprintf_P(str.name, sizeof(str.name), PSTR("%2d.%02d.%02d %2d:%02d"),
-                                dt.d, dt.m, dt.y % 100, dt.hh, dt.mm);
+                                tm.day, tm.mon, tm.year % 100, tm.h, tm.m);
                 snprintf_P(str.val, sizeof(str.val), PSTR("%d"), r.data.num);
             }
             else {

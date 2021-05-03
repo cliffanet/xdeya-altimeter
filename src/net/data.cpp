@@ -44,15 +44,15 @@ dnet_t dton(double val) {
     return n;
 }
 
-dt_t dtton(const dt_t &dt) {
-    auto n = dt;
-    n.y = htons(n.y);
+tm_t tmton(const tm_t &tm) {
+    auto n = tm;
+    n.year = htons(n.year);
     return n;
 }
-dt_t ntodt(const dt_t &n) {
-    auto dt = n;
-    dt.y = htons(dt.y);
-    return dt;
+tm_t ntotm(const tm_t &n) {
+    auto tm = n;
+    tm.year = htons(tm.year);
+    return tm;
 }
 
 logchs_t ckston(const logchs_t &cks) {
@@ -134,6 +134,11 @@ static log_item_t jmpton(const log_item_t &j) {
         .sat        = j.sat,
         ._          = 0,
         .batval     = htons(j.batval),
+        .hAcc       = htonl(j.hAcc),
+        .vAcc       = htonl(j.vAcc),
+        .sAcc       = htonl(j.sAcc),
+        .cAcc       = htonl(j.cAcc),
+        .tm         = j.tm,
     };
     
     return n;
@@ -221,13 +226,13 @@ static bool sendLogBookItem(const struct log_item_s<log_jmp_t> *r) {
     const auto &j = r->data;
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t    num;
-        dt_t        dt;
+        tm_t        tm;
         log_item_t  beg;
         log_item_t  cnp;
         log_item_t  end;
     } d = {
         .num    = htonl(j.num),
-        .dt     = dtton(j.dt),
+        .tm     = tmton(j.tm),
         .beg    = jmpton(j.beg),
         .cnp    = jmpton(j.cnp),
         .end    = jmpton(j.end)
