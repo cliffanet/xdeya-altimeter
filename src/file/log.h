@@ -107,13 +107,14 @@ int32_t logFileReadMono(
  *  Контрольная сумма файла
  * ------------------------------------------------------------------------------------------- */
 typedef struct  __attribute__((__packed__)) logchs_s {
-    uint32_t    cs;
+    uint16_t    csa;
+    uint16_t    csb;
     uint32_t    sz;
     
     bool operator== (const struct logchs_s & cks) {
-        return (this == &cks) || ((this->cs == cks.cs) && (this->sz == cks.sz));
+        return (this == &cks) || ((this->csa == cks.csa) && (this->csb == cks.csb) && (this->sz == cks.sz));
     };
-    operator bool() { return (cs != 0) && (sz != 0); }
+    operator bool() { return (csa != 0) && (csb != 0) && (sz != 0); }
 } logchs_t;
 
 logchs_t logChkSumFull(size_t dsz, const char *_fname, uint8_t num = 1);

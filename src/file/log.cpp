@@ -286,7 +286,7 @@ int32_t logFileRead(
 logchs_t logChkSumFull(size_t dsz, const char *_fname, uint8_t num) {
     char fname[36];
     const byte flen = logFName(fname, sizeof(fname), _fname);
-    logchs_t cks = { 0, 0 };
+    logchs_t cks = { 0, 0, 0 };
     uint8_t data[dsz];
     
     logFSuffix(fname+flen, num);
@@ -299,19 +299,24 @@ logchs_t logChkSumFull(size_t dsz, const char *_fname, uint8_t num) {
     }
     cks.sz = fh.size();
     
-    for (size_t i=0; i<dsz; i++)
-        cks.cs += data[i];
+    for (size_t i=0; i<dsz; i++) {
+        cks.csa += data[i];
+        cks.csb += cks.csa;
+    }
     
     fh.seek(cks.sz - dsz);
     if (fh.read(data, dsz) != dsz) {
-        cks.cs = 0;
+        cks.csa = 0;
+        cks.csb = 0;
         cks.sz = 0;
         fh.close();
         return cks;
     }
     
-    for (size_t i=0; i<dsz; i++)
-        cks.cs += data[i];
+    for (size_t i=0; i<dsz; i++) {
+        cks.csa += data[i];
+        cks.csb += cks.csa;
+    }
     
     fh.close();
     return cks;
@@ -333,12 +338,15 @@ uint32_t logChkSumBeg(size_t dsz, const char *_fname, uint8_t num) {
         return 0;
     }
     
-    uint16_t cs = 0;
-    for (size_t i=0; i<dsz; i++)
-        cs += data[i];
+    uint8_t csa = 0;
+    uint8_t csb = 0;
+    for (size_t i=0; i<dsz; i++) {
+        csa += data[i];
+        csb += csa;
+    }
     
     fh.close();
-    return (cs << 16) | (dsz & 0xff);
+    return (csa << 24) | (csb << 16) | (dsz & 0xffff);
 }
 
 uint8_t logFind(const char *_fname, size_t dsz, const logchs_t &cks) {

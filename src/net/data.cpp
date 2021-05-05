@@ -57,13 +57,15 @@ tm_t ntotm(const tm_t &n) {
 
 logchs_t ckston(const logchs_t &cks) {
     logchs_t n;
-    n.cs = htonl(cks.cs);
+    n.csa = htons(cks.csa);
+    n.csb = htons(cks.csb);
     n.sz = htonl(cks.sz);
     return n;
 }
 logchs_t ntocks(const logchs_t &n) {
     logchs_t cks;
-    cks.cs = ntohl(n.cs);
+    cks.csa = ntohs(n.csa);
+    cks.csb = ntohs(n.csb);
     cks.sz = ntohl(n.sz);
     return cks;
 }
@@ -319,7 +321,7 @@ bool sendTrack(logchs_t _cks) {
     int max;
     int32_t ibeg = 0;
     
-    CONSOLE("sendTrack: chksum: %08x%08x", _cks.cs, _cks.sz);
+    CONSOLE("sendTrack: chksum: %04x%04x%08x", _cks.csa, _cks.csb, _cks.sz);
     
     if (_cks) {
         max = logFind(PSTR(TRK_FILE_NAME), sizeof(struct log_item_s<log_item_t>), _cks);

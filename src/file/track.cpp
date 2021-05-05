@@ -39,7 +39,7 @@ bool trkStart(bool force) {
         return false;
     
     struct log_item_s <trk_head_t> th;
-    th.data.jmpnum = jmp.count();
+    th.data.jmpnum = jmp.count()+1;
     th.data.tmbeg = tmNow();
     
     auto sz = fh.write(reinterpret_cast<const uint8_t *>(&th), sizeof(th));
