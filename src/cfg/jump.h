@@ -35,6 +35,7 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
     int16_t     heading;    // направление движения             (deg)
     int16_t     gpsalt;     // высота по GPS (над ур моря)      (m)
     uint32_t    vspeed;     // 3D speed                         (cm/s)
+    uint32_t    gpsdage;    // gps data age
     uint8_t     sat;        // количество найденных спутников
     uint8_t     _;
     uint16_t    batval;     // raw-показания напряжения на батарее

@@ -133,6 +133,7 @@ static log_item_t jmpton(const log_item_t &j) {
         .heading    = htons(j.heading),
         .gpsalt     = htons(j.gpsalt),
         .vspeed     = htonl(j.vspeed),
+        .gpsdage    = htonl(j.gpsdage),
         .sat        = j.sat,
         ._          = 0,
         .batval     = htons(j.batval),

@@ -115,6 +115,7 @@ log_item_t jmpLogItem(const tm_val_t &tmval) {
         .heading    = GPS_DEG(gps.heading),
         .gpsalt     = GPS_MM(gps.hMSL),
         .vspeed     = gps.speed,
+        .gpsdage    = gpsDataAge(),
         .sat        = gps.numSV,
         ._          = 0,
 #if HWVER > 1
