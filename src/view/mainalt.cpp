@@ -1,6 +1,6 @@
 
 #include "main.h"
-#include "../altimeter.h"
+#include "../jump/proc.h"
 
 class ViewMainAlt : public ViewMain {
     public:

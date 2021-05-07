@@ -4,7 +4,7 @@
 
 #include "../power.h" // pwrBattValue()
 #include "../clock.h" // sys time
-#include "../altimeter.h" // altCalc()
+#include "../jump/proc.h" // altCalc()
 #include "../gps/proc.h"
 
 class ViewInfoDebug : public ViewInfo {

@@ -1,6 +1,6 @@
 
 #include "track.h"
-#include "../altimeter.h"
+#include "../jump/proc.h"
 #include "../gps/proc.h"
 #include "log.h"
 #include "../log.h"

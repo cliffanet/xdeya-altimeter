@@ -6,8 +6,7 @@
 #include "src/clock.h"
 #include "src/view/main.h"
 #include "src/gps/proc.h"
-#include "src/altcalc.h"
-#include "src/altimeter.h"
+#include "src/jump/proc.h"
 #include "src/file/track.h"
 #include "src/cfg/main.h"
 #include "src/cfg/point.h"
@@ -31,7 +30,7 @@ void setup() {
     viewInit();
     
     // инициализируем высотомер
-    altInit();
+    jmpInit();
 
     // инициируем gps
     gpsInit();
@@ -48,11 +47,10 @@ void setup() {
 void loop() {
     clockProcess();
     gpsProcess();
-    altProcess();
     jmpProcess();
     trkProcess();
     viewProcess();
     delay(100);
-    altProcess();
+    jmpProcess();
     delay(100);
 }

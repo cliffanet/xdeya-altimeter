@@ -1,7 +1,7 @@
 
 #include "base.h"
 #include "../cfg/main.h"
-#include "../altimeter.h"
+#include "../jump/proc.h"
 
 /* ------------------------------------------------------------------------------------------- *
  *  Текущий View
