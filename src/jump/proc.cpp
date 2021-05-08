@@ -9,12 +9,10 @@
 
 #include <Adafruit_BMP280.h>
 
-bool bmpok = false;
-
 #if HWVER <= 1
-static Adafruit_BMP280 bme; // hardware Wire
+static Adafruit_BMP280 bmp; // hardware Wire
 #else
-static Adafruit_BMP280 bme(5); // hardware SPI on IO5
+static Adafruit_BMP280 bmp(5); // hardware SPI on IO5
 #endif
 
 static AltCalc ac;
@@ -137,7 +135,7 @@ log_item_t jmpLogItem(const tm_val_t &tmval) {
  *  Инициализация
  * ------------------------------------------------------------------------------------------- */
 void jmpInit() {
-    if (!bme.begin(BMP280_ADDRESS_ALT)) {   
+    if (!bmp.begin(BMP280_ADDRESS_ALT)) {   
         CONSOLE("Could not find a valid BMP280 sensor, check wiring!");
     }
 }
@@ -148,7 +146,7 @@ void jmpInit() {
 void jmpProcess() {
     static uint32_t _mill = millis();
     uint32_t m = millis();
-    ac.tick(bme.readPressure(), m-_mill);
+    ac.tick(bmp.readPressure(), m-_mill);
     _mill = m;
     
     // Автокорректировка нуля
@@ -157,7 +155,7 @@ void jmpProcess() {
         (ac.direct() == ACDIR_FLAT) &&
         (ac.dirtm() >= ALT_AUTOGND_INTERVAL)) {
         ac.gndreset();
-        ac.dirtmreset();
+        ac.dirreset();
         CONSOLE("auto GND reseted");
     }
     
@@ -168,8 +166,7 @@ void jmpProcess() {
     altstate = ac.state();
     
     if ((jmpst == JMP_NONE) &&
-        ((ac.state() == ACST_FREEFALL) || (ac.state() == ACST_CANOPY)) &&
-        (ac.direct() == ACDIR_DOWN)) {
+        ((ac.state() == ACST_FREEFALL) || (ac.state() == ACST_CANOPY))) {
         // Включаем запись лога прыга
         jmpst = JMP_FREEFALL; // Самое начало прыга помечаем в любом случае как FF,
                               // т.к. из него можно перейти в CNP, но не обратно (именно для jmp)
@@ -180,7 +177,7 @@ void jmpProcess() {
         jmp.beg();
     }
     
-    if ((jmpst > JMP_FREEFALL) && (ac.state() == ACST_CANOPY)) {
+    if ((jmpst == JMP_FREEFALL) && (ac.state() == ACST_CANOPY)) {
         // Переход в режим CNP после начала прыга,
         // Дальше только окончание прыга может быть, даже если начнётся снова FF,
         // Для jmp только такой порядок переходов,
@@ -193,8 +190,6 @@ void jmpProcess() {
     
     if ((jmpst > JMP_NONE) && (ac.state() == ACST_GROUND)) {
         // Прыг закончился совсем, сохраняем результат
-        //if (jmp == JMP_FREEFALL) // Был пропущен момент перехода на JMP_CANOPY
-        //    jmpcnp = li;
         jmpst = JMP_NONE;
         
         if (trkState() == TRKRUN_AUTO)

@@ -79,24 +79,24 @@ class ViewInfoDebug : public ViewInfo {
                 case 11:
                     PRNL("Alt dir");
                     switch (altCalc().direct()) {
-                        case ACDIR_INIT:    PRNR("init");   break;
-                        case ACDIR_ERR:     PRNR("err");    break;
-                        case ACDIR_UP:      PRNR("up");     break;
-                        case ACDIR_FLAT:    PRNR("flat");   break;
-                        case ACDIR_DOWN:    PRNR("down");   break;
+                        case ACDIR_INIT:    PRNR("init / %d s", altCalc().dirtm()/1000);    break;
+                        case ACDIR_ERR:     PRNR("err / %d s",  altCalc().dirtm()/1000);    break;
+                        case ACDIR_UP:      PRNR("up / %d s",   altCalc().dirtm()/1000);    break;
+                        case ACDIR_FLAT:    PRNR("flat / %d s", altCalc().dirtm()/1000);    break;
+                        case ACDIR_DOWN:    PRNR("down / %d s", altCalc().dirtm()/1000);    break;
                     }
                     break;
                 
                 case 12:
                     PRNL("Alt mode");
                     switch (altCalc().state()) {
-                        case ACST_INIT:     PRNR("init");   break;
-                        case ACST_GROUND:   PRNR("gnd");    break;
-                        case ACST_TAKEOFF40:PRNR("to40");   break;
-                        case ACST_TAKEOFF:  PRNR("toff");   break;
-                        case ACST_FREEFALL: PRNR("ff");     break;
-                        case ACST_CANOPY:   PRNR("cnp");    break;
-                        case ACST_LANDING:  PRNR("land");   break;
+                        case ACST_INIT:     PRNR("init / %d s", altCalc().statetm()/1000);  break;
+                        case ACST_GROUND:   PRNR("gnd / %d s",  altCalc().statetm()/1000);  break;
+                        case ACST_TAKEOFF40:PRNR("to40 / %d s", altCalc().statetm()/1000);  break;
+                        case ACST_TAKEOFF:  PRNR("toff / %d s", altCalc().statetm()/1000);  break;
+                        case ACST_FREEFALL: PRNR("ff / %d s",   altCalc().statetm()/1000);  break;
+                        case ACST_CANOPY:   PRNR("cnp / %d s",  altCalc().statetm()/1000);  break;
+                        case ACST_LANDING:  PRNR("land / %d s", altCalc().statetm()/1000);  break;
                     }
                     break;
                 

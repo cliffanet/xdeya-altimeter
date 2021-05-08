@@ -10,10 +10,10 @@
 #define AC_LEVEL1_COUNT     10
 #define AC_LEVEL2_COUNT     4
 
-// Порог вертикальной скорости, при котором считается, что высота не меняется km/s
-#define AC_DIR_SPEED        0.0015
-// Коэфициент отклонения A от среднего, при котором отклонение считается слишком сильным (нельзя вычислять состояние)
-#define AC_DIR_ERROR        0.1
+// Порог скорости для режима FLAT (abs, km/s)
+#define AC_SPEED_FLAT       0.0015
+// Порог срабатывания режима freefall (abs, km/s)
+#define AC_SPEED_FREEFALL   0.030
 
 // states
 typedef enum {
@@ -70,12 +70,14 @@ class AltCalc
         const ac_state_t    state()     const { return _state; }
         // Время с предыдущего изменения режима высоты
         const uint32_t      statetm()   const { return _statetm; }
-        void statetmreset() { _statetm = 0; }
+        const uint32_t      statecnt()  const { return _statecnt; }
+        void statereset() { _statecnt = 0; _statetm = 0; }
         // Направление вертикального движения (вверх/вниз)
         const ac_direct_t   direct()    const { return _dir; }
         // Как долго сохраняется текущее направления движения (в ms)
         const uint32_t      dirtm()     const { return _dirtm; }
-        void dirtmreset() { _dirtm = 0; }
+        const uint32_t      dircnt()    const { return _dircnt; }
+        void dirreset() { _dircnt = 0; _dirtm = 0; }
         
         // поля для отладки коэфициентов
         // среднее значение коэфициента A на всём протяжении _d2
@@ -103,8 +105,8 @@ class AltCalc
         uint8_t cur2 = 0;
         ac_state_t _state = ACST_INIT;
         ac_direct_t _dir = ACDIR_INIT;
-        uint32_t _dirtm = 0;
-        uint32_t _statetm = 0;
+        uint32_t _dircnt = 0, _dirtm = 0;
+        uint32_t _statecnt = 0, _statetm = 0;
         double _kaavg = 0, _adiffmax = 0;
 };
 

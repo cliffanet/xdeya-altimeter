@@ -57,6 +57,9 @@ void AltCalc::tick(float press, uint16_t interval)
         l1calc();
         // количество тиков между изменениями в направлении движения (вверх/вниз)
         _dirtm += interval;
+        _dircnt ++;
+        _statetm += interval;
+        _statecnt ++;
         
         if (cur1+1 >= AC_LEVEL1_COUNT)
             stateupdate();
@@ -137,60 +140,82 @@ ac_state_t AltCalc::stateupdate() {
     ka = ka / AC_LEVEL2_COUNT;
     _kaavg = ka;
 
-    double adm = 0; // максимальное отклонение от среднего ka
+    double adm = 0; // максимальное отклонение от среднего ka (нигде не используется, только для отладки)
+    ac_direct_t dir = ACDIR_INIT; // направление движения
+    bool allff = true, allcnp = true;
+    uint32_t interval = 0;
     for (auto &d: _d2) {
         double adiff = d.ka - ka;
         if (adiff < 0)
             adiff = adiff * -1;
         if (adm < adiff)
             adm = adiff;
+        
+        interval += d.interval;
+        
+        // _dir описывает общее направление движения на всём протяжении _d2,
+        // если хотябы один из элементов _d2 не соответствует всем остальным,
+        // то _dir принимает статус ошибки
+        if (dir != ACDIR_ERR) {
+            ac_direct_t dir1 =
+                ka > AC_SPEED_FLAT ?
+                    ACDIR_UP :
+                ka < -AC_SPEED_FLAT ?
+                    ACDIR_DOWN :
+                    ACDIR_FLAT;
+            if (dir == ACDIR_INIT)
+                dir = dir1;
+            else
+            if (dir != dir1)
+                dir = ACDIR_ERR;
+        }
+        
+        // проверяем, все ли _d2 соответствуют режимам FF и CNP
+        if (allff && (ka > -AC_SPEED_FREEFALL))
+            allff = false;
+        if (allcnp && ((ka < -AC_SPEED_FREEFALL) || (ka > -AC_SPEED_FLAT)))
+            allcnp = false;
     }
     _adiffmax = adm/ka;
     
-    ac_direct_t dir = ACDIR_ERR;
-    
-    if ((ka > -AC_DIR_SPEED) && (ka < AC_DIR_SPEED))
-        // если среднее ka в пределах +-AC_DIR_SPEED, считаем, что высота не меняется при любой погрешности
-        dir = ACDIR_FLAT;
-    else
-    if (
-            ((ka > AC_DIR_SPEED*5) && (adm/ka < 0.25)) ||
-            // при 5-кратном превышении AC_DIR_SPEED, допустимое отклонение: 15%
-            ((ka > AC_DIR_SPEED) && (adm/ka < 0.50))        
-            // при меньшем превышении AC_DIR_SPEED, допустимое отклонение может достигать 25%
-        )
-        dir = ACDIR_UP;
-    else
-    if (
-            ((ka < -AC_DIR_SPEED*5) && (adm/ka > -0.25)) ||
-            ((ka < -AC_DIR_SPEED) && (adm/ka > -0.50))
-        )
-        dir = ACDIR_DOWN;
-    
     if (_dir != dir) {
-        _dirtm = 0;
         _dir = dir;
+        _dircnt = AC_LEVEL1_COUNT * AC_LEVEL2_COUNT;
+        _dirtm = interval;
     }
-    if (_dir == ACDIR_ERR)
-        return _state;
     
+    ac_state_t st = _state;
+    uint32_t stcnt = 0, sttm = 0;
     if (altapp() < 10) {
-        _state = ACST_GROUND;
+        st = ACST_GROUND;
     }
     else
-    switch (_dir) {
-        case ACDIR_UP:
-            _state = altapp() < 40 ? ACST_TAKEOFF40 : ACST_TAKEOFF;
-            break;
-            
-        case ACDIR_DOWN:
-            _state = 
-                ka < -0.030 ?
-                    ACST_FREEFALL :
-                altapp() > 100 ?
-                    ACST_CANOPY : 
-                    ACST_LANDING;
-            break;
+    if (_dir == ACDIR_UP) {
+        st = altapp() < 40 ? ACST_TAKEOFF40 : ACST_TAKEOFF;
+        stcnt = _dircnt;
+        sttm = _dirtm;
+    }
+    else
+    if (allff) {
+        st = ACST_FREEFALL;
+        stcnt = AC_LEVEL1_COUNT * AC_LEVEL2_COUNT;
+        sttm = interval;
+    }
+    else
+    if (allcnp) {
+        st = ACST_CANOPY;
+        stcnt = AC_LEVEL1_COUNT * AC_LEVEL2_COUNT;
+        sttm = interval;
+    }
+    else
+    if ((_dir == ACDIR_DOWN) && (altapp() < 100)) {
+        st = ACST_LANDING;
+    }
+    
+    if (_state != st) {
+        _state = st;
+        _statecnt = stcnt;
+        _statetm = sttm;
     }
 }
 
@@ -209,7 +234,7 @@ void AltCalc::gndreset() {
     
     if (_state != ACST_GROUND) {
         _state = ACST_GROUND;
-        _statetm = 0;
+        statereset();
     }
     
     // т.к. изменились высоты, пересчитаем все коэфициенты

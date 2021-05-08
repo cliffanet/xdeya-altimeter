@@ -7,6 +7,7 @@
 
 #include "../../def.h"
 #include "altcalc.h"
+#include "../clock.h" // поле tm в log_item_t
 
 // Шаг отображения высоты
 #define ALT_STEP            5
@@ -15,13 +16,6 @@
 
 // Интервал обнуления высоты (ms)
 #define ALT_AUTOGND_INTERVAL    600000
-
-typedef void (*altimeter_state_hnd_t)(ac_state_t prev, ac_state_t state);
-
-AltCalc & altCalc();
-
-
-#include "../clock.h"
 
 // имя файла для хранения простых логов
 #define JMPLOG_SIMPLE_NAME          "logsimple"
@@ -75,7 +69,10 @@ typedef struct __attribute__((__packed__)) {
     log_item_t  end;
 } log_jmp_t;
 
+
+AltCalc & altCalc();
 log_item_t jmpLogItem(const tm_val_t &tmval);
+
 void jmpInit();
 void jmpProcess();
 void jmpReset();
