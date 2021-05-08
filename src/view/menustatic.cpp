@@ -570,7 +570,7 @@ static const menu_el_t menuhwtest[] {
         .enter = NULL,
         .showval = [] (char *txt) {
             char ok[10];
-            float press = altCalc().presslast();
+            float press = altCalc().press();
             
             valOk(ok, (press > 60000) && (press < 150000));
             sprintf_P(txt, PSTR("(%0.0fkPa) %s"), press / 1000, ok);

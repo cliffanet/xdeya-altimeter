@@ -13,12 +13,12 @@
 // Порог перескока к следующему шагу
 #define ALT_STEP_ROUND      3
 
-// Интервал обнуления высоты (в количествах тиков)
-#define ALT_AUTOGND_INTERVAL    6000
+// Интервал обнуления высоты (ms)
+#define ALT_AUTOGND_INTERVAL    600000
 
 typedef void (*altimeter_state_hnd_t)(ac_state_t prev, ac_state_t state);
 
-altcalc & altCalc();
+AltCalc & altCalc();
 
 
 #include "../clock.h"
@@ -29,10 +29,6 @@ altcalc & altCalc();
 #define JMPLOG_SIMPLE_ITEM_COUNT    50
 // Сколько файлов прыгов максимум
 #define JMPLOG_SIMPLE_FILE_COUNT    5
-
-// Количество тиков высотомера с сохранением направления ACDIR_DOWN
-// после которого надо запускать автоматически запись прыга
-#define JMP_ALTI_DIRDOWN_COUNT  50
 
 // Один из элементов в длинном логбуке (несколько раз в сек)
 typedef struct __attribute__((__aligned__(64), __packed__)) {

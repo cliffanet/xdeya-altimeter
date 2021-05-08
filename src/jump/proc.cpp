@@ -17,7 +17,7 @@ static Adafruit_BMP280 bme; // hardware Wire
 static Adafruit_BMP280 bme(5); // hardware SPI on IO5
 #endif
 
-static altcalc ac;
+static AltCalc ac;
 
 static enum {
     JMP_NONE,
@@ -54,7 +54,7 @@ static void altState(ac_state_t prev, ac_state_t curr) {
  * Базовые функции
  * ------------------------------------------------------------------------------------------- */
 
-altcalc & altCalc() {
+AltCalc & altCalc() {
     return ac;
 }
 
@@ -71,7 +71,7 @@ log_item_t jmpLogItem(const tm_val_t &tmval) {
         .state      = 'U',
         .direct     = 'U',
         .alt        = ac.alt(),
-        .altspeed   = ac.speed()*100,
+        .altspeed   = ac.speedapp()*100,
         .lon        = gps.lon,
         .lat        = gps.lat,
         .hspeed     = gps.gSpeed,
@@ -124,8 +124,9 @@ log_item_t jmpLogItem(const tm_val_t &tmval) {
     }
     switch (ac.direct()) {
         case ACDIR_INIT:        li.direct = 'i'; break;
+        case ACDIR_ERR:         li.direct = 'e'; break;
         case ACDIR_UP:          li.direct = 'u'; break;
-        case ACDIR_NULL:        li.direct = 'n'; break;
+        case ACDIR_FLAT:        li.direct = 'f'; break;
         case ACDIR_DOWN:        li.direct = 'd'; break;
     }
     
@@ -145,25 +146,30 @@ void jmpInit() {
  *  Определяем текущее состояние прыга и переключаем по необходимости
  * ------------------------------------------------------------------------------------------- */
 void jmpProcess() {
-    ac.tick(bme.readPressure());
+    static uint32_t _mill = millis();
+    uint32_t m = millis();
+    ac.tick(bme.readPressure(), m-_mill);
+    _mill = m;
     
     // Автокорректировка нуля
     if (cfg.d().gndauto &&
         (ac.state() == ACST_GROUND) &&
-        (ac.direct() == ACDIR_NULL) &&
-        (ac.dircnt() >= ALT_AUTOGND_INTERVAL)) {
+        (ac.direct() == ACDIR_FLAT) &&
+        (ac.dirtm() >= ALT_AUTOGND_INTERVAL)) {
         ac.gndreset();
+        ac.dirtmreset();
         CONSOLE("auto GND reseted");
     }
     
     // Обработка изменения режима высотомера
-    if (ac.stateprev() != ac.state())
-        altState(ac.stateprev(), ac.state());
+    static auto altstate = ac.state();
+    if (altstate != ac.state())
+        altState(altstate, ac.state());
+    altstate = ac.state();
     
     if ((jmpst == JMP_NONE) &&
         ((ac.state() == ACST_FREEFALL) || (ac.state() == ACST_CANOPY)) &&
-        (ac.direct() == ACDIR_DOWN) &&
-        (ac.dircnt() > JMP_ALTI_DIRDOWN_COUNT)) {
+        (ac.direct() == ACDIR_DOWN)) {
         // Включаем запись лога прыга
         jmpst = JMP_FREEFALL; // Самое начало прыга помечаем в любом случае как FF,
                               // т.к. из него можно перейти в CNP, но не обратно (именно для jmp)

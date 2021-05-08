@@ -3,164 +3,215 @@
 */
 
 #include "altcalc.h"
+#include <math.h>
 
-float calc_alt(float pressgnd, float pressure) {
+float press2alt(float pressgnd, float pressure) {
   return 44330 * (1.0 - pow(pressure / pressgnd, 0.1903));
 }
 
-void altcalc::tick(float press)
+void AltCalc::tick(float press, uint16_t interval)
 {
-#ifdef PRESS_TEST
-    if (_state > ACST_INIT)
-        press = _presstest -= PRESS_TEST;
-#endif
-    uint32_t m = millis();
-    auto &r = (_rr[cur] = { mill: m, press: press, alt: calc_alt(_pressgnd, press) });
+    if (interval > 0) {
+        // курсор первого уровня
+        cur1 ++;
+        if (cur1 >= AC_LEVEL1_COUNT)
+            cur1 = 0;
     
-    // курсор в rr-массиве
-    cur ++;
-    if (cur >= AC_RR_ALT_SIZE) {
-        if (_state == ACST_INIT) // Завершение инициализации (rr-массив полностью заполнен)
-            initend();
-        cur = 0;
+        _d1[cur1].interval = interval;
     }
-    
-    // количество тиков между изменениями в направлении движения (вверх/вниз)
-    _dircnt++;
-    
-    if (_state == ACST_INIT) // Пока не завершилась инициализация, дальше ничего не считаем
+    else
+    if (cur1 >= AC_LEVEL1_COUNT)
         return;
     
-    _presslast = r.press;
-    _altlast = r.alt;
-    _altprev = _rr[cur].alt;
-    uint32_t millprev = _rr[cur].mill;
+    _d1[cur1].press = press;
+    _d1[cur1].alt   = press2alt(_pressgnd, press);
+    
+    if (_state == ACST_INIT) {
+        // в режиме инициализации мы только заполняем _d1 и _d2
+        if (cur2 > 0)
+            gndreset(); // при этом каждый раз пересчитываем уровень земли
+        l1calc();
+        if (cur1+1 >= AC_LEVEL1_COUNT) {
+            if (cur2+1 < AC_LEVEL2_COUNT) {
+                // пока ещё идёт процесс заполнения _d2
+                auto &d2 = _d2[cur2];
+                l2next();
+                // при переходе на следующий d2 дублируем его из предыдущего, 
+                // чтобы сохранить актуальные значения, если к ним будут обращения через методы
+                _d2[cur2] = d2;
+            }
+            else {
+                // а если мы заполнили уже все _d2,
+                // вычисляем текущее состояние и дальше будем работать 
+                // по стандартному алгоритму переходов к следующим ячейкам
+                _state = ACST_GROUND;
+                stateupdate();
+            }
+        }
+    }
+    else {
+        // стандартный алгоритм заполнения _d1 и _d2
+        if (cur1 == 0)
+            l2next();
+    
+        l1calc();
+        // количество тиков между изменениями в направлении движения (вверх/вниз)
+        _dirtm += interval;
+        
+        if (cur1+1 >= AC_LEVEL1_COUNT)
+            stateupdate();
+    }
+}
 
+void AltCalc::l1calc() {
     // считаем коэффициенты линейной аппроксимации
-    float sy=0, sxy = 0, sx = 0, sx2 = 0;
-    for (auto &r: _rr) {
-        float x = r.mill - millprev;
+    double sy=0, sxy = 0, sx = 0, sx2 = 0, alt = 0;
+    uint32_t x = 0, n = 0;
+    // начинаем с самого первого (начиная с cur1+1 и до конца списка)
+    for (uint8_t c = cur1+1; c < AC_LEVEL1_COUNT; c++) {
+        auto &d = _d1[c];
+        if (d.interval == 0)
+            continue;
+        
+        x   += d.interval;
         sx  += x;
         sx2 += x*x;
-        sy  += r.alt;
-        sxy += x*r.alt;
+        sy  += d.alt;
+        sxy += x*d.alt;
+        
+        alt += d.alt;
+        n   ++;
+    }
+    // и с самого начала списка до cur1 включительно
+    for (uint8_t c = 0; c <= cur1; c++) {
+        auto &d = _d1[c];
+        if (d.interval == 0)
+            continue;
+        
+        x   += d.interval;
+        sx  += x;
+        sx2 += x*x;
+        sy  += d.alt;
+        sxy += x*d.alt;
+        
+        alt += d.alt;
+        n   ++;
     }
 
-    float n = AC_RR_ALT_SIZE;
-    float a = (n*sxy - (sx*sy)) / (n*sx2-(sx*sx));
-    float b = (sy - (a*sx)) / n;
-
-    _speed = a >= 0 ? a*1000 : a * -1000;
-    _altappr = ((float)(m - millprev)) * a + b;
+    auto &d2 = _d2[cur2];
     
-    float a1000 = a*1000; // верт скорость в м/с со знаком: + вверх, - вниз
+    // коэфициенты
+    d2.interval = x;
+    d2.ka       = (n*sxy - (sx*sy)) / (n*sx2-(sx*sx));
+    d2.kb       = (sy - (d2.ka*sx)) / n;
     
-    _stateprev = _state;
-    switch (_state) {
-        case ACST_GROUND:
-            if ((_altlast > 40) && (_altlast < 100) && (a1000 > 1))
-                _state = ACST_TAKEOFF40;
-            break;
-        case ACST_TAKEOFF40:
-            if ((_altlast < 10) && (_speed < 1))
-                _state = ACST_GROUND;
-            else
-            if ((_altlast > 100) && (a1000 > 1))
-                _state = ACST_TAKEOFF;
-            break;
-        case ACST_TAKEOFF:
-            if ((_altlast < 40) && (_speed < 1))
-                _state = ACST_GROUND;
-            else
-            if ((_altlast > 300) && (a1000 < -30))
-                _state = ACST_FREEFALL;
-            else
-            if ((_altlast > 1000) && (a1000 < -5))
-                _state = ACST_CANOPY;
-            break;
-        case ACST_FREEFALL:
-            if ((_altlast > 300) && (a1000 > 3))
-                _state = ACST_TAKEOFF;
-            else
-            if (a1000 > -25)
-                _state = ACST_CANOPY;
-            else
-            if ((_altlast < 40) && (_speed < 1))
-                _state = ACST_GROUND;
-            else
-            break;
-        case ACST_CANOPY:
-            if ((_altlast > 300) && (a1000 > 3))
-                _state = ACST_TAKEOFF;
-            else
-            if ((_altlast < 40) && (_speed < 1))
-                _state = ACST_GROUND;
-            else
-            if ((_altlast > 300) && (a1000 < -30))
-                _state = ACST_FREEFALL;
-            else
-            if ((_altlast < 100) && ((a1000 > -25) && (a1000 < -1)))
-                _state = ACST_LANDING;
-            break;
-        case ACST_LANDING:
-            if ((_altlast < 100) && ((a1000 > -1) && (a1000 < 1)))
-                _state = ACST_GROUND;
-            break;
-    }
+    // средняя высота
+    d2.altavg   = alt / n;
     
-    // текущее направление движения
-    if ((_dir != ACDIR_NULL) && (a1000 > -0.3) && (a1000 < 0.3)) {
-        _dir = ACDIR_NULL;
-        _dircnt = 0;
+    // средняя скорость
+    uint8_t c = cur1+1;
+    if (c >= AC_LEVEL1_COUNT)
+        c = 0;
+    if (x > _d1[c].interval) { // защита от деления на ноль и переполнения при вычитании
+        // вычитаем из x самый первый интервал (перед вычисленной самой первой высотой), 
+        // т.к. для вычисления скорости он не нужен, а нужны только интервалы между первой высотой и текущей
+        uint32_t x1 = x-_d1[c].interval;
+        d2.speedavg = (_d1[cur1].alt - _d1[c].alt) * 1000 / x1;
     }
-    else
-    if ((_dir != ACDIR_UP) && (a1000 > 0.5)) {
-        _dir = ACDIR_UP;
-        _dircnt = 0;
-    }
-    else
-    if ((_dir != ACDIR_DOWN) && (a1000 < -0.5)) {
-        _dir = ACDIR_DOWN;
-        _dircnt = 0;
+    else {
+        d2.speedavg = 0;
     }
 }
 
-void altcalc::gndreset() {
-    // пересчёт _pressgnd
+void AltCalc::l2next() {
+    // курсор второго уровня
+    cur2 ++;
+    if (cur2 >= AC_LEVEL2_COUNT)
+        cur2 = 0;
+}
+
+ac_state_t AltCalc::stateupdate() {
+    double ka = 0; // среднее знчение ka
+    for (auto &d: _d2)
+        ka += d.ka;
+    ka = ka / AC_LEVEL2_COUNT;
+    _kaavg = ka;
+
+    double adm = 0; // максимальное отклонение от среднего ka
+    for (auto &d: _d2) {
+        double adiff = d.ka - ka;
+        if (adiff < 0)
+            adiff = adiff * -1;
+        if (adm < adiff)
+            adm = adiff;
+    }
+    _adiffmax = adm/ka;
     
-    if (_state == ACST_INIT) // Пока не завершилась инициализация, дальше ничего не считаем
+    ac_direct_t dir = ACDIR_ERR;
+    
+    if ((ka > -AC_DIR_SPEED) && (ka < AC_DIR_SPEED))
+        // если среднее ka в пределах +-AC_DIR_SPEED, считаем, что высота не меняется при любой погрешности
+        dir = ACDIR_FLAT;
+    else
+    if (
+            ((ka > AC_DIR_SPEED*5) && (adm/ka < 0.25)) ||
+            // при 5-кратном превышении AC_DIR_SPEED, допустимое отклонение: 15%
+            ((ka > AC_DIR_SPEED) && (adm/ka < 0.50))        
+            // при меньшем превышении AC_DIR_SPEED, допустимое отклонение может достигать 25%
+        )
+        dir = ACDIR_UP;
+    else
+    if (
+            ((ka < -AC_DIR_SPEED*5) && (adm/ka > -0.25)) ||
+            ((ka < -AC_DIR_SPEED) && (adm/ka > -0.50))
+        )
+        dir = ACDIR_DOWN;
+    
+    if (_dir != dir) {
+        _dirtm = 0;
+        _dir = dir;
+    }
+    if (_dir == ACDIR_ERR)
+        return _state;
+    
+    if (altapp() < 10) {
+        _state = ACST_GROUND;
+    }
+    else
+    switch (_dir) {
+        case ACDIR_UP:
+            _state = altapp() < 40 ? ACST_TAKEOFF40 : ACST_TAKEOFF;
+            break;
+            
+        case ACDIR_DOWN:
+            _state = 
+                ka < -0.030 ?
+                    ACST_FREEFALL :
+                altapp() > 100 ?
+                    ACST_CANOPY : 
+                    ACST_LANDING;
+            break;
+    }
+}
+
+void AltCalc::gndreset() {
+    // пересчёт _pressgnd
+    double pr = 0;
+    for (auto &d: _d1) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
+        pr += d.press;
+    _pressgnd = pr / AC_LEVEL1_COUNT;
+    
+    for (auto &d: _d1) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
+        d.alt = press2alt(_pressgnd, d.press);
+    
+    if (_state == ACST_INIT)
         return;
     
-    double pr = 0;
-    for (auto &r: _rr) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
-        pr += _rr[cur].press;
-    _pressgnd = pr / AC_RR_ALT_SIZE;
-    _state = ACST_GROUND;
-    
-    for (auto &r: _rr) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
-        r.alt = calc_alt(_pressgnd, r.press);
-    
-    // Сбрасываем направление движения при сбросе нуля по той же причине - мы пересчитали высоты
-    _dir = ACDIR_INIT;
-    _dircnt = 0;
-}
-
-void altcalc::initend() {
-    // сразу после включения первые значения датчик даёт сбойные, поэтому считаем
-    // по той же формуле среднего взвешенного - самое крайнее значение - наиболее значимое
-    float sm = 0, w = 1, ws = 0;
-    while (cur > 0) {
-        cur--;
-        sm += w * _rr[cur].press; // среднее взвешенное
-        ws += w; // суммарный вес
-        w /= 2;
+    if (_state != ACST_GROUND) {
+        _state = ACST_GROUND;
+        _statetm = 0;
     }
-    _pressgnd = sm / ws;
-    _state = ACST_GROUND;
-#ifdef PRESS_TEST
-    _presstest = _pressgnd;
-#endif
     
-    for (auto &r: _rr) // т.к. мы пересчитали _pressgnd, то пересчитаем и alt
-        r.alt = calc_alt(_pressgnd, r.press);
+    // т.к. изменились высоты, пересчитаем все коэфициенты
+    l1calc();
 }

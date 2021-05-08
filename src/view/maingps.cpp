@@ -192,7 +192,7 @@ class ViewMainGpsAlt : public ViewMain {
             u8g2.drawStr(128-u8g2.getStrWidth(s), 20, s);
     
             u8g2.setFont(u8g2_font_helvB08_tf);
-            sprintf_P(s, PSTR("%0.1f m/s"), ac.speed());
+            sprintf_P(s, PSTR("%0.1f m/s"), ac.speedavg());
             u8g2.drawStr(64, 30, s);
     
             // Текущий режим высоты
