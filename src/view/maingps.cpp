@@ -181,19 +181,32 @@ class ViewMainGpsAlt : public ViewMain {
     
             // Высота и скорость снижения
             auto &ac = altCalc();
-            u8g2.setFont(u8g2_font_ncenB08_tr);
-            int16_t alt = round(ac.alt());
-            int16_t o = alt % ALT_STEP;
-            alt -= o;
-            if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
+            if (ac.state() > ACST_INIT) {
+                u8g2.setFont(u8g2_font_ncenB08_tr);
+                int16_t alt = round(ac.alt());
+                int16_t o = alt % ALT_STEP;
+                alt -= o;
+                if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
     
-            u8g2.setFont(u8g2_font_fub20_tn);
-            sprintf_P(s, PSTR("%d"), alt);
-            u8g2.drawStr(128-u8g2.getStrWidth(s), 20, s);
-    
-            u8g2.setFont(u8g2_font_helvB08_tf);
-            sprintf_P(s, PSTR("%0.1f m/s"), ac.speedavg());
-            u8g2.drawStr(64, 30, s);
+                u8g2.setFont(u8g2_font_fub20_tn);
+                sprintf_P(s, PSTR("%d"), alt);
+                u8g2.drawStr(128-u8g2.getStrWidth(s), 20, s);
+                
+                switch (ac.direct()) {
+                    case ACDIR_UP:
+                        u8g2.setFont(u8g2_font_open_iconic_arrow_1x_t);
+                        u8g2.drawGlyph(64, 30, 0x43);
+                        break;
+                    
+                    case ACDIR_DOWN:
+                        u8g2.setFont(u8g2_font_open_iconic_arrow_1x_t);
+                        u8g2.drawGlyph(64, 30, 0x40);
+                        break;
+                }
+                u8g2.setFont(u8g2_font_helvB08_tf);
+                sprintf_P(s, PSTR("%0.1f m/s"), abs(ac.speedapp()));
+                u8g2.drawStr(70, 30, s);
+            }
     
             // Текущий режим высоты
             u8g2.setFont(u8g2_font_b10_b_t_japanese1);
