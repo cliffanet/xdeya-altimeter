@@ -32,7 +32,7 @@ typedef struct __attribute__((__packed__)) {
     uint8_t _[8] = { 0 };                   // резерв
 } trk_head_t;
 
-bool trkStart(bool force = true);
+bool trkStart(bool force = true, uint16_t old = 0);
 size_t trkStop();
 bool trkRunning();
 trk_running_t trkState();

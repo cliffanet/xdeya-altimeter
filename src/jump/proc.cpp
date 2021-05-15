@@ -17,11 +17,8 @@ static Adafruit_BMP280 bmp(5); // hardware SPI on IO5
 
 static AltCalc ac;
 
-static enum {
-    JMP_NONE,
-    JMP_FREEFALL,
-    JMP_CANOPY
-} jmpst = JMP_NONE;
+static log_item_t logall[JMP_PRELOG_SIZE] = { { 0 } };
+static uint16_t logcur = 0xffff;
 
 /* ------------------------------------------------------------------------------------------- *
  *  Обработка изменения режима высотомера
@@ -59,36 +56,40 @@ AltCalc & altCalc() {
 /* ------------------------------------------------------------------------------------------- *
  *  Сбор текущих данных
  * ------------------------------------------------------------------------------------------- */
-log_item_t jmpLogItem(const tm_val_t &tmval) {
-    auto &ac = altCalc();
+static void jmpPreLogAdd(uint16_t interval) {
     auto &gps = gpsInf();
     
-    log_item_t li = {
-        .tmoffset   = tmInterval(tmval),
-        .flags      = 0,
-        .state      = 'U',
-        .direct     = 'U',
-        .alt        = ac.alt(),
-        .altspeed   = ac.speedapp()*100,
-        .lon        = gps.lon,
-        .lat        = gps.lat,
-        .hspeed     = gps.gSpeed,
-        .heading    = GPS_DEG(gps.heading),
-        .gpsalt     = GPS_MM(gps.hMSL),
-        .vspeed     = gps.speed,
-        .gpsdage    = gpsDataAge(),
-        .sat        = gps.numSV,
-        ._          = 0,
+    logcur ++;
+    if (logcur >= JMP_PRELOG_SIZE)
+        logcur = 0;
+    auto &li = logall[logcur];
+    
+    li = {
+        tmoffset    : interval,
+        flags       : 0,
+        state       : 'U',
+        direct      : 'U',
+        alt         : ac.alt(),
+        altspeed    : ac.speedapp()*100,
+        lon         : gps.lon,
+        lat         : gps.lat,
+        hspeed      : gps.gSpeed,
+        heading     : GPS_DEG(gps.heading),
+        gpsalt      : GPS_MM(gps.hMSL),
+        vspeed      : gps.speed,
+        gpsdage     : gpsDataAge(),
+        sat         : gps.numSV,
+        _           : 0,
 #if HWVER > 1
-        .batval     = pwrBattValue(),
+        batval      : pwrBattValue(),
 #else
-        .batval     = 0,
+        batval      : 0,
 #endif
-        .hAcc       = gps.hAcc,
-        .vAcc       = gps.vAcc,
-        .sAcc       = gps.sAcc,
-        .cAcc       = gps.cAcc,
-        .tm         = gps.tm,
+        hAcc        : gps.hAcc,
+        vAcc        : gps.vAcc,
+        sAcc        : gps.sAcc,
+        cAcc        : gps.cAcc,
+        tm          : gps.tm,
     };
     
     if (GPS_VALID(gps))
@@ -127,8 +128,42 @@ log_item_t jmpLogItem(const tm_val_t &tmval) {
         case ACDIR_FLAT:        li.direct = 'f'; break;
         case ACDIR_DOWN:        li.direct = 'd'; break;
     }
+}
+
+const log_item_t &jmpPreLog(uint16_t old) {
+    if (old >= JMP_PRELOG_SIZE)
+        old = JMP_PRELOG_SIZE-1;
+    uint16_t cur = logcur;
     
-    return li;
+    if (cur < old) {
+        old -= cur;
+        cur = JMP_PRELOG_SIZE-1;
+    }
+    cur -= old;
+    if (cur >= JMP_PRELOG_SIZE) {
+        cur = logcur+1;
+        if (cur >= JMP_PRELOG_SIZE)
+            cur = 0;
+    }
+    
+    return logall[cur];
+}
+
+uint32_t jmpPreLogInterval(uint16_t old) {
+    if (old >= JMP_PRELOG_SIZE)
+        old = JMP_PRELOG_SIZE-1;
+    uint16_t cur = logcur;
+    uint32_t interval = 0;
+    
+    while (old > 0) {
+        // интервал до текущего (old = 0) равен 0
+        // до предыдущего (old = 1) = tmoffset текущего и т.д.
+        interval += logall[cur].tmoffset;
+        old --;
+        cur = cur > 0 ? cur-1 : JMP_PRELOG_SIZE-1;
+    }
+    
+    return interval;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -147,6 +182,7 @@ void jmpProcess() {
     static uint32_t _mill = millis();
     uint32_t m = millis();
     ac.tick(bmp.readPressure(), m-_mill);
+    jmpPreLogAdd(m-_mill);
     _mill = m;
     
     // Автокорректировка нуля
@@ -165,16 +201,64 @@ void jmpProcess() {
         altState(altstate, ac.state());
     altstate = ac.state();
     
-    if ((jmpst == JMP_NONE) &&
-        ((ac.state() == ACST_FREEFALL) || (ac.state() == ACST_CANOPY))) {
-        // Включаем запись лога прыга
-        jmpst = JMP_FREEFALL; // Самое начало прыга помечаем в любом случае как FF,
-                              // т.к. из него можно перейти в CNP, но не обратно (именно для jmp)
+    // Определение старта прыжка
+    static enum {
+        JMP_NONE,
+        JMP_FREEFALL,
+        JMP_CANOPY
+    } jmpst = JMP_NONE;
+    
+    if (jmpst == JMP_NONE) {
+        static uint32_t dncnt = 0;
+        if (dncnt == 0) {
+            if (ac.speedapp() < -3)                 // При скорости снижения выше пороговой
+                dncnt ++;                           // включаем счётчик тиков, пока это скорость сохраняется
+        }
+        else
+        if (ac.speedapp() < -2.5)                   // При сохранении скорости снижения, увеличиваем счётчик тиков
+            dncnt ++;
+        else
+            dncnt = 0;                              // либо сбрасываем его
         
-        if (!trkRunning())
-            trkStart(false);
+        // счётчик тиков увеличивается в промежуточном состоянии, когда мы ещё не определили,
+        // начался ли прыжок, но вертикальная скорость уже достаточно высокая - возможно,
+        // это кратковременное снижение ЛА
         
-        jmp.beg();
+        if (
+            (dncnt > 0) && (                        // если идёт отсчёт промежуточного состояния и при этом
+                (ac.state() == ACST_FREEFALL) ||    // скорость достигла фрифольной,
+                (dncnt >= 80)                       // либо пороговая скорость сохраняется 80 тиков (8 сек) - 
+            )) {                                    // считаем, что прыг начался
+            // для удобства отладки помечаем текущий jmpPreLog
+            // флагом LI_FLAG_JMPBEG - момент принятия решения о начале прыжка
+            logall[logcur].flags |= LI_FLAG_JMPBEG;
+            
+            // считаем, что прыжок начался с самого начала движения вних
+            if ((dncnt < ac.dircnt()) && (ac.direct() == ACDIR_DOWN))
+                dncnt = ac.dircnt();
+            
+            if (ac.state() == ACST_FREEFALL) {
+                // если скорость всё же успела достигнуть фрифольной,
+                // значит, фрифол считаем с самого начала снижения
+                // и до текущего момента, пока скорость не снизится до ACST_CANOPY
+                jmpst = JMP_FREEFALL;
+                jmp.beg(dncnt);
+            }
+            else {
+                // если за 80 тиков скорость так и не достигла фрифольной,
+                // значит было открытие под бортом
+                jmpst = JMP_CANOPY;
+                jmp.cnp(dncnt);
+            }
+            // после установки jmpst далее просто контролируем режим ac.state()
+
+            // Включаем запись лога прыга
+            if (!trkRunning())
+                trkStart(false, dncnt);
+            
+            dncnt = 0;                              // на всякий случай при старте лога прыга обнуляем счётчик тиков
+                                                    // пограничного состояния, чтобы в след раз не было ложных срабатываний
+        }
     }
     
     if ((jmpst == JMP_FREEFALL) && (ac.state() == ACST_CANOPY)) {
@@ -188,7 +272,10 @@ void jmpProcess() {
         jmp.cnp();
     }
     
-    if ((jmpst > JMP_NONE) && (ac.state() == ACST_GROUND)) {
+    if ((jmpst > JMP_NONE) && (
+            (ac.state() == ACST_GROUND) ||
+            (jmp.state() == LOGJMP_NONE)
+        )) {
         // Прыг закончился совсем, сохраняем результат
         jmpst = JMP_NONE;
         
@@ -204,7 +291,6 @@ void jmpProcess() {
  *  Принудительный сброс текущего прыга
  * ------------------------------------------------------------------------------------------- */
 void jmpReset() {
-    jmpst = JMP_NONE;
     if (jmp.state() != LOGJMP_NONE)
         jmp.end();
 }

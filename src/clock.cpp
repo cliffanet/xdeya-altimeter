@@ -27,19 +27,49 @@ static RTC_Millis rtc;
 tm_t &tmNow() { return tm; }
 bool tmValid() { return tmvalid; }
     //bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >= TIME_ADJUST_TIMEOUT)); }
-tm_val_t tmValue() {
-    auto dt = rtc.now();
-    tm_val_t tmval = {
-        .uts    = dt.unixtime(),
-        .ms     = tmcnt * TIME_TICK_INTERVAL,
-    };
+
+tm_t tmNow(uint32_t earlerms) {
+    if (earlerms == 0)
+        return tm;
     
-    return tmval;
+    DateTime dt1(tm.year, tm.mon, tm.day, tm.h, tm.m, tm.s);
+    uint32_t ut = dt1.unixtime() - (earlerms / 1000);
+    
+    int8_t cs = (earlerms % 1000) / 10;
+    cs = tm.cs - cs;
+    
+    ut += cs / 100;
+    cs = cs % 100;
+    if (cs < 0) {
+        ut --;
+        cs += 100;
+    }
+    
+    DateTime dt(ut);
+    return { 
+        year: dt.year(),
+        mon : dt.month(),
+        day : dt.day(),
+        h   : dt.hour(),
+        m   : dt.minute(),
+        s   : dt.second(),
+        cs  : cs
+    };
 }
 
-int32_t tmInterval(const tm_val_t &tmval) {
-    auto dt = rtc.now();
-    return (dt.unixtime() - tmval.uts) * 1000 + (tmcnt * TIME_TICK_INTERVAL - tmval.ms);
+int32_t tmInterval(const tm_t &tmbeg, const tm_t &tmend) {
+    DateTime
+        dtbeg(tmbeg.year, tmbeg.mon, tmbeg.day, tmbeg.h, tmbeg.m, tmbeg.s),
+        dtend(tmend.year, tmend.mon, tmend.day, tmend.h, tmend.m, tmend.s);
+    
+    int32_t tint = (dtend.unixtime() - dtbeg.unixtime()) * 1000;
+    int8_t cs1 = tmend.cs - tmbeg.cs;
+    int16_t cs = cs1;
+    return tint + (cs*10);
+}
+
+int32_t tmIntervalToNow(const tm_t &tmbeg) {
+    return tmInterval(tmbeg, tm);
 }
 
 // обновление времени

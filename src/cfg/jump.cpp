@@ -26,7 +26,7 @@ ConfigJump::ConfigJump() :
 /* ------------------------------------------------------------------------------------------- *
  *  Старт прыга, инициируем новый прыжок
  * ------------------------------------------------------------------------------------------- */
-bool ConfigJump::beg() {
+bool ConfigJump::beg(uint16_t old) {
     if (data.state != LOGJMP_NONE)
         return false;
     
@@ -34,14 +34,12 @@ bool ConfigJump::beg() {
     data.state = LOGJMP_BEG;
     
     data.last.num = data.count;
-    data.last.tm = tmNow();
+    data.last.tm = tmNow(jmpPreLogInterval(old));
     
-    tmval = tmValue();
-    
-    auto li = jmpLogItem(tmval);
-    data.last.beg = li;
-    data.last.cnp = li;
-    data.last.end = li;
+    data.last.beg = jmpPreLog(old);
+    data.last.beg.tmoffset = 0;
+    data.last.cnp = data.last.beg;
+    data.last.end = data.last.beg;
     
     return save(true);
 }
@@ -49,15 +47,23 @@ bool ConfigJump::beg() {
 /* ------------------------------------------------------------------------------------------- *
  *  Под куполом, сохраняем промежуточные значения
  * ------------------------------------------------------------------------------------------- */
-bool ConfigJump::cnp() {
+bool ConfigJump::cnp(uint16_t old) {
+    if (data.state == LOGJMP_NONE) {
+        beg(old);
+        data.state = LOGJMP_CNP;
+        return save(true);
+    }
+    
     if (data.state != LOGJMP_BEG)
         return false;
     
     data.state = LOGJMP_CNP;
     
-    auto li = jmpLogItem(tmval);
-    data.last.cnp = li;
-    data.last.end = li;
+    auto tm = tmNow(jmpPreLogInterval(old));
+    
+    data.last.cnp = jmpPreLog(old);
+    data.last.cnp.tmoffset = tmInterval(data.last.tm, tm);
+    data.last.end = data.last.cnp;
     
     return save(true);
 }
@@ -71,7 +77,8 @@ bool ConfigJump::end() {
     
     data.state = LOGJMP_NONE;
     
-    data.last.end = jmpLogItem(tmval);
+    data.last.end = jmpPreLog();
+    data.last.end.tmoffset = tmIntervalToNow(data.last.tm);
     
     if (!save(true))
         return false;

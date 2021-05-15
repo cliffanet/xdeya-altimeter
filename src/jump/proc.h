@@ -24,6 +24,9 @@
 // Сколько файлов прыгов максимум
 #define JMPLOG_SIMPLE_FILE_COUNT    5
 
+// хранимый буфер для заранее сохранённых log_item_t
+#define JMP_PRELOG_SIZE         100
+
 // Один из элементов в длинном логбуке (несколько раз в сек)
 typedef struct __attribute__((__aligned__(64), __packed__)) {
     int32_t     tmoffset;   // время от начала измерений        (ms)
@@ -56,6 +59,7 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
 #define LI_FLAG_GPS_VSPEED  0x0008
 #define LI_FLAG_GPS_VHEAD   0x0010
 #define LI_FLAG_GPS_VTIME   0x0020
+#define LI_FLAG_JMPBEG      0x1000
 #define LI_FLAG_BTN_UP      0x2000
 #define LI_FLAG_BTN_SEL     0x4000
 #define LI_FLAG_BTN_DOWN    0x8000
@@ -71,7 +75,8 @@ typedef struct __attribute__((__packed__)) {
 
 
 AltCalc & altCalc();
-log_item_t jmpLogItem(const tm_val_t &tmval);
+const log_item_t &jmpPreLog(uint16_t old = 0);
+uint32_t jmpPreLogInterval(uint16_t old = 0);
 
 void jmpInit();
 void jmpProcess();

@@ -30,15 +30,13 @@ typedef struct __attribute__((__packed__)) {
 class ConfigJump : public Config<cfg_jump_t> {
     public:
         ConfigJump();
-        bool beg();
-        bool cnp();
+        bool beg(uint16_t old = 0);
+        bool cnp(uint16_t old = 0);
         bool end();
         
         uint8_t         count() const { return data.count; }
         log_jmp_state_t state() const { return data.state; }
         const log_jmp_t & last() const{ return data.last; }
-    private:
-        tm_val_t tmval;
 };
 
 extern ConfigJump jmp;

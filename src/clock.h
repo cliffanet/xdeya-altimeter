@@ -27,15 +27,11 @@ typedef struct __attribute__((__packed__)) {
     uint8_t  cs;       // cs (1/100 of second)
 } tm_t;
 
-typedef struct {
-    uint32_t uts;
-    uint16_t ms;
-} tm_val_t;
-
 tm_t &tmNow();
 bool tmValid();
-tm_val_t tmValue();
-int32_t tmInterval(const tm_val_t &tmval);
+tm_t tmNow(uint32_t earlerms);
+int32_t tmInterval(const tm_t &tmbeg, const tm_t &tmend);
+int32_t tmIntervalToNow(const tm_t &tm);
 
 void clockInit();
 void clockForceAdjust();

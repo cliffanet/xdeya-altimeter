@@ -27,7 +27,7 @@ class ViewMainAlt : public ViewMain {
             //uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2;
             uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))-15;
             u8g2.drawStr(x, 52, s);
-            if (ac.alt() < 30) // чтобы минус не сдвигал цифры, пишем его отдельно
+            if (ac.alt() < -30) // чтобы минус не сдвигал цифры, пишем его отдельно
                 u8g2.drawGlyph(-5, 48, '-');
             
             switch (ac.direct()) {

@@ -7,25 +7,24 @@
 #include "../clock.h"
 
 static trk_running_t state = TRKRUN_NONE;
-static tm_val_t tmval_start;
+static uint32_t tmoffset = 0;
 File fh;
 
 /* ------------------------------------------------------------------------------------------- *
  *  Запуск трекинга
  * ------------------------------------------------------------------------------------------- */
 static bool trkCheckAvail(bool removeFirst = false);
-bool trkStart(bool force) {
+bool trkStart(bool force, uint16_t old) {
     if (state != TRKRUN_NONE)
         trkStop();
     
     if (!trkCheckAvail(true))
         return false;
     
+    // открываем файл
     const auto *_fname = PSTR(TRK_FILE_NAME);
     if (!logRotate(_fname, 0))
         return false;
-    
-    tmval_start = tmValue();
     
     char fname[36];
     
@@ -38,14 +37,34 @@ bool trkStart(bool force) {
     if (!fh)
         return false;
     
+    // пишем заголовок - время старта и номер прыга
     struct log_item_s <trk_head_t> th;
     th.data.jmpnum = jmp.count()+1;
-    th.data.tmbeg = tmNow();
+    th.data.tmbeg = tmNow(jmpPreLogInterval(old));
     
     auto sz = fh.write(reinterpret_cast<const uint8_t *>(&th), sizeof(th));
     if (sz != sizeof(th)) {
         fh.close();
         return false;
+    }
+    
+    // сбрасываем tmoffset, чтобы у самой первой записи он был равен нулю
+    tmoffset = 0 - jmpPreLog(old).tmoffset;
+    
+    // Скидываем сразу все презапомненные данные
+    while (old > 0) {
+        struct log_item_s <log_item_t> log;
+        log.data = jmpPreLog(old);
+        tmoffset += log.data.tmoffset;
+        log.data.tmoffset = tmoffset;
+    
+        auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
+        if (sz != sizeof(log)) {
+            fh.close();
+            return false;
+        }
+
+        old--;
     }
     
     state = force ? TRKRUN_FORCE : TRKRUN_AUTO;
@@ -118,14 +137,16 @@ void trkProcess() {
     if (!fh)
         return;
     
-    struct log_item_s <log_item_t> log;
-    log.data = jmpLogItem(tmval_start);
-    
     static uint8_t cnt = 0;
     if ((((cnt++) & 0b111) == 0) && !trkCheckAvail()) {
         trkStop();
         return;
     }
+
+    struct log_item_s <log_item_t> log;
+    log.data = jmpPreLog();
+    tmoffset += log.data.tmoffset;
+    log.data.tmoffset = tmoffset;
     
     auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
     if (sz != sizeof(log))
