@@ -7,6 +7,8 @@
 
 #include "../def.h"
 
+#include <stdint.h>
+
 #if HWVER >= 3
 #define CLOCK_PIN_INT       14
 #endif

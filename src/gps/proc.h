@@ -5,7 +5,7 @@
 #ifndef _gps_H
 #define _gps_H
 
-#include <stdint.h>
+#include "../../def.h"
 #include "../clock.h"
 
 #define _GPS_MPH_PER_KNOT 1.15077945

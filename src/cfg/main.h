@@ -5,6 +5,8 @@
 #ifndef _cfg_H
 #define _cfg_H
 
+#include "../../def.h"
+
 #include "../view/main.h"
 
 /* 

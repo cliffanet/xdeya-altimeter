@@ -5,7 +5,10 @@
 #ifndef _net_srv_H
 #define _net_srv_H
 
-#include <Arduino.h>
+#include "../../def.h"
+
+#include <stdint.h>
+#include <stdlib.h>
 
 const char *srvErr();
 

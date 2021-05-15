@@ -5,7 +5,7 @@
 #ifndef _file_wifi_H
 #define _file_wifi_H
 
-#include <Arduino.h>
+#include "../../def.h"
 
 #define WIFIPASS_FILE   "wifi.txt"
 

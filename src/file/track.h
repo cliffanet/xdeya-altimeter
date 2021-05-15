@@ -5,7 +5,8 @@
 #ifndef _file_track_H
 #define _file_track_H
 
-#include <Arduino.h>
+#include "../../def.h"
+
 #include "../cfg/jump.h"
 #include "../cfg/main.h"
 #include "../clock.h"

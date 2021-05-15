@@ -5,7 +5,6 @@
 #ifndef _cfg_jump_H
 #define _cfg_jump_H
 
-#include "../../def.h"
 #include "main.h"
 #include "../jump/proc.h"
 

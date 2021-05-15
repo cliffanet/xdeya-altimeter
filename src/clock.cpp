@@ -102,7 +102,6 @@ void clockInit() {
       CONSOLE("Couldn't find RTC");
       return;
     }
-    CONSOLE("tm size: %d", sizeof(tm));
     
     pinMode(CLOCK_PIN_INT, INPUT_PULLUP);  // set up interrupt pin, turn on pullup resistors
     // attach interrupt
@@ -112,7 +111,7 @@ void clockInit() {
     rtc.start();
     rtc.writeSqwPinMode(PCF8563_SquareWave1Hz);
 #else
-    tm.valid = false;
+    tmvalid = false;
 #endif
 }
 

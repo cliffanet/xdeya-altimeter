@@ -6,7 +6,6 @@
 #include "../file/log.h"
 #include "../file/track.h"
 
-#include <Arduino.h>
 #include <SPIFFS.h>
 #include <vector>
 

@@ -1,5 +1,8 @@
 
 #include "log.h"
+
+#ifdef FWVER_DEBUG
+
 #include "gps/proc.h"
 #include <Arduino.h>
 
@@ -48,3 +51,5 @@ void conslog_P(const char *s, ...) {
     vtxtlog(str, ap);
     va_end (ap);
 }
+
+#endif // FWVER_DEBUG

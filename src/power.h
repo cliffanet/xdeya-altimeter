@@ -7,6 +7,8 @@
 
 #include "../def.h"
 
+#include <stdint.h>
+
 #if HWVER > 1
 #define HWPOWER_PIN_GPS     27
 #define HWPOWER_PIN_BATIN   36

@@ -5,7 +5,7 @@
 #ifndef _file_log_H
 #define _file_log_H
 
-#include <Arduino.h>
+#include "../../def.h"
 
 #include "FS.h"
 #include <SPIFFS.h>

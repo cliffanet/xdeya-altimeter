@@ -10,7 +10,6 @@
 #include "../net/srv.h"
 #include "../net/data.h"
 
-#include <Arduino.h>
 #include <WiFi.h>
 #include <vector>
 

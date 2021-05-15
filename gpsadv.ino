@@ -17,9 +17,15 @@
 
 //------------------------------------------------------------------------------
 void setup() {
+
+#ifdef FWVER_DEBUG
     Serial.begin(115200);
+#endif // FWVER_DEBUG
+    
     if (!pwrCheck())
         return;
+    
+    CONSOLE("Firmware " FWVER_FILENAME "; Build Date: " __DATE__);
   
     WiFi.mode(WIFI_OFF);
 

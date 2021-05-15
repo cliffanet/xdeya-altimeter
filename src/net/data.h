@@ -5,7 +5,7 @@
 #ifndef _net_data_H
 #define _net_data_H
 
-#include <Arduino.h>
+#include "../../def.h"
 
 #include "../file/log.h"
 #include "../clock.h"

@@ -1,0 +1,291 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use utf8;
+
+use IPC::Open3;
+
+#==========================================================
+
+my @version = (0, 3, 0);
+
+my $dir     = '.fw';
+
+#==========================================================
+
+my @hwver   = 1 .. 3;
+
+my $fqbn    = 'esp32:esp32:esp32:PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=none';
+my @flags   = qw/
+        ESP32
+        CORE_DEBUG_LEVEL=0
+    /;
+
+my @type    = (
+    {
+        name    => '', # realese
+        flags => [qw/
+            
+        /],
+    },
+    {
+        name   => 'dev',
+        flags => [qw/
+            FWVER_DEV=1
+        /],
+    },
+    {
+        name    => 'debug',
+        flags => [qw/
+            FWVER_DEBUG=1
+        /],
+    }
+);
+
+my $cli     = 'arduino-cli';
+
+#==========================================================
+
+    my $pathRoot = $0;
+    $pathRoot =~ s/\/+/\//g;
+    $pathRoot =~ s/[^\/]+$//;
+    $dir || exit -1;
+    if ($dir !~ /^\//) {
+        $dir = $pathRoot . '/' . $dir;
+    }
+
+#==========================================================
+
+my %cmd = (
+    compileall      => \&compileall,
+    upload          => \&upload,
+    compile         => \&compile,
+    compileupload   => \&compileupload,
+);
+    
+    my $cmd = shift @ARGV;
+    if (!$cmd || !$cmd{$cmd}) {
+        print "  Command list:\n";
+        foreach my $cmd (sort keys %cmd) {
+            print "  - $cmd\n";
+        }
+        exit -1;
+    }
+    
+    $cmd{$cmd}->(@ARGV) || exit -1;
+
+#==========================================================
+
+sub fname {
+    my ($hwver, $typename) = @_;
+    
+    my $ver = join('.', @version) || return;
+    my $name = 'gpsadv.v'.$ver.'.hw'.$hwver;
+    
+    if ($typename) {
+        $name .= '.' . $typename;
+    }
+    
+    return $name;
+}
+
+sub runcmd {
+    my $cmd = shift;
+    
+    print "=== $cmd\n";
+    
+    my ($fhi, $fho);
+    # почему-то stderr не открывается через переменную
+    my $pid = open3($fhi, $fho, \*CHLD_ERR, $cmd);
+    if (!$pid) {
+        print "===\n";
+        print "!!! error: $! !!!\n";
+        print "===\n";
+        return;
+    }
+    
+    while (defined(my $str = <$fho>)) {
+        $str =~ s/\s+$//;
+        print "=== $str\n";
+    }
+    
+    my $ret = 1;
+    while (defined(my $str = <CHLD_ERR>)) {
+        $str =~ s/\s+$//;
+        print "ERR: $str\n";
+        $ret = 0 if $str =~ /(error|failed)/i;
+    }
+    
+    waitpid( $pid, 0 );
+    my $child_exit_status = $? >> 8;
+    if ($child_exit_status) {
+        print "return status: $child_exit_status\n";
+        $ret = 0;
+    }
+    
+    return $ret;
+}
+
+sub md5upd {
+    my $fname = shift;
+    my $f1 = $fname.'.bin';
+    my $f2 = $fname.'.md5';
+    
+    `md5 < $f1 > $f2`;
+}
+
+sub flags {
+    my @fl = @flags;
+    my $n = 0;
+    foreach my $num (@version) {
+        $n++;
+        push @fl, sprintf('FWVER_NUM%d=%s', $n, $num||0);
+    }
+    foreach my $f (@_) {
+        if (ref($f) eq 'HASH') {
+            push @fl, @{ $f->{flags} || [] };
+        }
+        elsif (ref($f) eq 'ARRAY') {
+            push @fl, @$f;
+        }
+        elsif ($f) {
+            push @fl, $f;
+        }
+    }
+    
+    @flags || return '';
+    return '--build-property build.extra_flags="'.join(' ', map { '-D'.$_ } @fl).'"';
+}
+
+sub build {
+    my ($hwver, $type) = @_;
+    
+    $cli || return;
+    my $srcdir = $pathRoot;
+    
+    my $fname = fname($hwver, $type->{name});
+    print "\n=======================================================\n";
+    print "=== BUILD: $fname\n";
+    print "=======================================================\n";
+    
+    my $flags = flags('HWVER='.$hwver, $type);
+    #print "FLAGS: $flags\n";
+    
+    my $cmd = "$cli compile --fqbn $fqbn --output-dir $dir/.build $flags $srcdir";
+    runcmd($cmd) || return;
+    
+    return unless -f "$dir/.build/gpsadv.ino.bin";
+    rename("$dir/.build/gpsadv.ino.bin", "$dir/${fname}.bin") || return;
+    if (-f "$dir/.build/gpsadv.ino.partitions.bin") {
+        rename("$dir/.build/gpsadv.ino.partitions.bin", "$dir/${fname}.partitions.bin") || return;
+    }
+    unlink "$dir/.build/gpsadv.ino.elf";
+    unlink "$dir/.build/gpsadv.ino.map";
+    
+    md5upd($dir.'/'.$fname);
+    
+    return 1;
+}
+
+sub burn {
+    my ($hwver, $type, $port) = @_;
+    
+    $cli || return;
+    
+    my $fname = fname($hwver, $type->{name});
+    print "\n=======================================================\n";
+    print "=== UPLOAD: $fname\n";
+    print "=======================================================\n";
+    
+    my $cmd = "$cli upload --fqbn $fqbn -i $dir/${fname}.bin -p $port -t";
+    runcmd($cmd) || return;
+    
+    1;
+}
+
+sub print_argver_usage {
+    my $cmd = shift;
+    
+    my $hwver = join ', ', @hwver;
+    my $type = join '|', map { $_->{name} } grep { $_->{name} } @type;
+    my $port = '';
+    $port = ' <port>' if ($cmd eq 'upload') || ($cmd eq 'compileupload');
+    
+    print "Usage:\n    fw $cmd [hwver] [$type]$port\n      <hwver>  - number: $hwver\n"
+}
+
+sub argver {
+    my $cmd = shift() || return;
+    
+    my ($hwver) = reverse @hwver;
+    $hwver = int(shift()) if $_[0] && ($_[0] =~ /^\d+$/);
+    
+    my ($type) = @type;
+    if ($_[0] && (my ($t) = grep { $_->{name} eq $_[0] } @type)) {
+        shift();
+        $type = $t;
+    }
+    
+    my $port;
+    if (($cmd eq 'upload') || ($cmd eq 'compileupload')) {
+        if (!@_) {
+            print "!!! undefined port\n";
+            print_argver_usage($cmd);
+            return;
+        }
+        $port = shift();
+        if ($port !~ /\//) {
+            $port = '/dev/'.$port;
+        }
+    }
+    
+    if (@_) {
+        print "!!! too many args\n";
+        print_argver_usage($cmd);
+        return;
+    }
+    
+    return ($hwver, $type, $port);
+}
+
+#==========================================================
+
+sub compileall {
+    foreach my $hwver (@hwver) {
+        foreach my $type (@type) {
+            build($hwver, $type) || return;
+        }
+    }
+}
+
+#==========================================================
+
+sub upload {
+    my ($hwver, $type, $port) = argver('upload', @_);
+    
+    $hwver || return;
+    burn($hwver, $type, $port);
+}
+
+sub compile {
+    my ($hwver, $type) = argver('compile', @_);
+    
+    $hwver || return;
+    
+    build($hwver, $type) || return;
+}
+
+sub compileupload {
+    my ($hwver, $type, $port) = argver('compileupload', @_);
+    
+    $hwver || return;
+    
+    build($hwver, $type) || return;
+    burn($hwver, $type, $port);
+}
+
+##==========================================================
+#================================================== End ===
+#==========================================================
+1;
