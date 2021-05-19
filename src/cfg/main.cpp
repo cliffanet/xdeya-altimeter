@@ -43,17 +43,22 @@ bool Config<T>::load() {
     if (!fh)
         return false;
     
-    size_t sz = fh.read(reinterpret_cast<uint8_t *>(&data), sizeof(data));
+    T d;
+    
+    size_t sz = fh.read(reinterpret_cast<uint8_t *>(&d), sizeof(T));
     fh.close();
     
     bool ok =
-        (sz == sizeof(data)) &&
-        (data.mgc1 == CFG_MGC1) &&
-        (data.ver == ver) &&
-        (data.mgc2 == CFG_MGC2);
+        (sz == sizeof(T)) &&
+        (d.mgc1 == CFG_MGC1) &&
+        (d.ver == ver) &&
+        (d.mgc2 == CFG_MGC2);
     
     CONSOLE("config %s read: %d", fname, ok);
-        
+    
+    if (ok)
+        data = d;
+    
     _modifed = !ok;
     return ok;
 }
@@ -107,15 +112,18 @@ uint32_t Config<T>::chksum() const {
 }
 
 bool cfgLoad(bool apply) {
-    if (!cfg.load() ||
-        !pnt.load() ||
-        !jmp.load())
-        return false;
+    bool ok = true;
+    if (!cfg.load())
+        ok = false;
+    if (!pnt.load())
+        ok = false;
+    if (!jmp.load())
+        ok = false;
     if (apply) {
         displayContrast(cfg.d().contrast);
         setViewMain(cfg.d().dsplpwron);
     }
-    return true;
+    return ok;
 }
 bool cfgSave(bool force) {
     return

@@ -96,7 +96,13 @@ bool verAvailGet(int num, char *ver) {
     
     CONSOLE("verAvailGet search: %d", num);
     
-    bool founded = false;
+    num --;
+    bool founded = num <= 0 ? fh.available() : false;
+    
+    if (founded && (ver == NULL)) {
+        fh.close();
+        return true;
+    }
     
     while (fh.available() > 0) {
         char s = fh.read(); // читаем до окончания строки
@@ -115,8 +121,10 @@ bool verAvailGet(int num, char *ver) {
             }
         }
         else
-        if (founded && (ver != NULL))
+        if (founded && (ver != NULL)) {
             *ver = s;
+            ver++;
+        }
     }
         
     if (ver != NULL)

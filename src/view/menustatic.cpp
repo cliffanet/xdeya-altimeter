@@ -533,7 +533,6 @@ static ViewMenuStatic vMenuPower(menupower, sizeof(menupower)/sizeof(menu_el_t))
 /* ------------------------------------------------------------------------------------------- *
  *  Меню Обновления прошивки
  * ------------------------------------------------------------------------------------------- */
-static int veri = 0;
 static const menu_el_t menufirmware[] {
     {
         .name = PSTR("FW version"),
@@ -564,23 +563,23 @@ static const menu_el_t menufirmware[] {
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
-            if (veri <= 0)
+            if (cfg.d().fwupdind <= 0)
                 strcpy_P(txt, PSTR("-no-"));
             else
-            if (!verAvailGet(veri, txt))
+            if (!verAvailGet(cfg.d().fwupdind, txt))
                 *txt = '\0';
         },
         .edit = [] (int val) {
-            if (val < 0) {
-                veri --;
-                if (veri < 0)
-                    veri = verAvailCount();
+            if (val > 0) {
+                cfg.set().fwupdind --;
+                if (cfg.d().fwupdind < 0)
+                    cfg.set().fwupdind = verAvailCount();
             }
             else
-            if (val > 0) {
-                veri ++;
-                if (!verAvailGet(veri))
-                    veri = 0;
+            if (val < 0) {
+                cfg.set().fwupdind ++;
+                if (!verAvailGet(cfg.d().fwupdind))
+                    cfg.set().fwupdind = 0;
             }
         },
     },
