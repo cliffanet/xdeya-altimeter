@@ -54,6 +54,7 @@ bool sendJump();
 bool sendPoint();
 bool sendLogBook(uint32_t _cks, uint32_t _pos);
 bool sendTrack(logchs_t _cks);
+bool sendDataFin();
 
 
 #endif // _net_data_H

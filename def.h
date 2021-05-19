@@ -25,12 +25,15 @@
 #ifdef FWVER_DEV
 #define FWVER_TYPE_NAME     ".dev"
 #define FWVER_TYPE_DSPL     "dev"
+#define FWVER_TYPE_CODE     'D'
 #elif defined(FWVER_DEBUG)
 #define FWVER_TYPE_NAME     ".debug"
 #define FWVER_TYPE_DSPL     "debug"
+#define FWVER_TYPE_CODE     'd'
 #else
 #define FWVER_TYPE_NAME     ""
 #define FWVER_TYPE_DSPL     "prod"
+#define FWVER_TYPE_CODE     'p'
 #endif
 
 #define FWVER_NAME          TOSTRING(FWVER_NUM) FWVER_TYPE_NAME ".hw" TOSTRING(HWVER)

@@ -4,6 +4,7 @@
 
 #include "../log.h"
 #include "../file/wifi.h"
+#include "../file/veravail.h"
 #include "../cfg/webjoin.h"
 #include "../cfg/point.h"
 #include "../cfg/jump.h"
@@ -24,6 +25,7 @@ typedef enum {
     NS_PROFILE_JOIN,
     NS_SERVER_DATA_CONFIRM,
     NS_RCV_WIFI_PASS,
+    NS_RCV_VER_AVAIL,
     NS_EXIT
 } netsync_state_t;
 
@@ -103,7 +105,7 @@ class ViewNetSync : public ViewBase {
                 return false;
             }
             if (timeout < millis()) {
-                ERR("server hello timeout");
+                ERR("timeout");
                 return false;
             }
             return true;
@@ -167,12 +169,14 @@ class ViewNetSync : public ViewBase {
                 ERR("send Tracks fail");
                 return;
             }
-    
-            uint32_t ckswifi = wifiPassChkSum();
-            ckswifi = htonl(ckswifi);
+            
+            MSG("Sending fin...");
+            if (!sendDataFin()) {
+                ERR("Finishing send fail");
+                return;
+            }
     
             NEXT("Wait server confirm...", NS_SERVER_DATA_CONFIRM, 30000);
-            srvSend(0x3f, ckswifi); // datafin
         }
         
         // фоновый процессинг - обрабатываем этапы синхронизации
@@ -309,6 +313,14 @@ class ViewNetSync : public ViewBase {
                                 }
                                 NEXT("Recv wifi pass", NS_RCV_WIFI_PASS, 3000);
                                 return;
+                                
+                            case 0x44: // veravail beg
+                                if (!verAvailClear()) {
+                                    ERR("Versions clear Fail");
+                                    return;
+                                }
+                                NEXT("Recv FW-versions", NS_RCV_VER_AVAIL, 3000);
+                                return;
         
                             case 0x0f: // bye
                                 FIN("Sync finished");
@@ -349,6 +361,42 @@ class ViewNetSync : public ViewBase {
                                     cks = htonl(cks);
                                     NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 3000);
                                     srvSend(0x4a, cks); // wifiok
+                                    return;
+            
+                                default:
+                                    ERR("recv unknown cmd");
+                                    return;
+                            }
+                        }
+                    }
+                    return;
+                
+                case NS_RCV_VER_AVAIL:
+                // этап 6 - принимаем список доступных версий прошивки
+                    {
+                        uint8_t cmd;
+                        uint8_t s[512];
+                        char ver[33];
+                        uint32_t cks;
+
+                        if (!chksrv())
+                            return;
+    
+                        while (srvRecv(cmd, s, sizeof(s))) {
+                            switch (cmd) {
+                                case 0x45: // veravail item
+                                    ntostrs(ver, sizeof(ver), s);
+                                    if (!verAvailAdd(ver)) {
+                                        ERR("FW-version add Fail");
+                                        return;
+                                    }
+                                    break;
+            
+                                case 0x46: // veravail end
+                                    cks = verAvailChkSum();
+                                    cks = htonl(cks);
+                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 3000);
+                                    srvSend(0x4b, cks); // veravail ok
                                     return;
             
                                 default:
@@ -458,7 +506,7 @@ class ViewNetSync : public ViewBase {
         }
         
     private:
-        char title[20], ssid[40], pass[40];
+        char title[24], ssid[40], pass[40];
         uint32_t timeout;
         uint16_t joinnum = 0;
         netsync_state_t state = NS_NONE;

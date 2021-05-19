@@ -8,6 +8,8 @@
 #include "../cfg/main.h"
 #include "../cfg/point.h"
 #include "../file/track.h"
+#include "../file/wifi.h"
+#include "../file/veravail.h"
 
 #include <WiFi.h> // htonl
 
@@ -355,5 +357,30 @@ bool sendTrack(logchs_t _cks) {
     }
     
     return true;
+}
+
+bool sendDataFin() {
+    uint32_t ckswifi = wifiPassChkSum();
+    uint32_t cksver = verAvailChkSum();
+    
+    struct __attribute__((__packed__)) {
+        uint32_t    ckswifi;
+        uint32_t    cksver;
+        uint8_t     vern1;
+        uint8_t     vern2;
+        uint8_t     vern3;
+        uint8_t     vtype;
+        uint8_t     hwver;
+    } d = {
+        .ckswifi    = htonl(ckswifi),
+        .cksver     = htonl(cksver),
+        .vern1      = FWVER_NUM1,
+        .vern2      = FWVER_NUM2,
+        .vern3      = FWVER_NUM3,
+        .vtype      = FWVER_TYPE_CODE,
+        .hwver      = HWVER,
+    };
+    
+    return srvSend(0x3f, d); // datafin
 }
 

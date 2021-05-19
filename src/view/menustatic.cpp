@@ -10,6 +10,7 @@
 #include "../cfg/jump.h"
 #include "../jump/proc.h"
 #include "../file/track.h"
+#include "../file/veravail.h"
 #include "../../def.h" // time/pwr
 
 
@@ -530,6 +531,63 @@ static const menu_el_t menupower[] {
 static ViewMenuStatic vMenuPower(menupower, sizeof(menupower)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Меню Обновления прошивки
+ * ------------------------------------------------------------------------------------------- */
+static int veri = 0;
+static const menu_el_t menufirmware[] {
+    {
+        .name = PSTR("FW version"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            strcpy_P(txt, PSTR(TOSTRING(FWVER_NUM)));
+        },
+    },
+    {
+        .name = PSTR("FW type"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            strcpy_P(txt, PSTR(FWVER_TYPE_DSPL));
+        },
+    },
+    {
+        .name = PSTR("Hardware rev."),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            strcpy_P(txt, PSTR(TOSTRING(v0.HWVER)));
+        },
+    },
+    {
+        .name = PSTR("Update to:"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            if (veri <= 0)
+                strcpy_P(txt, PSTR("-no-"));
+            else
+            if (!verAvailGet(veri, txt))
+                *txt = '\0';
+        },
+        .edit = [] (int val) {
+            if (val < 0) {
+                veri --;
+                if (veri < 0)
+                    veri = verAvailCount();
+            }
+            else
+            if (val > 0) {
+                veri ++;
+                if (!verAvailGet(veri))
+                    veri = 0;
+            }
+        },
+    },
+};
+static ViewMenuStatic vMenuFirmWare(menufirmware, sizeof(menufirmware)/sizeof(menu_el_t));
+
+/* ------------------------------------------------------------------------------------------- *
  *  Меню тестирования оборудования
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menuhwtest[] {
@@ -648,6 +706,10 @@ static const menu_el_t menusystem[] {
             //displayUpdate(); // чтобы сразу вывести текст на экран
             //ESP.restart();
         },
+    },
+    {
+        .name       = PSTR("FirmWare update"),
+        .submenu    = &vMenuFirmWare,
     },
     {
         .name = PSTR("GPS serial"),

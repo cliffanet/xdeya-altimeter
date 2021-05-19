@@ -55,7 +55,8 @@ uint32_t wifiPassChkSum() {
         return 0;
     
     uint16_t csz = fh.size();
-    uint16_t cs = 0;
+    uint8_t csa = 0;
+    uint8_t csb = 0;
     uint8_t buf[256];
     
     while (fh.available() > 0) {
@@ -65,13 +66,15 @@ uint32_t wifiPassChkSum() {
             return 0;
         }
         
-        for (int i=0; i<len; i++)
-            cs += buf[i];
+        for (int i=0; i<len; i++) {
+            csa += buf[i];
+            csb += csa;
+        }
     }
     
     fh.close();
     
-    return (cs << 16) | csz;
+    return (csa << 24) | (csb << 16) | csz;
 }
 
 /* ------------------------------------------------------------------------------------------- *
