@@ -12,6 +12,7 @@
 #include "../net/data.h"
 
 #include <WiFi.h>
+#include <Update.h>           // Обновление прошивки
 #include <vector>
 
 
@@ -26,6 +27,7 @@ typedef enum {
     NS_SERVER_DATA_CONFIRM,
     NS_RCV_WIFI_PASS,
     NS_RCV_VER_AVAIL,
+    NS_RCV_FWUPDATE,
     NS_EXIT
 } netsync_state_t;
 
@@ -51,13 +53,15 @@ class ViewNetSync : public ViewBase {
                 WiFi.begin((const char *)ssid, pass);
         }
         
+        void updTimeout(int32_t _timeout = 3000) {
+            if (_timeout > 0)
+                timeout = millis() + _timeout;
+        }
+        
         // изменение этапа
         void setState(netsync_state_t _state, int32_t _timeout = -1) {
             state = _state;
-            if (_timeout > 0)
-                timeout = millis() + _timeout;
-            //else
-            //    timeout = 0;
+            updTimeout(_timeout);
         }
         
         // вывод сообщения
@@ -321,6 +325,10 @@ class ViewNetSync : public ViewBase {
                                 }
                                 NEXT("Recv FW-versions", NS_RCV_VER_AVAIL, 3000);
                                 return;
+                                
+                            case 0x47: // firmware update beg
+                                NEXT("FW-update", NS_RCV_FWUPDATE, 3000);
+                                return;
         
                             case 0x0f: // bye
                                 FIN("Sync finished");
@@ -354,6 +362,7 @@ class ViewNetSync : public ViewBase {
                                         ERR("WiFi add Fail");
                                         return;
                                     }
+                                    updTimeout();
                                     break;
             
                                 case 0x43: // wifi end
@@ -390,6 +399,7 @@ class ViewNetSync : public ViewBase {
                                         ERR("FW-version add Fail");
                                         return;
                                     }
+                                    updTimeout();
                                     break;
             
                                 case 0x46: // veravail end
@@ -407,10 +417,88 @@ class ViewNetSync : public ViewBase {
                     }
                     return;
                 
+                case NS_RCV_FWUPDATE:
+                // этап 7 - обновляем прошивку
+                    {
+                        uint8_t cmd;
+                        union {
+                            struct {
+                                uint32_t    size;
+                                char        md5[36];
+                            } info;
+                            struct {
+                                uint16_t    sz;
+                                uint8_t     buf[1000];
+                            } data;
+                        } d;
+
+                        if (!chksrv())
+                            return;
+    
+                        while (srvRecv(cmd, d)) {
+                            switch (cmd) {
+                                case 0x48: // fwupd info
+                                    CONSOLE("recv fw info");
+                                    {
+                                        uint32_t freesz = ESP.getFreeSketchSpace();
+                                        uint32_t cursz = ESP.getSketchSize();
+                                        d.info.size = ntohl(d.info.size);
+                                        d.info.md5[sizeof(d.info.md5)-1] = '\0';
+                                        CONSOLE("current fw size: %lu, avail size for new fw: %lu, new fw size: %lu; md5: %s", 
+                                                cursz, freesz, d.info.size, d.info.md5);
+                                        
+                                        if (d.info.size > freesz) {
+                                            ERR("FW-size too big");
+                                            return;
+                                        }
+            
+                                        // start burn
+                                        if (!Update.begin(d.info.size, U_FLASH) || !Update.setMD5(d.info.md5)) {
+                                            CONSOLE("Upd begin fail: errno=%d", Update.getError());
+                                            ERR("FW-init fail");
+                                            return;
+                                        }
+                                    }
+                                    break;
+                                    
+                                case 0x49: // fwupd data
+                                    {
+                                        d.data.sz = ntohs(d.data.sz);
+                                        int sz1 = Update.write(d.data.buf, d.data.sz);
+                                        if ((sz1 == 0) || (sz1 != d.data.sz)) {
+                                            ERR("FW-write fail");
+                                            return;
+                                        }
+                                    }
+                                    updTimeout();
+                                    break;
+                                    
+                                case 0x4a: // fwupd end
+                                    if (!Update.end()) {
+                                        ERR("FW-finish fail");
+                                        return;
+                                    }
+                                    
+                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 3000);
+                                    srvSend(0x4c); // fwupd ok
+                                    cfg.set().fwupdind = 0;
+                                    fwupd = cfg.save();
+                                    return;
+            
+                                default:
+                                    ERR("recv unknown cmd");
+                                    return;
+                            }
+                        }
+                    }
+                    return;
+                
                 case NS_EXIT:
                     // ожидание таймаута сообщения перед выходом из режима синхронизации
                     if (timeout < millis())
                         close();
+                    if (fwupd)
+                        ESP.restart();
                     return;
                 
                 default:
@@ -510,6 +598,7 @@ class ViewNetSync : public ViewBase {
         uint32_t timeout;
         uint16_t joinnum = 0;
         netsync_state_t state = NS_NONE;
+        bool fwupd = false;
 };
 ViewNetSync vNetSync;
 

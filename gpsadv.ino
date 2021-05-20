@@ -51,12 +51,21 @@ void setup() {
 //------------------------------------------------------------------------------
 
 void loop() {
+    uint32_t m1 = millis();
     clockProcess();
     gpsProcess();
     jmpProcess();
     trkProcess();
     viewProcess();
-    delay(100);
+    
+    uint32_t m2 = millis();
+    uint32_t md = m2-m1;
+    if (md < 100)
+        delay(100-md);
+        
     jmpProcess();
-    delay(100);
+    
+    md = millis() - m2;
+    if (md < 100)
+        delay(100-md);
 }

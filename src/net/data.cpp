@@ -371,6 +371,8 @@ bool sendDataFin() {
         uint8_t     vern3;
         uint8_t     vtype;
         uint8_t     hwver;
+        uint8_t     _[3];
+        char        fwupdver[32];
     } d = {
         .ckswifi    = htonl(ckswifi),
         .cksver     = htonl(cksver),
@@ -380,6 +382,10 @@ bool sendDataFin() {
         .vtype      = FWVER_TYPE_CODE,
         .hwver      = HWVER,
     };
+    
+    if (cfg.d().fwupdind > 0) {
+        verAvailGet(cfg.d().fwupdind, d.fwupdver);
+    }
     
     return srvSend(0x3f, d); // datafin
 }

@@ -9,7 +9,6 @@
 
 static WiFiClient cli;
 
-
 // Заголовок данных при сетевой передаче
 typedef struct __attribute__((__packed__)) {
     char    mgc;
@@ -17,12 +16,17 @@ typedef struct __attribute__((__packed__)) {
     int16_t len;
 } phdr_t;
 
+// заголовок принимаемой команды - на время, пока будем принимать данные
+static phdr_t phr = { .mgc = '\0', .cmd = 0 };
+
 bool srvConnect() {
+    srvStop();
     return cli.connect("gpstat.dev.cliffa.net", 9971);
 }
 
 void srvStop() {
     cli.stop();
+    phr = { mgc: '\0', cmd: 0 };
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -76,41 +80,40 @@ static bool srvWaitHdr(phdr_t &p) {
 }
 
 bool srvRecv(uint8_t &cmd, uint8_t *data, uint16_t sz) {
-    static phdr_t p = { .mgc = '\0', .cmd = 0 };
     if (data == NULL) sz = 0;
     
     // ожидание и чтение заголовка
-    if ((p.mgc == '\0') && (p.cmd == 0)) {
-        if (!srvWaitHdr(p))
+    if ((phr.mgc == '\0') && (phr.cmd == 0)) {
+        if (!srvWaitHdr(phr))
             return false;
-        if (p.len < sz) // стираем хвост data, который не будет переписан принимаемыми данными,
+        if (phr.len < sz) // стираем хвост data, который не будет переписан принимаемыми данными,
                         // Удобно, если после изменения протокола, данные по требуемой команде
                         // от сервера будут более короткими.
                         // Но так же это и лишняя процедура, если буфер подаётся с запасом
-            bzero(data+p.len, sz-p.len);
+            bzero(data+phr.len, sz-phr.len);
     }
     
-    cmd = p.cmd;
+    cmd = phr.cmd;
     
     // Ожидание данных
-    if ((p.len > 0) && !srvWait(p.len))
+    if ((phr.len > 0) && !srvWait(phr.len))
         return false;
     
     // чтение данных
-    if (!srvReadData(data, p.len <= sz ? p.len : sz))
+    if (!srvReadData(data, phr.len <= sz ? phr.len : sz))
         return false;
     
     // И дочитываем буфер, если это требуется
-    if (p.len > sz) {
-        uint16_t sz1 = p.len - sz;
+    if (phr.len > sz) {
+        uint16_t sz1 = phr.len - sz;
         uint8_t buf[sz1];
         if (!srvReadData(buf, sz1))
             return false;
     }
     
     // Обозначаем, что дальше надо принимать заголовок
-    p.mgc = '\0';
-    p.cmd = 0;
+    phr.mgc = '\0';
+    phr.cmd = 0;
     
     return true;
 }
