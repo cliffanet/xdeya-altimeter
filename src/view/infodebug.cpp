@@ -22,6 +22,7 @@ class ViewInfoDebug : public ViewInfo {
         
         void updStr(uint16_t i) {
             switch (i) {
+#if HWVER > 1
                 case 0:
                     PRNL("Battery RAW");
                     PRNR("%d", pwrBattValue());
@@ -30,6 +31,7 @@ class ViewInfoDebug : public ViewInfo {
                     PRNL("Batt voltage");
                     PRNR("%0.2fv", 3.35 * pwrBattValue() / 4095 * 3 / 2);
                     break;
+#endif
                 
                 case 2:
                     PRNL("BMP280");
