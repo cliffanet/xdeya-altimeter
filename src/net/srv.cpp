@@ -5,7 +5,7 @@
 #include "srv.h"
 
 #include <WiFi.h> // htonl
-
+#include "../log.h"
 
 static WiFiClient cli;
 
@@ -124,6 +124,7 @@ bool srvRecv(uint8_t &cmd, uint8_t *data, uint16_t sz) {
 bool srvSend(uint8_t cmd, const uint8_t *data, uint16_t sz) {
     if (!cli.connected()) {
         last_err = PSTR("server connect lost");
+        CONSOLE("srvSend on server connect lost");
         return false;
     }
     
@@ -136,6 +137,7 @@ bool srvSend(uint8_t cmd, const uint8_t *data, uint16_t sz) {
     auto sz2 = cli.write(d, 4 + sz);
     if (sz2 != (4 + sz)) {
         last_err = PSTR("server send fail");
+        CONSOLE("srvSend FAIL: sended=%d; sz=%d", sz2, sz);
         return false;
     }
     return true;

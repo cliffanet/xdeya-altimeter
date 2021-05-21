@@ -106,9 +106,49 @@ class ViewMenuFile : public ViewMenu {
                 case 1:
                     menuFlashP(PSTR("Hold to ReNum"));
                     return;
+#if !defined(FWVER_DEV) && !defined(FWVER_DEBUG)
                 default:
                     menuFlashP(PSTR("Hold to remove"));
+#endif
             }
+
+#if defined(FWVER_DEV) || defined(FWVER_DEBUG)
+            auto i = sel()-2;
+            auto f = fileall[i];
+            CONSOLE("ViewMenuFile::btnSmpl: dump: %s", f.name);
+            File fh = DISKFS.open(f.name, FILE_READ);
+            if (!fh) {
+                CONSOLE("ViewMenuFile::btnSmpl: open fail");
+                return;
+            }
+            
+            for (int n = 0; n < 64; n++) {
+                uint8_t buf[16];
+                if (fh.read(buf, sizeof(buf)) != sizeof(buf)) {
+                    CONSOLE("ViewMenuFile::btnSmpl: read fail");
+                    break;
+                }
+                uint8_t *b = buf;
+                char str[128];
+                char *s = str;
+                for (int n1 = 0; n1 < sizeof(buf); n1++) {
+                    sprintf_P(s, PSTR("%02X "), *b);
+                    b++;
+                    s+=3;
+                }
+                b = buf;
+                for (int n1 = 0; n1 < sizeof(buf); n1++) {
+                    *s = *b >= 0x20 ? *b : '.';
+                    b++;
+                    s++;
+                }
+                s = '\0';
+                
+                CONSOLE("dump[%02x]: %s", n, str);
+            }
+            
+            fh.close();
+#endif
         }
         
         bool useLong(btn_code_t btn) {
