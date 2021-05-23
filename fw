@@ -8,7 +8,7 @@ use IPC::Open3;
 
 #==========================================================
 
-my @version = (0, 3, 0);
+my @version = (0, 3, 1);
 
 my $dir     = '.fw';
 
@@ -179,6 +179,9 @@ sub build {
     rename("$dir/.build/gpsadv.ino.bin", "$dir/${fname}.bin") || return;
     if (-f "$dir/.build/gpsadv.ino.partitions.bin") {
         rename("$dir/.build/gpsadv.ino.partitions.bin", "$dir/${fname}.partitions.bin") || return;
+    }
+    if (-f "$dir/.build/gpsadv.ino.bootloader.bin") {
+        rename("$dir/.build/gpsadv.ino.bootloader.bin", "$dir/${fname}.bootloader.bin") || return;
     }
     unlink "$dir/.build/gpsadv.ino.elf";
     unlink "$dir/.build/gpsadv.ino.map";

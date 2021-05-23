@@ -44,7 +44,7 @@ class ConfigPoint : public Config<cfg_point_t> {
         
         uint8_t num() const { return data.num; }
         bool numValid() const { return (data.num > 0) && (data.num <= PNT_COUNT); }
-        const cfg_point_el_t & cur() {
+        cfg_point_el_t cur() {
                 if ((data.num > 0) && (data.num <= PNT_COUNT))
                     return data.all[data.num-1];
                 cfg_point_el_t nullp;

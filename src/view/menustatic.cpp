@@ -20,7 +20,7 @@ typedef void (*menu_val_t)(char *txt);
 
 // Элемент меню
 typedef struct {
-    char        *name;      // Текстовое название пункта
+    const char  *name;      // Текстовое название пункта
     ViewMenu    *submenu;   // вложенное подменю
     menu_hnd_t  enter;      // Обраотка нажатия на среднюю кнопку
     menu_val_t  showval;    // как отображать значение, если требуется

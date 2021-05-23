@@ -65,7 +65,7 @@ class ViewMenu : public ViewBase {
 };
         
 // Запоминаем текст сообщения и сколько тактов отображения показывать
-void menuFlashP(char *txt, int16_t count = 20);
+void menuFlashP(const char *txt, int16_t count = 20);
 // Стандартное сообщение о том, что для данной процедуры нужно удерживать среднюю кнопку три секунды
 void menuFlashHold();
 void menuFlashClear();

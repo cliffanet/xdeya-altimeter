@@ -142,7 +142,7 @@ class ViewMenuFile : public ViewMenu {
                     b++;
                     s++;
                 }
-                s = '\0';
+                *s = '\0';
                 
                 CONSOLE("dump[%02x]: %s", n, str);
             }
