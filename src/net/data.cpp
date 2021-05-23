@@ -11,7 +11,7 @@
 #include "../file/wifi.h"
 #include "../file/veravail.h"
 
-#include <WiFi.h> // htonl
+#include <lwip/inet.h>      // htonl
 
 /* ------------------------------------------------------------------------------------------- *
  *  простые преобразования данных

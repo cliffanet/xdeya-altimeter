@@ -12,7 +12,6 @@
 #include "src/cfg/point.h"
 #include "src/cfg/jump.h"
 
-#include <WiFi.h>
 #include <SPIFFS.h>
 
 //------------------------------------------------------------------------------
@@ -26,8 +25,6 @@ void setup() {
         return;
     
     CONSOLE("Firmware " FWVER_FILENAME "; Build Date: " __DATE__);
-  
-    WiFi.mode(WIFI_OFF);
 
     // часы
     clockInit();

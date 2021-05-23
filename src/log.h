@@ -9,6 +9,8 @@
 
 #ifdef FWVER_DEBUG
 
+#include <pgmspace.h>   // PSTR()
+
 const char * pathToFileName_P(const char * path);
 #define LOG_FMT(s)        PSTR(" [%s:%u] %s(): " s), pathToFileName_P(PSTR(__FILE__)), __LINE__, __FUNCTION__
 //#define LOG_FMT(s)        PSTR(" [%s:%u] %s(): " s), __FILE__, __LINE__, __FUNCTION__
