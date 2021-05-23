@@ -10,11 +10,11 @@
 #include "../cfg/jump.h"
 #include "../net/srv.h"
 #include "../net/data.h"
+#include "../net/wifi.h"
 
 #include <WiFi.h>
 #include <Update.h>           // Обновление прошивки
 #include <vector>
-
 
 /* ------------------------------------------------------------------------------------------- *
  *  ViewNetSync - процесс синхронизации с сервером
@@ -617,29 +617,15 @@ class ViewMenuWifiSync : public ViewMenu {
     public:
         void restore() {
             CONSOLE("Wifi init begin");
-            WiFi.persistent(false);
-            WiFi.mode(WIFI_STA);
-            WiFi.disconnect();
-            delay(100);
-
-            CONSOLE("Wifi init done");
-            int n = WiFi.scanNetworks();
+            CONSOLE("wifi power 1: %d", wifiPower());
+            if (!wifiStart())
+                return;
+            CONSOLE("wifi power 2: %d", wifiPower());
+            
+            uint16_t n = wifiScan();
+            CONSOLE("wifi power 3: %d", wifiPower());
             CONSOLE("scan: %d", n);
             setSize(n);
-            
-            for (int i = 0; i < n; ++i) {
-                wifi_t w;
-                strncpy(w.name, WiFi.SSID(i).c_str(), sizeof(w.name));
-                w.name[sizeof(w.name)-1] = '\0';
-                w.isopen = WiFi.encryptionType(i) == WIFI_AUTH_OPEN;
-                snprintf_P(w.txt, sizeof(w.txt), PSTR("%s (%d) %c"), w.name, WiFi.RSSI(i), w.isopen?' ':'*');
-                wifiall.push_back(w);
-            }
-            CONSOLE("scan end (%d)", wifiall.size());
-    
-            for(auto const &w : wifiall)
-                CONSOLE("found: %s", w.txt);
-            CONSOLE("wifiall: %d", wifiall.size());
             
             ViewMenu::restore();
         }
@@ -647,19 +633,28 @@ class ViewMenuWifiSync : public ViewMenu {
         void close() {
             wifiall.clear();
             setSize(0);
-            WiFi.mode(WIFI_OFF);
+            wifiStop();
         }
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
             CONSOLE("ViewMenuWifiSync::getStr: %d (sz=%d)", i, wifiall.size());
-            auto const &w = wifiall[i];
-            strncpy(str.name, w.txt, sizeof(str.name));
-            str.name[sizeof(str.name)-1] = '\0';
-            if (w.isopen) {
+            auto n = wifiScanInfo(i);
+            if (n == NULL) {
+                str.name[0] = '\0';
+                str.val[0] = '\0';
+                return;
+            }
+            
+            snprintf_P(
+                str.name, sizeof(str.name), 
+                PSTR("%s (%d) %c"), n->ssid, n->rssi, n->isopen ? ' ':'*'
+            );
+            
+            if (n->isopen) {
                 str.val[0] = '\0';
             }
             else {
-                str.val[0] = wifiPassFind(w.name) ? '+' : 'x';
+                str.val[0] = wifiPassFind(n->ssid) ? '+' : 'x';
             }
             str.val[1] = '\0';
         }
@@ -691,6 +686,7 @@ class ViewMenuWifiSync : public ViewMenu {
         }
         
         void process() {
+            CONSOLE("wifi power p: %d", wifiPower());
             if (btnIdle() > MENU_TIMEOUT) {
                 close();
                 setViewMain();
