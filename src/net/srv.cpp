@@ -4,9 +4,9 @@
 
 #include "srv.h"
 
-//#include <lwip/inet.h>      // htonl
-//#include <pgmspace.h>       // PSTR
-#include <WiFi.h>
+#include <lwip/def.h>      // htonl
+#include <pgmspace.h>       // PSTR
+#include <WiFiClient.h>
 #include "../log.h"
 
 static WiFiClient cli;

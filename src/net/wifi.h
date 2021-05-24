@@ -31,9 +31,29 @@ typedef struct {
 
 bool wifiStart();
 bool wifiStop();
+bool wifiStarted();
 
 uint16_t wifiScan(bool show_hidden = false, bool passive = false, uint32_t max_ms_per_chan = 300, uint8_t channel = 0);
 const wifi_net_t * wifiScanInfo(uint16_t i);
+void wifiScanClean();
+
+typedef union {
+    uint8_t bytes[4];  // IPv4 address
+    uint32_t dword;
+} ipaddr_t;
+
+typedef enum {
+    WIFI_STA_NULL = 0,
+    WIFI_STA_CONNECTED,
+    WIFI_STA_WAITIP,
+    WIFI_STA_DISCONNECTED,
+    WIFI_STA_FAIL
+} wifi_status_t;
+
+bool wifiConnect(const char* ssid, const char *pass);
+wifi_status_t wifiStatus();
+ipaddr_t wifiIP();
+bool wifiInfo(char *ssid, int8_t &rssi);
 
 int8_t wifiPower();
 

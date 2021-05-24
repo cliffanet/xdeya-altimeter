@@ -12,9 +12,9 @@
 #include "../net/data.h"
 #include "../net/wifi.h"
 
-#include <WiFi.h>
-#include <Update.h>           // Обновление прошивки
+#include <Update.h>         // Обновление прошивки
 #include <vector>
+#include <lwip/inet.h>      // htonl
 
 /* ------------------------------------------------------------------------------------------- *
  *  ViewNetSync - процесс синхронизации с сервером
@@ -31,26 +31,28 @@ typedef enum {
     NS_EXIT
 } netsync_state_t;
 
+#define MSG(s)              msg(PSTR(s))
+#define NEXT(s, h, tout)    next(PSTR(s), h, tout)
+#define ERR(s)              fin(PSTR(s))
+#define FIN(s)              fin(PSTR(s))
+
 class ViewNetSync : public ViewBase {
     public:
         // старт процедуры синхронизации
         void begin(const char *_ssid, const char *_pass) {
-            strcpy(ssid, _ssid);        // Приходится временно копировать ssid, т.к. оно находится внутри списка wifi для ViewMenuWifiSync
-            if (_pass == NULL)          // а при завершении текущего begin этот список wifi будет очищен.
-                pass[0] = '\0';
-            else
-                strcpy(pass, _pass);
-    
-            snprintf_P(title, sizeof(title), PSTR("wifi to %s"), ssid);
-            setState(NS_WIFI_CONNECT, 10000);
+            snprintf_P(title, sizeof(title), PSTR("wifi to %s"), _ssid);
+            setState(NS_WIFI_CONNECT, 20000);
             joinnum = 0;
     
-            CONSOLE("wifi to: %s; pass: %s", ssid, pass);
-            WiFi.mode(WIFI_STA);
-            if (_pass == NULL)
-                WiFi.begin((const char *)ssid);
-            else
-                WiFi.begin((const char *)ssid, pass);
+            CONSOLE("wifi to: %s; pass: %s", _ssid, _pass == NULL ? "-no-" : _pass);
+            if (!wifiStart()) {
+                ERR("WiFi init fail");
+                return;
+            }
+            if (!wifiConnect(_ssid, _pass)) {
+                ERR("WiFi connect fail");
+                return;
+            }
         }
         
         void updTimeout(int32_t _timeout = 3000) {
@@ -65,7 +67,6 @@ class ViewNetSync : public ViewBase {
         }
         
         // вывод сообщения
-#define MSG(s) msg(PSTR(s))
         void msg(const char *_title) {
             if (_title == NULL)
                 title[0] = '\0';
@@ -78,7 +79,6 @@ class ViewNetSync : public ViewBase {
         }
         
         // сообщение о переходе на следующий этап
-#define NEXT(s, h, tout) next(PSTR(s), h, tout)
         void next(const char *_title, netsync_state_t _state, int32_t _timeout = -1) {
             msg(_title);
             setState(_state, _timeout);
@@ -86,18 +86,16 @@ class ViewNetSync : public ViewBase {
         
         // завершение всего процесса, но выход не сразу, а через несколько сек,
         // чтобы прочитать сообщение
-#define ERR(s) fin(PSTR(s))
-#define FIN(s) fin(PSTR(s))
         void fin(const char *_title) {
             srvStop();
-            WiFi.mode(WIFI_OFF);
+            wifiStop();
             next(_title, NS_EXIT, 5000);
         }
         
         // завершение всего процесса синхронизации с мнгновенным переходом в главный экран
         void close() {
             srvStop();
-            WiFi.mode(WIFI_OFF);
+            wifiStop();
             setViewMain();
         }
         
@@ -188,7 +186,8 @@ class ViewNetSync : public ViewBase {
             switch (state) {
                 case NS_WIFI_CONNECT:
                 // этап 1 - ожидаем соединения по вифи
-                    if (WiFi.status() == WL_CONNECTED) {
+                    if (wifiStatus() == WIFI_STA_CONNECTED) {
+                        CONSOLE("wifi ok, try to server connect");
                         // вифи подключилось, соединяемся с сервером
                         if (!srvConnect()) {
                             ERR("server can't connect");
@@ -201,7 +200,7 @@ class ViewNetSync : public ViewBase {
                     }
                     
                     // проблемы при соединении с вифи
-                    if ((WiFi.status() == WL_NO_SSID_AVAIL) || (WiFi.status() == WL_CONNECT_FAILED)) {
+                    if (wifiStatus() == WIFI_STA_FAIL) {
                         ERR("wifi connect fail");
                         return;
                     }
@@ -532,7 +531,7 @@ class ViewNetSync : public ViewBase {
             u8g2.setDrawColor(1);
             u8g2.drawBox(0,0,128,12);
             u8g2.setDrawColor(0);
-            char s[20];
+            char s[33];
             strcpy_P(s, PSTR("Web Sync"));
             u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, 10, s);
     
@@ -541,18 +540,16 @@ class ViewNetSync : public ViewBase {
     
             strcpy_P(s, PSTR("WiFi"));
             u8g2.drawStr(0, y, s);
-            switch (WiFi.status()) {
-                case WL_NO_SHIELD:      strcpy_P(s, PSTR("No shield")); break;
-                case WL_IDLE_STATUS:    strcpy_P(s, PSTR("Idle")); break;
-                case WL_NO_SSID_AVAIL:  strcpy_P(s, PSTR("SSID not avail")); break;
-                case WL_SCAN_COMPLETED: strcpy_P(s, PSTR("Scan completed")); break;
-                case WL_CONNECTED:
-                    strncpy(s, WiFi.SSID().c_str(), sizeof(s));
-                    s[sizeof(s)-1] = '\0';
+            
+            int8_t rssi;
+            switch (wifiStatus()) {
+                case WIFI_STA_NULL:         strcpy_P(s, PSTR("WiFi off"));          break;
+                case WIFI_STA_DISCONNECTED: strcpy_P(s, PSTR("Disconnected"));  break;
+                case WIFI_STA_FAIL:         strcpy_P(s, PSTR("Connect fail"));  break;
+                case WIFI_STA_WAITIP:
+                case WIFI_STA_CONNECTED:
+                    wifiInfo(s, rssi);
                     break;
-                case WL_CONNECT_FAILED: strcpy_P(s, PSTR("Connect fail")); break;
-                case WL_CONNECTION_LOST:strcpy_P(s, PSTR("Connect lost")); break;
-                case WL_DISCONNECTED:   strcpy_P(s, PSTR("Disconnected")); break;
             }
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
     
@@ -569,19 +566,22 @@ class ViewNetSync : public ViewBase {
                 return;
             }
     
-            if (WiFi.status() == WL_CONNECTED) {
-                snprintf_P(s, sizeof(s), PSTR("%3d dBm"), WiFi.RSSI());
+            if ((wifiStatus() == WIFI_STA_WAITIP) || (wifiStatus() == WIFI_STA_CONNECTED)) {
+                snprintf_P(s, sizeof(s), PSTR("%3d dBm"), rssi);
                 u8g2.drawStr(0, y, s);
-                const auto &ip = WiFi.localIP();
-                snprintf_P(s, sizeof(s), PSTR("%d.%d.%d.%d"), ip[0], ip[1], ip[2], ip[3]);
-                u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+                
+                if (wifiStatus() == WIFI_STA_CONNECTED) {
+                    const auto &ip = wifiIP();
+                    snprintf_P(s, sizeof(s), PSTR("%d.%d.%d.%d"), ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3]);
+                    u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+                }
             }
     
             y += 10;
             u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(title))/2, y, title);
     
             y += 10;
-            if ((WiFi.status() != WL_NO_SHIELD) && (WiFi.status() != WL_IDLE_STATUS)) {
+            if (wifiStatus() > WIFI_STA_NULL) {
                 uint16_t t = (millis() & 0x3FFF) >> 10;
                 s[t] = '\0';
                 while (t > 0) {
@@ -626,14 +626,14 @@ class ViewMenuWifiSync : public ViewMenu {
             CONSOLE("wifi power 3: %d", wifiPower());
             CONSOLE("scan: %d", n);
             setSize(n);
+            wifiStop();
             
             ViewMenu::restore();
         }
         
         void close() {
-            wifiall.clear();
             setSize(0);
-            wifiStop();
+            wifiScanClean();
         }
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
@@ -668,25 +668,26 @@ class ViewMenuWifiSync : public ViewMenu {
                 return;
             }
 
-            auto const &w = wifiall[sel()];
-            if (w.isopen) {
+            auto n = wifiScanInfo(sel());
+            if (n == NULL)
+                return;
+            if (n->isopen) {
                 viewSet(vNetSync);
-                vNetSync.begin(w.name, NULL);
+                vNetSync.begin(n->ssid, NULL);
             }
             else {
                 char pass[64];
-                if (!wifiPassFind(w.name, pass)) {
+                if (!wifiPassFind(n->ssid, pass)) {
                     menuFlashP(PSTR("Password required!"));
                     return;
                 }
                 
                 viewSet(vNetSync);
-                vNetSync.begin(w.name, pass);
+                vNetSync.begin(n->ssid, pass);
             }
         }
         
         void process() {
-            CONSOLE("wifi power p: %d", wifiPower());
             if (btnIdle() > MENU_TIMEOUT) {
                 close();
                 setViewMain();

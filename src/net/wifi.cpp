@@ -8,6 +8,7 @@
 #include <esp_err.h>
 #include <esp_wifi.h>
 #include <esp_event_loop.h>
+#include "freertos/event_groups.h"
 
 #include "esp_log.h"
 
@@ -15,17 +16,65 @@
 #include <string.h> // strcpy
 
 static std::vector<wifi_net_t> wifiall;
+static EventGroupHandle_t sta_status = NULL;
+
+/* ------------------------------------------------------------------------------------------- *
+ *  События
+ * ------------------------------------------------------------------------------------------- */
+static void setStatus(wifi_status_t status) {
+    if (sta_status == NULL)
+        return;
+    xEventGroupClearBits(sta_status, 0x00FFFFFF);
+    xEventGroupSetBits(sta_status, status);
+}
+static esp_err_t event_handler(void *ctx, system_event_t *event)
+{
+    CONSOLE("event_handler: %d", event->event_id);
+    
+    switch (event->event_id) {
+        case SYSTEM_EVENT_STA_START:
+            setStatus(WIFI_STA_DISCONNECTED);
+            break;
+        
+        case SYSTEM_EVENT_STA_STOP:
+            setStatus(WIFI_STA_NULL);
+            break;
+        
+        case SYSTEM_EVENT_STA_CONNECTED:
+            setStatus(WIFI_STA_WAITIP);
+            break;
+        
+        case SYSTEM_EVENT_STA_DISCONNECTED:
+            switch (event->event_info.disconnected.reason) {
+                case WIFI_REASON_NO_AP_FOUND:
+                case WIFI_REASON_AUTH_FAIL:
+                case WIFI_REASON_ASSOC_FAIL:
+                case WIFI_REASON_BEACON_TIMEOUT:
+                case WIFI_REASON_HANDSHAKE_TIMEOUT:
+                case WIFI_REASON_AUTH_EXPIRE:
+                    setStatus(WIFI_STA_FAIL);
+                    break;
+                default:
+                    setStatus(WIFI_STA_DISCONNECTED);
+            }
+            break;
+        
+        case SYSTEM_EVENT_STA_GOT_IP:
+            setStatus(WIFI_STA_CONNECTED);
+            CONSOLE("got ip:%s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
+            break;
+            
+        case SYSTEM_EVENT_STA_LOST_IP:
+            setStatus(WIFI_STA_FAIL);
+            break;
+    }
+    
+    return ESP_OK;
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Запуск / остановка
  * ------------------------------------------------------------------------------------------- */
-// Empty event handler
-static esp_err_t event_handler(void *ctx, system_event_t *event)
-{
-    CONSOLE("event_handler: %d", *event);
-    return ESP_OK;
-}
-
 bool wifiStart() {
     esp_err_t err;
     wifiall.clear();
@@ -42,6 +91,10 @@ bool wifiStart() {
         
         tcpip_init = true;
     }
+    
+    if (sta_status == NULL)
+        sta_status = xEventGroupCreate();
+    setStatus(WIFI_STA_NULL);
     
     // esp32-sdk не умеет устанавливать максимальную мощность wifi
     // до выполнения esp_wifi_start();
@@ -87,12 +140,21 @@ bool wifiStart() {
         return false;
     }
     
+    CONSOLE("wifi started");
+    
     return true;
 }
 
 bool wifiStop() {
-    wifiall.clear();
     esp_err_t err;
+    
+    if (wifiStatus() > WIFI_STA_NULL) {
+        err = esp_wifi_disconnect();
+        if (err != ESP_OK) {
+            CONSOLE("esp_wifi_disconnect: %d", err);
+            return false;
+        }
+    }
     
     err = esp_wifi_stop();
     if (err != ESP_OK) {
@@ -106,8 +168,22 @@ bool wifiStop() {
         return false;
     }
     
+    if (sta_status != NULL) {
+        vEventGroupDelete(sta_status);
+        sta_status = NULL;
+    }
+    
+    CONSOLE("wifi stopped");
+    
     return true;
 }
+bool wifiStarted() {
+    wifi_mode_t mode;
+    return
+        (esp_wifi_get_mode(&mode) == ESP_OK) &&
+        (mode & WIFI_MODE_STA);
+}
+
 /* ------------------------------------------------------------------------------------------- *
  *  Поиск доступных сетей
  * ------------------------------------------------------------------------------------------- */
@@ -141,6 +217,8 @@ uint16_t wifiScan(bool show_hidden, bool passive, uint32_t max_ms_per_chan, uint
     if (err != ESP_OK)
         count = 0;
     
+    CONSOLE("wifi scan found %d nets", count);
+    
     if (count == 0) {
         count = 1;
         wifi_ap_record_t rall[count];
@@ -172,6 +250,105 @@ const wifi_net_t * wifiScanInfo(uint16_t i) {
     if (i >= wifiall.size())
         return NULL;
     return &(wifiall[i]);
+}
+
+void wifiScanClean() {
+    wifiall.clear();
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  соединение с wifi-сетью
+ * ------------------------------------------------------------------------------------------- */
+
+bool wifiConnect(const char* ssid, const char *pass) {
+    if (!ssid || (*ssid == NULL) || (strlen(ssid) > 32)) {
+        CONSOLE("SSID too long or missing!");
+        return false;
+    }
+
+    if (pass && (strlen(pass) > 64)) {
+        CONSOLE("passphrase too long!");
+        return false;
+    }
+    
+    wifi_config_t conf = { };
+    strcpy(reinterpret_cast<char*>(conf.sta.ssid), ssid);
+    conf.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;       //force full scan to be able to choose the nearest / strongest AP
+
+    if (pass) {
+        if (strlen(pass) == 64) { // it's not a passphrase, is the PSK
+            memcpy(reinterpret_cast<char*>(conf.sta.password), pass, 64);
+        }
+        else {
+            strcpy(reinterpret_cast<char*>(conf.sta.password), pass);
+        }
+    }
+    
+    esp_err_t err;
+    err = esp_wifi_disconnect();
+    if (err != ESP_OK) {
+        CONSOLE("disconnect fail: %d", err);
+        return false;
+    }
+    
+    err = esp_wifi_set_config(WIFI_IF_STA, &conf);
+    if (err != ESP_OK) {
+        CONSOLE("esp_wifi_set_config: %d", err);
+        return false;
+    }
+    
+    if (tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA) == ESP_ERR_TCPIP_ADAPTER_DHCPC_START_FAILED) {
+        CONSOLE("dhcp client start failed!");
+        return false;
+    }
+    
+    err = esp_wifi_connect();
+    if (err != ESP_OK) {
+        CONSOLE("esp_wifi_connect: %d", err);
+        return false;
+    }
+    
+    CONSOLE("wifi connect begin");
+    
+    return true;
+}
+
+wifi_status_t wifiStatus() {
+    if (sta_status == NULL)
+        return WIFI_STA_NULL;
+    
+    return
+        static_cast<wifi_status_t>(xEventGroupClearBits(sta_status, 0));
+}
+
+ipaddr_t wifiIP() {
+    ipaddr_t ip;
+    
+    if (wifiStatus() == WIFI_STA_NULL) {
+        ip.dword = 0;
+        return ip;
+    }
+    
+    tcpip_adapter_ip_info_t ipinf;
+    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ipinf);
+    ip.dword = ipinf.ip.addr;
+    
+    return ip;
+}
+
+bool wifiInfo(char *ssid, int8_t &rssi) {
+    wifi_ap_record_t info;
+    if ((wifiStatus() == WIFI_STA_NULL) ||
+        (esp_wifi_sta_get_ap_info(&info) != ESP_OK)) {
+        *ssid = '\0';
+        rssi = 0;
+        return false;
+    }
+    
+    strcpy(ssid, reinterpret_cast<char*>(info.ssid));
+    rssi = rssi;
+    
+    return true;
 }
 
 /* ------------------------------------------------------------------------------------------- *
