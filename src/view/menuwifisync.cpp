@@ -31,6 +31,19 @@ typedef enum {
     NS_EXIT
 } netsync_state_t;
 
+static size_t progress_max = 0, progress_val = 0;
+void netsyncProgMax(size_t max) {
+    progress_max = max;
+    progress_val = 0;
+}
+void netsyncProgInc(size_t val) {
+    if (progress_max <= 0)
+        return;
+    progress_val += val;
+    
+    displayUpdate();
+}
+
 #define MSG(s)              msg(PSTR(s))
 #define NEXT(s, h, tout)    next(PSTR(s), h, tout)
 #define ERR(s)              fin(PSTR(s))
@@ -43,6 +56,7 @@ class ViewNetSync : public ViewBase {
             snprintf_P(title, sizeof(title), PSTR("wifi to %s"), _ssid);
             setState(NS_WIFI_CONNECT, 20000);
             joinnum = 0;
+            netsyncProgMax(0);
     
             CONSOLE("wifi to: %s; pass: %s", _ssid, _pass == NULL ? "-no-" : _pass);
             if (!wifiStart()) {
@@ -64,6 +78,7 @@ class ViewNetSync : public ViewBase {
         void setState(netsync_state_t _state, int32_t _timeout = -1) {
             state = _state;
             updTimeout(_timeout);
+            netsyncProgMax(0);
         }
         
         // вывод сообщения
@@ -96,6 +111,7 @@ class ViewNetSync : public ViewBase {
         void close() {
             srvStop();
             wifiStop();
+            netsyncProgMax(0);
             setViewMain();
         }
         
@@ -457,6 +473,8 @@ class ViewNetSync : public ViewBase {
                                             ERR("FW-init fail");
                                             return;
                                         }
+                                        
+                                        netsyncProgMax(d.info.size);
                                     }
                                     break;
                                     
@@ -468,6 +486,8 @@ class ViewNetSync : public ViewBase {
                                             ERR("FW-write fail");
                                             return;
                                         }
+                                        
+                                        netsyncProgInc(d.data.sz);
                                     }
                                     updTimeout();
                                     break;
@@ -482,6 +502,7 @@ class ViewNetSync : public ViewBase {
                                     srvSend(0x4c); // fwupd ok
                                     cfg.set().fwupdind = 0;
                                     fwupd = cfg.save();
+                                    netsyncProgMax(0);
                                     return;
             
                                 default:
@@ -582,13 +603,25 @@ class ViewNetSync : public ViewBase {
     
             y += 10;
             if (wifiStatus() > WIFI_STA_NULL) {
-                uint16_t t = (millis() & 0x3FFF) >> 10;
-                s[t] = '\0';
-                while (t > 0) {
-                    s[t-1] = '.';
-                    t--;
+                if (progress_max > 0) {
+                    uint8_t p = progress_val * 20 / progress_max;
+                    char *ss = s;
+                    *ss = '|';
+                    ss++;
+                    for (uint8_t i=0; i< 20; i++, ss++)
+                        *ss = i < p ? '.' : ' ';
+                    *ss = '|';
+                    ss++;
+                    *ss = '\0';
                 }
-                //u8g2.drawStr(0, y, s);
+                else {
+                    uint16_t t = (millis() & 0x3FFF) >> 10;
+                    s[t] = '\0';
+                    while (t > 0) {
+                        s[t-1] = '.';
+                        t--;
+                    }
+                }
                 u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
             }
         }

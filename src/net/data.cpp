@@ -13,6 +13,9 @@
 
 #include <lwip/inet.h>      // htonl
 
+void netsyncProgMax(size_t max);
+void netsyncProgInc(size_t val);
+
 /* ------------------------------------------------------------------------------------------- *
  *  простые преобразования данных
  * ------------------------------------------------------------------------------------------- */
@@ -310,13 +313,20 @@ static bool sendTrackBeg(const struct log_item_s <trk_head_t> *r) {
         .tmbeg      = tmton(r->data.tmbeg),
     };
     
+    netsyncProgInc(sizeof(const struct log_item_s <trk_head_t>));
+    
     return srvSend(0x34, d);
 }
 
 static bool sendTrackItem(const struct log_item_s <log_item_t> *r) {
     log_item_t d = jmpton(r->data);
     
-    return srvSend(0x35, d);
+    if (!srvSend(0x35, d))
+        return false;
+    
+    netsyncProgInc(sizeof(const struct log_item_s <log_item_t>));
+    
+    return true;
 }
 
 bool sendTrack(logchs_t _cks) {
@@ -345,6 +355,12 @@ bool sendTrack(logchs_t _cks) {
     if (max <= 0) // либо ошибка, либо вообще файлов нет - в любом случае выходим
         return max == 0;
     
+    // Общий размер файла
+    size_t fsz = 0;
+    for (int num = max; num > 0; num--)
+        fsz += logSize(PSTR(TRK_FILE_NAME), num);
+    netsyncProgMax(fsz);
+    
     for (int num = max; num > 0; num--) {
         uint8_t n = num;
         
@@ -355,6 +371,8 @@ bool sendTrack(logchs_t _cks) {
             return false;
         CONSOLE("track sended ok: %d", n);
     }
+    
+    netsyncProgMax(0);
     
     return true;
 }
