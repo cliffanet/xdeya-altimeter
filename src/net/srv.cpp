@@ -9,6 +9,10 @@
 #include <WiFiClient.h>
 #include "../log.h"
 
+#include "lwip/sockets.h"       // host -> ip
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+
 static WiFiClient cli;
 
 // Заголовок данных при сетевой передаче
@@ -21,21 +25,44 @@ typedef struct __attribute__((__packed__)) {
 // заголовок принимаемой команды - на время, пока будем принимать данные
 static phdr_t phr = { .mgc = '\0', .cmd = 0 };
 
-bool srvConnect() {
-    srvStop();
-    return cli.connect("gpstat.dev.cliffa.net", 9971);
-}
-
-void srvStop() {
-    cli.stop();
-    phr = { mgc: '\0', cmd: 0 };
-}
+#define SRV_HOST    "gpstat.dev.cliffa.net"
+#define SRV_PORT    9971
 
 /* ------------------------------------------------------------------------------------------- *
  *  Блок из mode/netsync - для отображения ошибок при работе с сервером
  * ------------------------------------------------------------------------------------------- */
 const char *last_err = NULL;
 const char *srvErr() { return last_err; }
+
+/* ------------------------------------------------------------------------------------------- *
+ *  соединение с сервером
+ * ------------------------------------------------------------------------------------------- */
+bool srvConnect() {
+    srvStop();
+    
+    char host[64];
+    strcpy_P(host, PSTR(SRV_HOST));
+    
+    struct addrinfo hints = {};
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    struct addrinfo *res;
+    int err = getaddrinfo(host, NULL, &hints, &res);
+    if(err != 0 || res == NULL) {
+        last_err = PSTR("DNS lookup failed");
+        return false;
+    }
+    
+    IPAddress ip(reinterpret_cast<struct sockaddr_in *>(res->ai_addr)->sin_addr.s_addr);
+    CONSOLE("srvConnect host %s -> ip %d.%d.%d.%d", host, ip[0], ip[1], ip[2], ip[3]);
+    
+    return cli.connect(ip, SRV_PORT);
+}
+
+void srvStop() {
+    cli.stop();
+    phr = { mgc: '\0', cmd: 0 };
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  чтение инфы от сервера, возвращает true, если есть инфа
