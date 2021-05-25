@@ -210,6 +210,7 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
  *      при i=1 - со второй, 
  *  если dhsz != 0, то от начала файла будет отступ в dhsz байт, которые ередадутся через hndhead
  *  
+ *  Возвращает индекс записи, на которой остановилось чтение, чтобы в след. раз с него начать
  *      
  * ------------------------------------------------------------------------------------------- */
 int32_t logFileRead(
@@ -256,7 +257,6 @@ int32_t logFileRead(
     }
     
     uint8_t data[disz];
-    int32_t cnt = 0;
     
     while (fh.available() >= disz) {
         auto sz = fh.read(data, disz);
@@ -270,12 +270,12 @@ int32_t logFileRead(
             fh.close();
             return -1;
         }
-        cnt++;
+        ibeg++;
     }
     
     fh.close();
     
-    return cnt;
+    return ibeg;
 }
 
 /* ------------------------------------------------------------------------------------------- *
