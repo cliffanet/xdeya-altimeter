@@ -33,7 +33,7 @@ class ConfigJump : public Config<cfg_jump_t> {
         bool cnp(uint16_t old = 0);
         bool end();
         
-        uint8_t         count() const { return data.count; }
+        uint32_t        count() const { return data.count; }
         log_jmp_state_t state() const { return data.state; }
         const log_jmp_t & last() const{ return data.last; }
 };
