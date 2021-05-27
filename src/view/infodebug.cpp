@@ -69,13 +69,13 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 9:
-                    PRNL("ka avg");
-                    PRNR("%.3f", altCalc().kaavg());
+                    PRNL("app kb");
+                    PRNR("%.3f", altCalc().kb());
                     break;
                 
                 case 10:
-                    PRNL("adiff");
-                    PRNR("%.3f", altCalc().adiffmax());
+                    PRNL("sqdiff");
+                    PRNR("%.3f", altCalc().sqdiff());
                     break;
                 
                 case 11:
