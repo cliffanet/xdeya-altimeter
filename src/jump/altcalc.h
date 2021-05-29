@@ -9,10 +9,10 @@
 
 #define AC_DATA_COUNT       30
 
-// Порог скорости для режима FLAT (abs, km/s)
-#define AC_SPEED_FLAT       0.0015
-// Порог срабатывания режима freefall (abs, km/s)
-#define AC_SPEED_FREEFALL   0.030
+// Порог скорости для режима FLAT (abs, m/s)
+#define AC_SPEED_FLAT       1.5
+// Порог срабатывания режима freefall (abs, m/s)
+#define AC_SPEED_FREEFALL   30
 
 // states
 typedef enum {
@@ -79,7 +79,7 @@ class AltCalc
         
         // доступ к элементу data по индексу относительно _с
         // т.е. при i=0 - текущий элемент, при i=-1 или i=AC_DATA_COUNT-1 - самый старый элемент
-        const ac_data_t &   data(int32_t i) const;
+        const ac_data_t &   data(int8_t i) { return _data[i2i(i)]; };
         
         // очередное полученное значение давления и интервал в ms после предыдущего вычисления
         void tick(float press, uint16_t interval);
@@ -95,12 +95,16 @@ class AltCalc
         ac_data_t _data[AC_DATA_COUNT];
         uint8_t _c = 0xff;
         double _ka = 0, _kb = 0, _sqdiff = 0;
-        float _altavg = 0, _speedavg = 0;
+        float _alt0 = 0, _press0 = 0, _altavg = 0, _speedavg = 0;
         uint32_t _interval = 0;
         ac_state_t _state = ACST_INIT;
         ac_direct_t _dir = ACDIR_INIT;
         uint32_t _dircnt = 0, _dirtm = 0;
         uint32_t _statecnt = 0, _statetm = 0;
+        
+        int8_t          i2i(int8_t i);
+        const int8_t    ifrst() const;
+        bool            inext(int8_t &i);
 };
 
 #endif // __altcalc_H
