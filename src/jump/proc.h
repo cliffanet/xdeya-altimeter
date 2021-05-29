@@ -25,7 +25,17 @@
 #define JMPLOG_SIMPLE_FILE_COUNT    5
 
 // хранимый буфер для заранее сохранённых log_item_t
-#define JMP_PRELOG_SIZE         100
+#define JMP_PRELOG_SIZE         120
+
+// Порог скорости, при которой считаем, что начался прыжок
+#define JMP_SPEED_MIN           15
+// Время (кол-во тиков), которое должна удерживаться скорость JMP_SPEED_BEG
+#define JMP_SPEED_COUNT         30
+// Порог скорости, при котором произойдёт отмена прыжка, если не закончилось время JMP_SPEED_COUNT
+#define JMP_SPEED_CANCEL        10
+// Время (кол-во тиков), которое надо прибавить к моменту при переходе через JMP_SPEED_MIN
+// т.е. примерное время для разгона до скорости JMP_SPEED_MIN
+#define JMP_SPEED_PREFIX        30
 
 // Один из элементов в длинном логбуке (несколько раз в сек)
 typedef struct __attribute__((__aligned__(64), __packed__)) {
@@ -59,7 +69,8 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
 #define LI_FLAG_GPS_VSPEED  0x0008
 #define LI_FLAG_GPS_VHEAD   0x0010
 #define LI_FLAG_GPS_VTIME   0x0020
-#define LI_FLAG_JMPBEG      0x1000
+#define LI_FLAG_JMPBEG      0x0800
+#define LI_FLAG_JMPDECISS   0x1000
 #define LI_FLAG_BTN_UP      0x2000
 #define LI_FLAG_BTN_SEL     0x4000
 #define LI_FLAG_BTN_DOWN    0x8000

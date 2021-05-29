@@ -130,23 +130,22 @@ static void jmpPreLogAdd(uint16_t interval) {
     }
 }
 
+static uint16_t old2index(uint16_t old) {
+    if (old >= JMP_PRELOG_SIZE) {
+        uint16_t ind = logcur+1;
+        return ind >= JMP_PRELOG_SIZE ? 0 : ind;
+    }
+    
+    uint16_t ind = logcur;
+    if (ind < old) {
+        old -= ind+1;
+        ind = JMP_PRELOG_SIZE-1;
+    }
+    return ind - old;
+}
+
 const log_item_t &jmpPreLog(uint16_t old) {
-    if (old >= JMP_PRELOG_SIZE)
-        old = JMP_PRELOG_SIZE-1;
-    uint16_t cur = logcur;
-    
-    if (cur < old) {
-        old -= cur;
-        cur = JMP_PRELOG_SIZE-1;
-    }
-    cur -= old;
-    if (cur >= JMP_PRELOG_SIZE) {
-        cur = logcur+1;
-        if (cur >= JMP_PRELOG_SIZE)
-            cur = 0;
-    }
-    
-    return logall[cur];
+    return logall[old2index(old)];
 }
 
 uint32_t jmpPreLogInterval(uint16_t old) {
@@ -211,14 +210,26 @@ void jmpProcess() {
     if (jmpst == JMP_NONE) {
         static uint32_t dncnt = 0;
         if (dncnt == 0) {
-            if (ac.speedapp() < -3)                 // При скорости снижения выше пороговой
+            if (ac.speedapp() < -JMP_SPEED_MIN)     // При скорости снижения выше пороговой
                 dncnt ++;                           // включаем счётчик тиков, пока это скорость сохраняется
         }
         else
-        if (ac.speedapp() < -2.5)                   // При сохранении скорости снижения, увеличиваем счётчик тиков
-            dncnt ++;
+        if (dncnt < JMP_SPEED_COUNT) {
+            // В зоне времени до JMP_SPEED_COUNT
+            // проверяем на выход из диапазона скорости снижения JMP_SPEED_CANCEL
+            if (ac.speedapp() < -JMP_SPEED_CANCEL)  // При сохранении скорости снижения, увеличиваем счётчик тиков
+                dncnt ++;
+            else
+                dncnt = 0;                          // либо сбрасываем его
+            // По окончании времени JMP_SPEED_COUNT мы уже не будем проверять скорость снижения
+            // по порогам JMP_SPEED_MIN и JMP_SPEED_CANCEL
+            // С этого момента это уже считается прыжком - осталось только выяснить, есть ли тут свободное падение
+        }
         else
-            dncnt = 0;                              // либо сбрасываем его
+            // Как только приняли решение, что это всё-таки прыг, просто отсчитываем
+            // dncnt дальше, пока не примем решение, есть ли в этом прыге FF, чтобы уже стартовать сам прыг,
+            // При этом нам понадобится dncnt, стобы получить момент старта
+            dncnt ++;
         
         // счётчик тиков увеличивается в промежуточном состоянии, когда мы ещё не определили,
         // начался ли прыжок, но вертикальная скорость уже достаточно высокая - возможно,
@@ -229,13 +240,16 @@ void jmpProcess() {
                 ((ac.state() == ACST_FREEFALL) && (ac.statecnt() >= 50)) ||    // скорость достигла фрифольной и остаётся такой более 5 сек,
                 (dncnt >= 80)                       // либо пороговая скорость сохраняется 80 тиков (8 сек) - 
             )) {                                    // считаем, что прыг начался
-            // для удобства отладки помечаем текущий jmpPreLog
-            // флагом LI_FLAG_JMPBEG - момент принятия решения о начале прыжка
-            logall[logcur].flags |= LI_FLAG_JMPBEG;
+            // Момент начала отсчёта dncnt начинается с превышения скорости снижения JMP_SPEED_MIN,
+            // Однако, это не сам момент отделения, а чуть позже - на JMP_SPEED_PREFIX тиков,
+            // прибавляем их к dncnt
+            dncnt += JMP_SPEED_PREFIX;
             
-            // считаем, что прыжок начался с самого начала движения вних
-            if ((dncnt < ac.dircnt()) && (ac.direct() == ACDIR_DOWN))
-                dncnt = ac.dircnt();
+            // для удобства отладки помечаем текущий jmpPreLog
+            // флагом LI_FLAG_JMPDECISS - момент принятия решения о начале прыжка
+            logall[logcur].flags            |= LI_FLAG_JMPDECISS;
+            // А момент, который мы считаем отделением - флагом LI_FLAG_JMPBEG
+            logall[old2index(dncnt)].flags  |= LI_FLAG_JMPBEG;
             
             if (ac.state() == ACST_FREEFALL) {
                 // если скорость всё же успела достигнуть фрифольной,
@@ -256,8 +270,8 @@ void jmpProcess() {
             if (!trkRunning())
                 trkStart(false, dncnt);
             
-            dncnt = 0;                              // на всякий случай при старте лога прыга обнуляем счётчик тиков
-                                                    // пограничного состояния, чтобы в след раз не было ложных срабатываний
+            dncnt = 0;                              // при старте лога прыга обнуляем счётчик тиков пограничного состояния,
+                                                    // он нам больше не нужен, чтобы в след раз не было ложных срабатываний
         }
     }
     
