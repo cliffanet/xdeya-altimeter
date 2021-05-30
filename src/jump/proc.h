@@ -74,7 +74,9 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
 #define LI_FLAG_GPS_VSPEED  0x0008
 #define LI_FLAG_GPS_VHEAD   0x0010
 #define LI_FLAG_GPS_VTIME   0x0020
-#define LI_FLAG_JMPBEG      0x0800
+#define LI_FLAG_JMPBEG      0x0200
+#define LI_FLAG_JMPCNP      0x0400
+#define LI_FLAG_JMPEND      0x0800
 #define LI_FLAG_JMPDECISS   0x1000
 #define LI_FLAG_BTN_UP      0x2000
 #define LI_FLAG_BTN_SEL     0x4000
