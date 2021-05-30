@@ -145,7 +145,9 @@ static log_item_t jmpton(const log_item_t &j) {
         .vAcc       = htonl(j.vAcc),
         .sAcc       = htonl(j.sAcc),
         .cAcc       = htonl(j.cAcc),
-        .tm         = tmton(j.tm),
+        //.tm         = tmton(j.tm),
+        .millis     = htonl(j.millis),
+        .msave      = htonl(j.msave),
     };
     
     return n;

@@ -8,6 +8,7 @@
 
 static trk_running_t state = TRKRUN_NONE;
 static uint32_t tmoffset = 0;
+static uint16_t prelogcur = 0;
 File fh;
 
 /* ------------------------------------------------------------------------------------------- *
@@ -49,25 +50,32 @@ bool trkStart(bool force, uint16_t old) {
     }
     
     // сбрасываем tmoffset, чтобы у самой первой записи он был равен нулю
-    tmoffset = 0 - jmpPreLog(old).tmoffset;
+    tmoffset = 0;
+    tmoffset -= jmpPreLog(old).tmoffset;
     
     // Скидываем сразу все презапомненные данные
-    while (old > 0) {
+    // даже если old == 0, мы всё равно запишем текущую позицию
+    while (1) {
         struct log_item_s <log_item_t> log;
         log.data = jmpPreLog(old);
         tmoffset += log.data.tmoffset;
         log.data.tmoffset = tmoffset;
+        
+        log.data.msave = millis();
     
         auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
         if (sz != sizeof(log)) {
             fh.close();
             return false;
         }
-
+        
+        if (old == 0)
+            break;
         old--;
     }
     
     state = force ? TRKRUN_FORCE : TRKRUN_AUTO;
+    prelogcur = jmpPreLogFirst();
     CONSOLE("track started %s", force ? "force" : "auto");
     return true;
 }
@@ -144,11 +152,14 @@ void trkProcess() {
     }
 
     struct log_item_s <log_item_t> log;
-    log.data = jmpPreLog();
-    tmoffset += log.data.tmoffset;
-    log.data.tmoffset = tmoffset;
-    
-    auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
-    if (sz != sizeof(log))
-        trkStop();
+    while (jmpPreLogNext(prelogcur, &(log.data))) {
+        tmoffset += log.data.tmoffset;
+        log.data.tmoffset = tmoffset;
+        
+        log.data.msave = millis();
+        
+        auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
+        if (sz != sizeof(log))
+            trkStop();
+    }
 }

@@ -5,6 +5,9 @@
 #ifndef _jump_proc_H
 #define _jump_proc_H
 
+#include <stdint.h> 
+#include <stdlib.h>
+
 #include "../../def.h"
 #include "altcalc.h"
 #include "../clock.h" // поле tm в log_item_t
@@ -60,7 +63,9 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
 	uint32_t    vAcc;       // Vertical accuracy estimate   (mm)
 	uint32_t    sAcc;       // Speed accuracy estimate      (cm/s)
 	uint32_t    cAcc;       // Heading accuracy estimate    (deg * 10^5)
-    tm_t        tm;
+    //tm_t        tm;
+    uint32_t    millis;     // для отладки времени tmoffset
+    uint32_t    msave;
 } log_item_t;
 
 #define LI_FLAG_GPS_VALID   0x0001
@@ -88,6 +93,8 @@ typedef struct __attribute__((__packed__)) {
 AltCalc & altCalc();
 const log_item_t &jmpPreLog(uint16_t old = 0);
 uint32_t jmpPreLogInterval(uint16_t old = 0);
+uint16_t jmpPreLogFirst(log_item_t *li = NULL);
+bool jmpPreLogNext(uint16_t &cursor, log_item_t *li = NULL);
 
 void jmpInit();
 void jmpProcess();

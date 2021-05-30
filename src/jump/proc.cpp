@@ -89,7 +89,8 @@ static void jmpPreLogAdd(uint16_t interval) {
         vAcc        : gps.vAcc,
         sAcc        : gps.sAcc,
         cAcc        : gps.cAcc,
-        tm          : gps.tm,
+        //tm          : gps.tm,
+        millis      : millis(),
     };
     
     if (GPS_VALID(gps))
@@ -130,6 +131,9 @@ static void jmpPreLogAdd(uint16_t interval) {
     }
 }
 
+/* ------------------------------------------------------------------------------------------- *
+ *  Получение данных по old-индексу (old=0 - текущие данные, old=1 - на 1 тик ранее, ...)
+ * ------------------------------------------------------------------------------------------- */
 static uint16_t old2index(uint16_t old) {
     if (old >= JMP_PRELOG_SIZE) {
         uint16_t ind = logcur+1;
@@ -163,6 +167,28 @@ uint32_t jmpPreLogInterval(uint16_t old) {
     }
     
     return interval;
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Получение данных, начиная от текущего положения
+ * ------------------------------------------------------------------------------------------- */
+uint16_t jmpPreLogFirst(log_item_t *li) {
+    if (li != NULL)
+        *li = logall[logcur];
+    return logcur;
+}
+// При обращении к jmpPreLogNext по индексу полученному ранее из jmpPreLogFirst,
+// пока next не вернёт false, мы гаранируем, что проёдёмся по всем данным, не пропустив ничего 
+bool jmpPreLogNext(uint16_t &cursor, log_item_t *li) {
+    if (cursor == logcur)
+        return false;
+    
+    cursor ++;
+    if (cursor >= JMP_PRELOG_SIZE)
+        cursor = 0;
+    if (li != NULL)
+        *li = logall[cursor];
+    return true;
 }
 
 /* ------------------------------------------------------------------------------------------- *
