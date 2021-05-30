@@ -38,6 +38,7 @@ bool ConfigJump::beg(uint16_t old) {
     
     data.last.beg = jmpPreLog(old);
     data.last.beg.tmoffset = 0;
+    data.last.beg.msave = millis();
     data.last.cnp = data.last.beg;
     data.last.end = data.last.beg;
     
@@ -63,6 +64,7 @@ bool ConfigJump::cnp(uint16_t old) {
     
     data.last.cnp = jmpPreLog(old);
     data.last.cnp.tmoffset = tmInterval(data.last.tm, tm);
+    data.last.cnp.msave = millis();
     data.last.end = data.last.cnp;
     
     return save(true);
@@ -79,6 +81,7 @@ bool ConfigJump::end() {
     
     data.last.end = jmpPreLog();
     data.last.end.tmoffset = tmIntervalToNow(data.last.tm);
+    data.last.end.msave = millis();
     
     if (!save(true))
         return false;
