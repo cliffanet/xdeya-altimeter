@@ -24,7 +24,11 @@ void viewSet(ViewBase &v) {
 
 //U8G2_ST7565_ZOLEN_128X64_1_4W_HW_SPI u8g2(U8G2_MIRROR, /* cs=*/ 5, /* dc=*/ 33, /* reset=*/ 25);
 
+#if HWVER >= 4
+static U8G2_ST75256_JLX19296_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 26, /* dc=*/ 33, /* reset=*/ 25);
+#else
 static U8G2_UC1701_MINI12864_F_4W_HW_SPI u8g2(U8G2_R2, /* cs=*/ 26, /* dc=*/ 33, /* reset=*/ 25);
+#endif
 
 void displayUpdate() {
     static auto vPrev = vCur;
@@ -79,8 +83,11 @@ bool displayLight() {
 }
 
 void displayContrast(uint8_t val) {
-    //u8g2.setContrast(val*3);
+#if HWVER >= 4
+    u8g2.setContrast(115+val/2);
+#else
     u8g2.setContrast(115+val*3);
+#endif
 }
 
 
