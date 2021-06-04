@@ -42,8 +42,8 @@ class ViewMainAlt : public ViewMain {
                     break;
             }
 
-            u8g2.setFont(u8g2_font_ncenB08_tr); 
-            sprintf_P(s, PSTR("%d km/h"), round(abs(ac.speedapp()) * 3.6));
+            u8g2.setFont(u8g2_font_ncenB08_tr);
+            sprintf_P(s, PSTR("%.0f km/h"), round(abs(ac.speedapp() * 3.6)));
             u8g2.drawStr(10, 64, s);
         }
 };
