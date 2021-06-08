@@ -103,8 +103,12 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 13:
-                    PRNL("Alt dirtm");
-                    PRNR("%d s", altCalc().dirtm()/1000);
+                    PRNL("Jmp state");
+                    switch (jmpState()) {
+                        case 0: PRNR("-");      break;
+                        case 1: PRNR("FF");     break;
+                        case 2: PRNR("CNP");    break;
+                    }
                     break;
                 
                 case 14:

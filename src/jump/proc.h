@@ -39,6 +39,8 @@
 // Время (кол-во тиков), которое надо прибавить к моменту при переходе через JMP_SPEED_MIN
 // т.е. примерное время для разгона до скорости JMP_SPEED_MIN
 #define JMP_SPEED_PREFIX        30
+// Скорость, при котором будет переход из FF в CNP
+#define JMP_SPEED_CANOPY        12
 
 // Один из элементов в длинном логбуке (несколько раз в сек)
 typedef struct __attribute__((__aligned__(64), __packed__)) {
@@ -97,6 +99,8 @@ const log_item_t &jmpPreLog(uint16_t old = 0);
 uint32_t jmpPreLogInterval(uint16_t old = 0);
 uint16_t jmpPreLogFirst(log_item_t *li = NULL);
 bool jmpPreLogNext(uint16_t &cursor, log_item_t *li = NULL);
+
+uint8_t jmpState();
 
 void jmpInit();
 void jmpProcess();
