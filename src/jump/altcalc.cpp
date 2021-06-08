@@ -116,25 +116,27 @@ ac_state_t AltCalc::stateupdate() {
     
     ac_state_t st = _state;
     uint32_t stcnt = 0, sttm = 0;
-    if (altapp() < 10) {
-        st = ACST_GROUND;
-    }
-    else
     if (_dir == ACDIR_UP) {
         st = altapp() < 40 ? ACST_TAKEOFF40 : ACST_TAKEOFF;
     }
-    else
-    if (speedapp() < -AC_SPEED_FREEFALL) {
-        st = ACST_FREEFALL;
-        stcnt = AC_DATA_COUNT;
-        sttm = _interval;
+    else 
+    if (altapp() < 10) {
+        st = ACST_GROUND;
     }
     else
     if ((_dir == ACDIR_DOWN) && (altapp() < 100)) {
         st = ACST_LANDING;
     }
     else
-    if ((speedapp() > -AC_SPEED_FREEFALL) || (speedapp() < -AC_SPEED_FLAT)) {
+    if ((speedapp() < -AC_SPEED_FREEFALL_I) || 
+        ((_state == ACST_FREEFALL) && (speedapp() < -AC_SPEED_FREEFALL_O))) {
+        st = ACST_FREEFALL;
+        stcnt = AC_DATA_COUNT;
+        sttm = _interval;
+    }
+    else
+    if ((speedapp() < -AC_SPEED_CANOPY_I) ||
+        ((_state == ACST_CANOPY) && (speedapp() < -AC_SPEED_FLAT))) {
         st = ACST_CANOPY;
         stcnt = AC_DATA_COUNT;
         sttm = _interval;

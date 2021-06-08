@@ -10,9 +10,19 @@
 #define AC_DATA_COUNT       30
 
 // Порог скорости для режима FLAT (abs, m/s)
+// Он же является порогом удержания для режима canopy
 #define AC_SPEED_FLAT       1.5
-// Порог срабатывания режима freefall (abs, m/s)
-#define AC_SPEED_FREEFALL   30
+// Порог срабатывания режима canopy,
+// т.е. если скорость снижения выше этой, то canopy
+// ну или freefall
+#define AC_SPEED_CANOPY_I     4
+// Порог срабатывания режима freefall безусловный (abs, m/s)
+// т.е. если скорость снижения выше этой, то полюбому - ff
+#define AC_SPEED_FREEFALL_I   30
+// Порог удержания режима freefall,
+// т.е. если текущий режим freefall, 
+// то он будет удерживаться таким, пока скорость снижения выше этой
+#define AC_SPEED_FREEFALL_O   20
 
 // states
 typedef enum {
