@@ -240,7 +240,7 @@ void jmpProcess() {
     } jmpst = JMP_NONE;
     
     if (jmpst == JMP_NONE) {
-        static uint32_t dncnt = 0;
+        static uint16_t dncnt = 0;
         if (dncnt == 0) {
             if (ac.speedapp() < -JMP_SPEED_MIN)     // При скорости снижения выше пороговой
                 dncnt ++;                           // включаем счётчик тиков, пока это скорость сохраняется
@@ -310,7 +310,7 @@ void jmpProcess() {
     }
     
     if (jmpst == JMP_FREEFALL) {
-        static uint32_t cnpcnt = 0;
+        static uint8_t cnpcnt = 0;
         //if (ac.state() == ACST_CANOPY) {
         if (ac.speedapp() >= -JMP_SPEED_CANOPY) {
             // Переход в режим CNP после начала прыга,
@@ -342,11 +342,17 @@ void jmpProcess() {
         jmpst = JMP_NONE;
         logall[logcur].flags  |= LI_FLAG_JMPEND;
         
-        if (trkState() == TRKRUN_AUTO)
-            trkStop();
-        
         // Сохраняем
         jmp.end();
+    }
+    
+    if ((jmpst == JMP_NONE) && (trkState() == TRKRUN_AUTO)) {
+        static uint8_t gndcnt = 0;
+        gndcnt++;
+        if (gndcnt >= 100) {
+            trkStop();
+            gndcnt = 0;
+        }
     }
     
     state = jmpst;
