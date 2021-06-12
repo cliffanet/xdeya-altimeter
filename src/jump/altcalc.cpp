@@ -119,7 +119,9 @@ ac_state_t AltCalc::stateupdate() {
         st = altapp() < 40 ? ACST_TAKEOFF40 : ACST_TAKEOFF;
     }
     else 
-    if (altapp() < 10) {
+    if ((altapp() < 50) && 
+        (speedavg() < 0.5) && (speedavg() > -0.5) &&
+        (sqdiff() < 0.5)) {
         st = ACST_GROUND;
     }
     else
