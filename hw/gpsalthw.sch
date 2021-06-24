@@ -46,7 +46,7 @@ U 1 1 601C1342
 P 4450 4550
 F 0 "SW5" H 4050 4550 50  0000 C CNN
 F 1 "btn-down" H 3750 4550 50  0000 C CNN
-F 2 "Button_Switch_SMD:SW_SPST_PTS810" H 4450 4550 50  0001 C CNN
+F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_6x6mm_H9.5mm" H 4450 4550 50  0001 C CNN
 F 3 "~" H 4450 4550 50  0001 C CNN
 	1    4450 4550
 	-1   0    0    -1  
@@ -57,7 +57,7 @@ U 1 1 601C8D29
 P 4450 4200
 F 0 "SW4" H 4050 4250 50  0000 C CNN
 F 1 "btn-sel" H 3800 4250 50  0000 C CNN
-F 2 "Button_Switch_SMD:SW_SPST_PTS810" H 4450 4200 50  0001 C CNN
+F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_6x6mm_H9.5mm" H 4450 4200 50  0001 C CNN
 F 3 "~" H 4450 4200 50  0001 C CNN
 	1    4450 4200
 	-1   0    0    -1  
@@ -90,7 +90,7 @@ U 1 1 601CAF71
 P 1050 1750
 F 0 "SW3" H 750 1850 50  0000 C CNN
 F 1 "btn-up" H 1050 1850 50  0000 C CNN
-F 2 "Button_Switch_SMD:SW_SPST_PTS810" H 1050 1750 50  0001 C CNN
+F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_6x6mm_H9.5mm" H 1050 1750 50  0001 C CNN
 F 3 "~" H 1050 1750 50  0001 C CNN
 	1    1050 1750
 	1    0    0    -1  
@@ -170,8 +170,6 @@ Wire Wire Line
 Wire Wire Line
 	4650 4550 4750 4550
 Connection ~ 4750 4550
-Wire Wire Line
-	4750 4550 4750 4700
 $Comp
 L power:GND #PWR012
 U 1 1 602A1905
@@ -215,11 +213,7 @@ Wire Wire Line
 	4050 3700 4250 3700
 Wire Wire Line
 	1250 1750 1950 1750
-Wire Wire Line
-	1250 1350 1250 1550
 Connection ~ 1250 1750
-Wire Wire Line
-	850  1350 850  1550
 Connection ~ 850  1750
 $Comp
 L power:GND #PWR06
@@ -477,13 +471,13 @@ $EndComp
 $Comp
 L Connector_Generic:Conn_01x24 J2
 U 1 1 601DFF37
-P 7850 3450
-F 0 "J2" H 7930 3442 50  0000 L CNN
-F 1 "display" H 7930 3351 50  0000 L CNN
-F 2 "Connector_FFC-FPC:TE_2-1734839-4_1x24-1MP_P0.5mm_Horizontal" H 7850 3450 50  0001 C CNN
-F 3 "~" H 7850 3450 50  0001 C CNN
-	1    7850 3450
-	1    0    0    -1  
+P 7850 3550
+F 0 "J2" H 7930 3542 50  0000 L CNN
+F 1 "display" H 7930 3451 50  0000 L CNN
+F 2 "Connector_FFC-FPC:TE_2-1734839-4_1x24-1MP_P0.5mm_Horizontal" H 7850 3550 50  0001 C CNN
+F 3 "~" H 7850 3550 50  0001 C CNN
+	1    7850 3550
+	1    0    0    1   
 $EndComp
 $Comp
 L Battery_Management:MCP73831-2-OT U2
@@ -1173,61 +1167,6 @@ Connection ~ 6000 6450
 Wire Wire Line
 	6000 6800 6000 6900
 $Comp
-L Switch:SW_SPST SW7
-U 1 1 604669A7
-P 4450 4050
-F 0 "SW7" H 4150 4100 50  0000 C CNN
-F 1 "btn-sel2" H 3900 4100 50  0000 C CNN
-F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_6x6mm_H9.5mm" H 4450 4050 50  0001 C CNN
-F 3 "~" H 4450 4050 50  0001 C CNN
-	1    4450 4050
-	-1   0    0    -1  
-$EndComp
-Wire Wire Line
-	4250 4050 4250 4200
-Connection ~ 4250 4200
-$Comp
-L Switch:SW_SPST SW8
-U 1 1 6047A02F
-P 4450 4700
-F 0 "SW8" H 4050 4700 50  0000 C CNN
-F 1 "btn-down2" H 3750 4700 50  0000 C CNN
-F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_6x6mm_H9.5mm" H 4450 4700 50  0001 C CNN
-F 3 "~" H 4450 4700 50  0001 C CNN
-	1    4450 4700
-	-1   0    0    -1  
-$EndComp
-Wire Wire Line
-	4250 4700 4250 4550
-Connection ~ 4250 4550
-Wire Wire Line
-	4650 4700 4750 4700
-Connection ~ 4750 4700
-Wire Wire Line
-	4750 4700 4750 4750
-Wire Wire Line
-	4650 4050 4750 4050
-Wire Wire Line
-	4750 4050 4750 4200
-Connection ~ 4750 4200
-$Comp
-L Switch:SW_SPST SW6
-U 1 1 604A27E5
-P 1050 1550
-F 0 "SW6" H 750 1650 50  0000 C CNN
-F 1 "btn-up2" H 1050 1650 50  0000 C CNN
-F 2 "Button_Switch_SMD:SW_Push_1P1T_NO_6x6mm_H9.5mm" H 1050 1550 50  0001 C CNN
-F 3 "~" H 1050 1550 50  0001 C CNN
-	1    1050 1550
-	1    0    0    -1  
-$EndComp
-Connection ~ 850  1550
-Wire Wire Line
-	850  1550 850  1750
-Connection ~ 1250 1550
-Wire Wire Line
-	1250 1550 1250 1750
-$Comp
 L Device:C C10
 U 1 1 60C421B1
 P 7350 2500
@@ -1455,7 +1394,7 @@ U 1 1 60E6496E
 P 6000 3500
 F 0 "J6" H 6080 3587 50  0000 L CNN
 F 1 "A" H 6080 3496 50  0000 L CNN
-F 2 "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad" H 6080 3405 50  0000 L CNN
+F 2 "Connector_Pin:Pin_D1.4mm_L8.5mm_W2.8mm_FlatFork" H 6080 3405 50  0001 L CNN
 F 3 "~" H 6000 3500 50  0001 C CNN
 	1    6000 3500
 	1    0    0    -1  
@@ -1470,7 +1409,7 @@ U 1 1 60E741F7
 P 6000 3700
 F 0 "J7" H 6080 3742 50  0000 L CNN
 F 1 "K" H 6080 3651 50  0000 L CNN
-F 2 "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad" H 6000 3700 50  0001 C CNN
+F 2 "Connector_Pin:Pin_D1.4mm_L8.5mm_W2.8mm_FlatFork" H 6000 3700 50  0001 C CNN
 F 3 "~" H 6000 3700 50  0001 C CNN
 	1    6000 3700
 	1    0    0    -1  
@@ -1553,11 +1492,7 @@ Entry Wire Line
 Entry Wire Line
 	8400 2900 8500 3000
 Wire Wire Line
-	9400 2350 9400 2400
-Wire Wire Line
 	8900 2350 8900 3000
-Wire Wire Line
-	9400 2350 8900 2350
 $Comp
 L Device:C C11
 U 1 1 610FD9EC
@@ -1603,7 +1538,6 @@ Wire Wire Line
 	8750 2400 8750 2350
 Wire Wire Line
 	8750 2350 8900 2350
-Connection ~ 8900 2350
 $Comp
 L Device:Q_NPN_BEC Q3
 U 1 1 611742F4
@@ -1825,6 +1759,61 @@ Connection ~ 10400 2250
 Wire Wire Line
 	10400 2250 9500 2250
 Wire Wire Line
+	9400 2250 9500 2250
+Wire Wire Line
+	9400 2250 9400 2400
+Connection ~ 9500 2250
+Wire Wire Line
+	4750 4550 4750 4750
+Wire Wire Line
+	850  1350 850  1750
+Wire Wire Line
+	1250 1350 1250 1750
+$Comp
+L Mechanical:MountingHole H6
+U 1 1 60DA8112
+P 8100 2150
+F 0 "H6" H 8200 2196 50  0000 L CNN
+F 1 "MountingHole" H 8200 2105 50  0000 L CNN
+F 2 "MHole:MountingHole_2.0" H 8100 2150 50  0001 C CNN
+F 3 "~" H 8100 2150 50  0001 C CNN
+	1    8100 2150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H5
+U 1 1 60DBBFF8
+P 6100 2150
+F 0 "H5" H 6200 2196 50  0000 L CNN
+F 1 "MountingHole" H 6200 2105 50  0000 L CNN
+F 2 "MHole:MountingHole_2.0" H 6100 2150 50  0001 C CNN
+F 3 "~" H 6100 2150 50  0001 C CNN
+	1    6100 2150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H7
+U 1 1 60DBC8CD
+P 6050 4300
+F 0 "H7" H 6150 4346 50  0000 L CNN
+F 1 "MountingHole" H 6150 4255 50  0000 L CNN
+F 2 "MHole:MountingHole_1.5" H 6050 4300 50  0001 C CNN
+F 3 "~" H 6050 4300 50  0001 C CNN
+	1    6050 4300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H8
+U 1 1 60DBD323
+P 8150 4300
+F 0 "H8" H 8250 4346 50  0000 L CNN
+F 1 "MountingHole" H 8250 4255 50  0000 L CNN
+F 2 "MHole:MountingHole_1.5" H 8150 4300 50  0001 C CNN
+F 3 "~" H 8150 4300 50  0001 C CNN
+	1    8150 4300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
 	3150 3050 4050 3050
@@ -1839,11 +1828,11 @@ Wire Bus Line
 Wire Bus Line
 	5650 900  5650 1600
 Wire Bus Line
-	3650 2300 3650 3700
-Wire Bus Line
 	8000 5600 8000 6050
 Wire Bus Line
 	8400 2850 8400 3150
+Wire Bus Line
+	3650 2300 3650 3700
 Wire Bus Line
 	6550 3300 6550 4100
 Wire Bus Line
