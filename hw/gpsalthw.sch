@@ -1813,6 +1813,63 @@ F 3 "~" H 8150 4300 50  0001 C CNN
 	1    8150 4300
 	1    0    0    -1  
 $EndComp
+$Comp
+L Connector_Generic:Conn_01x01 J9
+U 1 1 60F3E26C
+P 3050 7050
+F 0 "J9" H 3130 7137 50  0000 L CNN
+F 1 "A" H 3130 7046 50  0001 L CNN
+F 2 "MHole:SolderWirePad_1x01_SMD_3x6mm" H 3130 6955 50  0001 L CNN
+F 3 "~" H 3050 7050 50  0001 C CNN
+	1    3050 7050
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x01 J10
+U 1 1 60F3EEAD
+P 3050 7200
+F 0 "J10" H 3130 7287 50  0000 L CNN
+F 1 "A" H 3130 7196 50  0001 L CNN
+F 2 "MHole:SolderWirePad_1x01_SMD_3x6mm" H 3130 7105 50  0001 L CNN
+F 3 "~" H 3050 7200 50  0001 C CNN
+	1    3050 7200
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x01 J11
+U 1 1 60F3F3DA
+P 3050 7350
+F 0 "J11" H 3130 7437 50  0000 L CNN
+F 1 "A" H 3130 7346 50  0001 L CNN
+F 2 "MHole:SolderWirePad_1x01_SMD_3x6mm" H 3130 7255 50  0001 L CNN
+F 3 "~" H 3050 7350 50  0001 C CNN
+	1    3050 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x01 J12
+U 1 1 60F3F68B
+P 3050 7500
+F 0 "J12" H 3130 7587 50  0000 L CNN
+F 1 "A" H 3130 7496 50  0001 L CNN
+F 2 "MHole:SolderWirePad_1x01_SMD_3x6mm" H 3130 7405 50  0001 L CNN
+F 3 "~" H 3050 7500 50  0001 C CNN
+	1    3050 7500
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR05
+U 1 1 60F3FA33
+P 2850 7550
+F 0 "#PWR05" H 2850 7300 50  0001 C CNN
+F 1 "GND" H 2855 7377 50  0000 C CNN
+F 2 "" H 2850 7550 50  0001 C CNN
+F 3 "" H 2850 7550 50  0001 C CNN
+	1    2850 7550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2850 7550 2850 7500
 Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
@@ -1837,4 +1894,13 @@ Wire Bus Line
 	6550 3300 6550 4100
 Wire Bus Line
 	4150 2000 4150 3200
+Connection ~ 2850 7200
+Wire Wire Line
+	2850 7200 2850 7050
+Connection ~ 2850 7350
+Wire Wire Line
+	2850 7350 2850 7200
+Connection ~ 2850 7500
+Wire Wire Line
+	2850 7500 2850 7350
 $EndSCHEMATC
