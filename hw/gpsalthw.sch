@@ -1394,7 +1394,7 @@ U 1 1 60E6496E
 P 6000 3500
 F 0 "J6" H 6080 3587 50  0000 L CNN
 F 1 "A" H 6080 3496 50  0000 L CNN
-F 2 "Connector_Pin:Pin_D1.4mm_L8.5mm_W2.8mm_FlatFork" H 6080 3405 50  0001 L CNN
+F 2 "Connector_Wire:SolderWire-1sqmm_1x01_D1.4mm_OD2.7mm" H 6080 3405 50  0001 L CNN
 F 3 "~" H 6000 3500 50  0001 C CNN
 	1    6000 3500
 	1    0    0    -1  
@@ -1409,7 +1409,7 @@ U 1 1 60E741F7
 P 6000 3700
 F 0 "J7" H 6080 3742 50  0000 L CNN
 F 1 "K" H 6080 3651 50  0000 L CNN
-F 2 "Connector_Pin:Pin_D1.4mm_L8.5mm_W2.8mm_FlatFork" H 6000 3700 50  0001 C CNN
+F 2 "Connector_Wire:SolderWire-1sqmm_1x01_D1.4mm_OD2.7mm" H 6000 3700 50  0001 C CNN
 F 3 "~" H 6000 3700 50  0001 C CNN
 	1    6000 3700
 	1    0    0    -1  
@@ -1775,7 +1775,7 @@ U 1 1 60DA8112
 P 8100 2150
 F 0 "H6" H 8200 2196 50  0000 L CNN
 F 1 "MountingHole" H 8200 2105 50  0000 L CNN
-F 2 "MHole:MountingHole_2.0" H 8100 2150 50  0001 C CNN
+F 2 "MountingHole:MountingHole_2.2mm_M2" H 8100 2150 50  0001 C CNN
 F 3 "~" H 8100 2150 50  0001 C CNN
 	1    8100 2150
 	1    0    0    -1  
@@ -1786,7 +1786,7 @@ U 1 1 60DBBFF8
 P 6100 2150
 F 0 "H5" H 6200 2196 50  0000 L CNN
 F 1 "MountingHole" H 6200 2105 50  0000 L CNN
-F 2 "MHole:MountingHole_2.0" H 6100 2150 50  0001 C CNN
+F 2 "MountingHole:MountingHole_2.2mm_M2" H 6100 2150 50  0001 C CNN
 F 3 "~" H 6100 2150 50  0001 C CNN
 	1    6100 2150
 	1    0    0    -1  
