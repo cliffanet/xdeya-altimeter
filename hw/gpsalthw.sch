@@ -240,12 +240,8 @@ Wire Wire Line
 	3400 4550 4050 4550
 Wire Wire Line
 	3150 3750 3400 3750
-Text Label 3200 3550 0    50   ~ 0
-d-rs-dc
-Text Label 3200 3250 0    50   ~ 0
-d-cs
 Text Label 3200 3150 0    50   ~ 0
-d-rst
+d-rs-dc
 Text Label 3200 3050 0    50   ~ 0
 spi-mosi
 Text Label 3200 2650 0    50   ~ 0
@@ -469,7 +465,7 @@ F 3 "~" H 5650 2850 50  0001 C CNN
 	1    0    0    1   
 $EndComp
 $Comp
-L Connector_Generic:Conn_01x24 J2
+L Connector_Generic_MountingPin:Conn_01x24_MountingPin J2
 U 1 1 601DFF37
 P 7850 3550
 F 0 "J2" H 7930 3542 50  0000 L CNN
@@ -866,17 +862,8 @@ Wire Wire Line
 	9350 850  9350 800 
 Wire Wire Line
 	9350 800  9550 800 
-Wire Wire Line
-	9750 1350 9950 1350
-Wire Wire Line
-	9950 1350 9950 1450
-Wire Wire Line
-	9950 1450 9750 1450
 Text GLabel 10000 1350 2    50   Input ~ 0
 clk-int
-Wire Wire Line
-	10000 1350 9950 1350
-Connection ~ 9950 1350
 $Comp
 L power:GND #PWR0105
 U 1 1 603A4A02
@@ -1870,6 +1857,34 @@ F 3 "" H 2850 7550 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2850 7550 2850 7500
+Connection ~ 2850 7200
+Wire Wire Line
+	2850 7200 2850 7050
+Connection ~ 2850 7350
+Wire Wire Line
+	2850 7350 2850 7200
+Connection ~ 2850 7500
+Wire Wire Line
+	2850 7500 2850 7350
+Text Label 3200 3550 0    50   ~ 0
+d-rst
+Text Label 3200 3250 0    50   ~ 0
+d-cs
+Wire Wire Line
+	9750 1350 10000 1350
+$Comp
+L power:GND #PWR?
+U 1 1 60EA470A
+P 7850 2050
+F 0 "#PWR?" H 7850 1800 50  0001 C CNN
+F 1 "GND" V 7850 1900 50  0000 R CNN
+F 2 "" H 7850 2050 50  0001 C CNN
+F 3 "" H 7850 2050 50  0001 C CNN
+	1    7850 2050
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	7850 2050 7850 2150
 Wire Wire Line
 	3150 2650 4050 2650
 Wire Wire Line
@@ -1894,13 +1909,4 @@ Wire Bus Line
 	6550 3300 6550 4100
 Wire Bus Line
 	4150 2000 4150 3200
-Connection ~ 2850 7200
-Wire Wire Line
-	2850 7200 2850 7050
-Connection ~ 2850 7350
-Wire Wire Line
-	2850 7350 2850 7200
-Connection ~ 2850 7500
-Wire Wire Line
-	2850 7500 2850 7350
 $EndSCHEMATC
