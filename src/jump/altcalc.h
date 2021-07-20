@@ -7,7 +7,7 @@
 
 #include <stdint.h> 
 
-#define AC_DATA_COUNT       30
+#define AC_DATA_COUNT       40
 
 // Порог скорости для режима FLAT (abs, m/s)
 // Он же является порогом удержания для режима canopy

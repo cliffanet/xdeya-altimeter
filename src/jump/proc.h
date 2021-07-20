@@ -28,7 +28,7 @@
 #define JMPLOG_SIMPLE_FILE_COUNT    5
 
 // хранимый буфер для заранее сохранённых log_item_t
-#define JMP_PRELOG_SIZE         120
+#define JMP_PRELOG_SIZE         160
 
 // Порог скорости, при которой считаем, что начался прыжок
 #define JMP_SPEED_MIN           15
