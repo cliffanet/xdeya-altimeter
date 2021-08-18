@@ -168,13 +168,13 @@ void ViewMenu::draw(U8G2 &u8g2) {
     u8g2.setFont(u8g2_font_ncenB08_tr);
     
     // Заголовок
-    u8g2.drawBox(0,0,128,12);
+    u8g2.drawBox(0,0,u8g2.getDisplayWidth(),12);
     u8g2.setDrawColor(0);
     u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(title))/2, 10, title);
     
     // выделение пункта меню, текст будем писать поверх
     u8g2.setDrawColor(1);
-    u8g2.drawBox(0,(isel-itop)*10+14,128,10);
+    u8g2.drawBox(0,(isel-itop)*10+14,u8g2.getDisplayWidth(),10);
     
     // Выводим видимую часть меню, n - это индекс строки на экране
     for (uint8_t n = 0; n<MENU_STR_COUNT; n++) {

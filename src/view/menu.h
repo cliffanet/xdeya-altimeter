@@ -7,7 +7,11 @@
 
 #include "base.h"
 
+#if HWVER < 4
 #define MENU_STR_COUNT  5
+#else
+#define MENU_STR_COUNT  8
+#endif
 #define MENUSZ_NAME 20
 #define MENUSZ_VAL 15
 
