@@ -8,13 +8,13 @@ use IPC::Open3;
 
 #==========================================================
 
-my @version = (0, 3, 3);
+my @version = (0, 3, 4);
 
 my $dir     = 'arch.fw';
 
 #==========================================================
 
-my @hwver   = 1 .. 3;
+my @hwver   = 1 .. 4;
 
 my $fqbn    = 'esp32:esp32:esp32:PSRAM=disabled,PartitionScheme=default,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=none';
 my @flags   = qw/

@@ -9,19 +9,19 @@
 
 // Вырианты отображения основного режима
 #define MODE_MAIN_MIN       1
-#define MODE_MAIN_MAX       4
+#define MODE_MAIN_MAX       2
 // не переключать на main-экран (ничего не делать)
 #define MODE_MAIN_NONE      -1
 // Использовать крайний запомненный (не менять экран, но включить main-режим)
 #define MODE_MAIN_LAST      0
 // Экран отображения только показаний GPS
-#define MODE_MAIN_GPS       1
+//#define MODE_MAIN_GPS       1
+// Экран отображения высоты и GPS
+#define MODE_MAIN_GPSALT    1
 // Экран отображения высоты (большими цифрами)
 #define MODE_MAIN_ALT       2
-// Экран отображения высоты и GPS
-#define MODE_MAIN_GPSALT    3
 // Экран отображения времени
-#define MODE_MAIN_TIME      4
+//#define MODE_MAIN_TIME      4
 
 class ViewMain : public ViewBase {
     public:
@@ -34,9 +34,9 @@ class ViewMain : public ViewBase {
 
 void setViewMain(int8_t mode = MODE_MAIN_LAST, bool save = true);
 
-void setViewMainGps();
+//void setViewMainGps();
 void setViewMainGpsAlt();
 void setViewMainAlt();
-void setViewMainTime();
+//void setViewMainTime();
 
 #endif // _view_main_H

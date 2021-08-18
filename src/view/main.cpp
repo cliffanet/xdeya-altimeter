@@ -7,7 +7,7 @@
 #include "../clock.h"
 #include "../file/track.h"
 
-static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_GPS; // Текущая страница отображения, сохраняется при переходе в меню
+static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_GPSALT; // Текущая страница отображения, сохраняется при переходе в меню
 
 void ViewMain::btnLong(btn_code_t btn) {
     switch (btn) {
@@ -91,7 +91,7 @@ void setViewMain(int8_t m, bool save) {
     
     if (m == MODE_MAIN_LAST) {
         if ((mode < MODE_MAIN_MIN) || (mode > MODE_MAIN_MAX))
-            mode = MODE_MAIN_GPS;
+            mode = MODE_MAIN_GPSALT;
         m = mode;
     }
     else
@@ -99,24 +99,28 @@ void setViewMain(int8_t m, bool save) {
         mode = m;
     
     switch (m) {
+        /*
         case MODE_MAIN_GPS:
             CONSOLE("click to gps");
             setViewMainGps();
             break;
-            
-        case MODE_MAIN_ALT:
-            CONSOLE("click to alt");
-            setViewMainAlt();
-            break;
+        */
             
         case MODE_MAIN_GPSALT:
             CONSOLE("click to gps-alt");
             setViewMainGpsAlt();
             break;
             
+        case MODE_MAIN_ALT:
+            CONSOLE("click to alt");
+            setViewMainAlt();
+            break;
+        
+        /*
         case MODE_MAIN_TIME:
             CONSOLE("click to time");
             setViewMainTime();
             break;
+        */
     }
 }

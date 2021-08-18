@@ -96,7 +96,7 @@ static void displayCompasFull(U8G2 &u8g2) {
 /* ------------------------------------------------------------------------------------------- *
  *  Только GPS
  * ------------------------------------------------------------------------------------------- */
-
+/*
 class ViewMainGps : public ViewMain {
     public:
         void btnSmpl(btn_code_t btn) {
@@ -154,7 +154,7 @@ class ViewMainGps : public ViewMain {
 };
 static ViewMainGps vGps;
 void setViewMainGps() { viewSet(vGps); }
-
+*/
 /* ------------------------------------------------------------------------------------------- *
  *  GPS + высотомер
  * ------------------------------------------------------------------------------------------- */
@@ -165,7 +165,7 @@ class ViewMainGpsAlt : public ViewMain {
             if (btn != BTN_SEL)
                 return;
     
-            setViewMain(MODE_MAIN_TIME);
+            setViewMain(MODE_MAIN_ALT);
         }
         
         void draw(U8G2 &u8g2) {

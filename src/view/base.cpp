@@ -84,7 +84,7 @@ bool displayLight() {
 
 void displayContrast(uint8_t val) {
 #if HWVER >= 4
-    u8g2.setContrast(115+val/2);
+    u8g2.setContrast(115+val);///2);
 #else
     u8g2.setContrast(115+val*3);
 #endif

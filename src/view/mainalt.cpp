@@ -1,5 +1,6 @@
 
 #include "main.h"
+#include "info.h"
 #include "../jump/proc.h"
 
 class ViewMainAlt : public ViewMain {
@@ -8,7 +9,8 @@ class ViewMainAlt : public ViewMain {
             if (btn != BTN_SEL)
                 return;
     
-            setViewMain(MODE_MAIN_GPSALT);
+            //setViewMain(MODE_MAIN_GPSALT);
+            setViewInfoDebug();
         }
         
         void draw(U8G2 &u8g2) {

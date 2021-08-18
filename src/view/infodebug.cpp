@@ -17,7 +17,7 @@ class ViewInfoDebug : public ViewInfo {
                 return;
             }
     
-            setViewMain(MODE_MAIN_GPS);
+            setViewMain(MODE_MAIN_GPSALT);
         }
         
         void updStr(uint16_t i) {

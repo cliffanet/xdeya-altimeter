@@ -177,10 +177,10 @@ static void valDsplAuto(char *txt, int8_t val) {
     switch (val) {
         case MODE_MAIN_NONE:    strcpy_P(txt, PSTR("No change")); break;
         case MODE_MAIN_LAST:    strcpy_P(txt, PSTR("Last")); break;
-        case MODE_MAIN_GPS:     strcpy_P(txt, PSTR("GPS")); break;
-        case MODE_MAIN_ALT:     strcpy_P(txt, PSTR("Alti")); break;
+        //case MODE_MAIN_GPS:     strcpy_P(txt, PSTR("GPS")); break;
         case MODE_MAIN_GPSALT:  strcpy_P(txt, PSTR("GPS+Alt")); break;
-        case MODE_MAIN_TIME:    strcpy_P(txt, PSTR("Clock")); break;
+        case MODE_MAIN_ALT:     strcpy_P(txt, PSTR("Alti")); break;
+        //case MODE_MAIN_TIME:    strcpy_P(txt, PSTR("Clock")); break;
     }
 }
 
