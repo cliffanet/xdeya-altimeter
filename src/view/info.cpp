@@ -72,7 +72,7 @@ void ViewInfo::draw(U8G2 &u8g2) {
     
     if (title != NULL) {
         // Заголовок
-        u8g2.drawBox(0,0,128,10);
+        u8g2.drawBox(0,0,u8g2.getDisplayWidth(),10);
         u8g2.setDrawColor(0);
         
         char s[128];
@@ -84,7 +84,13 @@ void ViewInfo::draw(U8G2 &u8g2) {
     }
     
     u8g2.setDrawColor(1);
+
+#if HWVER < 4
+    const uint8_t strcnt = 7;
+#else
+    const uint8_t strcnt = 10;
+#endif
     
-    for (uint16_t i = itop; (i<sz) && (iprn<7); i++, iprn++)
+    for (uint16_t i = itop; (i<sz) && (iprn<strcnt); i++, iprn++)
         updStr(i);
 }
