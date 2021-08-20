@@ -550,7 +550,7 @@ class ViewNetSync : public ViewBase {
     
             // Заголовок
             u8g2.setDrawColor(1);
-            u8g2.drawBox(0,0,128,12);
+            u8g2.drawBox(0,0,u8g2.getDisplayWidth(),12);
             u8g2.setDrawColor(0);
             char s[33];
             strcpy_P(s, PSTR("Web Sync"));

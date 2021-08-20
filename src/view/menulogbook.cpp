@@ -51,7 +51,7 @@ class ViewMenuLogBookInfo : public ViewBase {
         
         void draw(U8G2 &u8g2) {
             u8g2.setDrawColor(1);
-            u8g2.drawBox(0,0,128,12);
+            u8g2.drawBox(0,0,u8g2.getDisplayWidth(),12);
             
             if (!readok)
                 return;

@@ -32,7 +32,7 @@ void ViewMain::drawState(U8G2 &u8g2) {
     u8g2.setDrawColor(1);
 #if HWVER >= 3
     uint16_t bv = pwrBattValue();
-    if ((bv > 2600) || ((millis() % 2000) >= 1000)) {
+    if ((bv > 2700) || ((millis() % 2000) >= 1000)) {
         u8g2.setFont(u8g2_font_battery19_tn);
         char b = 
                 bv > 3250 ? '5' :
@@ -41,11 +41,13 @@ void ViewMain::drawState(U8G2 &u8g2) {
                 bv > 2950 ? '2' :
                 bv > 2800 ? '1' :
                 '0';
-        u8g2.drawGlyph(0, 20, b);
+        u8g2.setFontDirection(1);
+        u8g2.drawGlyph(0, 0, b);
+        u8g2.setFontDirection(0);
     }
     if (pwrBattCharge()) {
         u8g2.setFont(u8g2_font_open_iconic_embedded_1x_t);
-        u8g2.drawGlyph(10, 9, 'C');
+        u8g2.drawGlyph(0, 20, 'C');
     }
 #endif
     
@@ -66,7 +68,7 @@ void ViewMain::drawState(U8G2 &u8g2) {
 #endif
     
     if (trkRunning() && ((millis() % 2000) >= 1000))
-        u8g2.drawGlyph(0, 64, 'R');
+        u8g2.drawGlyph(0, u8g2.getDisplayHeight()-1, 'R');
     
 #ifdef USE4BUTTON
     u8g2.setDrawColor(1);
@@ -77,12 +79,17 @@ void ViewMain::drawClock(U8G2 &u8g2) {
     if (!tmValid())
         return;
     
-    u8g2.setDrawColor(1);
-    u8g2.setFont(u8g2_font_tom_thumb_4x6_mn);
-    
     char s[10];
     sprintf_P(s, PSTR("%d:%02d"), tmNow().h, tmNow().m);
+
+    u8g2.setDrawColor(1);
+#if HWVER < 4
+    u8g2.setFont(u8g2_font_tom_thumb_4x6_mn);
     u8g2.drawStr(53, 6, s);
+#else // if HWVER < 4
+    u8g2.setFont(u8g2_font_amstrad_cpc_extended_8n);
+    u8g2.drawStr(80, 10, s);
+#endif // if HWVER < 4
 }
 
 void setViewMain(int8_t m, bool save) {
