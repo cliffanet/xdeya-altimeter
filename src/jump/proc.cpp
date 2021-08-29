@@ -6,6 +6,7 @@
 #include "../file/track.h"
 #include "../view/base.h"   // btnPushed()
 #include "../power.h"       // pwrBattValue()
+#include "../clock.h"
 
 #include <Adafruit_BMP280.h>
 
@@ -77,7 +78,7 @@ static void jmpPreLogAdd(uint16_t interval) {
         heading     : GPS_DEG(gps.heading),
         gpsalt      : GPS_MM(gps.hMSL),
         vspeed      : gps.speed,
-        gpsdage     : gpsDataAge(),
+        gpsdage     : gpsDataAge(), // тут вместо millis уже используется только 1 байт для хранения, можно пересмотреть формат
         sat         : gps.numSV,
         _           : 0,
 #if HWVER > 1
@@ -90,7 +91,7 @@ static void jmpPreLogAdd(uint16_t interval) {
         sAcc        : gps.sAcc,
         cAcc        : gps.cAcc,
         //tm          : gps.tm,
-        millis      : millis(),
+        millis      : utm() / 1000,
     };
     
     if (GPS_VALID(gps))
@@ -210,11 +211,10 @@ void jmpInit() {
  *  Определяем текущее состояние прыга и переключаем по необходимости
  * ------------------------------------------------------------------------------------------- */
 void jmpProcess() {
-    static uint32_t _mill = millis();
-    uint32_t m = millis();
-    ac.tick(bmp.readPressure(), m-_mill);
-    jmpPreLogAdd(m-_mill);
-    _mill = m;
+    static uint32_t ut = utm();
+    uint32_t interval = utm_diff32(ut, ut);
+    ac.tick(bmp.readPressure(), interval / 1000);
+    jmpPreLogAdd(interval / 1000);
     
     // Автокорректировка нуля
     if (cfg.d().gndauto &&

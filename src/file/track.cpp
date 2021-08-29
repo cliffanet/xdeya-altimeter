@@ -63,7 +63,7 @@ bool trkStart(bool force, uint16_t old) {
         tmoffset += log.data.tmoffset;
         log.data.tmoffset = tmoffset;
         
-        log.data.msave = millis();
+        log.data.msave = utm() / 1000;
     
         auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
         if (sz != sizeof(log)) {
@@ -158,7 +158,7 @@ void trkProcess() {
         tmoffset += log.data.tmoffset;
         log.data.tmoffset = tmoffset;
         
-        log.data.msave = millis();
+        log.data.msave = utm() / 1000;
         
         auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
         if (sz != sizeof(log))
