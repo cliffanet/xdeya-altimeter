@@ -10,13 +10,30 @@
 
 #if HWVER < 4
 #define COMP_X      32
-#define COMP_Y      31
-#define COMP_R      
+#define COMP_Y      32
+#define COMP_R      31
 #else // if HWVER < 4
 #define COMP_X      48
 #define COMP_Y      47
-#define COMP_R      
+#define COMP_R      46
 #endif // if HWVER < 4
+
+// разные точки компаса, в которых можем давать отклонения по обеим координатам
+// центр
+#define COMP_CEN_X(dx)  (COMP_X dx)
+#define COMP_CEN_Y(dy)  (COMP_Y dy)
+// верх
+#define COMP_TOP_X(dx)  (COMP_X dx)
+#define COMP_TOP_Y(dy)  (COMP_Y - COMP_R dy)
+// низ
+#define COMP_BTM_X(dx)  (COMP_X dx)
+#define COMP_BTM_Y(dy)  (COMP_Y + COMP_R dy)
+// лево
+#define COMP_LFT_X(dx)  (COMP_X - COMP_R dx)
+#define COMP_LFT_Y(dy)  (COMP_Y dy)
+// право
+#define COMP_RGH_X(dx)  (COMP_X + COMP_R dx)
+#define COMP_RGH_Y(dy)  (COMP_Y dy)
 
 /* ------------------------------------------------------------------------------------------- *
  * Функция отрисовки компаса, провёрнутого на угол ang
@@ -28,15 +45,15 @@
 inline void drawCompas(U8G2 &u8g2, float ang) {
     u8g2.setFont(u8g2_font_helvB08_tr);
     
-    u8g2.drawDisc(COMP_X, COMP_Y, 1);
+    u8g2.drawDisc(COMP_CEN_X(),COMP_CEN_Y(), 1);
     //u8g2.drawCircle(32,31, 31);
-    u8g2.drawDisc(APNT(COMP_X-1,6,COMP_X-1,COMP_Y+1), 7);
+    u8g2.drawDisc(APNT(COMP_TOP_X(-1),COMP_TOP_Y(+5), COMP_CEN_X(-1),COMP_CEN_Y(+1)), 7);
     u8g2.setDrawColor(0);
-    u8g2.drawGlyph(APNT(COMP_X-4,10,COMP_X-4,COMP_Y+5), 'N');
+    u8g2.drawGlyph(APNT(COMP_TOP_X(-4),COMP_TOP_Y(+9), COMP_CEN_X(-4),COMP_CEN_Y(+4)), 'N');
     u8g2.setDrawColor(1);
-    u8g2.drawGlyph(APNT(COMP_X-4,(COMP_X+1)*2-1,COMP_X-4,COMP_Y+5), 'S');
-    u8g2.drawGlyph(APNT(1,COMP_Y+5,COMP_X-4,COMP_Y+5), 'W');
-    u8g2.drawGlyph(APNT(COMP_X*2-7,COMP_Y+5,COMP_X-4,COMP_Y+5), 'E');
+    u8g2.drawGlyph(APNT(COMP_BTM_X(-4),COMP_BTM_Y(+1), COMP_CEN_X(-4),COMP_CEN_Y(+4)), 'S');
+    u8g2.drawGlyph(APNT(COMP_LFT_X(+0),COMP_LFT_Y(+4), COMP_CEN_X(-4),COMP_CEN_Y(+4)), 'W');
+    u8g2.drawGlyph(APNT(COMP_RGH_X(-8),COMP_RGH_Y(+4), COMP_CEN_X(-4),COMP_CEN_Y(+4)), 'E');
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -44,15 +61,15 @@ inline void drawCompas(U8G2 &u8g2, float ang) {
  * ------------------------------------------------------------------------------------------- */
 inline void drawPointArrow(U8G2 &u8g2, float ang) {
     //u8g2.drawLine(APNT(32,15,32,31), APNT(32,42,32,31));
-    u8g2.drawLine(APNT(COMP_X,15,COMP_X,COMP_Y), APNT(COMP_X-2,COMP_Y+5,COMP_X,COMP_Y));
-    u8g2.drawLine(APNT(COMP_X,15,COMP_X,COMP_Y), APNT(COMP_X+3,COMP_Y+5,COMP_X,COMP_Y));
-    u8g2.drawLine(APNT(COMP_X-2,COMP_Y+5,COMP_X,COMP_Y), APNT(COMP_X+2,COMP_Y+5,COMP_X,COMP_Y));
-    u8g2.drawLine(APNT(COMP_X,15,COMP_X,COMP_Y), APNT(COMP_X-4,COMP_Y-11,COMP_X,COMP_Y));
-    u8g2.drawLine(APNT(COMP_X,15,COMP_X,COMP_Y), APNT(COMP_X+4,COMP_Y-11,COMP_X,COMP_Y));
-    u8g2.drawLine(APNT(COMP_X,14,COMP_X,COMP_Y), APNT(COMP_X-5,COMP_Y-11,COMP_X,COMP_Y));
-    u8g2.drawLine(APNT(COMP_X,14,COMP_X,COMP_Y), APNT(COMP_X+5,COMP_Y-11,COMP_X,COMP_Y));
-    u8g2.drawLine(APNT(COMP_X,16,COMP_X,COMP_Y), APNT(COMP_X-4,COMP_Y-10,COMP_X,COMP_Y));
-    u8g2.drawLine(APNT(COMP_X,16,COMP_X,COMP_Y), APNT(COMP_X+4,COMP_Y-10,COMP_X,COMP_Y));
+    u8g2.drawLine(APNT(COMP_TOP_X(+0),COMP_TOP_Y(+14), COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(-2),COMP_CEN_Y(+4),  COMP_CEN_X(),COMP_CEN_Y(-1)));
+    u8g2.drawLine(APNT(COMP_TOP_X(+0),COMP_TOP_Y(+14), COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(+2),COMP_CEN_Y(+4),  COMP_CEN_X(),COMP_CEN_Y(-1)));
+    u8g2.drawLine(APNT(COMP_TOP_X(-2),COMP_CEN_Y(+4),  COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(+2),COMP_CEN_Y(+4),  COMP_CEN_X(),COMP_CEN_Y(-1)));
+    u8g2.drawLine(APNT(COMP_TOP_X(+0),COMP_TOP_Y(+14), COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(-4),COMP_CEN_Y(-12), COMP_CEN_X(),COMP_CEN_Y(-1)));
+    u8g2.drawLine(APNT(COMP_TOP_X(+0),COMP_TOP_Y(+14), COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(+4),COMP_CEN_Y(-12), COMP_CEN_X(),COMP_CEN_Y(-1)));
+    u8g2.drawLine(APNT(COMP_TOP_X(+0),COMP_TOP_Y(+13), COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(-5),COMP_CEN_Y(-12), COMP_CEN_X(),COMP_CEN_Y(-1)));
+    u8g2.drawLine(APNT(COMP_TOP_X(+0),COMP_TOP_Y(+13), COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(+5),COMP_CEN_Y(-12), COMP_CEN_X(),COMP_CEN_Y(-1)));
+    u8g2.drawLine(APNT(COMP_TOP_X(+0),COMP_TOP_Y(+15), COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(-4),COMP_CEN_Y(-11), COMP_CEN_X(),COMP_CEN_Y(-1)));
+    u8g2.drawLine(APNT(COMP_TOP_X(+0),COMP_TOP_Y(+15), COMP_CEN_X(),COMP_CEN_Y(-1)), APNT(COMP_TOP_X(+4),COMP_CEN_Y(-11), COMP_CEN_X(),COMP_CEN_Y(-1)));
 }
 
 static void displayCompasFull(U8G2 &u8g2) {
@@ -60,7 +77,18 @@ static void displayCompasFull(U8G2 &u8g2) {
 
     if (!GPS_VALID(gps)) {
         u8g2.setFont(u8g2_font_open_iconic_www_4x_t);
-        u8g2.drawGlyph(16, 48, 'J');
+        u8g2.drawGlyph(COMP_CEN_X(-16),COMP_CEN_Y(+16), 'J');
+        /*
+        drawCompas(u8g2, 0);
+        drawPointArrow(u8g2, 0);
+                u8g2.drawCircle(COMP_CEN_X(),COMP_CEN_Y(-1), 10);
+                u8g2.drawCircle(COMP_CEN_X(),COMP_CEN_Y(-1), 15);
+            u8g2.drawDisc(COMP_CEN_X(),COMP_CEN_Y(-1), 6);
+            u8g2.setFont(u8g2_font_helvB08_tr);
+            u8g2.setDrawColor(0);
+            u8g2.drawGlyph(COMP_CEN_X(-2),COMP_CEN_Y(+4), '5');
+            u8g2.setDrawColor(1);
+        */
         return;
     }
     
@@ -81,8 +109,8 @@ static void displayCompasFull(U8G2 &u8g2) {
                 ) < 8.0;
             
             if (in_pnt) {
-                u8g2.drawCircle(COMP_X, COMP_Y, 10);
-                u8g2.drawCircle(COMP_X, COMP_Y, 15);
+                u8g2.drawCircle(COMP_CEN_X(),COMP_CEN_Y(-1), 10);
+                u8g2.drawCircle(COMP_CEN_X(),COMP_CEN_Y(-1), 15);
             }
             else {
                 double courseto = 
@@ -95,10 +123,10 @@ static void displayCompasFull(U8G2 &u8g2) {
                 drawPointArrow(u8g2, DEG_TO_RAD*(courseto-GPS_DEG(gps.heading)));
             }
             
-            u8g2.drawDisc(COMP_X, COMP_Y, 6);
+            u8g2.drawDisc(COMP_CEN_X(),COMP_CEN_Y(-1), 6);
             u8g2.setFont(u8g2_font_helvB08_tr);
             u8g2.setDrawColor(0);
-            u8g2.drawGlyph(COMP_X-2,COMP_X+5, '0' + pnt.num());
+            u8g2.drawGlyph(COMP_CEN_X(-2),COMP_CEN_Y(+4), '0' + pnt.num());
             u8g2.setDrawColor(1);
         }
     }
@@ -252,11 +280,11 @@ class ViewMainGpsAlt : public ViewMain {
                 if (dist < 950) 
                     sprintf_P(s, PSTR("%0.0fm"), dist);
                 else if (dist < 9500) 
-                    sprintf_P(s, PSTR("%0.1fkm"), dist/1000);
+                    sprintf_P(s, PSTR("%0.1fk"), dist/1000);
                 else if (dist < 950000) 
-                    sprintf_P(s, PSTR("%0.0fkm"), dist/1000);
+                    sprintf_P(s, PSTR("%0.0fk"), dist/1000);
                 else
-                    sprintf_P(s, PSTR("%0.2fMm"), dist/1000000);
+                    sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
                 u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 54, s);
             }
     
@@ -277,7 +305,7 @@ class ViewMainGpsAlt : public ViewMain {
                 alt -= o;
                 if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
     
-                u8g2.setFont(u8g2_font_fub30_tn);
+                u8g2.setFont(u8g2_font_logisoso30_tf);
                 sprintf_P(s, PSTR("%d"), alt);
                 u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 30, s);
                 
@@ -310,6 +338,10 @@ class ViewMainGpsAlt : public ViewMain {
                 default: s[0] = '\0';
             }
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s)+6, 44, s);
+
+            u8g2.setFont(u8g2_font_helvB08_tf);
+            sprintf_P(s, PSTR("s: %d"), gps.numSV);
+            u8g2.drawStr(0, u8g2.getDisplayHeight()-1, s);
     
             // Далее жпс данные
             if (!GPS_VALID(gps))
@@ -325,15 +357,15 @@ class ViewMainGpsAlt : public ViewMain {
                         pnt.cur().lng
                     );
         
-                u8g2.setFont(u8g2_font_fub30_tf);
+                u8g2.setFont(u8g2_font_logisoso30_tf);
                 if (dist < 950) 
                     sprintf_P(s, PSTR("%0.0fm"), dist);
                 else if (dist < 9500) 
-                    sprintf_P(s, PSTR("%0.1fkm"), dist/1000);
+                    sprintf_P(s, PSTR("%0.1fk"), dist/1000);
                 else if (dist < 950000) 
-                    sprintf_P(s, PSTR("%0.0fkm"), dist/1000);
+                    sprintf_P(s, PSTR("%0.0fk"), dist/1000);
                 else
-                    sprintf_P(s, PSTR("%0.2fMm"), dist/1000000);
+                    sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
                 u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 81, s);
             }
     
