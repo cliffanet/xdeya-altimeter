@@ -9,14 +9,19 @@
 
 #include <stdint.h>
 
+uint64_t utm();
+uint64_t utm_diff(uint64_t prev, uint64_t &curr);
+uint64_t utm_diff(uint64_t prev);
+uint32_t utm_diff32(uint32_t prev, uint32_t &curr);
+uint32_t iter();
+
 #if HWVER >= 3
 #define CLOCK_PIN_INT       14
 #endif
 
 // Интервал синхронизации времени
-#define TIME_ADJUST_INTERVAL    1200000
-#define TIME_ADJUST_TIMEOUT     (TIME_ADJUST_INTERVAL*3)
-#define TIME_TICK_INTERVAL      200
+#define TIME_ADJUST_INTERVAL    12000
+#define TIME_TICK_INTERVAL      100
 //bool timeOk();
     
 typedef struct __attribute__((__packed__)) {

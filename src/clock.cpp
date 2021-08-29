@@ -6,13 +6,42 @@
 
 #include "RTClib.h"
 
+#include "soc/rtc.h"
+extern "C" {
+  #include <esp_clk.h>
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  RTC-таймер, который не сбрасывается при deep sleep
+ * ------------------------------------------------------------------------------------------- */
+uint64_t utm() {
+    return rtc_time_slowclk_to_us(rtc_time_get(), esp_clk_slowclk_cal_get());
+}
+
+uint64_t utm_diff(uint64_t prev, uint64_t &curr) {
+    curr = utm();
+    return curr-prev;
+}
+
+uint64_t utm_diff(uint64_t prev) {
+    uint64_t curr;
+    return utm_diff(prev, curr);
+}
+
+uint32_t utm_diff32(uint32_t prev, uint32_t &curr) {
+    curr = utm();
+    return curr-prev;
+}
+
+static volatile RTC_DATA_ATTR uint32_t tmcnt = 0;
+uint32_t iter() { return tmcnt; }
+
 /* ------------------------------------------------------------------------------------------- *
  *  работа с часами
  * ------------------------------------------------------------------------------------------- */
 
 static RTC_DATA_ATTR tm_t tm = { 0 };
 static RTC_DATA_ATTR bool tmvalid = false;
-static volatile RTC_DATA_ATTR uint32_t tmcnt = 0;
 
 #if HWVER >= 3
 static RTC_PCF8563 rtc;
@@ -26,7 +55,6 @@ static RTC_Millis rtc;
 
 tm_t &tmNow() { return tm; }
 bool tmValid() { return tmvalid; }
-    //bool timeOk() { return (tmadj > 0) && ((tmadj > millis()) || ((millis()-tmadj) >= TIME_ADJUST_TIMEOUT)); }
 
 tm_t tmNow(uint32_t earlerms) {
     if (earlerms == 0)
@@ -77,7 +105,7 @@ int32_t tmIntervalToNow(const tm_t &tmbeg) {
 // при millis-часах - в clockProcess()
 #if HWVER >= 3
 static volatile bool istick = false;
-static void IRAM_ATTR  clockTick() { istick = true; tmcnt=0; }
+static void IRAM_ATTR  clockTick() { istick = true; tm.cs = 0; }
 #endif
 static void clockUpd() {
     auto dt = rtc.now();
@@ -115,13 +143,15 @@ void clockInit() {
 #endif
 }
 
-static uint32_t adj = 0;
+static uint16_t adj = 0;
 void clockForceAdjust() {
-    adj = 0;
+    adj = TIME_ADJUST_INTERVAL;
 }
 
 void clockProcess() {
-    if ((millis() >= adj) || !tmvalid) {
+    tmcnt++;
+    
+    if ((adj >= TIME_ADJUST_INTERVAL) || !tmvalid) {
         auto &gps = gpsInf();
         if (GPS_VALID_TIME(gps)) {
             // set the Time to the latest GPS reading
@@ -130,12 +160,14 @@ void clockProcess() {
             CONSOLE("time ajust - gps: %d.%02d.%d %2d:%02d:%02d, tm: %d.%02d.%d %2d:%02d:%02d / %d", 
                 gps.tm.year, gps.tm.mon, gps.tm.day, gps.tm.h, gps.tm.m, gps.tm.s,
                 tm.year, tm.mon, tm.day, tm.h, tm.m, tm.s, tmvalid);
-            adj = millis() + TIME_ADJUST_INTERVAL;
+            adj = 0;
 #if HWVER >= 3
             istick = true;
 #endif
         }
     }
+    else
+        adj++;
 
 #if HWVER >= 3
     if (istick) {
@@ -147,7 +179,6 @@ void clockProcess() {
     else
 #endif
     {
-        tmcnt++;
-        tm.cs = tmcnt*TIME_TICK_INTERVAL / 10;
+        tm.cs += TIME_TICK_INTERVAL / 10;
     }
 }

@@ -60,6 +60,7 @@ void loop() {
         delay(100-md);
     
     m = millis();
+    clockProcess();
     jmpProcess();
     
     md = millis() - m;

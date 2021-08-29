@@ -4,6 +4,8 @@
 #ifdef FWVER_DEBUG
 
 #include "gps/proc.h"
+#include "clock.h"
+
 #include <Arduino.h>
 
 /* ------------------------------------------------------------------------------------------- *
@@ -26,15 +28,14 @@ static void vtxtlog(const char *s, va_list ap) {
     
     int len = vsnprintf(NULL, 0, s, ap), sbeg = 0;
     char str[len+60]; // +48=dt +12=debug mill/tick
-    uint32_t t = millis();
     
-    uint32_t ms = millis();
-    uint16_t d = ms / (3600*24*1000);
+    uint64_t ms = utm() / 1000;
+    uint32_t d = ms / (3600*24*1000);
     uint8_t h = (ms - d*3600*24*1000) / (3600*1000);
     uint8_t m = (ms - d*3600*24*1000 - h*3600*1000) / (60*1000);
     uint8_t ss = (ms - d*3600*24*1000 - h*3600*1000 - m*60*1000) / 1000;
     ms -= d*3600*24*1000 + h*3600*1000 + m*60*1000 + ss*1000;
-    sbeg = snprintf_P(str, 32, PSTR("%3ud %2u:%02u:%02u.%03lu"), d, h, m, ss, ms);
+    sbeg = snprintf_P(str, 32, PSTR("%3ud %2u:%02u:%02u.%03llu"), d, h, m, ss, ms);
     
     vsnprintf(str+sbeg, len+1, s, ap);
     
