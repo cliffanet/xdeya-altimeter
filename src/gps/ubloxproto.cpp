@@ -3,11 +3,10 @@
 */
 
 #include "ubloxproto.h"
-#include "../log.h"
-#include <Arduino.h> // millis()
+//#include "../log.h"
 
 
-bool UbloxGpsProto::recv(uint8_t c, bool clearonfail) {
+bool UbloxGpsProto::recv(uint8_t c) {
     switch (rcv_bytewait) {
         case UBXWB_SYNC1:
     		if (c == UBX_SYNC1)
@@ -73,7 +72,6 @@ bool UbloxGpsProto::recv(uint8_t c, bool clearonfail) {
             break;
     }
 
-    if (clearonfail) rcvclear();
     return false;
 }
 
@@ -96,18 +94,13 @@ bool UbloxGpsProto::tick(void (*readhnd)(uint8_t c)) {
         cntrecv++;
         if (readhnd != NULL)
             readhnd(c);
-        if (!recv(c, false)) {
-            //CONSOLE("gps recv proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x, rcv_plen=%d", 
-            //                    c, rcv_bytewait, rcv_class, rcv_ident, rcv_plen);
+        if (!recv(c)) {
             cntrecverr++;
             rcvclear();
+            if (sndcnt > 0)
+                cnfclear();
             return false;
         }
-    }
-    
-    if ((cnftimeout > 0) && (cnftimeout <= millis())) {
-        CONSOLE("gps timeout on wait confirm (sndcnt=%d)", sndcnt);
-        cnfclear();
     }
     
     return true;
@@ -120,43 +113,14 @@ bool UbloxGpsProto::docmd() {
     if (hndcall(rcv_class, rcv_ident) > 0)
         return true;
     
-    CONSOLE("gps recv unknown cmd class=0x%02X, id=0x%02X, len=%d", rcv_class, rcv_ident, rcv_plen);
+    //CONSOLE("gps recv unknown cmd class=0x%02X, id=0x%02X, len=%d", rcv_class, rcv_ident, rcv_plen);
     cntcmdunknown++;
-    
-    return false;
-}
-
-bool UbloxGpsProto::waitcnf() {
-    if (sndcnt == 0)
-        return false;
-    
-    while (cnftimeout >= millis()) {
-        if (!_uart->available()) {
-            delay(50);
-            continue;
-        }
-        
-        char c;
-        if (!recv(c = _uart->read())) {
-            _uart->flush();
-            CONSOLE("gps on waitcnf proto fail on byte=0x%02x, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x, rcv_plen=%d",
-                                c, rcv_bytewait, rcv_class, rcv_ident);
-            return false;
-        }
-        
-        if (sndcnt == 0)
-            return true;
-    }
-    
-    CONSOLE("gps wait confirm timeout, sndcnt=%d, waited=0x%02x, rcv_class=0x%02x, rcv_ident=0x%02x", sndcnt, rcv_bytewait, rcv_class, rcv_ident);
-    cnfclear();
     
     return false;
 }
 
 void UbloxGpsProto::cnfclear() {
     sndcnt = 0;
-    cnftimeout = 0;
 }
 
 void UbloxGpsProto::rcvcks(uint8_t c) {
@@ -166,17 +130,15 @@ void UbloxGpsProto::rcvcks(uint8_t c) {
 
 bool UbloxGpsProto::rcvconfirm(bool isok) {
     if (sndcnt == 0) {
-        CONSOLE("gps recv confirm(%d), but cmd not sended", isok);
+        //CONSOLE("gps recv confirm(%d), but cmd not sended", isok);
         return false;
     }
     
     sndcnt--;
-    if (sndcnt == 0)
-        cnftimeout = 0;
-    if (isok)
-        CONSOLE("gps recv cmd-confirm");
-    else
-        CONSOLE("gps recv cmd-reject");
+    //if (isok)
+    //    CONSOLE("gps recv cmd-confirm");
+    //else
+    //    CONSOLE("gps recv cmd-reject");
     
     return true;
 }
@@ -242,12 +204,11 @@ bool UbloxGpsProto::send(uint8_t cl, uint8_t id, const uint8_t *data, uint16_t d
     if ((dlen > 0) && !_uart->write(data, dlen))
         return false;
 
-    CONSOLE("gps send class=0x%02X, id=0x%02X, len=%d", cl, id, dlen);
+    //CONSOLE("gps send class=0x%02X, id=0x%02X, len=%d", cl, id, dlen);
     
     if (!_uart->write(reinterpret_cast<const uint8_t *>(&ck), sizeof(ck)))
         return false;
     sndcnt++;
-    cnftimeout = millis()+1000;
     
     return true;
 }

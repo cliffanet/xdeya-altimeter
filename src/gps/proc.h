@@ -32,6 +32,8 @@
 #define GPS_VALID_HEAD(gps)         (GPS_VALID_LOCATION(gps) && (gps.cAcc < 5000000))
 #define GPS_VALID_TIME(gps)         (GPS_VALID(gps) && (gps.tm.year > 2000))
 
+#define GPS_TICK_INTERVAL       200
+
 typedef struct {
 	int32_t  lon;      // Longitude                    (deg * 10^7)
 	int32_t  lat;      // Latitude                     (deg * 10^7)
@@ -59,7 +61,7 @@ const gps_data_t &gpsInf();
 uint32_t gpsRecv();
 uint32_t gpsRecvError();
 uint32_t gpsCmdUnknown();
-uint32_t gpsDataAge();
+uint8_t gpsDataAge();
 void gpsInit();
 void gpsProcess();
 

@@ -649,14 +649,11 @@ static const menu_el_t menuhwtest[] {
         .enter = NULL,
         .showval = [] (char *txt) {
             char ok[10];
-            uint32_t dage = gpsDataAge();
+            uint16_t dage = gpsDataAge();
             
-            valOk(ok, dage < 250);
-            if (dage < 1000)
-                sprintf_P(txt, PSTR("(%d ms) %s"), dage, ok);
-            else
-            if (dage < 30000)
-                sprintf_P(txt, PSTR("(%d s) fail"), dage / 1000);
+            valOk(ok, gpsInf().rcvok);
+            if (dage < 15)
+                sprintf_P(txt, PSTR("(%d ms) %s"), dage*GPS_TICK_INTERVAL, ok);
             else
                 strcpy_P(txt, PSTR("no data"));
         },

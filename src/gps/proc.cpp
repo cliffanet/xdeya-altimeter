@@ -1,11 +1,12 @@
 
 #include "proc.h"
 #include "../log.h"
+#include "../clock.h"
 
 // будем использовать стандартный экземпляр класса HardwareSerial, 
 // т.к. он и так в системе уже есть и память под него выделена
 // Стандартные пины для свободного аппаратного Serial2: 16(rx), 17(tx)
-#include <Arduino.h> // Serial, millis()
+#include <Arduino.h> // Serial, delay
 #define ss Serial2
 
 #include "ubloxproto.h"
@@ -19,12 +20,18 @@ static bool direct = false;
  *  GPS-получение данных
  * ------------------------------------------------------------------------------------------- */
 static struct {
-    uint32_t posllh = 0;
-    uint32_t velned = 0;
-    uint32_t timeutc = 0;
-    uint32_t sol = 0;
-    uint32_t pvt = 0;
-} ageRecv;
+    uint8_t posllh  : 4;
+    uint8_t velned  : 4;
+    uint8_t timeutc : 4;
+    uint8_t sol     : 4;
+    uint8_t pvt     : 4;
+} ageRecv = {
+    posllh  : 15,
+    velned  : 15,
+    timeutc : 15,
+    sol     : 15,
+    pvt     : 15,
+};
 
 static void gpsRecvPosllh(UbloxGpsProto &gps) {
     struct {
@@ -45,7 +52,7 @@ static void gpsRecvPosllh(UbloxGpsProto &gps) {
 	data.hMSL   = nav.hMSL;
 	data.hAcc   = nav.hAcc;
 	data.vAcc   = nav.vAcc;
-    ageRecv.posllh = millis();
+    ageRecv.posllh = 0;
 }
 static void gpsRecvVelned(UbloxGpsProto &gps) {
     struct {
@@ -71,7 +78,7 @@ static void gpsRecvVelned(UbloxGpsProto &gps) {
     data.heading= nav.heading;
     data.sAcc   = nav.sAcc;
     data.cAcc   = nav.cAcc;
-    ageRecv.velned = millis();
+    ageRecv.velned = 0;
 }
 static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
     struct {
@@ -97,7 +104,7 @@ static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
     data.tm.m   = nav.min;
     data.tm.s   = nav.sec;
     data.tm.cs  = nav.nano / 10000000;
-    ageRecv.timeutc = millis();
+    ageRecv.timeutc = 0;
 }
 static void gpsRecvSol(UbloxGpsProto &gps) {
     struct {
@@ -125,7 +132,7 @@ static void gpsRecvSol(UbloxGpsProto &gps) {
     
     data.gpsFix = nav.gpsFix;
     data.numSV  = nav.numSV;
-    ageRecv.sol = millis();
+    ageRecv.sol = 0;
 }
 static void gpsRecvPvt(UbloxGpsProto &gps) {
     struct {
@@ -169,7 +176,7 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
     
 	data.gpsFix = nav.gpsFix;
 	data.numSV  = nav.numSV;
-    ageRecv.pvt = millis();
+    ageRecv.pvt = 0;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -181,17 +188,17 @@ const gps_data_t &gpsInf() { return data; };
 uint32_t gpsRecv() { return gps.cntRecv(); }
 uint32_t gpsRecvError() { return gps.cntRecvErr(); }
 uint32_t gpsCmdUnknown() { return gps.cntCmdUnknown(); }
-uint32_t gpsDataAge() {
+uint8_t gpsDataAge() {
     uint32_t frst = ageRecv.posllh;
-    if (frst > ageRecv.velned)
+    if (frst < ageRecv.velned)
         frst = ageRecv.velned;
-    if (frst > ageRecv.timeutc)
+    if (frst < ageRecv.timeutc)
         frst = ageRecv.timeutc;
-    if (frst > ageRecv.sol)
+    if (frst < ageRecv.sol)
         frst = ageRecv.sol;
-    if (frst > ageRecv.pvt)
+    if (frst < ageRecv.pvt)
         frst = ageRecv.pvt;
-    return millis()-frst;
+    return frst;
 }
 
 
@@ -202,17 +209,37 @@ static void gpsFree() {
     gps.uart(NULL);
 }
 
+static bool gpsCmdConfirm() {
+    uint16_t cnt = 0;
+    while (1) {
+        cnt ++;
+        if (!gps.tick()) {
+            CONSOLE("Wait cmd-confirm fail");
+            return false;
+        }
+        if (gps.cnfneed() == 0)
+            return true;
+        if (cnt > 20) {
+            CONSOLE("Wait cmd-confirm timeout");
+            return false;
+        }
+        delay(50);
+    }
+    
+    return false;
+}
+
 static bool gpsUartSpeed(uint32_t baudRate) {
     // инициируем uart-порт GPS-приёмника
     ss.begin(9600);
     ss.setRxBufferSize(512); // По умолчанию = 256 и этого не хватает, чтобы принять сразу все присылаемые от GPS данные за один цикл
     
-    char cnt = 5;
+    char cnt = 0;
     
-    while (cnt > 0) {
-        cnt--;
+    while (cnt < 5) {
+        cnt++;
         
-        CONSOLE("Set UART(gps) default speed 9600");
+        CONSOLE("Set UART(gps) default speed 9600 [try #%d]", cnt);
         ss.updateBaudRate(9600);
         
         struct
@@ -242,8 +269,12 @@ static bool gpsUartSpeed(uint32_t baudRate) {
         if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
             return false;
         
+        delay(10);
+        
         gps.cnfclear();
+        gps.rcvclear();
         ss.flush();
+        while (ss.available()) ss.read();
         
         CONSOLE("Set UART(gps) speed %d", baudRate);
         ss.updateBaudRate(baudRate);
@@ -251,9 +282,9 @@ static bool gpsUartSpeed(uint32_t baudRate) {
         
         if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
             return false;
-        if (gps.waitcnf()) {
+        
+        if (gpsCmdConfirm())
             return true;
-        }
     }
     
     return false;
@@ -294,7 +325,7 @@ static bool gpsInitCmd() {
     };
     
     for (auto r : cfg_rate)
-        if (!gps.send(UBX_CFG, UBX_CFG_MSG, r) || !gps.tick())
+        if (!gps.send(UBX_CFG, UBX_CFG_MSG, r) || !gpsCmdConfirm())
             return false;
 
     struct {
@@ -308,7 +339,7 @@ static bool gpsInitCmd() {
 		.navRate    = 1,        // Navigation rate (cycles)
 		.timeRef    = 0         // UTC time
 	};
-    if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate) || !gps.tick())
+    if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate) || !gpsCmdConfirm())
         return false;
 	
     struct {
@@ -332,7 +363,7 @@ static bool gpsInitCmd() {
 		.mask       = 0x0001,       // Apply dynamic model settings
 		.dynModel   = 7             // Airborne with < 1 g acceleration
 	};
-    if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5) || !gps.tick())
+    if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5) || !gpsCmdConfirm())
         return false;
     
     struct {
@@ -343,8 +374,10 @@ static bool gpsInitCmd() {
 		.navBbrMask = 0x0000,   // Hot start
 		.resetMode  = 0x09      // Controlled GPS start
 	};
-    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst) || !gps.tick())
+    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst) || !gpsCmdConfirm())
         return false;
+    
+    CONSOLE("GPS-UART config ok");
     
     return true;
 }
@@ -361,18 +394,28 @@ static void gpsDirectToSerial(uint8_t c) {
 }
 
 void gpsProcess() {
+    if (ageRecv.posllh  < 15)
+        ageRecv.posllh  ++;
+    if (ageRecv.velned  < 15)
+        ageRecv.velned  ++;
+    if (ageRecv.timeutc < 15)
+        ageRecv.timeutc ++;
+    if (ageRecv.sol     < 15)
+        ageRecv.sol     ++;
+    if (ageRecv.pvt     < 15)
+        ageRecv.pvt     ++;
+    
     gps.tick(direct ? &gpsDirectToSerial : NULL);
     
     while (direct && Serial.available())
         ss.write( Serial.read() );
 
-    uint32_t m = millis();
     data.rcvok =
-        ((ageRecv.posllh  + 500) > m) &&
-        ((ageRecv.velned  + 500) > m) &&
-        ((ageRecv.timeutc + 500) > m) &&
-        ((ageRecv.sol     + 500) > m) &&
-        ((ageRecv.pvt     + 500) > m);
+        (ageRecv.posllh     < 7) &&
+        (ageRecv.velned     < 7) &&
+        (ageRecv.timeutc    < 7) &&
+        (ageRecv.sol        < 7) &&
+        (ageRecv.pvt        < 7);
 }
 
 /* ------------------------------------------------------------------------------------------- *

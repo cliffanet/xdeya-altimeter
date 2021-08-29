@@ -61,6 +61,7 @@ typedef struct {
 } ubloxgps_hnditem_t;
 
 #define UBX_HND_SIZE    10
+#define UBX_CONFIRM_TIMEOUT 1000
 
 class UbloxGpsProto
 {
@@ -70,16 +71,15 @@ class UbloxGpsProto
         void uart(Stream *__uart) { _uart = __uart; }
         Stream *uart() const { return _uart; }
         
-        bool recv(uint8_t c, bool clearonfail = true);
-        bool recv() { return (_uart != NULL) && _uart->available() ? recv(_uart->read()) : false; }
+        bool recv(uint8_t c);
         void rcvclear();
         bool tick(void (*readhnd)(uint8_t c) = NULL);
         
         bool docmd();
         void cnfclear();
-        bool waitcnf();
+        uint16_t cnfneed() { return sndcnt; }
         
-        UbloxGpsProto& operator << (const char &c) { recv(c); return *this; }
+        UbloxGpsProto& operator << (const char &c) { if (!recv(c)) rcvclear(); return *this; }
         
         bool bufcopy(uint8_t *data, uint16_t dsz);
         template <typename T>
@@ -111,7 +111,6 @@ class UbloxGpsProto
         uint16_t rcv_plen, bufi;
         uint8_t buf[128];
         uint16_t sndcnt;
-        uint32_t cnftimeout;
         ubloxgps_hnditem_t hndall[UBX_HND_SIZE];
         
         uint32_t cntrecv=0, cntrecverr=0, cntcmdunknown=0;
