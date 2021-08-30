@@ -32,7 +32,7 @@ void ViewMain::drawState(U8G2 &u8g2) {
     u8g2.setDrawColor(1);
 #if HWVER >= 3
     uint16_t bv = pwrBattValue();
-    if ((bv > 2700) || ((millis() % 2000) >= 1000)) {
+    if ((bv > 2700) || isblink()) {
         u8g2.setFont(u8g2_font_battery19_tn);
         char b = 
                 bv > 3250 ? '5' :
@@ -67,7 +67,7 @@ void ViewMain::drawState(U8G2 &u8g2) {
     }
 #endif
     
-    if (trkRunning() && ((millis() % 2000) >= 1000))
+    if (trkRunning() && isblink())
         u8g2.drawGlyph(0, u8g2.getDisplayHeight()-10, 'R');
     
 #ifdef USE4BUTTON

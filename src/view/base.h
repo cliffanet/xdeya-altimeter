@@ -112,6 +112,8 @@ class ViewBase {
         virtual void draw(U8G2 &u8g2) = 0;
         
         virtual void process() {}
+        
+        bool isblink();
     private:
 };
 
