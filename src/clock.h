@@ -13,7 +13,6 @@ uint64_t utm();
 uint64_t utm_diff(uint64_t prev, uint64_t &curr);
 uint64_t utm_diff(uint64_t prev);
 uint32_t utm_diff32(uint32_t prev, uint32_t &curr);
-uint32_t iter();
 
 #if HWVER >= 3
 #define CLOCK_PIN_INT       14

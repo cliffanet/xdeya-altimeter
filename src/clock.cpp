@@ -33,9 +33,6 @@ uint32_t utm_diff32(uint32_t prev, uint32_t &curr) {
     return curr-prev;
 }
 
-static volatile RTC_DATA_ATTR uint32_t tmcnt = 0;
-uint32_t iter() { return tmcnt; }
-
 /* ------------------------------------------------------------------------------------------- *
  *  работа с часами
  * ------------------------------------------------------------------------------------------- */
@@ -149,8 +146,6 @@ void clockForceAdjust() {
 }
 
 void clockProcess() {
-    tmcnt++;
-    
     if ((adj >= TIME_ADJUST_INTERVAL) || !tmvalid) {
         auto &gps = gpsInf();
         if (GPS_VALID_TIME(gps)) {

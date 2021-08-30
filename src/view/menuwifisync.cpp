@@ -69,9 +69,9 @@ class ViewNetSync : public ViewBase {
             }
         }
         
-        void updTimeout(int32_t _timeout = 3000) {
+        void updTimeout(int16_t _timeout = 30) {
             if (_timeout > 0)
-                timeout = millis() + _timeout;
+                timeout = 1 + _timeout;
         }
         
         // изменение этапа
@@ -104,7 +104,7 @@ class ViewNetSync : public ViewBase {
         void fin(const char *_title) {
             srvStop();
             wifiStop();
-            next(_title, NS_EXIT, 5000);
+            next(_title, NS_EXIT, 50);
         }
         
         // завершение всего процесса синхронизации с мнгновенным переходом в главный экран
@@ -122,7 +122,7 @@ class ViewNetSync : public ViewBase {
                 fin(e);
                 return false;
             }
-            if (timeout < millis()) {
+            if (timeout == 1) {
                 ERR("timeout");
                 return false;
             }
@@ -145,7 +145,7 @@ class ViewNetSync : public ViewBase {
                 return;
             }
             
-            NEXT("wait hello", NS_SERVER_HELLO, 3000);
+            NEXT("wait hello", NS_SERVER_HELLO, 30);
         }
         
         // пересылка данных на сервер
@@ -194,11 +194,14 @@ class ViewNetSync : public ViewBase {
                 return;
             }
     
-            NEXT("Wait server confirm...", NS_SERVER_DATA_CONFIRM, 30000);
+            NEXT("Wait server confirm...", NS_SERVER_DATA_CONFIRM, 300);
         }
         
         // фоновый процессинг - обрабатываем этапы синхронизации
         void process() {
+            if (timeout > 1)
+                timeout --;
+            
             switch (state) {
                 case NS_WIFI_CONNECT:
                 // этап 1 - ожидаем соединения по вифи
@@ -221,7 +224,7 @@ class ViewNetSync : public ViewBase {
                         return;
                     }
     
-                    if (timeout < millis())
+                    if (timeout == 1)
                         ERR("wifi timeout");
                     return;
                 
@@ -279,7 +282,7 @@ class ViewNetSync : public ViewBase {
                             n++;
                             if (n > 16) {
                                 // Отправляем idle- чтобы на сервере не сработал таймаут передачи
-                                srvSend(0x12, htonl(timeout - millis()));
+                                srvSend(0x12, htonl(timeout * 100));
                                 n=0;
                             }
                             return;
@@ -330,7 +333,7 @@ class ViewNetSync : public ViewBase {
                                     ERR("WiFi clear Fail");
                                     return;
                                 }
-                                NEXT("Recv wifi pass", NS_RCV_WIFI_PASS, 3000);
+                                NEXT("Recv wifi pass", NS_RCV_WIFI_PASS, 30);
                                 return;
                                 
                             case 0x44: // veravail beg
@@ -338,11 +341,11 @@ class ViewNetSync : public ViewBase {
                                     ERR("Versions clear Fail");
                                     return;
                                 }
-                                NEXT("Recv FW-versions", NS_RCV_VER_AVAIL, 3000);
+                                NEXT("Recv FW-versions", NS_RCV_VER_AVAIL, 30);
                                 return;
                                 
                             case 0x47: // firmware update beg
-                                NEXT("FW-update", NS_RCV_FWUPDATE, 3000);
+                                NEXT("FW-update", NS_RCV_FWUPDATE, 30);
                                 return;
         
                             case 0x0f: // bye
@@ -383,7 +386,7 @@ class ViewNetSync : public ViewBase {
                                 case 0x43: // wifi end
                                     cks = wifiPassChkSum();
                                     cks = htonl(cks);
-                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 3000);
+                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 30);
                                     srvSend(0x4a, cks); // wifiok
                                     return;
             
@@ -420,7 +423,7 @@ class ViewNetSync : public ViewBase {
                                 case 0x46: // veravail end
                                     cks = verAvailChkSum();
                                     cks = htonl(cks);
-                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 3000);
+                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 30);
                                     srvSend(0x4b, cks); // veravail ok
                                     return;
             
@@ -498,7 +501,7 @@ class ViewNetSync : public ViewBase {
                                         return;
                                     }
                                     
-                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 3000);
+                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 30);
                                     srvSend(0x4c); // fwupd ok
                                     cfg.set().fwupdind = 0;
                                     fwupd = cfg.save();
@@ -515,7 +518,7 @@ class ViewNetSync : public ViewBase {
                 
                 case NS_EXIT:
                     // ожидание таймаута сообщения перед выходом из режима синхронизации
-                    if (timeout < millis())
+                    if (timeout == 1)
                         close();
                     if (fwupd)
                         ESP.restart();
@@ -578,7 +581,7 @@ class ViewNetSync : public ViewBase {
             if (state == NS_PROFILE_JOIN) {
                 strcpy_P(s, PSTR("Wait to JOIN"));
                 u8g2.drawStr(0, y, s);
-                snprintf_P(s, sizeof(s), PSTR("%d sec"), (timeout-millis()) / 1000);
+                snprintf_P(s, sizeof(s), PSTR("%d sec"), timeout / 10);
                 u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
                 y += 25;
                 u8g2.setFont(u8g2_font_fub20_tr);
@@ -628,7 +631,7 @@ class ViewNetSync : public ViewBase {
         
     private:
         char title[24], ssid[40], pass[40];
-        uint32_t timeout;
+        uint16_t timeout;
         uint16_t joinnum = 0;
         netsync_state_t state = NS_NONE;
         bool fwupd = false;
