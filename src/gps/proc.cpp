@@ -103,7 +103,7 @@ static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
     data.tm.h   = nav.hour;
     data.tm.m   = nav.min;
     data.tm.s   = nav.sec;
-    data.tm.cs  = nav.nano / 10000000;
+    data.tm.tick= nav.nano / 1000000 / TIME_TICK_INTERVAL;
     ageRecv.timeutc = 0;
 }
 static void gpsRecvSol(UbloxGpsProto &gps) {

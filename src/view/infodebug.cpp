@@ -214,7 +214,7 @@ class ViewInfoDebug : public ViewInfo {
                 
                 case 33:
                     PRNL("GPS time");
-                    PRNR("%d:%02d:%02d.%02d", gpsInf().tm.h, gpsInf().tm.m, gpsInf().tm.s, gpsInf().tm.cs);
+                    PRNR("%d:%02d:%02d.%d", gpsInf().tm.h, gpsInf().tm.m, gpsInf().tm.s, gpsInf().tm.tick);
                     break;
                 
                 case 34:
@@ -224,7 +224,7 @@ class ViewInfoDebug : public ViewInfo {
                 
                 case 35:
                     PRNL("Sys time");
-                    PRNR("%d:%02d:%02d.%02d", tmNow().h, tmNow().m, tmNow().s, tmNow().cs);
+                    PRNR("%d:%02d:%02d.%d", tmNow().h, tmNow().m, tmNow().s, tmNow().tick);
                     break;
                 
                 case 36:

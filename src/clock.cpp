@@ -60,14 +60,14 @@ tm_t tmNow(uint32_t earlerms) {
     DateTime dt1(tm.year, tm.mon, tm.day, tm.h, tm.m, tm.s);
     uint32_t ut = dt1.unixtime() - (earlerms / 1000);
     
-    int8_t cs = (earlerms % 1000) / 10;
-    cs = tm.cs - cs;
+    int8_t tick = (earlerms % 1000) / TIME_TICK_INTERVAL;
+    tick = tm.tick - tick;
     
-    ut += cs / 100;
-    cs = cs % 100;
-    if (cs < 0) {
+    ut += tick * TIME_TICK_INTERVAL / 1000;
+    tick = tick % (1000 / TIME_TICK_INTERVAL);
+    if (tick < 0) {
         ut --;
-        cs += 100;
+        tick += 100;
     }
     
     DateTime dt(ut);
@@ -78,7 +78,7 @@ tm_t tmNow(uint32_t earlerms) {
         h   : dt.hour(),
         m   : dt.minute(),
         s   : dt.second(),
-        cs  : cs
+        tick: tick
     };
 }
 
@@ -88,9 +88,9 @@ int32_t tmInterval(const tm_t &tmbeg, const tm_t &tmend) {
         dtend(tmend.year, tmend.mon, tmend.day, tmend.h, tmend.m, tmend.s);
     
     int32_t tint = (dtend.unixtime() - dtbeg.unixtime()) * 1000;
-    int8_t cs1 = tmend.cs - tmbeg.cs;
-    int16_t cs = cs1;
-    return tint + (cs*10);
+    int8_t tick1 = tmend.tick - tmbeg.tick;
+    int16_t tick = tick1;
+    return tint + (tick * TIME_TICK_INTERVAL);
 }
 
 int32_t tmIntervalToNow(const tm_t &tmbeg) {
@@ -102,7 +102,7 @@ int32_t tmIntervalToNow(const tm_t &tmbeg) {
 // при millis-часах - в clockProcess()
 #if HWVER >= 3
 static volatile bool istick = false;
-static void IRAM_ATTR  clockTick() { istick = true; tm.cs = 0; }
+static void IRAM_ATTR  clockTick() { istick = true; tm.tick = 0; }
 #endif
 static void clockUpd() {
     auto dt = rtc.now();
@@ -112,7 +112,7 @@ static void clockUpd() {
     tm.h    = dt.hour();
     tm.m    = dt.minute();
     tm.s    = dt.second();
-    tm.cs   = 0;
+    tm.tick = 0;
     
     tmvalid = dt.isValid()
 #if HWVER >= 3
@@ -174,6 +174,6 @@ void clockProcess() {
     else
 #endif
     {
-        tm.cs += TIME_TICK_INTERVAL / 10;
+        tm.tick ++;
     }
 }
