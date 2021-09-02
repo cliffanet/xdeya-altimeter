@@ -663,9 +663,9 @@ static const menu_el_t menuhwtest[] {
         .name = PSTR("GPS power restart"),
         .submenu = NULL,
         .enter = [] () {
-            digitalWrite(HWPOWER_PIN_GPS, HIGH);
+            gpsOff();
             delay(1000);
-            digitalWrite(HWPOWER_PIN_GPS, LOW);
+            gpsOn();
             menuFlashP(PSTR("GPS restarted"), 10);
         },
     },

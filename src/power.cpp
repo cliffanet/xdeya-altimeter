@@ -2,6 +2,7 @@
 #include "power.h"
 #include "log.h"
 #include "view/base.h"
+#include "gps/proc.h"
 
 #include <EEPROM.h>
 
@@ -13,10 +14,7 @@ static RTC_DATA_ATTR bool isoff = false;
 
 static void hwOff() {
     displayOff();
-#if HWVER > 1
-    digitalWrite(HWPOWER_PIN_GPS, HIGH);
-    pinMode(HWPOWER_PIN_GPS, OUTPUT);
-#endif
+    gpsOff();
     CONSOLE("hw off");
   /*
     First we configure the wake up source
@@ -45,12 +43,11 @@ static void hwOff() {
 }
 
 static void hwOn() {
+    gpsOff();
+    delay(200);
+    gpsOn();
+    delay(200);
 #if HWVER > 1
-    pinMode(HWPOWER_PIN_GPS, OUTPUT);
-    digitalWrite(HWPOWER_PIN_GPS, HIGH);
-    delay(200);
-    digitalWrite(HWPOWER_PIN_GPS, LOW);
-    delay(200);
     pinMode(HWPOWER_PIN_BATIN, INPUT);
 #endif
 #if HWVER >= 3

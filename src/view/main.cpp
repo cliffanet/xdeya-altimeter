@@ -6,13 +6,18 @@
 #include "../power.h" // pwrBattValue()
 #include "../clock.h"
 #include "../file/track.h"
+#include "../gps/proc.h"
 
 static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_GPSALT; // Текущая страница отображения, сохраняется при переходе в меню
 
 void ViewMain::btnLong(btn_code_t btn) {
     switch (btn) {
         case BTN_UP:
-            displayLightTgl();
+            //displayLightTgl();
+            if (gpsPwr())
+                gpsOff();
+            else
+                gpsOn(true);
             return;
 
         case BTN_SEL:

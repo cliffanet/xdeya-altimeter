@@ -261,6 +261,13 @@ class ViewMainGpsAlt : public ViewMain {
                 default: s[0] = '\0';
             }
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 30, s);
+
+            u8g2.setFont(u8g2_font_helvB08_tf);
+            if (gpsPwr())
+                sprintf_P(s, PSTR("s: %d"), gps.numSV);
+            else
+                strcpy_P(s, PSTR("gps off"));
+            u8g2.drawStr(0, u8g2.getDisplayHeight()-1, s);
     
             // Далее жпс данные
             if (!GPS_VALID(gps))
@@ -340,7 +347,10 @@ class ViewMainGpsAlt : public ViewMain {
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s)+6, 44, s);
 
             u8g2.setFont(u8g2_font_helvB08_tf);
-            sprintf_P(s, PSTR("s: %d"), gps.numSV);
+            if (gpsPwr())
+                sprintf_P(s, PSTR("s: %d"), gps.numSV);
+            else
+                strcpy_P(s, PSTR("gps off"));
             u8g2.drawStr(0, u8g2.getDisplayHeight()-1, s);
     
             // Далее жпс данные

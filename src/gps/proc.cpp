@@ -474,3 +474,32 @@ double gpsCourse(double lat1, double long1, double lat2, double long2) {
   
   return degrees(a2);
 }
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Питание на GPS-модуле
+ * ------------------------------------------------------------------------------------------- */
+static bool gpspwr = false;
+bool gpsPwr() {
+    return gpspwr;
+}
+void gpsOn(bool init) {
+#if HWVER > 1
+    digitalWrite(GPS_PIN_POWER, LOW);
+#endif
+    gpspwr = true;
+    
+    if (init) {
+        delay(200);
+        gpsInit();
+    }
+}
+void gpsOff() {
+#if HWVER > 1
+    pinMode(GPS_PIN_POWER, OUTPUT);
+    digitalWrite(GPS_PIN_POWER, HIGH);
+#endif
+    gpspwr = false;
+}
+
+

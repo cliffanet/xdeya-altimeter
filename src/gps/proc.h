@@ -8,6 +8,8 @@
 #include "../../def.h"
 #include "../clock.h"
 
+#define GPS_PIN_POWER     27
+
 #define _GPS_MPH_PER_KNOT 1.15077945
 #define _GPS_MPS_PER_KNOT 0.51444444
 #define _GPS_KMPH_PER_KNOT 1.852
@@ -70,5 +72,9 @@ bool gpsDirect();
 
 double gpsDistance(double lat1, double long1, double lat2, double long2);
 double gpsCourse(double lat1, double long1, double lat2, double long2);
+
+bool gpsPwr();
+void gpsOn(bool init = false);
+void gpsOff();
 
 #endif // _gps_H
