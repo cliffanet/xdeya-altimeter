@@ -141,9 +141,45 @@ void pwrModeUpd() {
     if (mode == m)
         return;
     
-    CONSOLE("pwrModeUpd: %d => %d", mode, m);
+    CONSOLE("[change] %d => %d", mode, m);
+    if ((mode > PWR_SLEEP) && (m <= PWR_SLEEP))
+        displayOff();
+    else
+    if ((mode <= PWR_SLEEP) && (m > PWR_SLEEP))
+        displayOn();
     
     mode = m;
+}
+
+void pwrRun(void (*run)()) {
+    uint64_t u = utm();
+    
+    if (run != NULL)
+        run();
+    
+    pwrModeUpd();
+    
+    switch (mode) {
+        case PWR_OFF:
+            pwrOff();
+            return;
+        
+        case PWR_SLEEP:
+        case PWR_PASSIVE:
+            u = utm_diff(u);
+            if (u < 99000) {
+                esp_sleep_enable_timer_wakeup(100000-u);
+                esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+                esp_light_sleep_start();
+            }
+            break;
+            
+        case PWR_ACTIVE:
+            u = utm_diff(u);
+            if (u < 99000)
+                delay((100000-u) / 1000);
+            break;
+    }
 }
 
 void pwrOff() {

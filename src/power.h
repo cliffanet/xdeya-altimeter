@@ -28,6 +28,7 @@ typedef enum {
 power_mode_t pwrMode();
 bool pwrInit();
 void pwrModeUpd();
+void pwrRun(void (*run)());
 
 void pwrOff();
 
