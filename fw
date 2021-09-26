@@ -252,6 +252,11 @@ sub argver {
     return ($hwver, $type, $port);
 }
 
+sub showtty {
+    my $port = shift();
+    system('(stty speed 115200 >/dev/null && cat) < '.$port);
+}
+
 #==========================================================
 
 sub compileall {
@@ -268,7 +273,9 @@ sub upload {
     my ($hwver, $type, $port) = argver('upload', @_);
     
     $hwver || return;
-    burn($hwver, $type, $port);
+    burn($hwver, $type, $port) || return;
+    showtty($port);
+    1;
 }
 
 sub compile {
@@ -285,7 +292,9 @@ sub compileupload {
     $hwver || return;
     
     build($hwver, $type) || return;
-    burn($hwver, $type, $port);
+    burn($hwver, $type, $port) || return;
+    showtty($port);
+    1;
 }
 
 ##==========================================================
