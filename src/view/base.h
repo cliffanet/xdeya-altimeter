@@ -118,6 +118,7 @@ class ViewBase {
 };
 
 void viewSet(ViewBase &v);
+bool viewIs(ViewBase &v);
 
 void viewInit();
 void viewProcess();

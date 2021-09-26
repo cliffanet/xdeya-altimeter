@@ -76,4 +76,6 @@ void menuFlashClear();
 
 void setViewMenu();
 
+bool menuIsWifi();
+
 #endif // _view_menu_H

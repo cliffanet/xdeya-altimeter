@@ -16,7 +16,18 @@
 #define HWPOWER_PIN_BATCHRG 12
 #endif
 
-bool pwrCheck();
+typedef enum {
+    PWR_OFF = 0,
+    PWR_SLEEP,
+    PWR_PASSIVE,
+    PWR_ACTIVE
+} power_mode_t;
+
+#define PWR_SLEEP_TIMEOUT   30000
+
+power_mode_t pwrMode();
+bool pwrInit();
+void pwrModeUpd();
 
 void pwrOff();
 

@@ -21,7 +21,7 @@ void setup() {
     Serial.begin(115200);
 #endif // FWVER_DEBUG
     
-    if (!pwrCheck())
+    if (!pwrInit())
         return;
     
     CONSOLE("Firmware " FWVER_FILENAME "; Build Date: " __DATE__);
@@ -49,6 +49,9 @@ void setup() {
 
 void loop() {
     uint32_t m = millis();
+    
+    pwrModeUpd();
+    
     clockProcess();
     gpsProcess();
     jmpProcess();
@@ -57,10 +60,10 @@ void loop() {
     
     uint32_t md = millis()-m;
     if (md < 100) {
-        //delay(100-md);
-        esp_sleep_enable_timer_wakeup((100-md) * 1000);
-        esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-        esp_light_sleep_start();
+        delay(100-md);
+        //esp_sleep_enable_timer_wakeup((100-md) * 1000);
+        //esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+        //esp_light_sleep_start();
     }
     
     m = millis();
@@ -69,9 +72,9 @@ void loop() {
     
     md = millis() - m;
     if (md < 100) {
-        //delay(100-md);
-        esp_sleep_enable_timer_wakeup((100-md) * 1000);
-        esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-        esp_light_sleep_start();
+        delay(100-md);
+        //esp_sleep_enable_timer_wakeup((100-md) * 1000);
+        //esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+        //esp_light_sleep_start();
     }
 }

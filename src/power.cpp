@@ -1,8 +1,12 @@
 
 #include "power.h"
 #include "log.h"
+#include "clock.h"
 #include "view/base.h"
+#include "view/menu.h"
 #include "gps/proc.h"
+#include "jump/proc.h"
+#include "file/track.h"
 
 #include <EEPROM.h>
 
@@ -10,7 +14,7 @@
 /* ------------------------------------------------------------------------------------------- *
  *  работа с eeprom
  * ------------------------------------------------------------------------------------------- */
-static RTC_DATA_ATTR bool isoff = false;
+static RTC_DATA_ATTR power_mode_t mode = PWR_ACTIVE;
 
 static void hwOff() {
     displayOff();
@@ -61,8 +65,11 @@ static void hwOn() {
  *  
  * ------------------------------------------------------------------------------------------- */
 
+power_mode_t pwrMode() {
+    return mode;
+}
 
-bool pwrCheck() {
+bool pwrInit() {
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
     switch(wakeup_reason) {
         case ESP_SLEEP_WAKEUP_EXT0 : CONSOLE("Wakeup caused by external signal using RTC_IO"); break;
@@ -75,12 +82,12 @@ bool pwrCheck() {
     
     if (wakeup_reason == 0) {
         // если была перезагрузка по питанию, то просто включаемся
-        isoff = false;
+        mode = PWR_ACTIVE;
         hwOn();
         return true;
     }
 
-    if (!isoff) {
+    if (mode > PWR_OFF) {
         // если при загрузке обнаружили, что текущее состояние - "вкл", то включаемся
         hwOn();
         return true;
@@ -93,8 +100,8 @@ bool pwrCheck() {
         if (n > 20) {
             // если кнопка нажата более 2 сек, 
             // сохраняем состояние как "вкл" и выходим с положительной проверкой
-            CONSOLE("pwrCheck on");
-            isoff = false;
+            CONSOLE("pwrInit on");
+            mode = PWR_ACTIVE;
             hwOn();
             return true;
         }
@@ -102,13 +109,45 @@ bool pwrCheck() {
         n++;
     }
 
-    CONSOLE("pwrCheck off");
+    CONSOLE("pwrInit off");
     hwOff();
     return false;
 }
 
+static power_mode_t pwrModeCalc() {
+    if (mode == PWR_OFF)
+        return PWR_OFF;
+    
+    if (altCalc().state() != ACST_GROUND)
+        return PWR_ACTIVE;
+    if (gpsPwr())
+        return PWR_ACTIVE;
+    if (menuIsWifi())
+        return PWR_ACTIVE;
+    
+    if (trkRunning())
+        return PWR_PASSIVE;
+    if (btnIdle() < PWR_SLEEP_TIMEOUT)
+        return PWR_PASSIVE;
+    
+    return PWR_SLEEP;
+}
+
+void pwrModeUpd() {
+    if (mode == PWR_OFF)
+        return;
+    
+    auto m = pwrModeCalc();
+    if (mode == m)
+        return;
+    
+    CONSOLE("pwrModeUpd: %d => %d", mode, m);
+    
+    mode = m;
+}
+
 void pwrOff() {
-    isoff = true;
+    mode = PWR_OFF;
     CONSOLE("pwr off");
     hwOff();
 }

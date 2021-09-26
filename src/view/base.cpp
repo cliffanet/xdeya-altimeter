@@ -12,6 +12,9 @@ static ViewBase *vCur = NULL;
 void viewSet(ViewBase &v) {
     vCur = &v;
 }
+bool viewIs(ViewBase &v) {
+    return vCur == &v;
+}
 
 
 
@@ -100,8 +103,8 @@ static volatile btn_t btnall[] = {
     { BUTTON_PIN_SEL,   BTN_SEL },
     { BUTTON_PIN_DOWN,  BTN_DOWN },
 };
-static volatile uint8_t _btnstate = 0;
-static volatile uint32_t _btnstatelast = 0;
+static volatile RTC_DATA_ATTR uint8_t _btnstate = 0;
+static volatile RTC_DATA_ATTR uint32_t _btnstatelast = 0;
 // this variable will be changed in the ISR (interrupt), and Read in main loop
 // static: says this variable is only visible to function in this file, its value will persist, it is a global variable
 // volatile: tells the compiler that this variables value must not be stored in a CPU register, it must exist

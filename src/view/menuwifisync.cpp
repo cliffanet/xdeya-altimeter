@@ -736,3 +736,7 @@ class ViewMenuWifiSync : public ViewMenu {
 
 static ViewMenuWifiSync vMenuWifiSync;
 ViewMenu *menuWifiSync() { return &vMenuWifiSync; }
+
+bool menuIsWifi() {
+    return viewIs(vMenuWifiSync) || viewIs(vNetSync);
+}
