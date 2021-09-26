@@ -99,9 +99,9 @@ void displayContrast(uint8_t val) {
  *  Обработчик кнопок
  * ------------------------------------------------------------------------------------------- */
 static volatile btn_t btnall[] = {
-    { BUTTON_PIN_UP,    BTN_UP },
-    { BUTTON_PIN_SEL,   BTN_SEL },
-    { BUTTON_PIN_DOWN,  BTN_DOWN },
+    { BUTTON_PIN_UP,    BTN_UP,     HIGH },
+    { BUTTON_PIN_SEL,   BTN_SEL,    HIGH },
+    { BUTTON_PIN_DOWN,  BTN_DOWN,   HIGH },
 };
 static volatile RTC_DATA_ATTR uint8_t _btnstate = 0;
 static volatile RTC_DATA_ATTR uint32_t _btnstatelast = 0;
@@ -155,7 +155,7 @@ void IRAM_ATTR btnChkState(volatile btn_t &b) {
     b.val = val;
     
     // текущее положение всех кнопок и их крайнее изменение
-    uint8_t bmask = 1 << (b.code-1);
+    uint8_t bmask = btnMask(b.code);
     uint8_t state = (_btnstate & ~bmask) | ((val == LOW ? 1 : 0) << (b.code-1));
     if (_btnstate != state) {
         _btnstate = state;
@@ -166,6 +166,25 @@ void IRAM_ATTR btnChkState0() { btnChkState(btnall[0]); }
 void IRAM_ATTR btnChkState1() { btnChkState(btnall[1]); }
 void IRAM_ATTR btnChkState2() { btnChkState(btnall[2]); }
 
+
+/* ------------------------------------------------------------------------------------------- *
+ *  отдельно выносим инициализацию кнопок, т.к. оно нужно при возвращении из deepsleep
+ * ------------------------------------------------------------------------------------------- */
+void btnInit() {
+    for (auto &b : btnall) {
+        pinMode(b.pin, INPUT_PULLUP);
+        /*
+        if (b.pin == BUTTON_PIN_SEL) {
+            // Если поисле включения питания мы всё ещё держим кнопку,
+            // дальше пока не работаем
+            while (digitalRead(BUTTON_GPIO_PWR) == LOW)
+                delay(100);
+        }
+        b.val = digitalRead(b.pin);
+        */
+        btnChkState(b);
+    }
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  время ненажатия ни на одну кнопку
@@ -228,16 +247,7 @@ void viewInit() {
     pinMode(LIGHT_PIN, OUTPUT);
     
     // кнопки
-    for (auto &b : btnall) {
-        pinMode(b.pin, INPUT_PULLUP);
-        if (b.pin == BUTTON_PIN_SEL) {
-            // Если поисле включения питания мы всё ещё держим кнопку,
-            // дальше пока не работаем
-            while (digitalRead(BUTTON_GPIO_PWR) == LOW)
-                delay(100);
-        }
-        b.val = digitalRead(b.pin);
-    }
+    btnInit();
     
     attachInterrupt(
         digitalPinToInterrupt(btnall[0].pin),

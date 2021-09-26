@@ -8,18 +8,10 @@
 #include "jump/proc.h"
 #include "file/track.h"
 
-#include <EEPROM.h>
 
-
-/* ------------------------------------------------------------------------------------------- *
- *  работа с eeprom
- * ------------------------------------------------------------------------------------------- */
 static RTC_DATA_ATTR power_mode_t mode = PWR_ACTIVE;
 
-static void hwOff() {
-    displayOff();
-    gpsOff();
-    CONSOLE("hw off");
+static void pwrDeepSleep(uint64_t timer = 0) {
   /*
     First we configure the wake up source
     We set our ESP32 to wake up for an external trigger.
@@ -34,16 +26,26 @@ static void hwOff() {
 
     //If you were to use ext1, you would use it like
     //esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
+    
+    if (timer > 0)
+        esp_sleep_enable_timer_wakeup(timer);
 
+    //Go to sleep now
+    CONSOLE("Going to deep sleep now");
+    esp_deep_sleep_start();
+    CONSOLE("This will never be printed");
+}
+
+static void hwOff() {
+    displayOff();
+    gpsOff();
+    CONSOLE("hw off");
 
     // перед тем, как уйти в сон окончательно, дождёмся отпускания кнопки питания
     while (digitalRead(BUTTON_GPIO_PWR) == LOW)
         delay(100);
-
-    //Go to sleep now
-    CONSOLE("Going to sleep now");
-    esp_deep_sleep_start();
-    CONSOLE("This will never be printed");
+    
+    pwrDeepSleep();
 }
 
 static void hwOn() {
@@ -86,13 +88,33 @@ bool pwrInit() {
         hwOn();
         return true;
     }
-
-    if (mode > PWR_OFF) {
-        // если при загрузке обнаружили, что текущее состояние - "вкл", то включаемся
-        hwOn();
-        return true;
-    }
     
+    switch (mode) {
+        case PWR_OFF:
+            {   // при состоянии "выкл" проверяем состояние кнопок, надо удержать 4 сек кнопку 
+                btnInit();
+                uint8_t bm = 0;
+                uint32_t tm = btnPressed(bm);
+                CONSOLE("btn [%d] pressed %d ms", bm, tm);
+                if (bm == btnMask(BTN_SEL)) {
+                    if (tm > 4000) {
+                        CONSOLE("pwrInit on");
+                        mode = PWR_ACTIVE;
+                        hwOn();
+                        return true;
+                    }
+                    else
+                    pwrDeepSleep(1000000);
+                }
+            }
+            break;
+        
+        default:
+            // если при загрузке обнаружили, что текущее состояние - "вкл", то включаемся
+            hwOn();
+            return true;
+    }
+    /*
     pinMode(BUTTON_GPIO_PWR, INPUT_PULLUP);
     int n = 0;
     while (digitalRead(BUTTON_GPIO_PWR) == LOW) {
@@ -108,9 +130,11 @@ bool pwrInit() {
         delay(100);
         n++;
     }
+    */
 
     CONSOLE("pwrInit off");
-    hwOff();
+    //hwOff();
+    pwrDeepSleep();
     return false;
 }
 

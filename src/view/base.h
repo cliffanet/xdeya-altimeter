@@ -87,8 +87,14 @@ typedef struct {
 #define BTN_PUSHED_SIMPLE   0x01
 #define BTN_PUSHED_LONG     0x02
 
+// отдельно выносим инициализацию кнопок,
+// т.к. оно нужно при возвращении из deepsleep
+void btnInit();
+
 // время ненажатия ни на одну кнопку
 uint32_t btnIdle();
+// получение маски из кода кнопки, используется в btnPressed
+#define btnMask(bcode)      (1 << (bcode-1))
 // время зажатой одной или более кнопок
 uint32_t btnPressed(uint8_t &btn);
 // нажата ли сейчас кнопка
