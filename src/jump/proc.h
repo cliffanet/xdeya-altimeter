@@ -102,6 +102,8 @@ bool jmpPreLogNext(uint16_t &cursor, log_item_t *li = NULL);
 
 uint8_t jmpState();
 
+bool jmpTakeoffCheck();
+
 void jmpInit();
 void jmpProcess();
 void jmpReset();

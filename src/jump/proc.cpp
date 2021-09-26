@@ -199,6 +199,50 @@ static uint8_t state = 0;
 uint8_t jmpState() { return state; }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Текущее давление "у земли", нужно для отслеживания начала подъёма в режиме "сон"
+ * ------------------------------------------------------------------------------------------- */
+static RTC_DATA_ATTR float _pressgnd = 101325, _altlast = 0;
+static RTC_DATA_ATTR int8_t _toffcnt = 0;
+bool jmpTakeoffCheck() {
+    jmpInit();
+    
+    float press = bmp.readPressure();
+    float alt = press2alt(_pressgnd, press);
+    CONSOLE("_pressgnd: %.2f, press: %.2f, alt: %.2f, _altlast: %.2f, _toffcnt: %d", _pressgnd, press, alt, _altlast, _toffcnt);
+    
+    if (alt > 100) {
+        ac.gndset(press);
+        return true;
+    }
+    if (alt > (_altlast + 0.5)) {
+        if (_toffcnt < 0)
+            _toffcnt = 0;
+        _toffcnt ++;
+        if (_toffcnt >= 10) {
+            CONSOLE("is toff");
+            ac.gndset(press);
+            return true;
+        }
+        else
+            _toffcnt = 0;
+    }
+    else {
+        if (_toffcnt > 0)
+            _toffcnt --;
+        _toffcnt --;
+        if (_toffcnt <= -10) {
+            CONSOLE("gnd reset");
+            _pressgnd = press;
+            _toffcnt = 0;
+        }
+    }
+    
+    _altlast = alt;
+    
+    return false;
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  Инициализация
  * ------------------------------------------------------------------------------------------- */
 void jmpInit() {
@@ -215,6 +259,9 @@ void jmpProcess() {
     uint32_t interval = utm_diff32(ut, ut);
     ac.tick(bmp.readPressure(), interval / 1000);
     jmpPreLogAdd(interval / 1000);
+    _pressgnd = ac.pressgnd();
+    _altlast = ac.alt();
+    _toffcnt = 0;
     
     // Автокорректировка нуля
     if (cfg.d().gndauto &&

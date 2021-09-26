@@ -169,6 +169,19 @@ void AltCalc::gndreset() {
     dcalc();
 }
 
+void AltCalc::gndset(float press) {
+    _pressgnd = press;
+    
+    if (_state == ACST_INIT) {
+        for (auto &d: _data) { // забиваем весь массив текущим значением
+            d.press = press;
+            d.interval = 100;
+            d.alt = 0;
+        }
+        _state = ACST_GROUND;
+    }
+}
+
 int8_t AltCalc::i2i(int8_t i) {
     if (i < 0) {
         i += AC_DATA_COUNT;

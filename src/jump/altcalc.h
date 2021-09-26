@@ -24,6 +24,8 @@
 // то он будет удерживаться таким, пока скорость снижения выше этой
 #define AC_SPEED_FREEFALL_O   20
 
+float press2alt(float pressgnd, float pressure);
+
 // states
 typedef enum {
     ACST_INIT = 0,
@@ -99,6 +101,7 @@ class AltCalc
         ac_state_t stateupdate();
         // сбрасывает "ноль" высоты в текущие показания, а так же обнуляет все состояния
         void gndreset();
+        void gndset(float press);
   
     private:
         float _pressgnd = 101325;

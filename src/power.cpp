@@ -108,6 +108,25 @@ bool pwrInit() {
                 }
             }
             break;
+            
+        case PWR_SLEEP:
+            if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
+                btnInit();
+                CONSOLE("pwrInit resume to passive");
+                mode = PWR_PASSIVE;
+                hwOn();
+                return true;
+            }
+            else
+            if (jmpTakeoffCheck()) {
+                mode = PWR_PASSIVE;
+                hwOn();
+                return true;
+            }
+            else {
+                pwrDeepSleep(1000000);
+                return false;
+            }
         
         default:
             // если при загрузке обнаружили, что текущее состояние - "вкл", то включаемся
@@ -189,6 +208,9 @@ void pwrRun(void (*run)()) {
             return;
         
         case PWR_SLEEP:
+            pwrDeepSleep(1000000);
+            break;
+            
         case PWR_PASSIVE:
             u = utm_diff(u);
             if (u < 99000) {
