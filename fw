@@ -62,6 +62,7 @@ my %cmd = (
     upload          => \&upload,
     compile         => \&compile,
     compileupload   => \&compileupload,
+    showport        => \&showport,
 );
     
     my $cmd = shift @ARGV;
@@ -212,26 +213,32 @@ sub print_argver_usage {
     
     my $hwver = join ', ', @hwver;
     my $type = join '|', map { $_->{name} } grep { $_->{name} } @type;
+    my $hwvertype = '';
+    $hwvertype = " [hwver] [$type]" if $cmd ne 'showport';
     my $port = '';
-    $port = ' <port>' if ($cmd eq 'upload') || ($cmd eq 'compileupload');
+    $port = ' <port>' if ($cmd eq 'upload') || ($cmd eq 'compileupload') || ($cmd eq 'showport');
     
-    print "Usage:\n    fw $cmd [hwver] [$type]$port\n      <hwver>  - number: $hwver\n"
+    print "Usage:\n    fw $cmd$hwvertype$port\n";
+    print "      <hwver>  - number: $hwver\n" if $cmd ne 'showport';
 }
 
 sub argver {
     my $cmd = shift() || return;
     
-    my ($hwver) = reverse @hwver;
-    $hwver = int(shift()) if $_[0] && ($_[0] =~ /^\d+$/);
+    my ($hwver, $type, $port);
     
-    my ($type) = @type;
-    if ($_[0] && (my ($t) = grep { $_->{name} eq $_[0] } @type)) {
-        shift();
-        $type = $t;
+    if ($cmd ne 'showport') {
+        ($hwver) = reverse @hwver;
+        $hwver = int(shift()) if $_[0] && ($_[0] =~ /^\d+$/);
+    
+        ($type) = @type;
+        if ($_[0] && (my ($t) = grep { $_->{name} eq $_[0] } @type)) {
+            shift();
+            $type = $t;
+        }
     }
     
-    my $port;
-    if (($cmd eq 'upload') || ($cmd eq 'compileupload')) {
+    if (($cmd eq 'upload') || ($cmd eq 'compileupload') || ($cmd eq 'showport')) {
         if (!@_) {
             print "!!! undefined port\n";
             print_argver_usage($cmd);
@@ -253,7 +260,7 @@ sub argver {
 }
 
 sub showtty {
-    my $port = shift();
+    my $port = shift() || return;
     system('(stty speed 115200 >/dev/null && cat) < '.$port);
 }
 
@@ -274,7 +281,7 @@ sub upload {
     
     $hwver || return;
     burn($hwver, $type, $port) || return;
-    showtty($port);
+    showtty($port) || return;
     1;
 }
 
@@ -293,7 +300,14 @@ sub compileupload {
     
     build($hwver, $type) || return;
     burn($hwver, $type, $port) || return;
-    showtty($port);
+    showtty($port) || return;
+    1;
+}
+
+sub showport {
+    my ($hwver, $type, $port) = argver('showport', @_);
+
+    showtty($port) || return;
     1;
 }
 
