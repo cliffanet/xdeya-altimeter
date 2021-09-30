@@ -11,7 +11,8 @@
 
 static RTC_DATA_ATTR power_mode_t mode = PWR_ACTIVE;
 
-static void pwrDeepSleep(uint64_t timer = 0) {
+// Уход в сон без таймера - pwroff
+static void pwrDeepSleep() {
   /*
     First we configure the wake up source
     We set our ESP32 to wake up for an external trigger.
@@ -26,6 +27,16 @@ static void pwrDeepSleep(uint64_t timer = 0) {
 
     //If you were to use ext1, you would use it like
     //esp_sleep_enable_ext1_wakeup(BUTTON_PIN_BITMASK,ESP_EXT1_WAKEUP_ANY_HIGH);
+
+    //Go to sleep now
+    CONSOLE("Going to deep sleep now");
+    esp_deep_sleep_start();
+    CONSOLE("This will never be printed");
+}
+
+// Уход в сон с таймером - sleep
+static void pwrDeepSleep(uint64_t timer) {
+    esp_sleep_enable_ext0_wakeup(BUTTON_GPIO_PWR, LOW); //1 = High, 0 = Low
     
     if (timer > 0)
         esp_sleep_enable_timer_wakeup(timer);

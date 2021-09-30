@@ -1,5 +1,6 @@
 
 #include "base.h"
+#include "logo.h"
 #include "../cfg/main.h"
 #include "../jump/proc.h"
 #include "../clock.h"
@@ -233,16 +234,11 @@ void viewInit() {
     u8g2.begin();
     displayOn();
     
-    if (pwrMode() == PWR_SLEEP) {
+    if (pwrMode() == PWR_SLEEP)
         setViewMain();
-        displayUpdate();
-    }
-    else {
-        u8g2.setFont(u8g2_font_helvB10_tr);  
-        do {
-            u8g2.drawStr(0,24,"Init...");
-        } while( u8g2.nextPage() );
-    }
+    else
+        setViewLogo();
+    displayUpdate();
     
     pinMode(LIGHT_PIN, OUTPUT);
     

@@ -121,7 +121,6 @@ bool cfgLoad(bool apply) {
         ok = false;
     if (apply) {
         displayContrast(cfg.d().contrast);
-        setViewMain(cfg.d().dsplpwron);
     }
     return ok;
 }
