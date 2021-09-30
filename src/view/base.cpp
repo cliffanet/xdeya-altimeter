@@ -3,6 +3,7 @@
 #include "../cfg/main.h"
 #include "../jump/proc.h"
 #include "../clock.h"
+#include "../power.h"
 
 /* ------------------------------------------------------------------------------------------- *
  *  Текущий View
@@ -37,7 +38,8 @@ static U8G2_UC1701_MINI12864_F_4W_HW_SPI u8g2(U8G2_R2, /* cs=*/ 26, /* dc=*/ 33,
 void displayUpdate() {
     static auto vPrev = vCur;
     if (vPrev != vCur) {
-        u8g2.clearDisplay();
+        if (vPrev != NULL)
+            u8g2.clearDisplay();
         vPrev = vCur;
     }
     
@@ -173,15 +175,6 @@ void IRAM_ATTR btnChkState2() { btnChkState(btnall[2]); }
 void btnInit() {
     for (auto &b : btnall) {
         pinMode(b.pin, INPUT_PULLUP);
-        /*
-        if (b.pin == BUTTON_PIN_SEL) {
-            // Если поисле включения питания мы всё ещё держим кнопку,
-            // дальше пока не работаем
-            while (digitalRead(BUTTON_GPIO_PWR) == LOW)
-                delay(100);
-        }
-        b.val = digitalRead(b.pin);
-        */
         btnChkState(b);
     }
 }
@@ -239,15 +232,44 @@ void viewInit() {
     // дисплей
     u8g2.begin();
     displayOn();
-    u8g2.setFont(u8g2_font_helvB10_tr);  
-    do {
-        u8g2.drawStr(0,24,"Init...");
-    } while( u8g2.nextPage() );
+    
+    if (pwrMode() == PWR_SLEEP) {
+        setViewMain();
+        displayUpdate();
+    }
+    else {
+        u8g2.setFont(u8g2_font_helvB10_tr);  
+        do {
+            u8g2.drawStr(0,24,"Init...");
+        } while( u8g2.nextPage() );
+    }
     
     pinMode(LIGHT_PIN, OUTPUT);
     
     // кнопки
     btnInit();
+    // Ожидаем отпускания кнопки, чтобы не отработали события
+    while (1) {
+        uint8_t bmask = 0;
+        for (auto &b : btnall) {
+            if (digitalRead(b.pin) != LOW)
+                continue;
+            bmask |= btnMask(b.code);
+        }
+        if (bmask == 0)
+            break;
+        delay(100);
+    }
+    // Сбрасываем все текущие состояния, которые могли появиться
+    // при выходе из режимов pwroff/sleep
+    for (auto &b : btnall) {
+        b.val = HIGH;
+        b.pushed = 0;
+        b.evsmpl = false;
+        b.evlong = false;
+    }
+    _btnstate = 0;
+    _btnstatelast = utm() / 1000;
     
     attachInterrupt(
         digitalPinToInterrupt(btnall[0].pin),

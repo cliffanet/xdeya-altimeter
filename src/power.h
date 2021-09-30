@@ -30,6 +30,7 @@ bool pwrInit();
 void pwrModeUpd();
 void pwrRun(void (*run)());
 
+void pwrSleep();
 void pwrOff();
 
 #if HWVER > 1

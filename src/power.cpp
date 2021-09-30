@@ -36,33 +36,6 @@ static void pwrDeepSleep(uint64_t timer = 0) {
     CONSOLE("This will never be printed");
 }
 
-static void hwOff() {
-    displayOff();
-    gpsOff();
-    CONSOLE("hw off");
-
-    // перед тем, как уйти в сон окончательно, дождёмся отпускания кнопки питания
-    while (digitalRead(BUTTON_GPIO_PWR) == LOW)
-        delay(100);
-    
-    pwrDeepSleep();
-}
-
-static void hwOn() {
-    gpsOff();
-    delay(200);
-    gpsOn();
-    delay(200);
-#if HWVER > 1
-    pinMode(HWPOWER_PIN_BATIN, INPUT);
-#endif
-#if HWVER >= 3
-    pinMode(HWPOWER_PIN_BATCHRG, INPUT_PULLUP);
-#endif
-    //displayOn();
-    CONSOLE("hw on");
-}
-
 /* ------------------------------------------------------------------------------------------- *
  *  
  * ------------------------------------------------------------------------------------------- */
@@ -82,12 +55,9 @@ bool pwrInit() {
         default : CONSOLE("Wakeup was not caused by deep sleep: %d", wakeup_reason); break;
     }
     
-    if (wakeup_reason == 0) {
+    if (wakeup_reason == 0)
         // если была перезагрузка по питанию, то просто включаемся
-        mode = PWR_ACTIVE;
-        hwOn();
         return true;
-    }
     
     switch (mode) {
         case PWR_OFF:
@@ -99,12 +69,10 @@ bool pwrInit() {
                 if (bm == btnMask(BTN_SEL)) {
                     if (tm > 4000) {
                         CONSOLE("pwrInit on");
-                        mode = PWR_ACTIVE;
-                        hwOn();
                         return true;
                     }
                     else
-                    pwrDeepSleep(1000000);
+                        pwrDeepSleep(1000000);
                 }
             }
             break;
@@ -112,55 +80,31 @@ bool pwrInit() {
         case PWR_SLEEP:
             if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT0) {
                 btnInit();
-                CONSOLE("pwrInit resume to passive");
-                mode = PWR_PASSIVE;
-                hwOn();
+                CONSOLE("pwrInit resume from sleep by btn");
                 return true;
             }
             else
             if (jmpTakeoffCheck()) {
-                mode = PWR_PASSIVE;
-                hwOn();
+                CONSOLE("pwrInit resume from sleep by Takeoff");
                 return true;
             }
-            else {
+            else
                 pwrDeepSleep(1000000);
-                return false;
-            }
+            
+            return false;
         
         default:
             // если при загрузке обнаружили, что текущее состояние - "вкл", то включаемся
-            hwOn();
             return true;
     }
-    /*
-    pinMode(BUTTON_GPIO_PWR, INPUT_PULLUP);
-    int n = 0;
-    while (digitalRead(BUTTON_GPIO_PWR) == LOW) {
-        CONSOLE("Btn power is pushed: %d", n);
-        if (n > 20) {
-            // если кнопка нажата более 2 сек, 
-            // сохраняем состояние как "вкл" и выходим с положительной проверкой
-            CONSOLE("pwrInit on");
-            mode = PWR_ACTIVE;
-            hwOn();
-            return true;
-        }
-        delay(100);
-        n++;
-    }
-    */
 
     CONSOLE("pwrInit off");
-    //hwOff();
+    
     pwrDeepSleep();
     return false;
 }
 
 static power_mode_t pwrModeCalc() {
-    if (mode == PWR_OFF)
-        return PWR_OFF;
-    
     if (altCalc().state() != ACST_GROUND)
         return PWR_ACTIVE;
     if (gpsPwr())
@@ -177,19 +121,11 @@ static power_mode_t pwrModeCalc() {
 }
 
 void pwrModeUpd() {
-    if (mode == PWR_OFF)
-        return;
-    
     auto m = pwrModeCalc();
     if (mode == m)
         return;
     
     CONSOLE("[change] %d => %d", mode, m);
-    if ((mode > PWR_SLEEP) && (m <= PWR_SLEEP))
-        displayOff();
-    else
-    if ((mode <= PWR_SLEEP) && (m > PWR_SLEEP))
-        displayOn();
     
     mode = m;
 }
@@ -208,7 +144,7 @@ void pwrRun(void (*run)()) {
             return;
         
         case PWR_SLEEP:
-            pwrDeepSleep(1000000);
+            pwrSleep();
             break;
             
         case PWR_PASSIVE:
@@ -228,10 +164,28 @@ void pwrRun(void (*run)()) {
     }
 }
 
+void pwrSleep() {
+    mode = PWR_SLEEP;
+    
+    displayOff();
+    gpsOff(false);
+    
+    CONSOLE("pwr sleep");
+    pwrDeepSleep(1000000);
+}
+
 void pwrOff() {
     mode = PWR_OFF;
+    
+    displayOff();
+    gpsOff(false);
+    
+    // перед тем, как уйти в сон окончательно, дождёмся отпускания кнопки питания
+    while (digitalRead(BUTTON_GPIO_PWR) == LOW)
+        delay(100);
+    
     CONSOLE("pwr off");
-    hwOff();
+    pwrDeepSleep();
 }
 
 #if HWVER > 1

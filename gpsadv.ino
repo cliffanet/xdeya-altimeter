@@ -26,22 +26,33 @@ void setup() {
     
     CONSOLE("Firmware " FWVER_FILENAME "; Build Date: " __DATE__);
 
-    // часы
-    clockInit();
-
     // инициируем view
     viewInit();
+    
+    // Инициализация сервисных пинов
+#if HWVER > 1
+    pinMode(HWPOWER_PIN_BATIN, INPUT);
+#endif
+#if HWVER >= 3
+    pinMode(HWPOWER_PIN_BATCHRG, INPUT_PULLUP);
+#endif
+
+    // часы
+    clockInit();
     
     // инициализируем высотомер
     jmpInit();
 
     // инициируем gps
-    gpsInit();
+    gpsRestore();
 
     // загружаем сохранённый конфиг
     if(!SPIFFS.begin(true))
         CONSOLE("SPIFFS Mount Failed");
-    cfgLoad(true);
+    
+    // Загружаем конфиги, но apply делаем только при холодном старте (не из sleep)    
+    cfgLoad(pwrMode() != PWR_SLEEP);
+    
     CONSOLE("begin");
 }
 

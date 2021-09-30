@@ -75,6 +75,7 @@ double gpsCourse(double lat1, double long1, double lat2, double long2);
 
 bool gpsPwr();
 void gpsOn(bool init = false);
-void gpsOff();
+void gpsOff(bool save = true);
+void gpsRestore();
 
 #endif // _gps_H

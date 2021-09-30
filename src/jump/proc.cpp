@@ -212,6 +212,7 @@ bool jmpTakeoffCheck() {
     
     if (alt > 100) {
         ac.gndset(press);
+        CONSOLE("alt: %0.0f", alt);
         return true;
     }
     if (alt > (_altlast + 0.5)) {
@@ -220,7 +221,6 @@ bool jmpTakeoffCheck() {
         _toffcnt ++;
         if (_toffcnt >= 10) {
             CONSOLE("is toff");
-            ac.gndset(press);
             return true;
         }
         else
@@ -249,6 +249,11 @@ void jmpInit() {
     if (!bmp.begin(BMP280_ADDRESS_ALT)) {   
         CONSOLE("Could not find a valid BMP280 sensor, check wiring!");
     }
+    // В режиме sleep у нас постоянно мониторится "давление земли"
+    // Используем его при выходе из сна, 
+    // особенно, если выход из сна по причине начала подъёма
+    if (pwrMode() == PWR_SLEEP)
+        ac.gndset(_pressgnd);
 }
 
 /* ------------------------------------------------------------------------------------------- *

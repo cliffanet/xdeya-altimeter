@@ -479,13 +479,14 @@ double gpsCourse(double lat1, double long1, double lat2, double long2) {
 /* ------------------------------------------------------------------------------------------- *
  *  Питание на GPS-модуле
  * ------------------------------------------------------------------------------------------- */
-static bool gpspwr = false;
+static RTC_DATA_ATTR bool gpspwr = true;
 bool gpsPwr() {
     return gpspwr;
 }
 void gpsOn(bool init) {
 #if HWVER > 1
     digitalWrite(GPS_PIN_POWER, LOW);
+    pinMode(GPS_PIN_POWER, OUTPUT);
 #endif
     gpspwr = true;
     
@@ -494,12 +495,19 @@ void gpsOn(bool init) {
         gpsInit();
     }
 }
-void gpsOff() {
+void gpsOff(bool save) {
 #if HWVER > 1
-    pinMode(GPS_PIN_POWER, OUTPUT);
     digitalWrite(GPS_PIN_POWER, HIGH);
+    pinMode(GPS_PIN_POWER, OUTPUT);
 #endif
-    gpspwr = false;
+    if (save)
+        gpspwr = false;
+}
+void gpsRestore() {
+    if (gpspwr)
+        gpsOn(digitalRead(GPS_PIN_POWER) != LOW);
+    else
+        gpsOff();
 }
 
 
