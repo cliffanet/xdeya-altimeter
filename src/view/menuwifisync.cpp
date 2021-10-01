@@ -653,6 +653,13 @@ class ViewMenuWifiSync : public ViewMenu {
     public:
         void restore() {
             CONSOLE("Wifi init begin");
+            // Сначала прорисуем на экране, что мы начали сканировать
+            _isinit = true;
+            setSize(2);
+            ViewMenu::restore();
+            displayUpdate();
+            
+            // А теперь начнём сканировать
             CONSOLE("wifi power 1: %d", wifiPower());
             if (!wifiStart())
                 return;
@@ -663,7 +670,10 @@ class ViewMenuWifiSync : public ViewMenu {
             CONSOLE("scan: %d", n);
             setSize(n);
             wifiStop();
+
+            _isinit = false;
             
+            // И снова обновим список отображаемых пунктов
             ViewMenu::restore();
         }
         
@@ -673,6 +683,21 @@ class ViewMenuWifiSync : public ViewMenu {
         }
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
+            if (_isinit) {
+                switch (i) {
+                    case 0:
+                        str.name[0] = '\0';
+                        str.val[0] = '\0';
+                        return;
+                        
+                    case 1:
+                        strcpy_P(str.name, PSTR("... searching ..."));
+                        str.val[0] = '\0';
+                        return;
+                }
+                return;
+            }
+            
             CONSOLE("ViewMenuWifiSync::getStr: %d (sz=%d)", i, wifiall.size());
             auto n = wifiScanInfo(i);
             if (n == NULL) {
@@ -732,6 +757,7 @@ class ViewMenuWifiSync : public ViewMenu {
         
     private:
         std::vector<wifi_t> wifiall;
+        bool _isinit = true;
 };
 
 static ViewMenuWifiSync vMenuWifiSync;
