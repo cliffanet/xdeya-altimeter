@@ -11,6 +11,8 @@
 #include <esp_event_loop.h>
 #include "freertos/event_groups.h"
 #include "driver/adc.h";
+#include "soc/soc.h" // brownout detector
+#include "soc/rtc_cntl_reg.h"
 
 #include "esp_log.h"
 
@@ -119,6 +121,8 @@ bool wifiStart() {
     //esp_phy_init_data_t* init_data
     //memcpy(init_data, phy_init_data, sizeof(esp_phy_init_data_t));
     
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+    
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     err = esp_wifi_init(&cfg);
     if (err != ESP_OK) {
@@ -149,6 +153,8 @@ bool wifiStart() {
         clockIntEnable();
         return false;
     }
+    
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
     
     CONSOLE("wifi started");
     
