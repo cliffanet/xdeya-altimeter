@@ -18,6 +18,7 @@
 
 // принудительная перерисовка экрана
 void displayUpdate();
+void displayDraw(void (*draw)(U8G2 &u8g2), bool clear = true, bool init = false);
 
 /* Управление дисплеем */
 void displayOn();

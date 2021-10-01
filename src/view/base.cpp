@@ -53,6 +53,24 @@ void displayUpdate() {
     }  while( u8g2.nextPage() );
 }
 
+void displayDraw(void (*draw)(U8G2 &u8g2), bool clear, bool init) {
+    if (init) {
+        u8g2.begin();
+        displayOn();
+    }
+    
+    if (clear)
+        u8g2.clearDisplay();
+    
+    if (draw == NULL)
+        return;
+     
+    u8g2.firstPage();
+    do {
+        draw(u8g2);
+    }  while( u8g2.nextPage() );
+}
+
 /* ------------------------------------------------------------------------------------------- *
  * Управление дисплеем: вкл/выкл самого дисплея и его подсветки, изменение контрастности
  * ------------------------------------------------------------------------------------------- */

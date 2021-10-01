@@ -63,6 +63,8 @@ power_mode_t pwrMode() {
 }
 
 bool pwrInit() {
+    pwrBattChk(true);
+    
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
     switch(wakeup_reason) {
         case ESP_SLEEP_WAKEUP_EXT0 : CONSOLE("Wakeup caused by external signal using RTC_IO"); break;
@@ -207,6 +209,33 @@ void pwrOff() {
 }
 
 #if HWVER > 1
+bool pwrBattChk(bool init, uint16_t val) {
+    if (init)
+        pinMode(HWPOWER_PIN_BATIN, INPUT);
+    
+    if (pwrBattValue() > val)
+        return true;
+    
+    CONSOLE("battery low");
+    
+    auto draw = [](U8G2 &u8g2) {
+        u8g2.setFont(u8g2_font_open_iconic_embedded_8x_t);
+        u8g2.drawGlyph((u8g2.getDisplayWidth()-56)/2, u8g2.getDisplayHeight()/2 + 56/2, 0x40);
+    };
+    displayDraw(draw, true, init);
+    delay(500);
+    displayDraw(NULL, true);
+    delay(500);
+    displayDraw(draw, true);
+    delay(2000);
+    
+    CONSOLE("pwr off");
+    displayOff();
+    gpsOff(false);
+    pwrDeepSleep();
+    
+    return false;
+}
 uint16_t pwrBattValue() {
     return analogRead(HWPOWER_PIN_BATIN);
 }

@@ -30,9 +30,6 @@ void setup() {
     viewInit();
     
     // Инициализация сервисных пинов
-#if HWVER > 1
-    pinMode(HWPOWER_PIN_BATIN, INPUT);
-#endif
 #if HWVER >= 3
     pinMode(HWPOWER_PIN_BATCHRG, INPUT_PULLUP);
 #endif
@@ -60,6 +57,7 @@ void setup() {
 
 void loop() {
     pwrRun([]() {
+        pwrBattChk();
         clockProcess();
         gpsProcess();
         jmpProcess();

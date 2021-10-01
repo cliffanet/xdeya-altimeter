@@ -41,8 +41,13 @@ int32_t tmInterval(const tm_t &tmbeg, const tm_t &tmend);
 int32_t tmIntervalToNow(const tm_t &tm);
 
 void clockInit();
+#if HWVER >= 3
 void clockIntEnable();
 void clockIntDisable();
+#else
+#define clockIntEnable
+#define clockIntDisable
+#endif
 void clockForceAdjust();
 void clockProcess();
 

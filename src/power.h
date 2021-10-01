@@ -34,7 +34,10 @@ void pwrSleep();
 void pwrOff();
 
 #if HWVER > 1
+bool pwrBattChk(bool init = false, uint16_t val = 2730);
 uint16_t pwrBattValue();
+#else
+#define pwrBattChk(...)
 #endif
 #if HWVER >= 3
 bool pwrBattCharge();
