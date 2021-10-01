@@ -4,6 +4,7 @@
 
 #include "wifi.h"
 #include "../log.h"
+#include "../clock.h"
 
 #include <esp_err.h>
 #include <esp_wifi.h>
@@ -96,6 +97,8 @@ bool wifiStart() {
         sta_status = xEventGroupCreate();
     setStatus(WIFI_STA_NULL);
     
+    clockIntDisable();
+    
     // esp32-sdk не умеет устанавливать максимальную мощность wifi
     // до выполнения esp_wifi_start();
     // В документации к esp_wifi_set_max_tx_power() сказано:
@@ -117,6 +120,7 @@ bool wifiStart() {
     err = esp_wifi_init(&cfg);
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_init: %d", err);
+        clockIntEnable();
         return false;
     }
     
@@ -125,18 +129,21 @@ bool wifiStart() {
     err = esp_wifi_set_mode( WIFI_MODE_STA);
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_set_mode: %d", err);
+        clockIntEnable();
         return false;
     }
     
     err = esp_wifi_start();
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_start: %d", err);
+        clockIntEnable();
         return false;
     }
     
     err = esp_wifi_set_max_tx_power(60);
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_set_max_tx_power: %d", err);
+        clockIntEnable();
         return false;
     }
     
@@ -152,6 +159,7 @@ bool wifiStop() {
         err = esp_wifi_disconnect();
         if (err != ESP_OK) {
             CONSOLE("esp_wifi_disconnect: %d", err);
+            clockIntEnable();
             return false;
         }
     }
@@ -159,12 +167,14 @@ bool wifiStop() {
     err = esp_wifi_stop();
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_stop: %d", err);
+        clockIntEnable();
         return false;
     }
     
     err = esp_wifi_deinit();
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_deinit: %d", err);
+        clockIntEnable();
         return false;
     }
     
@@ -174,6 +184,8 @@ bool wifiStop() {
     }
     
     CONSOLE("wifi stopped");
+    
+    clockIntEnable();
     
     return true;
 }

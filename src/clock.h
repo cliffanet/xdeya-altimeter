@@ -41,6 +41,8 @@ int32_t tmInterval(const tm_t &tmbeg, const tm_t &tmend);
 int32_t tmIntervalToNow(const tm_t &tm);
 
 void clockInit();
+void clockIntEnable();
+void clockIntDisable();
 void clockForceAdjust();
 void clockProcess();
 

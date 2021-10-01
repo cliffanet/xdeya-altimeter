@@ -11,6 +11,8 @@ extern "C" {
   #include <esp_clk.h>
 }
 
+#include "esp32-hal-gpio.h" // OPEN_DRAIN
+
 /* ------------------------------------------------------------------------------------------- *
  *  RTC-таймер, который не сбрасывается при deep sleep
  * ------------------------------------------------------------------------------------------- */
@@ -133,17 +135,28 @@ void clockInit() {
       return;
     }
     
-    pinMode(CLOCK_PIN_INT, INPUT_PULLUP);  // set up interrupt pin, turn on pullup resistors
-    // attach interrupt
-    attachInterrupt(digitalPinToInterrupt(CLOCK_PIN_INT), clockTick, RISING);
-    
     CONSOLE("clock init ok, lostPower: %d, isrunning: %d", rtc.lostPower(), rtc.isrunning());
     rtc.start();
-    rtc.writeSqwPinMode(PCF8563_SquareWave1Hz);
+    clockIntEnable();
 #else
     tmvalid = false;
 #endif
 }
+
+#if HWVER >= 3
+void clockIntEnable() {
+    rtc.writeSqwPinMode(PCF8563_SquareWave1Hz);
+    
+    pinMode(CLOCK_PIN_INT, INPUT_PULLUP);  // set up interrupt pin, turn on pullup resistors
+    // attach interrupt
+    attachInterrupt(digitalPinToInterrupt(CLOCK_PIN_INT), clockTick, RISING);
+}
+void clockIntDisable() {
+    detachInterrupt(digitalPinToInterrupt(CLOCK_PIN_INT));
+    pinMode(CLOCK_PIN_INT, OPEN_DRAIN);
+    rtc.writeSqwPinMode(PCF8563_SquareWaveOFF);
+}
+#endif
 
 static uint16_t adj = 0;
 void clockForceAdjust() {
