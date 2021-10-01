@@ -10,6 +10,7 @@
 #include <esp_wifi.h>
 #include <esp_event_loop.h>
 #include "freertos/event_groups.h"
+#include "driver/adc.h";
 
 #include "esp_log.h"
 
@@ -79,6 +80,8 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 bool wifiStart() {
     esp_err_t err;
     wifiall.clear();
+    
+    adc_power_on();
     
     static bool tcpip_init = false;
     if (!tcpip_init) {
@@ -186,6 +189,7 @@ bool wifiStop() {
     CONSOLE("wifi stopped");
     
     clockIntEnable();
+    adc_power_off();
     
     return true;
 }
