@@ -45,8 +45,8 @@ void clockInit();
 void clockIntEnable();
 void clockIntDisable();
 #else
-#define clockIntEnable
-#define clockIntDisable
+#define clockIntEnable()
+#define clockIntDisable()
 #endif
 void clockForceAdjust();
 void clockProcess();
