@@ -148,6 +148,23 @@ void pwrModeUpd() {
     CONSOLE("[change] %d => %d", mode, m);
     
     mode = m;
+    
+    if (m < PWR_ACTIVE) {
+        if (getCpuFrequencyMhz() != 10) {
+            setCpuFrequencyMhz(10);
+            CONSOLE("change CPU Freq to: %lu MHz", getCpuFrequencyMhz());
+        }
+    }
+    else {
+        if (getCpuFrequencyMhz() != 240) {
+            setCpuFrequencyMhz(240);
+            CONSOLE("change CPU Freq to: %lu MHz", getCpuFrequencyMhz());
+        }
+    }
+    CONSOLE("CPU Freq = %lu MHz; XTAL Freq = %lu MHz; APB Freq = %lu Hz",
+            getCpuFrequencyMhz(),
+            getXtalFrequencyMhz(),
+            getApbFrequency());
 }
 
 void pwrRun(void (*run)()) {
@@ -189,6 +206,7 @@ void pwrSleep() {
     
     displayOff();
     gpsOff(false);
+    setCpuFrequencyMhz(10);
     
     CONSOLE("pwr sleep");
     pwrDeepSleep(1000000);
@@ -199,6 +217,7 @@ void pwrOff() {
     
     displayOff();
     gpsOff(false);
+    setCpuFrequencyMhz(10);
     
     // перед тем, как уйти в сон окончательно, дождёмся отпускания кнопки питания
     while (digitalRead(BUTTON_GPIO_PWR) == LOW)
