@@ -150,8 +150,8 @@ void pwrModeUpd() {
     mode = m;
     
     if (m < PWR_ACTIVE) {
-        if (getCpuFrequencyMhz() != 10) {
-            setCpuFrequencyMhz(10);
+        if (getCpuFrequencyMhz() != 80) {
+            setCpuFrequencyMhz(80);
             CONSOLE("change CPU Freq to: %lu MHz", getCpuFrequencyMhz());
         }
     }
