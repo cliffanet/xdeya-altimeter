@@ -40,6 +40,8 @@ bool trkStart(bool force, uint16_t old) {
     
     // пишем заголовок - время старта и номер прыга
     struct log_item_s <trk_head_t> th;
+    th.mgc1 = LOG_MGC1;
+    th.mgc2 = LOG_MGC2;
     th.data.jmpnum = jmp.count();
     if (jmp.state() == LOGJMP_NONE) // в случае, если прыг не начался (включение трека до начала прыга),
         th.data.jmpnum ++;          // за номер прыга считаем следующий

@@ -233,19 +233,18 @@ int32_t logFileRead(
     if (dhsz > 0) {
         if (fh.available() < dhsz)
             return 0;
-        if (hndhead != NULL) {
-            uint8_t data[dhsz];
-            auto sz = fh.read(data, dhsz);
-            if (
-                    (sz != dhsz) ||
-                    (data[0] != LOG_MGC1) ||
-                    (data[dhsz-1] != LOG_MGC2) ||
-                    !hndhead(data)
-                ) {
-                CONSOLE("logFileRead head err: sz=%d, dhsz=%d, MGC1=0x%02X, MGC2=0x%02X", sz, dhsz, data[0], data[dhsz-1]);
-                fh.close();
-                return -1;
-            }
+        
+        uint8_t data[dhsz];
+        auto sz = fh.read(data, dhsz);
+        if (
+                (sz != dhsz) ||
+                (data[0] != LOG_MGC1) ||
+                (data[dhsz-1] != LOG_MGC2) ||
+                ((hndhead != NULL) && !hndhead(data))
+            ) {
+            CONSOLE("logFileRead head err: sz=%d, dhsz=%d, MGC1=0x%02X, MGC2=0x%02X", sz, dhsz, data[0], data[dhsz-1]);
+            fh.close();
+            return -1;
         }
     }
     
