@@ -100,6 +100,8 @@ uint32_t btnIdle();
 uint32_t btnPressed(uint8_t &btn);
 // нажата ли сейчас кнопка
 bool btnPushed(btn_code_t btn);
+// Ожидание, пока кнопка будет отпущена
+void btnWaitRelease();
 
 #ifdef USE4BUTTON
 // нажатие на дополнительную 4ую кнопку

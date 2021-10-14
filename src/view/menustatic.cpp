@@ -694,6 +694,9 @@ static const menu_el_t menusystem[] {
         .hold = [] () {
             menuFlashP(PSTR("formating eeprom"));
             displayUpdate(); // чтобы сразу вывести текст на экран
+            btnWaitRelease();   // Надо ожидать, пока будет отпущена кнопка,
+                                // иначе, если сработает прерывание во время cfgFactory(),
+                                // будет: Core  1 panic'ed (Cache disabled but cached memory region accessed)
             if (!cfgFactory()) {
                 menuFlashP(PSTR("EEPROM fail"));
                 return;
