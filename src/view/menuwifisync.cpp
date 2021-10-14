@@ -54,7 +54,7 @@ class ViewNetSync : public ViewBase {
         // старт процедуры синхронизации
         void begin(const char *_ssid, const char *_pass) {
             snprintf_P(title, sizeof(title), PSTR("wifi to %s"), _ssid);
-            setState(NS_WIFI_CONNECT, 20000);
+            setState(NS_WIFI_CONNECT, 200);
             joinnum = 0;
             netsyncProgMax(0);
     
@@ -69,7 +69,7 @@ class ViewNetSync : public ViewBase {
             }
         }
         
-        void updTimeout(int16_t _timeout = 30) {
+        void updTimeout(int16_t _timeout = 100) {
             if (_timeout > 0)
                 timeout = 1 + _timeout;
         }
@@ -247,7 +247,7 @@ class ViewNetSync : public ViewBase {
                             case 0x10: // rejoin
                                 // требуется привязка к аккаунту
                                 joinnum = ntohl(d.num);
-                                setState(NS_PROFILE_JOIN, 120000);
+                                setState(NS_PROFILE_JOIN, 1200);
                                 return;
         
                             case 0x20: // accept
