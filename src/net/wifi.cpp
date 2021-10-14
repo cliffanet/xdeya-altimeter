@@ -83,10 +83,12 @@ bool wifiStart() {
     esp_err_t err;
     wifiall.clear();
     
+    CONSOLE("adc_power_on");
     adc_power_on();
     
     static bool tcpip_init = false;
     if (!tcpip_init) {
+        CONSOLE("tcpip_adapter_init");
         tcpip_adapter_init();
 
         err = esp_event_loop_init(event_handler, NULL);
@@ -98,10 +100,13 @@ bool wifiStart() {
         tcpip_init = true;
     }
     
-    if (sta_status == NULL)
+    if (sta_status == NULL) {
+        CONSOLE("xEventGroupCreate");
         sta_status = xEventGroupCreate();
+    }
     setStatus(WIFI_STA_NULL);
-    
+
+    CONSOLE("clockIntDisable");
     clockIntDisable();
     
     // esp32-sdk не умеет устанавливать максимальную мощность wifi
@@ -120,9 +125,11 @@ bool wifiStart() {
     
     //esp_phy_init_data_t* init_data
     //memcpy(init_data, phy_init_data, sizeof(esp_phy_init_data_t));
-    
+
+    CONSOLE("RTC_CNTL_BROWN_OUT_REG 0");
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
-    
+
+    CONSOLE("esp_wifi_init");
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     err = esp_wifi_init(&cfg);
     if (err != ESP_OK) {
@@ -130,30 +137,35 @@ bool wifiStart() {
         clockIntEnable();
         return false;
     }
-    
+
+    CONSOLE("esp_wifi_set_storage WIFI_STORAGE_RAM");
     esp_wifi_set_storage(WIFI_STORAGE_RAM);
-    
+
+    CONSOLE("esp_wifi_set_mode WIFI_MODE_STA");
     err = esp_wifi_set_mode( WIFI_MODE_STA);
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_set_mode: %d", err);
         clockIntEnable();
         return false;
     }
-    
+
+    CONSOLE("esp_wifi_start");
     err = esp_wifi_start();
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_start: %d", err);
         clockIntEnable();
         return false;
     }
-    
+
+    CONSOLE("esp_wifi_set_max_tx_power 60");
     err = esp_wifi_set_max_tx_power(60);
     if (err != ESP_OK) {
         CONSOLE("esp_wifi_set_max_tx_power: %d", err);
         clockIntEnable();
         return false;
     }
-    
+
+    CONSOLE("RTC_CNTL_BROWN_OUT_REG 1");
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
     
     CONSOLE("wifi started");
