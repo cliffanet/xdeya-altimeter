@@ -11,18 +11,14 @@
  *  Конфиг, сохраняемый в SPIFFS
  */
 
-#define CFG_WEBJOIN_VER   1
-#define CFG_WEBJOIN_NAME  "wjn"
+#define CFG_WEBJOIN_ID      2
+#define CFG_WEBJOIN_VER     1
+#define CFG_WEBJOIN_NAME    "wjn"
 
 //  Сохранение GPS-координат
 typedef struct __attribute__((__packed__)) {
-    uint8_t mgc1 = CFG_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
-    uint8_t ver = CFG_WEBJOIN_VER;
-    
     uint32_t    authid = 0;
     uint32_t    secnum = 0;
-    
-    uint8_t mgc2 = CFG_MGC2;
 } cfg_webjoin_t;
 
 class ConfigWebJoin : public Config<cfg_webjoin_t> {

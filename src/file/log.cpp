@@ -77,7 +77,7 @@ bool fread(File &fh, uint8_t *data, uint16_t dsz) {
         return false;
     }
 
-    CONSOLE("readed %d+4 bytes; cka=%d; ckb=%d", sz1-2, cka, ckb);
+    //CONSOLE("readed %d+4 bytes; cka=%d; ckb=%d", sz1-2, cka, ckb);
     
     return true;
 }
@@ -112,7 +112,7 @@ bool fwrite(File &fh, const uint8_t *data, uint16_t dsz) {
         return false;
     }
     
-    CONSOLE("save record: sz=%d+4; cka=%d; ckb=%d;", sz-4, cka, ckb);
+    //CONSOLE("save record: sz=%d+4; cka=%d; ckb=%d;", sz-4, cka, ckb);
     
     return true;
 }

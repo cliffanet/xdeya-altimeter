@@ -10,7 +10,7 @@
 ConfigJump jmp;
 
 ConfigJump::ConfigJump() :
-    Config(PSTR(CFG_JUMP_NAME), CFG_JUMP_VER)
+    Config(PSTR(CFG_JUMP_NAME), CFG_JUMP_ID, CFG_JUMP_VER)
 {
     log_item_t li = { 0 };
     li.state = ACST_INIT;

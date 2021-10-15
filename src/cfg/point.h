@@ -13,6 +13,7 @@
 
 #define PNT_COUNT     3
 
+#define CFG_POINT_ID    5
 #define CFG_POINT_VER   1
 #define CFG_POINT_NAME  "pnt"
 
@@ -24,13 +25,8 @@ typedef struct __attribute__((__packed__)) {
 
 //  Сохранение GPS-координат
 typedef struct __attribute__((__packed__)) {
-    uint8_t mgc1 = CFG_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
-    uint8_t ver = CFG_POINT_VER;
-    
     uint8_t num = 0;                         // текущая выбранная точка
     cfg_point_el_t all[PNT_COUNT];           // координаты трёх точек (sizeof(double) == 8)
-    
-    uint8_t mgc2 = CFG_MGC2;
 } cfg_point_t;
 
 class ConfigPoint : public Config<cfg_point_t> {

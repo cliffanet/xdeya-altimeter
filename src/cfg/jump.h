@@ -10,19 +10,21 @@
 
 typedef enum {
     LOGJMP_NONE,
+    LOGJMP_TOFF,
     LOGJMP_BEG,
     LOGJMP_CNP
 } log_jmp_state_t;
 
+
+#define CFG_JUMP_ID     4
+#define CFG_JUMP_VER    1
+#define CFG_JUMP_NAME   "jmp"
+
 //  Сохранение информации о прыжках
 typedef struct __attribute__((__packed__)) {
-    uint8_t mgc1 = CFG_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
-    uint8_t ver = CFG_JUMP_VER;
-    
     uint32_t count = 0;                      // Сколько всего прыжков у владельца
     log_jmp_t last;
     log_jmp_state_t state = LOGJMP_NONE;
-    uint8_t mgc2 = CFG_MGC2;
 } cfg_jump_t;
 
 

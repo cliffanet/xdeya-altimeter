@@ -12,19 +12,15 @@
 /* 
  *  Конфиг, сохраняемый в SPIFFS
  */
-#define CFG_MGC1        0xe4
-#define CFG_MGC2        0x7a
+#define CFG_MGC         0xe4
 
+#define CFG_MAIN_ID     3
 #define CFG_MAIN_VER    1
 #define CFG_MAIN_NAME   "cfg"
-#define CFG_JUMP_VER    1
-#define CFG_JUMP_NAME   "jmp"
-
 
 // Основной конфиг
 typedef struct __attribute__((__packed__)) {
-    uint8_t mgc1 = CFG_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
-    uint8_t ver = CFG_MAIN_VER;
+    uint8_t _0;                                 // резерв для выравнивания до 4 байт
     
     uint8_t contrast = 10;                      // контраст дисплея (0..30)
     int16_t timezone = 180;                     // часовой пояс (в минутах)
@@ -38,20 +34,17 @@ typedef struct __attribute__((__packed__)) {
     int8_t dsplgnd  = MODE_MAIN_NONE;           // смена экрана при длительном нахождении на земле
     int8_t dsplpwron= MODE_MAIN_LAST;           // смена экрана при включении питания
     
-    uint8_t _[32];                              // Более не используется
-    
     int8_t fwupdind    = 0;                     // Номер версии прошивки в файле veravail, на которую следует обновиться
-    
-    uint8_t mgc2 = CFG_MGC2;
 } cfg_main_t;
 
 template <class T>
 class Config {
     public:
-        Config(const char *_fname, uint8_t _ver = 1);
+        Config(const char *_fname, uint8_t _cfgid, uint8_t _ver = 1);
         bool load();
         bool save(bool force = false);
         void reset();
+        void upgrade(uint8_t v, const uint8_t *d);
         
         uint32_t chksum() const;
         
@@ -61,6 +54,7 @@ class Config {
     
     protected:
         char fname[10];
+        uint8_t cfgid;
         uint8_t ver;
         T data;
         bool _modifed = false;

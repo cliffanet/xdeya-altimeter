@@ -11,7 +11,7 @@ ConfigPoint pnt;
  * ------------------------------------------------------------------------------------------- */
 
 ConfigPoint::ConfigPoint() :
-    Config(PSTR(CFG_POINT_NAME), CFG_POINT_VER)
+    Config(PSTR(CFG_POINT_NAME), CFG_POINT_ID, CFG_POINT_VER)
 {
     
 }
