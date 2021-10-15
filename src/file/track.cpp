@@ -39,16 +39,13 @@ bool trkStart(bool force, uint16_t old) {
         return false;
     
     // пишем заголовок - время старта и номер прыга
-    struct log_item_s <trk_head_t> th;
-    th.mgc1 = LOG_MGC1;
-    th.mgc2 = LOG_MGC2;
-    th.data.jmpnum = jmp.count();
+    trk_head_t th;
+    th.jmpnum = jmp.count();
     if (jmp.state() == LOGJMP_NONE) // в случае, если прыг не начался (включение трека до начала прыга),
-        th.data.jmpnum ++;          // за номер прыга считаем следующий
-    th.data.tmbeg = tmNow(jmpPreLogInterval(old));
+        th.jmpnum ++;          // за номер прыга считаем следующий
+    th.tmbeg = tmNow(jmpPreLogInterval(old));
     
-    auto sz = fh.write(reinterpret_cast<const uint8_t *>(&th), sizeof(th));
-    if (sz != sizeof(th)) {
+    if (!fwrite(fh, th)) {
         fh.close();
         return false;
     }
@@ -60,15 +57,14 @@ bool trkStart(bool force, uint16_t old) {
     // Скидываем сразу все презапомненные данные
     // даже если old == 0, мы всё равно запишем текущую позицию
     while (1) {
-        struct log_item_s <log_item_t> log;
-        log.data = jmpPreLog(old);
-        tmoffset += log.data.tmoffset;
-        log.data.tmoffset = tmoffset;
+        log_item_t log;
+        log = jmpPreLog(old);
+        tmoffset += log.tmoffset;
+        log.tmoffset = tmoffset;
         
-        log.data.msave = utm() / 1000;
+        log.msave = utm() / 1000;
     
-        auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
-        if (sz != sizeof(log)) {
+        if (!fwrite(fh, log)) {
             fh.close();
             return false;
         }
@@ -118,7 +114,7 @@ size_t trkCountAvail() {
     size_t used = DISKFS.usedBytes();
     if (used >= ALL_SIZE_MAX)
         return 0;
-    return (ALL_SIZE_MAX - used) / sizeof(struct log_item_s <log_item_t>);
+    return (ALL_SIZE_MAX - used) / LOG_REC_SIZE(sizeof(log_item_t));
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -155,15 +151,14 @@ void trkProcess() {
         return;
     }
 
-    struct log_item_s <log_item_t> log;
-    while (jmpPreLogNext(prelogcur, &(log.data))) {
-        tmoffset += log.data.tmoffset;
-        log.data.tmoffset = tmoffset;
+    log_item_t log;
+    while (jmpPreLogNext(prelogcur, &log)) {
+        tmoffset += log.tmoffset;
+        log.tmoffset = tmoffset;
         
-        log.data.msave = utm() / 1000;
+        log.msave = utm() / 1000;
         
-        auto sz = fh.write(reinterpret_cast<const uint8_t *>(&log), sizeof(log));
-        if (sz != sizeof(log))
+        if (!fwrite(fh, log))
             trkStop();
     }
 }

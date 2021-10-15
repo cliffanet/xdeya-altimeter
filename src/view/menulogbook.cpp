@@ -22,7 +22,7 @@ class ViewMenuLogBookInfo : public ViewBase {
         }
         
         void read() {
-            readok = logRead(r, PSTR(JMPLOG_SIMPLE_NAME), isel);
+            readok = logRead(jmp, PSTR(JMPLOG_SIMPLE_NAME), isel);
         }
         
         void btnSmpl(btn_code_t btn) {
@@ -58,18 +58,16 @@ class ViewMenuLogBookInfo : public ViewBase {
             
             u8g2.setFont(u8g2_font_ncenB08_tr);
     
-            const auto &d = r.data;
-    
             // Заголовок
             char s[20];
-            snprintf_P(s, sizeof(s), PSTR("Jump # %d"), d.num);
+            snprintf_P(s, sizeof(s), PSTR("Jump # %d"), jmp.num);
             u8g2.setDrawColor(0);
             u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, 10, s);
     
             u8g2.setDrawColor(1);
             int8_t y = 10-1+14;
     
-            const auto &tm = d.tm;
+            const auto &tm = jmp.tm;
             snprintf_P(s, sizeof(s), PSTR("%2d.%02d.%04d"), tm.day, tm.mon, tm.year);
             u8g2.drawStr(0, y, s);
             snprintf_P(s, sizeof(s), PSTR("%2d:%02d"), tm.h, tm.m);
@@ -78,25 +76,25 @@ class ViewMenuLogBookInfo : public ViewBase {
             y += 10;
             strcpy_P(s, PSTR("Alt"));
             u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%d"), d.beg.alt);
+            snprintf_P(s, sizeof(s), PSTR("%d"), jmp.beg.alt);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
     
             y += 10;
             strcpy_P(s, PSTR("Deploy"));
             u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%d"), d.cnp.alt);
+            snprintf_P(s, sizeof(s), PSTR("%d"), jmp.cnp.alt);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
     
             y += 10;
             strcpy_P(s, PSTR("FF time"));
             u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%d s"), d.cnp.tmoffset/1000);
+            snprintf_P(s, sizeof(s), PSTR("%d s"), jmp.cnp.tmoffset/1000);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
     
             y += 10;
             strcpy_P(s, PSTR("CNP time"));
             u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%d s"), (d.end.tmoffset-d.cnp.tmoffset)/1000);
+            snprintf_P(s, sizeof(s), PSTR("%d s"), (jmp.end.tmoffset-jmp.cnp.tmoffset)/1000);
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
         }
         
@@ -107,7 +105,7 @@ class ViewMenuLogBookInfo : public ViewBase {
         
     private:
         size_t isel=0, sz=0;
-        struct log_item_s<log_jmp_t> r;
+        log_jmp_t jmp;
         bool readok = false;
 };
 
@@ -118,7 +116,7 @@ static ViewMenuLogBookInfo vLogBookInfo;
 class ViewMenuLogBook : public ViewMenu {
     public:
         void restore() {
-            size_t cnt = logRCountFull(PSTR(JMPLOG_SIMPLE_NAME), struct log_item_s<log_jmp_t>);
+            size_t cnt = logRCountFull(PSTR(JMPLOG_SIMPLE_NAME), log_jmp_t);
             setSize(cnt);
             
             ViewMenu::restore();
@@ -127,12 +125,12 @@ class ViewMenuLogBook : public ViewMenu {
         void getStr(menu_dspl_el_t &str, int16_t i) {
             CONSOLE("ViewMenuLogBook::getStr: %d", i);
     
-            struct log_item_s<log_jmp_t> r;
-            if (logRead(r, PSTR(JMPLOG_SIMPLE_NAME), i)) {
-                auto &tm = r.data.tm;
+            log_jmp_t jmp;
+            if (logRead(jmp, PSTR(JMPLOG_SIMPLE_NAME), i)) {
+                auto &tm = jmp.tm;
                 snprintf_P(str.name, sizeof(str.name), PSTR("%2d.%02d.%02d %2d:%02d"),
                                 tm.day, tm.mon, tm.year % 100, tm.h, tm.m);
-                snprintf_P(str.val, sizeof(str.val), PSTR("%d"), r.data.num);
+                snprintf_P(str.val, sizeof(str.val), PSTR("%d"), jmp.num);
             }
             else {
                 str.name[0] = '\0';

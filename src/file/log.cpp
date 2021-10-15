@@ -2,6 +2,10 @@
 #include "log.h"
 #include "../log.h"
 
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Базовые функции по работе с файлами
+ * ------------------------------------------------------------------------------------------- */
 static const byte logFName(char *fname, size_t sz, const char *_fnamesrc) {
     if (sz <= 7) return 0;
     sz -= 7;
@@ -11,8 +15,106 @@ static const byte logFName(char *fname, size_t sz, const char *_fnamesrc) {
     fname[sz] = '\0';
     return strlen(fname);
 }
+
 static int logFSuffix(char *fname, uint8_t num) {
     return sprintf_P(fname, PSTR(LOGFILE_SUFFIX), num);
+}
+
+static void fcks(uint8_t c, uint8_t &cka, uint8_t &ckb) {
+    cka += c;
+    ckb += cka;
+}
+
+#define RSZ(sz)     LOG_REC_SIZE(sz)
+
+bool fread(File &fh, uint8_t *data, uint16_t dsz) {
+    uint16_t sz = 0;
+    uint8_t bs[2];
+    uint8_t cka = 0, ckb = 0;
+    
+    if (fh.read(bs, 2) != 2) {
+        CONSOLE("fail read len");
+        return false;
+    }
+    
+    fcks(bs[0], cka, ckb);
+    fcks(bs[1], cka, ckb);
+    
+    sz |= bs[0];
+    sz |= bs[1] << 8;
+    sz+=2;
+    
+    uint8_t buf[sz], *b = buf;
+    size_t sz1 = fh.read(buf, sz);
+    
+    if (sz1 != sz) {
+        CONSOLE("fail read to buf: readed=%d of %d", sz1, sz);
+        return false;
+    }
+    
+    while ((sz > 2) && (dsz > 0)) {
+        fcks(*b, cka, ckb);
+        *data = *b;
+        b++;
+        sz--;
+        data++;
+        dsz--;
+    }
+    
+    while (sz > 2) {
+        fcks(*b, cka, ckb);
+        b++;
+        sz--;
+    }
+    
+    while (dsz > 0) {
+        *data = 0;
+        dsz--;
+    }
+    
+    if ((b[0] != cka) || (b[1] != ckb)) {
+        CONSOLE("read fail %d+4 bytes; cka: %d=%d; ckb: %d=%d", sz1-2, b[0], cka, b[1], ckb);
+        return false;
+    }
+
+    CONSOLE("readed %d+4 bytes; cka=%d; ckb=%d", sz1-2, cka, ckb);
+    
+    return true;
+}
+
+bool fwrite(File &fh, const uint8_t *data, uint16_t dsz) {
+    uint16_t sz = RSZ(dsz);
+    uint8_t buf[sz], *b = buf;
+    uint8_t cka = 0, ckb = 0;
+    
+    *b = dsz & 0xff;
+    fcks(*b, cka, ckb);
+    b++;
+    *b = (dsz & 0xff00) >> 8;
+    fcks(*b, cka, ckb);
+    b++;
+    
+    while (dsz > 0) {
+        fcks(*data, cka, ckb);
+        *b = *data;
+        b++;
+        data++;
+        dsz--;
+    }
+    
+    *b = cka;
+    b++;
+    *b = ckb;
+    
+    size_t sz1 = fh.write(buf, sz);
+    if (sz1 != sz) {
+        CONSOLE("write error: saved=%d of %d", sz1, sz);
+        return false;
+    }
+    
+    CONSOLE("save record: sz=%d+4; cka=%d; ckb=%d;", sz-4, cka, ckb);
+    
+    return true;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -156,7 +258,7 @@ bool logAppend(const char *_fname, const uint8_t *data, uint16_t dsz, size_t max
         auto sz = fh.size();
         fh.close();
         
-        if ((sz + dsz) > (maxrcnt*dsz))
+        if ((sz + RSZ(dsz)) > (maxrcnt * RSZ(dsz)))
             if (!logRotate(_fname, count))
                 return false;
     }
@@ -165,10 +267,10 @@ bool logAppend(const char *_fname, const uint8_t *data, uint16_t dsz, size_t max
     if (!fh)
         return false;
     
-    auto sz = fh.write(data, dsz);
+    auto ok = fwrite(fh, data, dsz);
     fh.close();
     
-    return sz == dsz;
+    return ok;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -187,18 +289,18 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
         if (!fh) return false;
         
         auto sz = fh.size();
-        auto count = sz / dsz;
+        auto count = sz / RSZ(dsz);
         if (count <= index) {
             index -= count;
             fh.close();
             continue;
         }
         
-        fh.seek(sz - (index * dsz) - dsz);
-        sz = fh.read(data, dsz);
+        fh.seek(sz - (index * RSZ(dsz)) - RSZ(dsz));
+        auto ok = fread(fh, data, dsz);
         fh.close();
         
-        return sz == dsz;
+        return ok;
     }
     
     return false;
@@ -228,44 +330,40 @@ int32_t logFileRead(
     File fh = DISKFS.open(fname);
     if (!fh) return -1;
     
-    CONSOLE("logFileRead open: %s (%d) avail: %d/%d/%d/%d", fname, ibeg, fh.size(), fh.available(), dhsz, disz);
+    CONSOLE("file open: %s (%d) avail: %d/%d/%d/%d", fname, ibeg, fh.size(), fh.available(), dhsz, disz);
     
     if (dhsz > 0) {
-        if (fh.available() < dhsz)
+        if (fh.available() < RSZ(dhsz))
             return 0;
         
         uint8_t data[dhsz];
-        auto sz = fh.read(data, dhsz);
-        if (
-                (sz != dhsz) ||
-                (data[0] != LOG_MGC1) ||
-                (data[dhsz-1] != LOG_MGC2) ||
-                ((hndhead != NULL) && !hndhead(data))
-            ) {
-            CONSOLE("logFileRead head err: sz=%d, dhsz=%d, MGC1=0x%02X, MGC2=0x%02X", sz, dhsz, data[0], data[dhsz-1]);
+        if (!fread(fh, data, dhsz)) {
+            fh.close();
+            return -1;
+        }
+        if ((hndhead != NULL) && !hndhead(data)) {
+            CONSOLE("head hnd error");
             fh.close();
             return -1;
         }
     }
     
     if (ibeg >= 0) {
-        size_t sz = dhsz + (disz * ibeg);
+        size_t sz = RSZ(dhsz) + (RSZ(disz) * ibeg);
         if (sz >= fh.size())
-            return (fh.size()-dhsz) / disz;
+            return (fh.size()-RSZ(dhsz)) / RSZ(disz);
         fh.seek(sz, SeekSet);
     }
     
     uint8_t data[disz];
     
-    while (fh.available() >= disz) {
-        auto sz = fh.read(data, disz);
-        if (
-                (sz != disz) ||
-                (data[0] != LOG_MGC1) ||
-                (data[disz-1] != LOG_MGC2) ||
-                !hnditem(data)
-            ) {
-            CONSOLE("logFileRead item err: [%d] sz=%d, dsz=%d, MGC1=0x%02X, MGC2=0x%02X", ibeg, sz, disz, data[0], data[disz-1]);
+    while (fh.available() >= RSZ(disz)) {
+        if (!fread(fh, data, disz)) {
+            fh.close();
+            return -1;
+        }
+        if ((hnditem != NULL) && !hnditem(data)) {
+            CONSOLE("item[%d] hnd error");
             fh.close();
             return -1;
         }

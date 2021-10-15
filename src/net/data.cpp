@@ -231,8 +231,7 @@ bool sendPoint() {
     return true;
 }
 
-static bool sendLogBookItem(const struct log_item_s<log_jmp_t> *r) {
-    const auto &j = r->data;
+static bool sendLogBookItem(const log_jmp_t *jmp) {
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t    num;
         tm_t        tm;
@@ -240,11 +239,11 @@ static bool sendLogBookItem(const struct log_item_s<log_jmp_t> *r) {
         log_item_t  cnp;
         log_item_t  end;
     } d = {
-        .num    = htonl(j.num),
-        .tm     = tmton(j.tm),
-        .beg    = jmpton(j.beg),
-        .cnp    = jmpton(j.cnp),
-        .end    = jmpton(j.end)
+        .num    = htonl(jmp->num),
+        .tm     = tmton(jmp->tm),
+        .beg    = jmpton(jmp->beg),
+        .cnp    = jmpton(jmp->cnp),
+        .end    = jmpton(jmp->end)
     };
     
     return srvSend(0x32, d);
@@ -257,11 +256,11 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
     CONSOLE("sendLogBook: chksum: %08x, pos: %d", _cks, _pos);
     
     if (_cks > 0) {
-        max = logFind(PSTR(JMPLOG_SIMPLE_NAME), sizeof(struct log_item_s<log_jmp_t>), _cks);
+        max = logFind(PSTR(JMPLOG_SIMPLE_NAME), LOG_REC_SIZE(sizeof(log_jmp_t)), _cks);
         if (max > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
             CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %d", max, _pos);
             ibeg = _pos;
-            if ((max == 1) && (_pos*sizeof(struct log_item_s<log_jmp_t>) >= logSize(PSTR(JMPLOG_SIMPLE_NAME)))) {
+            if ((max == 1) && (_pos*LOG_REC_SIZE(sizeof(log_jmp_t)) >= logSize(PSTR(JMPLOG_SIMPLE_NAME)))) {
                 CONSOLE("sendLogBook: by chksum finded num 1 and pos is last; no need send");
                 return true;
             }
@@ -289,7 +288,7 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
         CONSOLE("logbook sended ok: %d (ibeg: %d, pos: %d)", num, ibeg, pos);
         ibeg = 0;
     }
-    auto cks = logChkSumBeg(sizeof(struct log_item_s<log_jmp_t>), PSTR(JMPLOG_SIMPLE_NAME), 1);
+    auto cks = logChkSumBeg(LOG_REC_SIZE(sizeof(log_jmp_t)), PSTR(JMPLOG_SIMPLE_NAME), 1);
     
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t    chksum;
@@ -302,31 +301,31 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
     return srvSend(0x33, d) && (pos > 0);
 }
 
-static bool sendTrackBeg(const struct log_item_s <trk_head_t> *r) {
+static bool sendTrackBeg(const trk_head_t *th) {
     struct __attribute__((__packed__)) {
         uint32_t id;
         uint32_t flags;
         uint32_t jmpnum;
         tm_t     tmbeg;
     } d = {
-        .id         = htonl(r->data.id),
-        .flags      = htonl(r->data.flags),
-        .jmpnum     = htonl(r->data.jmpnum),
-        .tmbeg      = tmton(r->data.tmbeg),
+        .id         = htonl(th->id),
+        .flags      = htonl(th->flags),
+        .jmpnum     = htonl(th->jmpnum),
+        .tmbeg      = tmton(th->tmbeg),
     };
     
-    netsyncProgInc(sizeof(const struct log_item_s <trk_head_t>));
+    netsyncProgInc(LOG_REC_SIZE(sizeof(trk_head_t)));
     
     return srvSend(0x34, d);
 }
 
-static bool sendTrackItem(const struct log_item_s <log_item_t> *r) {
-    log_item_t d = jmpton(r->data);
+static bool sendTrackItem(const log_item_t *ti) {
+    log_item_t d = jmpton(*ti);
     
     if (!srvSend(0x35, d))
         return false;
     
-    netsyncProgInc(sizeof(const struct log_item_s <log_item_t>));
+    netsyncProgInc(LOG_REC_SIZE(sizeof(log_item_t)));
     
     return true;
 }
@@ -338,7 +337,12 @@ bool sendTrack(logchs_t _cks) {
     CONSOLE("sendTrack: chksum: %04x%04x%08x", _cks.csa, _cks.csb, _cks.sz);
     
     if (_cks) {
-        max = logFind(PSTR(TRK_FILE_NAME), sizeof(struct log_item_s<log_item_t>), _cks);
+        max =
+            logFind(
+                PSTR(TRK_FILE_NAME),
+                LOG_REC_SIZE(sizeof(trk_head_t)) + LOG_REC_SIZE(sizeof(log_item_t)),
+                _cks
+            );
         if (max == 1) {// самый свежий и есть тот, который мы уже передавали - больше передавать не надо
             CONSOLE("sendTrack: by chksum finded num 1; no need send");
             return true;
@@ -367,7 +371,12 @@ bool sendTrack(logchs_t _cks) {
         uint8_t n = num;
         
         bool ok = logFileRead(sendTrackBeg, sendTrackItem, PSTR(TRK_FILE_NAME), num) >= 0;
-        auto cks = logChkSumFull(sizeof(struct log_item_s<log_item_t>), PSTR(TRK_FILE_NAME), num);
+        auto cks =
+            logChkSumFull(
+                LOG_REC_SIZE(sizeof(trk_head_t)) + LOG_REC_SIZE(sizeof(log_item_t)),
+                PSTR(TRK_FILE_NAME),
+                num
+            );
         
         if (!srvSend(0x36, ckston(cks)) || !ok)
             return false;

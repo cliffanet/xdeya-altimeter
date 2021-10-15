@@ -87,8 +87,7 @@ bool ConfigJump::end() {
     if (!save(true))
         return false;
     
-    struct log_item_s<log_jmp_t> jlast(data.last);
-    if (!logAppend(PSTR(JMPLOG_SIMPLE_NAME), jlast, JMPLOG_SIMPLE_ITEM_COUNT, JMPLOG_SIMPLE_FILE_COUNT))
+    if (!logAppend(PSTR(JMPLOG_SIMPLE_NAME), data.last, JMPLOG_SIMPLE_ITEM_COUNT, JMPLOG_SIMPLE_FILE_COUNT))
         return false;
     
     return true;

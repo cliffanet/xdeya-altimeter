@@ -13,6 +13,7 @@
 #define DISKFS SPIFFS
 
 #define LOGFILE_SUFFIX  ".%02d"
+#define LOG_REC_SIZE(sz)    (sz+4)
 
 bool logExists(const char *_fname, uint8_t num = 1);
 
@@ -27,23 +28,29 @@ int logCount(const char *_fname);
 size_t logSize(const char *_fname, uint8_t num = 1);
 size_t logSizeFull(const char *_fname);
 
-#define logRCount(fname, type)      (logSize(fname)/sizeof(type))
-#define logRCountFull(fname, type)  (logSizeFull(fname)/sizeof(type))
+#define logRCount(fname, type)      (logSize(fname)/LOG_REC_SIZE(sizeof(type)))
+#define logRCountFull(fname, type)  (logSizeFull(fname)/LOG_REC_SIZE(sizeof(type)))
 
 bool logRotate(const char *_fname, uint8_t count);
 
-
-#define LOG_MGC1        0xe4
-#define LOG_MGC2        0x7a
+/* ------------------------------------------------------------------------------------------- *
+ *  Базовый ввод/вывод
+ * ------------------------------------------------------------------------------------------ */
+class File;
+bool fread(File &fh, uint8_t *data, uint16_t dsz);
 
 template <typename T>
-struct __attribute__((__packed__)) log_item_s {
-    uint8_t mgc1 = LOG_MGC1;                 // mgc1 и mgc2 служат для валидации текущих данных в eeprom
-    T data;
-    uint8_t mgc2 = LOG_MGC2;
-    log_item_s() { };
-    log_item_s(const T &_data) : data(_data) { };
-};
+bool fread(File &fh, T &data) {
+    return fread(fh, reinterpret_cast<uint8_t *>(&data), sizeof(T));
+}
+
+bool fwrite(File &fh, const uint8_t *data, uint16_t dsz);
+
+template <typename T>
+bool fwrite(File &fh, const T &data) {
+    return fwrite(fh, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
+}
+
 
 /* ------------------------------------------------------------------------------------------- *
  *  Дописывание в конец
@@ -63,8 +70,7 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index = 0);
 template <typename T>
 bool logRead(T &data, const char *_fname, size_t index = 0) {
     return
-        logRead(reinterpret_cast<uint8_t *>(&data), sizeof(T), _fname, index) &&
-        (data.mgc1 == LOG_MGC1) && (data.mgc2 == LOG_MGC2);
+        logRead(reinterpret_cast<uint8_t *>(&data), sizeof(T), _fname, index);
 }
 
 /* ------------------------------------------------------------------------------------------- *
