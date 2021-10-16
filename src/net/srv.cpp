@@ -25,7 +25,11 @@ typedef struct __attribute__((__packed__)) {
 // заголовок принимаемой команды - на время, пока будем принимать данные
 static phdr_t phr = { .mgc = '\0', .cmd = 0 };
 
-#define SRV_HOST    "gpstat.dev.cliffa.net"
+#ifdef FWVER_DEV
+#define SRV_HOST    "sync.xdeya.dev.cliffa.net"
+#else
+#define SRV_HOST    "sync.xdeya.cliffa.net"
+#endif
 #define SRV_PORT    9971
 
 /* ------------------------------------------------------------------------------------------- *
@@ -54,7 +58,7 @@ bool srvConnect() {
     }
     
     IPAddress ip(reinterpret_cast<struct sockaddr_in *>(res->ai_addr)->sin_addr.s_addr);
-    CONSOLE("srvConnect host %s -> ip %d.%d.%d.%d", host, ip[0], ip[1], ip[2], ip[3]);
+    CONSOLE("host %s -> ip %d.%d.%d.%d", host, ip[0], ip[1], ip[2], ip[3]);
     
     return cli.connect(ip, SRV_PORT);
 }
@@ -187,7 +191,7 @@ static bool _srvSend(const uint8_t *data, size_t sz) {
 bool srvSend(uint8_t cmd, const uint8_t *data, uint16_t sz) {
     if (!cli.connected()) {
         last_err = PSTR("server connect lost");
-        CONSOLE("srvSend on server connect lost");
+        CONSOLE("server connect lost");
         return false;
     }
     
