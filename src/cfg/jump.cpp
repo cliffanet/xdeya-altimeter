@@ -19,23 +19,46 @@ ConfigJump::ConfigJump() :
     
     data.last.num = 0;
     data.last.tm = tm;
+    data.last.toff = li;
     data.last.beg = li;
     data.last.cnp = li;
     data.last.end = li;
 }
-
 /* ------------------------------------------------------------------------------------------- *
- *  Старт прыга, инициируем новый прыжок
+ *  старт
  * ------------------------------------------------------------------------------------------- */
-bool ConfigJump::beg(uint16_t old) {
+bool ConfigJump::toff(uint16_t old) {
     if (data.state != LOGJMP_NONE)
         return false;
     
-    data.count++;
-    data.state = LOGJMP_BEG;
+    data.state = LOGJMP_TOFF;
     
     data.last.num = data.count;
     data.last.tm = tmNow(jmpPreLogInterval(old));
+    
+    data.last.toff = jmpPreLog(old);
+    data.last.toff.tmoffset = 0;
+    data.last.toff.msave = utm() / 1000;
+    
+    return save(true);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Начало свободного падения - инициализируем прыжок
+ * ------------------------------------------------------------------------------------------- */
+bool ConfigJump::beg(uint16_t old) {
+    if ((data.state < LOGJMP_TOFF) && !toff(old))
+        return false;
+    
+    data.count++;
+    data.last.num = data.count;
+    
+    auto tm = tmNow(jmpPreLogInterval(old));
+    if (data.state == LOGJMP_TOFF)
+        data.last.toff.tmoffset = tmInterval(data.last.tm, tm);
+    data.last.tm = tm;
+    
+    data.state = LOGJMP_BEG;
     
     data.last.beg = jmpPreLog(old);
     data.last.beg.tmoffset = 0;
@@ -50,13 +73,7 @@ bool ConfigJump::beg(uint16_t old) {
  *  Под куполом, сохраняем промежуточные значения
  * ------------------------------------------------------------------------------------------- */
 bool ConfigJump::cnp(uint16_t old) {
-    if (data.state == LOGJMP_NONE) {
-        beg(old);
-        data.state = LOGJMP_CNP;
-        return save(true);
-    }
-    
-    if (data.state != LOGJMP_BEG)
+    if ((data.state < LOGJMP_BEG) && !beg(old))
         return false;
     
     data.state = LOGJMP_CNP;
@@ -75,8 +92,10 @@ bool ConfigJump::cnp(uint16_t old) {
  *  Окончание прыга, пишем в логбук
  * ------------------------------------------------------------------------------------------- */
 bool ConfigJump::end() {
-    if (data.state == LOGJMP_NONE)
+    if (data.state < LOGJMP_BEG) {
+        data.state = LOGJMP_NONE;
         return false;
+    }
     
     data.state = LOGJMP_NONE;
     

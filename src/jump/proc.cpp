@@ -292,6 +292,14 @@ void jmpProcess() {
     } jmpst = JMP_NONE;
     
     if (jmpst == JMP_NONE) {
+        if ((jmp.state() == LOGJMP_NONE) && ((ac.state() == ACST_TAKEOFF40) || (ac.state() == ACST_TAKEOFF))) {
+            jmp.toff(50);
+        }
+        else
+        if ((jmp.state() == LOGJMP_TOFF) && (ac.state() == ACST_GROUND)) {
+            jmp.end();
+        }
+        
         static uint16_t dncnt = 0;
         if (dncnt == 0) {
             if (ac.speedapp() < -JMP_SPEED_MIN)     // При скорости снижения выше пороговой

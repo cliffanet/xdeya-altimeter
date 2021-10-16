@@ -73,11 +73,11 @@ bool fread(File &fh, uint8_t *data, uint16_t dsz) {
     }
     
     if ((b[0] != cka) || (b[1] != ckb)) {
-        CONSOLE("read fail %d+4 bytes; cka: %d=%d; ckb: %d=%d", sz1-2, b[0], cka, b[1], ckb);
+        CONSOLE("read fail %d+4 bytes; cka: 0x%02x=0x%02x; ckb: 0x%02x=0x%02x", sz1-2, b[0], cka, b[1], ckb);
         return false;
     }
 
-    //CONSOLE("readed %d+4 bytes; cka=%d; ckb=%d", sz1-2, cka, ckb);
+    //CONSOLE("readed %d+4 bytes; cka=0x%02x; ckb=0x%02x", sz1-2, cka, ckb);
     
     return true;
 }
@@ -112,7 +112,7 @@ bool fwrite(File &fh, const uint8_t *data, uint16_t dsz) {
         return false;
     }
     
-    //CONSOLE("save record: sz=%d+4; cka=%d; ckb=%d;", sz-4, cka, ckb);
+    //CONSOLE("save record: sz=%d+4; cka=0x%02x; ckb=0x%02x;", sz-4, cka, ckb);
     
     return true;
 }
@@ -296,6 +296,8 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
             continue;
         }
         
+        CONSOLE("index: %d; dsz: %d; read from: %d; fsize: %d", index, dsz, sz - (index * RSZ(dsz)) - RSZ(dsz), fh.size());
+        
         fh.seek(sz - (index * RSZ(dsz)) - RSZ(dsz));
         auto ok = fread(fh, data, dsz);
         fh.close();
@@ -333,8 +335,10 @@ int32_t logFileRead(
     CONSOLE("file open: %s (%d) avail: %d/%d/%d/%d", fname, ibeg, fh.size(), fh.available(), dhsz, disz);
     
     if (dhsz > 0) {
-        if (fh.available() < RSZ(dhsz))
+        if (fh.available() < RSZ(dhsz)) {
+            fh.close();
             return 0;
+        }
         
         uint8_t data[dhsz];
         if (!fread(fh, data, dhsz)) {
@@ -349,9 +353,12 @@ int32_t logFileRead(
     }
     
     if (ibeg >= 0) {
-        size_t sz = RSZ(dhsz) + (RSZ(disz) * ibeg);
+        size_t sz = RSZ(disz) * ibeg;
+        if (dhsz > 0) sz += RSZ(dhsz);
+        
         if (sz >= fh.size())
             return (fh.size()-RSZ(dhsz)) / RSZ(disz);
+        CONSOLE("seek to: %d", sz);
         fh.seek(sz, SeekSet);
     }
     

@@ -88,6 +88,7 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
 typedef struct __attribute__((__packed__)) {
     uint32_t    num;
     tm_t        tm;
+    log_item_t  toff;
     log_item_t  beg;
     log_item_t  cnp;
     log_item_t  end;

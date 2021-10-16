@@ -235,12 +235,14 @@ static bool sendLogBookItem(const log_jmp_t *jmp) {
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t    num;
         tm_t        tm;
+        log_item_t  toff;
         log_item_t  beg;
         log_item_t  cnp;
         log_item_t  end;
     } d = {
         .num    = htonl(jmp->num),
         .tm     = tmton(jmp->tm),
+        .toff   = jmpton(jmp->toff),
         .beg    = jmpton(jmp->beg),
         .cnp    = jmpton(jmp->cnp),
         .end    = jmpton(jmp->end)
