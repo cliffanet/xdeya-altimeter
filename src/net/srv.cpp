@@ -150,6 +150,40 @@ bool srvRecv(uint8_t &cmd, uint8_t *data, uint16_t sz) {
 /* ------------------------------------------------------------------------------------------- *
  *  отправка на сервер
  * ------------------------------------------------------------------------------------------- */
+static bool _srvSend(const uint8_t *data, size_t sz) {
+    uint8_t t = 5;
+    while (sz > 0) {
+        t --;
+        auto sz1 = cli.write(data, sz);
+        
+        if (sz1 < sz) {
+            CONSOLE("not all sended: %d of %d; try avail: %d", sz1, sz, t);
+            if (sz1 < 0) {
+                last_err = PSTR("server send fail");
+                CONSOLE("write FAIL (%d)", sz1);
+                return false;
+            }
+            if (!cli.connected()) {
+                last_err = PSTR("server connect lost");
+                CONSOLE("server connect lost while send");
+                return false;
+            }
+            if (t < 1) {
+                last_err = PSTR("server send timeout");
+                CONSOLE("no try avail");
+                return false;
+            }
+            
+            delay(50);
+            CONSOLE("try send again");
+        }
+        
+        sz -= sz1;
+        data += sz1;
+    }
+    
+    return true;
+}
 bool srvSend(uint8_t cmd, const uint8_t *data, uint16_t sz) {
     if (!cli.connected()) {
         last_err = PSTR("server connect lost");
@@ -163,11 +197,5 @@ bool srvSend(uint8_t cmd, const uint8_t *data, uint16_t sz) {
     if (sz > 0)
         memcpy(d+4, data, sz);
     
-    auto sz2 = cli.write(d, 4 + sz);
-    if (sz2 != (4 + sz)) {
-        last_err = PSTR("server send fail");
-        CONSOLE("srvSend FAIL: sended=%d; sz=%d", sz2, sz);
-        return false;
-    }
-    return true;
+    return _srvSend(d, 4 + sz);
 }
