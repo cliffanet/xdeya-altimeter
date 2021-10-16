@@ -87,6 +87,7 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
 // Один прыг в простом логбуке, где запоминаются только данные на начало, середину и самое окончание прыга
 typedef struct __attribute__((__packed__)) {
     uint32_t    num;
+    uint32_t    key;
     tm_t        tm;
     log_item_t  toff;
     log_item_t  beg;

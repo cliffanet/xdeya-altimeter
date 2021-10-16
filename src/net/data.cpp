@@ -234,6 +234,7 @@ bool sendPoint() {
 static bool sendLogBookItem(const log_jmp_t *jmp) {
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t    num;
+        uint32_t    key;
         tm_t        tm;
         log_item_t  toff;
         log_item_t  beg;
@@ -241,6 +242,7 @@ static bool sendLogBookItem(const log_jmp_t *jmp) {
         log_item_t  end;
     } d = {
         .num    = htonl(jmp->num),
+        .key    = htonl(jmp->key),
         .tm     = tmton(jmp->tm),
         .toff   = jmpton(jmp->toff),
         .beg    = jmpton(jmp->beg),
@@ -308,11 +310,13 @@ static bool sendTrackBeg(const trk_head_t *th) {
         uint32_t id;
         uint32_t flags;
         uint32_t jmpnum;
+        uint32_t jmpkey;
         tm_t     tmbeg;
     } d = {
         .id         = htonl(th->id),
         .flags      = htonl(th->flags),
         .jmpnum     = htonl(th->jmpnum),
+        .jmpkey     = htonl(th->jmpkey),
         .tmbeg      = tmton(th->tmbeg),
     };
     

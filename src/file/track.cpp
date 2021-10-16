@@ -43,6 +43,7 @@ bool trkStart(bool force, uint16_t old) {
     th.jmpnum = jmp.count();
     if (jmp.state() == LOGJMP_NONE) // в случае, если прыг не начался (включение трека до начала прыга),
         th.jmpnum ++;          // за номер прыга считаем следующий
+    th.jmpkey = jmp.key();
     th.tmbeg = tmNow(jmpPreLogInterval(old));
     
     if (!fwrite(fh, th)) {
@@ -90,6 +91,7 @@ size_t trkStop() {
     fh.close();
     
     state = TRKRUN_NONE;
+    jmp.keyreset();
     CONSOLE("track stopped");
     return 0;
 }

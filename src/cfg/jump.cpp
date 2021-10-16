@@ -3,6 +3,8 @@
 #include "../file/log.h"
 #include "../clock.h"
 
+#include "esp_system.h"
+
 /* ------------------------------------------------------------------------------------------- *
  *  Пишем в простой лог прыжки
  * ------------------------------------------------------------------------------------------- */
@@ -18,12 +20,31 @@ ConfigJump::ConfigJump() :
     tm_t tm = { 0 }; 
     
     data.last.num = 0;
+    data.last.key = 0;
     data.last.tm = tm;
     data.last.toff = li;
     data.last.beg = li;
     data.last.cnp = li;
     data.last.end = li;
 }
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Генерирует при необходимости случайный ключ прыга, и возвращает его
+ * ------------------------------------------------------------------------------------------- */
+uint32_t ConfigJump::key() {
+    // Эта функция вызывается только снаружи
+    // И пока не начался прыг (свободное падение), мы каждый раз перегенерируем его
+    if ((data.last.key == 0) || (data.state < LOGJMP_BEG))
+        data.last.key = esp_random();
+    
+    return data.last.key;
+}
+void ConfigJump::keyreset() {
+    // сброс ключа снаружи - только если он не используется тут
+    if (data.state == LOGJMP_NONE)
+        data.last.key = 0;
+}
+
 /* ------------------------------------------------------------------------------------------- *
  *  старт
  * ------------------------------------------------------------------------------------------- */
@@ -59,6 +80,7 @@ bool ConfigJump::beg(uint16_t old) {
     data.last.tm = tm;
     
     data.state = LOGJMP_BEG;
+    key(); // перегенерируем key только если он нулевой (не используется никем)
     
     data.last.beg = jmpPreLog(old);
     data.last.beg.tmoffset = 0;
@@ -108,6 +130,8 @@ bool ConfigJump::end() {
     
     if (!logAppend(PSTR(JMPLOG_SIMPLE_NAME), data.last, JMPLOG_SIMPLE_ITEM_COUNT, JMPLOG_SIMPLE_FILE_COUNT))
         return false;
+
+    data.last.key = 0;
     
     return true;
 }
