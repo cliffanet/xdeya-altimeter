@@ -228,11 +228,11 @@ void pwrOff() {
 }
 
 #if HWVER > 1
-bool pwrBattChk(bool init, uint16_t val) {
+bool pwrBattChk(bool init, double val) {
     if (init)
         pinMode(HWPOWER_PIN_BATIN, INPUT);
     
-    if (pwrBattValue() > val)
+    if (pwrBattValue() >= val)
         return true;
     
     CONSOLE("battery low");
@@ -255,8 +255,30 @@ bool pwrBattChk(bool init, uint16_t val) {
     
     return false;
 }
-uint16_t pwrBattValue() {
+
+static double fmap(uint32_t in, uint32_t in_min, uint32_t in_max, double out_min, double out_max) {
+    return  (out_max - out_min) * (in - in_min) / (in_max - in_min) + out_min;
+}
+
+uint16_t pwrBattRaw() {
     return analogRead(HWPOWER_PIN_BATIN);
+}
+double pwrBattValue() {
+    //return 3.35 * pwrBattRaw() / 4095 * 3 / 2;
+    return fmap(pwrBattRaw(), 0x0000, 0x0fff, 0.12, 3.35) * 3 / 2;
+    /*
+        raw 2400 = 3.02v
+        raw 2500 = 3.14v
+        raw 2600 = 3.26v
+        raw 2700 = 3.37v
+        raw 2800 = 3.49v
+        raw 2900 = 3.61v
+        raw 3000 = 3.73v
+        raw 3100 = 3.85v
+        raw 3200 = 3.97v
+        raw 3300 = 4.08v
+        raw 3400 = 4.20v
+    */
 }
 #endif
 

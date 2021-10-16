@@ -605,11 +605,9 @@ static const menu_el_t menuhwtest[] {
         .enter = NULL,
         .showval = [] (char *txt) {
             char ok[10];
-            uint16_t bval = pwrBattValue();
-            float vpin = 3.35 * bval / 4095;
-            
+            uint16_t bval = pwrBattRaw();
             valOk(ok, (bval > 2400) && (bval < 3450));
-            sprintf_P(txt, PSTR("(%0.2fv) %s"), vpin * 3 / 2, ok);
+            sprintf_P(txt, PSTR("(%0.2fv) %s"), pwrBattValue(), ok);
         },
     },
 #endif

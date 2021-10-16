@@ -5,7 +5,7 @@
 #include "../gps/proc.h"
 #include "../file/track.h"
 #include "../view/base.h"   // btnPushed()
-#include "../power.h"       // pwrBattValue()
+#include "../power.h"       // pwrBattRaw()
 #include "../clock.h"
 
 #include <Adafruit_BMP280.h>
@@ -82,7 +82,7 @@ static void jmpPreLogAdd(uint16_t interval) {
         sat         : gps.numSV,
         _           : 0,
 #if HWVER > 1
-        batval      : pwrBattValue(),
+        batval      : pwrBattRaw(),
 #else
         batval      : 0,
 #endif

@@ -16,6 +16,8 @@
 #define HWPOWER_PIN_BATCHRG 12
 #endif
 
+#define BATT_VALUE_MIN      3.15
+
 typedef enum {
     PWR_OFF = 0,
     PWR_SLEEP,
@@ -34,8 +36,9 @@ void pwrSleep();
 void pwrOff();
 
 #if HWVER > 1
-bool pwrBattChk(bool init = false, uint16_t val = 2730);
-uint16_t pwrBattValue();
+bool pwrBattChk(bool init = false, double val = BATT_VALUE_MIN);
+uint16_t pwrBattRaw();
+double pwrBattValue();
 #else
 #define pwrBattChk(...)
 #endif

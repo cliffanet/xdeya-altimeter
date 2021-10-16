@@ -2,10 +2,11 @@
 #include "info.h"
 #include "main.h"
 
-#include "../power.h" // pwrBattValue()
+#include "../power.h" // pwrBattRaw()
 #include "../clock.h" // sys time
 #include "../jump/proc.h" // altCalc()
 #include "../gps/proc.h"
+
 
 class ViewInfoDebug : public ViewInfo {
     public:
@@ -25,11 +26,11 @@ class ViewInfoDebug : public ViewInfo {
 #if HWVER > 1
                 case 0:
                     PRNL("Battery RAW");
-                    PRNR("%d", pwrBattValue());
+                    PRNR("%d", pwrBattRaw());
                     break;
                 case 1:
                     PRNL("Batt voltage");
-                    PRNR("%0.2fv", 3.35 * pwrBattValue() / 4095 * 3 / 2);
+                    PRNR("%0.2fv", pwrBattValue());
                     break;
 #endif
                 

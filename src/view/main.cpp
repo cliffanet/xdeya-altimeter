@@ -3,7 +3,7 @@
 
 #include "menu.h"
 #include "../log.h"
-#include "../power.h" // pwrBattValue()
+#include "../power.h" // pwrBattRaw()
 #include "../clock.h"
 #include "../file/track.h"
 #include "../gps/proc.h"
@@ -36,14 +36,14 @@ void ViewMain::btnLong(btn_code_t btn) {
 void ViewMain::drawState(U8G2 &u8g2) {
     u8g2.setDrawColor(1);
 #if HWVER >= 3
-    uint16_t bv = pwrBattValue();
+    uint16_t bv = pwrBattRaw();
     if ((bv > 2700) || isblink()) {
         u8g2.setFont(u8g2_font_battery19_tn);
         char b = 
-                bv > 3250 ? '5' :
-                bv > 3150 ? '4' :
-                bv > 3050 ? '3' :
-                bv > 2950 ? '2' :
+                bv > 3200 ? '5' :
+                bv > 3100 ? '4' :
+                bv > 3000 ? '3' :
+                bv > 2900 ? '2' :
                 bv > 2800 ? '1' :
                 '0';
         u8g2.setFontDirection(1);
@@ -60,7 +60,7 @@ void ViewMain::drawState(U8G2 &u8g2) {
 
 #if HWVER == 2
     char s[10];
-    sprintf_P(s, PSTR("%d"), pwrBattValue());
+    sprintf_P(s, PSTR("%d"), pwrBattRaw());
     u8g2.drawStr(0, 8, s);
 #endif
 
