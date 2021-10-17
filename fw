@@ -82,7 +82,7 @@ sub fname {
     my ($hwver, $typename) = @_;
     
     my $ver = join('.', @version) || return;
-    my $name = 'gpsadv.v'.$ver.'.hw'.$hwver;
+    my $name = 'xdeya-altimeter.v'.$ver.'.hw'.$hwver;
     
     if ($typename) {
         $name .= '.' . $typename;
@@ -176,16 +176,16 @@ sub build {
     my $cmd = "$cli compile --fqbn $fqbn --output-dir $dir/.build $flags $srcdir";# --verbose --log-level trace --clean";
     runcmd($cmd) || return;
     
-    return unless -f "$dir/.build/gpsadv.ino.bin";
-    rename("$dir/.build/gpsadv.ino.bin", "$dir/${fname}.bin") || return;
-    if (-f "$dir/.build/gpsadv.ino.partitions.bin") {
-        rename("$dir/.build/gpsadv.ino.partitions.bin", "$dir/${fname}.partitions.bin") || return;
+    return unless -f "$dir/.build/xdeya-altimeter.ino.bin";
+    rename("$dir/.build/xdeya-altimeter.ino.bin", "$dir/${fname}.bin") || return;
+    if (-f "$dir/.build/xdeya-altimeter.ino.partitions.bin") {
+        rename("$dir/.build/xdeya-altimeter.ino.partitions.bin", "$dir/${fname}.partitions.bin") || return;
     }
-    if (-f "$dir/.build/gpsadv.ino.bootloader.bin") {
-        rename("$dir/.build/gpsadv.ino.bootloader.bin", "$dir/${fname}.bootloader.bin") || return;
+    if (-f "$dir/.build/xdeya-altimeter.ino.bootloader.bin") {
+        rename("$dir/.build/xdeya-altimeter.ino.bootloader.bin", "$dir/${fname}.bootloader.bin") || return;
     }
-    unlink "$dir/.build/gpsadv.ino.elf";
-    unlink "$dir/.build/gpsadv.ino.map";
+    unlink "$dir/.build/xdeya-altimeter.ino.elf";
+    unlink "$dir/.build/xdeya-altimeter.ino.map";
     
     md5upd($dir.'/'.$fname);
     

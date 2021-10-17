@@ -37,7 +37,7 @@
 #endif
 
 #define FWVER_NAME          TOSTRING(FWVER_NUM) FWVER_TYPE_NAME ".hw" TOSTRING(HWVER)
-#define FWVER_FILENAME      "gpsadv.v" FWVER_NAME
+#define FWVER_FILENAME      "xdeya.v" FWVER_NAME
 
 #endif
 

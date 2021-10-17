@@ -17,9 +17,9 @@ void ViewLogo::draw(U8G2 &u8g2) {
     
     char s[30];
     u8g2.setFont(u8g2_font_ImpactBits_tr);
-    strcpy_P(s, PSTR("HYBRIDO"));
+    strcpy_P(s, PSTR("XDEYA"));
     u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, u8g2.getDisplayHeight()-20, s);
-    strcpy_P(s, PSTR("v." FWVER_NAME));
+    strcpy_P(s, PSTR("v" FWVER_NAME));
     u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, u8g2.getDisplayHeight()-5, s);
 }
 
