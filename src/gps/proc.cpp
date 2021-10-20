@@ -374,8 +374,13 @@ static bool gpsInitCmd() {
 		.navBbrMask = 0x0000,   // Hot start
 		.resetMode  = 0x09      // Controlled GPS start
 	};
-    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst) || !gpsCmdConfirm())
+    // В документации пишут, что на старых версиях прошивки подтверждение этой
+    // команды приходит нестабильно, а в новых - специально убрали подтверждение
+    // этой команды, т.к. всё равно, до перезагрузки устройства это подтверждение
+    // не успевает отправиться
+    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst)) // || !gpsCmdConfirm())
         return false;
+    gps.cnfclear();
     
     CONSOLE("GPS-UART config ok");
     
@@ -385,7 +390,7 @@ static bool gpsInitCmd() {
 void gpsInit() {
     if (!gpsInitCmd()) {
         CONSOLE("GPS init fail");
-        gpsFree();
+        //gpsFree();
     }
 }
 
@@ -502,6 +507,8 @@ void gpsOff(bool save) {
 #endif
     if (save)
         gpspwr = false;
+    
+    ss.begin(9600);
 }
 void gpsRestore() {
     if (gpspwr)
