@@ -232,8 +232,18 @@ bool pwrBattChk(bool init, double val) {
     if (init)
         pinMode(HWPOWER_PIN_BATIN, INPUT);
     
-    if (pwrBattValue() >= val)
+    auto cur = pwrBattValue();
+    if (cur >= val)
         return true;
+    
+    if (cur < 1) {
+        // Эта величина означает, что скорее всего мы питаемся
+        // от другого источника питания, либо есть проблема контроля
+        // напряжения питания
+        // ибо от такого низкого напряжения esp работать не может
+        CONSOLE("battery value wrong: %0.2f", cur);
+        return true;
+    }
     
     CONSOLE("battery low");
     
