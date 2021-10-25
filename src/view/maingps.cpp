@@ -132,6 +132,36 @@ static void displayCompasFull(U8G2 &u8g2) {
     }
 }
 
+static void displayGpsState(U8G2 &u8g2) {
+    auto &gps = gpsInf();
+    char s[50];
+    
+    u8g2.setFont(u8g2_font_helvB08_tf);
+    
+    switch (gpsState()) {
+        case GPS_STATE_OFF:
+            strcpy_P(s, PSTR("gps off"));
+            break;
+        
+        case GPS_STATE_INIT:
+            strcpy_P(s, PSTR("gps init"));
+            break;
+        
+        case GPS_STATE_FAIL:
+            strcpy_P(s, PSTR("gps init fail"));
+            break;
+        
+        case GPS_STATE_NODATA:
+            strcpy_P(s, PSTR("no gps data"));
+            break;
+        
+        case GPS_STATE_OK:
+            sprintf_P(s, PSTR("s: %d"), gps.numSV);
+            break;
+    }
+    u8g2.drawStr(0, u8g2.getDisplayHeight()-1, s);
+}
+
 /* ------------------------------------------------------------------------------------------- *
  *  Только GPS
  * ------------------------------------------------------------------------------------------- */
@@ -262,12 +292,7 @@ class ViewMainGpsAlt : public ViewMain {
             }
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 30, s);
 
-            u8g2.setFont(u8g2_font_helvB08_tf);
-            if (gpsPwr())
-                sprintf_P(s, PSTR("s: %d"), gps.numSV);
-            else
-                strcpy_P(s, PSTR("gps off"));
-            u8g2.drawStr(0, u8g2.getDisplayHeight()-1, s);
+            displayGpsState(u8g2);
     
             // Далее жпс данные
             if (!GPS_VALID(gps))
@@ -346,12 +371,7 @@ class ViewMainGpsAlt : public ViewMain {
             }
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s)+6, 44, s);
 
-            u8g2.setFont(u8g2_font_helvB08_tf);
-            if (gpsPwr())
-                sprintf_P(s, PSTR("s: %d"), gps.numSV);
-            else
-                strcpy_P(s, PSTR("gps off"));
-            u8g2.drawStr(0, u8g2.getDisplayHeight()-1, s);
+            displayGpsState(u8g2);
     
             // Далее жпс данные
             if (!GPS_VALID(gps))

@@ -15,6 +15,7 @@ static UbloxGpsProto gps(ss);
 static gps_data_t data = { 0 };
 
 static bool direct = false;
+static gps_state_t state = GPS_STATE_OFF;
 
 /* ------------------------------------------------------------------------------------------- *
  *  GPS-получение данных
@@ -200,6 +201,7 @@ uint8_t gpsDataAge() {
         frst = ageRecv.pvt;
     return frst;
 }
+gps_state_t gpsState() { return state; }
 
 
 /* ------------------------------------------------------------------------------------------- *
@@ -388,9 +390,12 @@ static bool gpsInitCmd() {
 }
 
 void gpsInit() {
-    if (!gpsInitCmd()) {
+    state = GPS_STATE_INIT;
+    if (gpsInitCmd())
+        state = GPS_STATE_OK;
+    else {
+        state = GPS_STATE_FAIL;
         CONSOLE("GPS init fail");
-        //gpsFree();
     }
 }
 
@@ -421,6 +426,9 @@ void gpsProcess() {
         (ageRecv.timeutc    < 7) &&
         (ageRecv.sol        < 7) &&
         (ageRecv.pvt        < 7);
+    
+    if (state >= GPS_STATE_NODATA)
+        state = data.rcvok ? GPS_STATE_OK : GPS_STATE_NODATA;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -494,6 +502,7 @@ void gpsOn(bool init) {
     pinMode(GPS_PIN_POWER, OUTPUT);
 #endif
     gpspwr = true;
+    state = GPS_STATE_OK;
     
     if (init) {
         delay(200);
@@ -501,6 +510,8 @@ void gpsOn(bool init) {
     }
 }
 void gpsOff(bool save) {
+    state = GPS_STATE_OFF;
+    
 #if HWVER > 1
     digitalWrite(GPS_PIN_POWER, HIGH);
     pinMode(GPS_PIN_POWER, OUTPUT);

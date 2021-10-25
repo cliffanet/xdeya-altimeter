@@ -59,11 +59,20 @@ typedef struct {
     bool rcvok;
 } gps_data_t;
 
+typedef enum {
+    GPS_STATE_OFF = 0,
+    GPS_STATE_INIT,
+    GPS_STATE_FAIL,
+    GPS_STATE_NODATA,
+    GPS_STATE_OK
+} gps_state_t;
+
 const gps_data_t &gpsInf();
 uint32_t gpsRecv();
 uint32_t gpsRecvError();
 uint32_t gpsCmdUnknown();
 uint8_t gpsDataAge();
+gps_state_t gpsState();
 void gpsInit();
 void gpsProcess();
 
