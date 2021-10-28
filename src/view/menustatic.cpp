@@ -264,52 +264,6 @@ static const menu_el_t menugpsupoint[] {
 static ViewMenuStatic vMenuGpsPoint(menugpsupoint, sizeof(menugpsupoint)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
- *  Меню работы с трэками
- * ------------------------------------------------------------------------------------------- */
-static const menu_el_t menutrack[] {
-    {   // Текущий режим записи трэка
-        .name = PSTR("Recording"),
-        .submenu = NULL,
-        .enter = menuFlashHold,           // Переключаем в один клик без режима редактирования
-        .showval = [] (char *txt) {
-            switch (trkState()) {
-                case TRKRUN_NONE:  strcpy_P(txt, PSTR("no")); break;
-                case TRKRUN_FORCE: strcpy_P(txt, PSTR("Force")); break;
-                case TRKRUN_AUTO:  strcpy_P(txt, PSTR("Auto")); break;
-                default: txt[0] = '\0';
-            }
-        },
-        .edit = NULL,
-        .hold = [] () {
-            if (trkRunning())
-                trkStop();
-            else
-                trkStart(true);
-        },
-    },
-    {   // Количество записей
-        .name = PSTR("Count"),
-        .submenu = NULL,
-        .enter = NULL,
-        .showval = [] (char *txt) { valInt(txt, trkFileCount()); },
-    },
-    {   // Сколько времени доступно
-        .name = PSTR("Avail"),
-        .submenu = NULL,
-        .enter = NULL,
-        .showval = [] (char *txt) {
-            // сколько записей ещё влезет
-            size_t avail = trkCountAvail() / 5; // количество секунд
-            if (avail >= 60)
-                sprintf_P(txt, PSTR("%d:%02d"), avail/60, avail%60);
-            else
-                sprintf_P(txt, PSTR("%d s"), avail);
-        },
-    },
-};
-static ViewMenuStatic vMenuTrack(menutrack, sizeof(menutrack)/sizeof(menu_el_t));
-
-/* ------------------------------------------------------------------------------------------- *
  *  Меню управления экраном
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menudisplay[] {
@@ -476,6 +430,169 @@ static const menu_el_t menuinfo[] {
 static ViewMenuStatic vMenuInfo(menuinfo, sizeof(menuinfo)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Меню автоотключения питания
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menupoweroff[] {
+    {   // отключаться через N часов отсутствия взлётов
+        .name       = PSTR("No Fly hours"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            if (cfg.d().hrpwrnofly > 0)
+                valInt(txt, cfg.d().hrpwrnofly);
+            else
+                strcpy_P(txt, PSTR("disable"));
+        },
+        .edit       = [] (int val) {
+            int32_t c = cfg.d().hrpwrnofly;
+            c += val;
+            if (c < 0) c = 0;
+            if (c > 24) c = 24;
+            if (c == cfg.d().hrpwrnofly) return;
+            cfg.set().hrpwrnofly = c;
+        },
+    },
+    {   // отключаться через N часов после включения
+        .name       = PSTR("Aft. Pwr-On"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            if (cfg.d().hrpwrafton > 0)
+                valInt(txt, cfg.d().hrpwrafton);
+            else
+                strcpy_P(txt, PSTR("disable"));
+        },
+        .edit       = [] (int val) {
+            int32_t c = cfg.d().hrpwrafton;
+            c += val;
+            if (c < 0) c = 0;
+            if (c > 24) c = 24;
+            if (c == cfg.d().hrpwrafton) return;
+            cfg.set().hrpwrafton = c;
+        },
+    },
+};
+static ViewMenuStatic vMenuPowerOff(menupoweroff, sizeof(menupoweroff)/sizeof(menu_el_t));
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Меню автоматического включения GPS-приёмника
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menugpson[] {
+    {   // Включение / выключение питания GPS вручную
+        .name = PSTR("Current State"),
+        .submenu = NULL,
+        .enter = gpsPwrTgl,                 // Переключаем в один клик без режима редактирования
+        .showval = [] (char *txt) { valOn(txt, gpsPwr()); },
+    },
+    {   // авто-включение сразу при включении питания
+        .name       = PSTR("Auto-On by Pwr-On"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsonpwron); },
+        .edit       = [] (int val) { cfg.set().gpsonpwron = !cfg.d().gpsonpwron; },
+    },
+    {   // автоматически включать при старте записи трека
+        .name       = PSTR("Auto-On by Track Rec"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsontrkrec); },
+        .edit       = [] (int val) { cfg.set().gpsontrkrec = !cfg.d().gpsontrkrec; },
+    },
+    {   // авто-включение в подъёме на заданной высоте
+        .name       = PSTR("Auto-On by Takeoff Alt"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            if (cfg.d().gpsonalt > 0)
+                valInt(txt, cfg.d().gpsonalt);
+            else
+                strcpy_P(txt, PSTR("disable"));
+        },
+        .edit       = [] (int val) {
+            int32_t c = cfg.d().gpsonalt;
+            c += val*10;
+            if (c < 0) c = 0;
+            if (c > 6000) c = 6000;
+            if (c == cfg.d().gpsonalt) return;
+            cfg.set().gpsonalt = c;
+        },
+    },
+    {   // авто-отключать жпс всегда после приземления
+        .name       = PSTR("Force-Off by Landing"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsoffland); },
+        .edit       = [] (int val) { cfg.set().gpsoffland = !cfg.d().gpsoffland; },
+    },
+};
+static ViewMenuStatic vMenuGpsOn(menugpson, sizeof(menugpson)/sizeof(menu_el_t));
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Меню работы с трэками
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menutrack[] {
+    {   // Текущий режим записи трэка
+        .name = PSTR("Recording"),
+        .submenu = NULL,
+        .enter = menuFlashHold,           // Переключаем в один клик без режима редактирования
+        .showval = [] (char *txt) {
+            switch (trkState()) {
+                case TRKRUN_NONE:  strcpy_P(txt, PSTR("no")); break;
+                case TRKRUN_FORCE: strcpy_P(txt, PSTR("Force")); break;
+                case TRKRUN_AUTO:  strcpy_P(txt, PSTR("Auto")); break;
+                default: txt[0] = '\0';
+            }
+        },
+        .edit = NULL,
+        .hold = [] () {
+            if (trkRunning())
+                trkStop();
+            else
+                trkStart(true);
+        },
+    },
+    {   // автоматически включать трек на заданной высоте в подъёме
+        .name       = PSTR("Auto Rec. by Alt"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            if (cfg.d().trkonalt > 0)
+                valInt(txt, cfg.d().trkonalt);
+            else
+                strcpy_P(txt, PSTR("disable"));
+        },
+        .edit       = [] (int val) {
+            int32_t c = cfg.d().trkonalt;
+            c += val*10;
+            if (c < 0) c = 0;
+            if (c > 6000) c = 6000;
+            if (c == cfg.d().trkonalt) return;
+            cfg.set().trkonalt = c;
+        },
+    },
+    {   // Количество записей
+        .name = PSTR("Count"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) { valInt(txt, trkFileCount()); },
+    },
+    {   // Сколько времени доступно
+        .name = PSTR("Avail"),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            // сколько записей ещё влезет
+            size_t avail = trkCountAvail() / 5; // количество секунд
+            if (avail >= 60)
+                sprintf_P(txt, PSTR("%d:%02d"), avail/60, avail%60);
+            else
+                sprintf_P(txt, PSTR("%d s"), avail);
+        },
+    },
+};
+static ViewMenuStatic vMenuTrack(menutrack, sizeof(menutrack)/sizeof(menu_el_t));
+
+/* ------------------------------------------------------------------------------------------- *
  *  Меню управления часами
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menutime[] {
@@ -514,6 +631,41 @@ static const menu_el_t menutime[] {
     },
 };
 static ViewMenuStatic vMenuTime(menutime, sizeof(menutime)/sizeof(menu_el_t));
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Меню опций
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menuoptions[] {
+    {
+        .name       = PSTR("Display"),
+        .submenu    = &vMenuDisplay,
+    },
+    {
+        .name       = PSTR("Gnd Correct"),
+        .submenu    = &vMenuGnd,
+    },
+    {
+        .name       = PSTR("Auto Screen-Mode"),
+        .submenu    = &vMenuInfo,
+    },
+    {
+        .name       = PSTR("Auto Power-Off"),
+        .submenu    = &vMenuPowerOff,
+    },
+    {
+        .name       = PSTR("Auto GPS-On"),
+        .submenu    = &vMenuGpsOn,
+    },
+    {
+        .name       = PSTR("Track"),
+        .submenu    = &vMenuTrack,
+    },
+    {
+        .name       = PSTR("Time"),
+        .submenu    = &vMenuTime,
+    },
+};
+static ViewMenuStatic vMenuOptions(menuoptions, sizeof(menuoptions)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления питанием
@@ -753,24 +905,8 @@ static const menu_el_t menumain[] {
         .submenu    = menuLogBook(),
     },
     {
-        .name       = PSTR("Track"),
-        .submenu    = &vMenuTrack,
-    },
-    {
-        .name       = PSTR("Display"),
-        .submenu    = &vMenuDisplay,
-    },
-    {
-        .name       = PSTR("Gnd Correct"),
-        .submenu    = &vMenuGnd,
-    },
-    {
-        .name       = PSTR("Auto Screen-Mode"),
-        .submenu    = &vMenuInfo,
-    },
-    {
-        .name       = PSTR("Time"),
-        .submenu    = &vMenuTime,
+        .name       = PSTR("Options"),
+        .submenu    = &vMenuOptions,
     },
     {
         .name       = PSTR("Power"),

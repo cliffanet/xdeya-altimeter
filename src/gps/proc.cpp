@@ -521,6 +521,12 @@ void gpsOff(bool save) {
     
     ss.begin(9600);
 }
+void gpsPwrTgl() {
+    if (gpspwr)
+        gpsOff();
+    else
+        gpsOn(true);
+}
 void gpsRestore() {
     if (gpspwr)
         gpsOn(digitalRead(GPS_PIN_POWER) != LOW);
