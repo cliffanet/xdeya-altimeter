@@ -82,9 +82,17 @@ bool gpsDirect();
 double gpsDistance(double lat1, double long1, double lat2, double long2);
 double gpsCourse(double lat1, double long1, double lat2, double long2);
 
-bool gpsPwr();
-void gpsOn(bool init = false);
-void gpsOff(bool save = true);
+#define GPS_PWRBY_HAND      0x01
+#define GPS_PWRBY_PWRON     0x02
+#define GPS_PWRBY_TRKREC    0x04
+#define GPS_PWRBY_ALT       0x08
+#define GPS_PWRBY_ANY       0xFF
+
+bool gpsPwr(uint8_t by = GPS_PWRBY_ANY);
+void gpsOn(uint8_t by = GPS_PWRBY_HAND);
+void gpsPwrDown();
+void gpsOff(uint8_t by = GPS_PWRBY_ANY);
+void gpsRestart();
 void gpsPwrTgl();
 void gpsRestore();
 

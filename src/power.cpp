@@ -205,7 +205,7 @@ void pwrSleep() {
     mode = PWR_SLEEP;
     
     displayOff();
-    gpsOff(false);
+    gpsPwrDown();
     setCpuFrequencyMhz(10);
     
     CONSOLE("pwr sleep");
@@ -216,7 +216,7 @@ void pwrOff() {
     mode = PWR_OFF;
     
     displayOff();
-    gpsOff(false);
+    gpsPwrDown();
     setCpuFrequencyMhz(10);
     
     // перед тем, как уйти в сон окончательно, дождёмся отпускания кнопки питания
@@ -260,7 +260,7 @@ bool pwrBattChk(bool init, double val) {
     
     CONSOLE("pwr off");
     displayOff();
-    gpsOff(false);
+    gpsPwrDown();
     pwrDeepSleep();
     
     return false;

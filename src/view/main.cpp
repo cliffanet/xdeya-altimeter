@@ -14,10 +14,7 @@ void ViewMain::btnLong(btn_code_t btn) {
     switch (btn) {
         case BTN_UP:
             //displayLightTgl();
-            if (gpsPwr())
-                gpsOff();
-            else
-                gpsOn(true);
+            gpsPwrTgl();
             return;
 
         case BTN_SEL:

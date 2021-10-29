@@ -4,6 +4,7 @@
 #include "point.h"
 #include "jump.h"
 #include "webjoin.h"
+#include "../gps/proc.h"
 #include "../file/log.h"
 
 #include <FS.h>
@@ -167,9 +168,13 @@ bool cfgLoad(bool apply) {
         ok = false;
     if (!jmp.load())
         ok = false;
+    
     if (apply) {
         displayContrast(cfg.d().contrast);
+        if (cfg.d().gpsonpwron)
+            gpsOn(GPS_PWRBY_PWRON);
     }
+    
     return ok;
 }
 bool cfgSave(bool force) {

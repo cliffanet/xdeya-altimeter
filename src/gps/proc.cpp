@@ -492,44 +492,70 @@ double gpsCourse(double lat1, double long1, double lat2, double long2) {
 /* ------------------------------------------------------------------------------------------- *
  *  Питание на GPS-модуле
  * ------------------------------------------------------------------------------------------- */
-static RTC_DATA_ATTR bool gpspwr = true;
-bool gpsPwr() {
-    return gpspwr;
+static RTC_DATA_ATTR uint8_t gpspwr = 0;
+bool gpsPwr(uint8_t by) {
+    return (gpspwr & by) > 0;
 }
-void gpsOn(bool init) {
+
+void gpsOn(uint8_t by) {
+    gpspwr |= by;
+    if (gpspwr == 0)
+        return;
+    
 #if HWVER > 1
+    if (digitalRead(GPS_PIN_POWER) == LOW)
+        return;
     digitalWrite(GPS_PIN_POWER, LOW);
     pinMode(GPS_PIN_POWER, OUTPUT);
 #endif
-    gpspwr = true;
+    
     state = GPS_STATE_OK;
     
-    if (init) {
-        delay(200);
-        gpsInit();
-    }
+    delay(200);
+    gpsInit();
 }
-void gpsOff(bool save) {
-    state = GPS_STATE_OFF;
-    
+
+void gpsPwrDown() {
 #if HWVER > 1
+    if (digitalRead(GPS_PIN_POWER) == HIGH)
+        return;
     digitalWrite(GPS_PIN_POWER, HIGH);
     pinMode(GPS_PIN_POWER, OUTPUT);
 #endif
-    if (save)
-        gpspwr = false;
+    
+    state = GPS_STATE_OFF;
+}
+void gpsOff(uint8_t by) {
+    gpspwr &= ~by;
+    
+    if (gpspwr > 0)
+        return;
+
+    gpsPwrDown();
     
     ss.begin(9600);
 }
+
+void gpsRestart() {
+    digitalWrite(GPS_PIN_POWER, HIGH);
+    pinMode(GPS_PIN_POWER, OUTPUT);
+    
+    delay(1000);
+
+    digitalWrite(GPS_PIN_POWER, LOW);
+    gpspwr |= GPS_PWRBY_HAND;
+    state = GPS_STATE_OK;
+}
+
 void gpsPwrTgl() {
     if (gpspwr)
         gpsOff();
     else
-        gpsOn(true);
+        gpsOn(GPS_PWRBY_HAND);
 }
 void gpsRestore() {
-    if (gpspwr)
-        gpsOn(digitalRead(GPS_PIN_POWER) != LOW);
+    if (gpspwr > 0)
+        gpsOn(0);
     else
         gpsOff();
 }

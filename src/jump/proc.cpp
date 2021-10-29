@@ -404,6 +404,15 @@ void jmpProcess() {
         
         // Сохраняем
         jmp.end();
+
+        // на земле выключаем gps после включения на заданной высоте
+        if ((cfg.d().gpsonalt > 0) &&
+            gpsPwr(GPS_PWRBY_ALT))
+            gpsOff(GPS_PWRBY_ALT);
+
+        // Принудительное отключение gps после приземления
+        if (cfg.d().gpsoffland && gpsPwr())
+            gpsOff();
     }
     
     if ((jmpst == JMP_NONE) && (trkState() == TRKRUN_AUTO)) {
@@ -416,6 +425,14 @@ void jmpProcess() {
     }
     
     state = jmpst;
+    
+    if (ac.state() > ACST_GROUND) {
+        // автовключение gps на заданной высоте
+        if ((cfg.d().gpsonalt > 0) &&
+            (ac.alt() >= cfg.d().gpsonalt) &&
+            !gpsPwr(GPS_PWRBY_ALT))
+            gpsOn(GPS_PWRBY_ALT);
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *

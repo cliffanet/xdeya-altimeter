@@ -78,6 +78,10 @@ bool trkStart(bool force, uint16_t old) {
     state = force ? TRKRUN_FORCE : TRKRUN_AUTO;
     prelogcur = jmpPreLogFirst();
     CONSOLE("track started %s", force ? "force" : "auto");
+    
+    if (cfg.d().gpsontrkrec)
+        gpsOn(GPS_PWRBY_TRKREC);
+    
     return true;
 }
 
@@ -93,6 +97,10 @@ size_t trkStop() {
     state = TRKRUN_NONE;
     jmp.keyreset();
     CONSOLE("track stopped");
+    
+    if (cfg.d().gpsontrkrec)
+        gpsOff(GPS_PWRBY_TRKREC);
+    
     return 0;
 }
 

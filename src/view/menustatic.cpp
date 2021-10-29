@@ -813,9 +813,7 @@ static const menu_el_t menuhwtest[] {
         .name = PSTR("GPS power restart"),
         .submenu = NULL,
         .enter = [] () {
-            gpsOff();
-            delay(1000);
-            gpsOn();
+            gpsRestart();
             menuFlashP(PSTR("GPS restarted"), 10);
         },
     },
