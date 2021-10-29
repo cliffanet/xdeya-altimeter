@@ -359,10 +359,8 @@ void jmpProcess() {
             }
             // после установки jmpst далее просто контролируем режим ac.state()
 
-            // Включаем запись лога прыга
-            if (!trkRunning())
-                // Временно сделаем, чтобы при автозапуске трека, он начинал писать чуть заранее до отделения
-                trkStart(false, dncnt+50);
+            // Временно сделаем, чтобы при автозапуске трека, он начинал писать чуть заранее до отделения
+            trkStart(TRK_RUNBY_JMPBEG, dncnt+50);
             
             dncnt = 0;                              // при старте лога прыга обнуляем счётчик тиков пограничного состояния,
                                                     // он нам больше не нужен, чтобы в след раз не было ложных срабатываний
@@ -406,20 +404,18 @@ void jmpProcess() {
         jmp.end();
 
         // на земле выключаем gps после включения на заданной высоте
-        if ((cfg.d().gpsonalt > 0) &&
-            gpsPwr(GPS_PWRBY_ALT))
-            gpsOff(GPS_PWRBY_ALT);
+        gpsOff(GPS_PWRBY_ALT);
 
         // Принудительное отключение gps после приземления
         if (cfg.d().gpsoffland && gpsPwr())
             gpsOff();
     }
     
-    if ((jmpst == JMP_NONE) && (trkState() == TRKRUN_AUTO)) {
+    if ((jmpst == JMP_NONE) && trkRunning(TRK_RUNBY_JMPBEG | TRK_RUNBY_ALT)) {
         static uint8_t gndcnt = 0;
         gndcnt++;
         if (gndcnt >= 100) {
-            trkStop();
+            trkStop(TRK_RUNBY_JMPBEG | TRK_RUNBY_ALT);
             gndcnt = 0;
         }
     }
@@ -432,6 +428,12 @@ void jmpProcess() {
             (ac.alt() >= cfg.d().gpsonalt) &&
             !gpsPwr(GPS_PWRBY_ALT))
             gpsOn(GPS_PWRBY_ALT);
+        
+        // автовключение записи трека на заданной высоте
+        if ((cfg.d().trkonalt > 0) &&
+            (ac.alt() >= cfg.d().trkonalt) &&
+            !trkRunning(TRK_RUNBY_ALT))
+            trkStart(TRK_RUNBY_ALT);
     }
 }
 

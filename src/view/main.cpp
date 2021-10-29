@@ -25,7 +25,7 @@ void ViewMain::btnLong(btn_code_t btn) {
             if (trkRunning())
                 trkStop();
             else
-                trkStart(true);
+                trkStart(TRK_RUNBY_HAND);
             return;
     }
 }

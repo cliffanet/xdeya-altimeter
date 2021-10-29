@@ -536,19 +536,20 @@ static const menu_el_t menutrack[] {
         .submenu = NULL,
         .enter = menuFlashHold,           // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) {
-            switch (trkState()) {
-                case TRKRUN_NONE:  strcpy_P(txt, PSTR("no")); break;
-                case TRKRUN_FORCE: strcpy_P(txt, PSTR("Force")); break;
-                case TRKRUN_AUTO:  strcpy_P(txt, PSTR("Auto")); break;
-                default: txt[0] = '\0';
-            }
+            if (trkRunning(TRK_RUNBY_HAND))
+                strcpy_P(txt, PSTR("Force"));
+            else
+            if (trkRunning())
+                strcpy_P(txt, PSTR("Auto"));
+            else
+                strcpy_P(txt, PSTR("no"));
         },
         .edit = NULL,
         .hold = [] () {
             if (trkRunning())
                 trkStop();
             else
-                trkStart(true);
+                trkStart(TRK_RUNBY_HAND);
         },
     },
     {   // автоматически включать трек на заданной высоте в подъёме

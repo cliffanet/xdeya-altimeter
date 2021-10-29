@@ -6,7 +6,8 @@
 #include "../log.h"
 #include "../clock.h"
 
-static trk_running_t state = TRKRUN_NONE;
+static uint8_t state = 0;
+static bool runned = false;
 static uint32_t tmoffset = 0;
 static uint16_t prelogcur = 0;
 File fh;
@@ -15,9 +16,13 @@ File fh;
  *  Запуск трекинга
  * ------------------------------------------------------------------------------------------- */
 static bool trkCheckAvail(bool removeFirst = false);
-bool trkStart(bool force, uint16_t old) {
-    if (state != TRKRUN_NONE)
-        trkStop();
+bool trkStart(uint8_t by, uint16_t old) {
+    state |= by;
+    if (state == 0)
+        return false;
+    
+    if (runned)
+        return true;
     
     if (!trkCheckAvail(true))
         return false;
@@ -75,9 +80,9 @@ bool trkStart(bool force, uint16_t old) {
         old--;
     }
     
-    state = force ? TRKRUN_FORCE : TRKRUN_AUTO;
     prelogcur = jmpPreLogFirst();
-    CONSOLE("track started %s", force ? "force" : "auto");
+    runned = true;
+    CONSOLE("track started by 0x%02x", by);
     
     if (cfg.d().gpsontrkrec)
         gpsOn(GPS_PWRBY_TRKREC);
@@ -88,27 +93,27 @@ bool trkStart(bool force, uint16_t old) {
 /* ------------------------------------------------------------------------------------------- *
  *  Остановка
  * ------------------------------------------------------------------------------------------- */
-size_t trkStop() {
-    if (state == TRKRUN_NONE)
-        return -1;
+void trkStop(uint8_t by) {
+    state &= ~by;
+    if ((state > 0) || !runned)
+        return;
     
     fh.close();
     
-    state = TRKRUN_NONE;
+    runned = false;
     jmp.keyreset();
     CONSOLE("track stopped");
     
     if (cfg.d().gpsontrkrec)
         gpsOff(GPS_PWRBY_TRKREC);
-    
-    return 0;
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Текущее состояние
  * ------------------------------------------------------------------------------------------- */
-bool trkRunning() { return state > TRKRUN_NONE; }
-trk_running_t trkState() { return state; }
+bool trkRunning(uint8_t by) {
+    return (state & by) > 0;
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Сколько файлов есть в наличии
@@ -149,7 +154,7 @@ static bool trkCheckAvail(bool removeFirst) {
  *  Запись (на каждый тик тут приходится два тика высотомера и один тик жпс)
  * ------------------------------------------------------------------------------------------- */
 void trkProcess() {
-    if (state == TRKRUN_NONE)
+    if (state == 0)
         return;
     
     if (!fh)

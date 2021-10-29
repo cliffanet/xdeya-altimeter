@@ -15,12 +15,6 @@
 #define TRK_PRESERV_COUNT   32
 #define ALL_SIZE_MAX        786432
 
-typedef enum {
-    TRKRUN_NONE = 0,
-    TRKRUN_FORCE,
-    TRKRUN_AUTO
-} trk_running_t;
-
 // Заголовок трека
 typedef struct __attribute__((__packed__)) {
     uint32_t id = 0;                        // пока не ведётся, но нужно запоминать ID в отдельном файле и делать ему inc
@@ -34,10 +28,15 @@ typedef struct __attribute__((__packed__)) {
     uint8_t _[8] = { 0 };                   // резерв
 } trk_head_t;
 
-bool trkStart(bool force = true, uint16_t old = 0);
-size_t trkStop();
-bool trkRunning();
-trk_running_t trkState();
+#define TRK_RUNBY_HAND      0x01
+#define TRK_RUNBY_JMPBEG    0x02
+#define TRK_RUNBY_ALT       0x08
+#define TRK_RUNBY_ANY       0xFF
+
+
+bool trkStart(uint8_t by = TRK_RUNBY_HAND, uint16_t old = 0);
+void trkStop(uint8_t by = TRK_RUNBY_ANY);
+bool trkRunning(uint8_t by = TRK_RUNBY_ANY);
 
 int trkFileCount();
 size_t trkCountAvail();
