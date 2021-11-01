@@ -8,6 +8,7 @@
 #include <pgmspace.h>       // PSTR
 #include <WiFiClient.h>
 #include "../log.h"
+#include "../view/base.h"
 
 #include "lwip/sockets.h"       // host -> ip
 #include "lwip/sys.h"
@@ -59,8 +60,12 @@ bool srvConnect() {
     
     IPAddress ip(reinterpret_cast<struct sockaddr_in *>(res->ai_addr)->sin_addr.s_addr);
     CONSOLE("host %s -> ip %d.%d.%d.%d", host, ip[0], ip[1], ip[2], ip[3]);
+
+    viewIntDis();
+    bool ok = cli.connect(ip, SRV_PORT);
+    viewIntEn();
     
-    return cli.connect(ip, SRV_PORT);
+    return ok;
 }
 
 void srvStop() {
@@ -86,8 +91,10 @@ static bool srvReadData(uint8_t *data, uint16_t sz) {
     last_err = NULL;
     if (sz == 0)
         return true;
-    
+
+    viewIntDis();
     size_t sz1 = cli.read(data, sz);
+    viewIntEn();
     if (sz1 != sz) {
         last_err = PSTR("fail read from server");
         return false;
@@ -156,6 +163,8 @@ bool srvRecv(uint8_t &cmd, uint8_t *data, uint16_t sz) {
  * ------------------------------------------------------------------------------------------- */
 static bool _srvSend(const uint8_t *data, size_t sz) {
     uint8_t t = 5;
+    
+    viewIntDis();
     while (sz > 0) {
         t --;
         auto sz1 = cli.write(data, sz);
@@ -165,16 +174,19 @@ static bool _srvSend(const uint8_t *data, size_t sz) {
             if (sz1 < 0) {
                 last_err = PSTR("server send fail");
                 CONSOLE("write FAIL (%d)", sz1);
+                viewIntEn();
                 return false;
             }
             if (!cli.connected()) {
                 last_err = PSTR("server connect lost");
                 CONSOLE("server connect lost while send");
+                viewIntEn();
                 return false;
             }
             if (t < 1) {
                 last_err = PSTR("server send timeout");
                 CONSOLE("no try avail");
+                viewIntEn();
                 return false;
             }
             
@@ -185,6 +197,7 @@ static bool _srvSend(const uint8_t *data, size_t sz) {
         sz -= sz1;
         data += sz1;
     }
+    viewIntEn();
     
     return true;
 }

@@ -39,9 +39,12 @@ bool trkStart(uint8_t by, uint16_t old) {
     fname[30] = '\0';
     const byte flen = strlen(fname);
     sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), 1);
+    viewIntDis();
     fh = DISKFS.open(fname, FILE_WRITE);
-    if (!fh)
+    if (!fh) {
+        viewIntEn();
         return false;
+    }
     
     // пишем заголовок - время старта и номер прыга
     trk_head_t th;
@@ -53,6 +56,7 @@ bool trkStart(uint8_t by, uint16_t old) {
     
     if (!fwrite(fh, th)) {
         fh.close();
+        viewIntEn();
         return false;
     }
     
@@ -72,6 +76,7 @@ bool trkStart(uint8_t by, uint16_t old) {
     
         if (!fwrite(fh, log)) {
             fh.close();
+            viewIntEn();
             return false;
         }
         
@@ -79,6 +84,7 @@ bool trkStart(uint8_t by, uint16_t old) {
             break;
         old--;
     }
+    viewIntEn();
     
     prelogcur = jmpPreLogFirst();
     runned = true;

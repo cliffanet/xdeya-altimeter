@@ -492,7 +492,7 @@ double gpsCourse(double lat1, double long1, double lat2, double long2) {
 /* ------------------------------------------------------------------------------------------- *
  *  Питание на GPS-модуле
  * ------------------------------------------------------------------------------------------- */
-static RTC_DATA_ATTR uint8_t gpspwr = 0;
+static RTC_DATA_ATTR uint8_t gpspwr = GPS_PWRBY_PWRON;
 bool gpsPwr(uint8_t by) {
     return (gpspwr & by) > 0;
 }

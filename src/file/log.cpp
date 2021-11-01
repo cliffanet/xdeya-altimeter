@@ -1,6 +1,7 @@
 
 #include "log.h"
 #include "../log.h"
+#include "../view/base.h"
 
 
 /* ------------------------------------------------------------------------------------------- *
@@ -32,10 +33,15 @@ bool fread(File &fh, uint8_t *data, uint16_t dsz) {
     uint8_t bs[2];
     uint8_t cka = 0, ckb = 0;
     
+    viewIntDis();
+    
     if (fh.read(bs, 2) != 2) {
         CONSOLE("fail read len");
+        viewIntEn();
         return false;
     }
+    
+    viewIntEn();
     
     fcks(bs[0], cka, ckb);
     fcks(bs[1], cka, ckb);
@@ -106,7 +112,10 @@ bool fwrite(File &fh, const uint8_t *data, uint16_t dsz) {
     b++;
     *b = ckb;
     
+    viewIntDis();
+    
     size_t sz1 = fh.write(buf, sz);
+    viewIntEn();
     if (sz1 != sz) {
         CONSOLE("write error: saved=%d of %d", sz1, sz);
         return false;
@@ -157,12 +166,16 @@ size_t logSize(const char *_fname, uint8_t num) {
     
     logFSuffix(fname+flen, num);
     
+    viewIntDis();
+    
     File fh = DISKFS.open(fname);
     if (!fh)
         return -1;
     
     auto sz = fh.size();
     fh.close();
+    
+    viewIntEn();
         
     return sz;
 }
@@ -174,6 +187,8 @@ size_t logSizeFull(const char *_fname) {
     const byte flen = logFName(fname, sizeof(fname), _fname);
     
     logFSuffix(fname+flen, n);
+    
+    viewIntDis();
     
     while (DISKFS.exists(fname)) {
         File fh = DISKFS.open(fname);
@@ -190,6 +205,8 @@ size_t logSizeFull(const char *_fname) {
         sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), n);
     }
     
+    viewIntEn();
+    
     return sz;
 }
 
@@ -205,6 +222,8 @@ bool logRotate(const char *_fname, uint8_t count) {
     
     if (count == 0)
         count = 255;
+    
+    viewIntDis();
 
     // ищем первый свободный слот
     while (1) {
@@ -218,6 +237,7 @@ bool logRotate(const char *_fname, uint8_t count) {
         // его надо удалить и посчитать первым свободным слотом
         if (!DISKFS.remove(fname)) {
             CONSOLE("Can't remove file '%s'", fname);
+            viewIntEn();
             return false;
         }
         CONSOLE("file '%s' removed", fname);
@@ -231,12 +251,15 @@ bool logRotate(const char *_fname, uint8_t count) {
         
         if (!DISKFS.rename(fname, fname1)) {
             CONSOLE("Can't rename file '%s' to '%s'", fname, fname1);
+            viewIntEn();
             return false;
         }
         CONSOLE("file '%s' renamed to '%s'", fname, fname1);
         
         n--;
     }
+    
+    viewIntEn();
 
     return true;
 }
@@ -251,24 +274,35 @@ bool logAppend(const char *_fname, const uint8_t *data, uint16_t dsz, size_t max
     
     logFSuffix(fname+flen, 1);
     
+    viewIntDis();
+    
     if (DISKFS.exists(fname)) {
         File fh = DISKFS.open(fname);
-        if (!fh) return false;
+        if (!fh) {
+            viewIntEn();
+            return false;
+        }
         
         auto sz = fh.size();
         fh.close();
         
         if ((sz + RSZ(dsz)) > (maxrcnt * RSZ(dsz)))
-            if (!logRotate(_fname, count))
+            if (!logRotate(_fname, count)) {
+                viewIntEn();
                 return false;
+            }
     }
     
     File fh = DISKFS.open(fname, FILE_APPEND);
-    if (!fh)
+    if (!fh) {
+        viewIntEn();
         return false;
+    }
     
     auto ok = fwrite(fh, data, dsz);
     fh.close();
+    
+    viewIntEn();
     
     return ok;
 }
@@ -285,8 +319,13 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
         if (!DISKFS.exists(fname))
             return false;
         
+        viewIntDis();
+        
         File fh = DISKFS.open(fname);
-        if (!fh) return false;
+        if (!fh) {
+            viewIntEn();
+            return false;
+        }
         
         auto sz = fh.size();
         auto count = sz / RSZ(dsz);
@@ -301,6 +340,7 @@ bool logRead(uint8_t *data, uint16_t dsz, const char *_fname, size_t index) {
         fh.seek(sz - (index * RSZ(dsz)) - RSZ(dsz));
         auto ok = fread(fh, data, dsz);
         fh.close();
+        viewIntEn();
         
         return ok;
     }
@@ -329,25 +369,32 @@ int32_t logFileRead(
     if (!DISKFS.exists(fname))
         return -1;
     
+    viewIntDis();
     File fh = DISKFS.open(fname);
-    if (!fh) return -1;
+    if (!fh) {
+        viewIntEn();
+        return -1;
+    }
     
     CONSOLE("file open: %s (%d) avail: %d/%d/%d/%d", fname, ibeg, fh.size(), fh.available(), dhsz, disz);
     
     if (dhsz > 0) {
         if (fh.available() < RSZ(dhsz)) {
             fh.close();
+            viewIntEn();
             return 0;
         }
         
         uint8_t data[dhsz];
         if (!fread(fh, data, dhsz)) {
             fh.close();
+            viewIntEn();
             return -1;
         }
         if ((hndhead != NULL) && !hndhead(data)) {
             CONSOLE("head hnd error");
             fh.close();
+            viewIntEn();
             return -1;
         }
     }
@@ -356,8 +403,10 @@ int32_t logFileRead(
         size_t sz = RSZ(disz) * ibeg;
         if (dhsz > 0) sz += RSZ(dhsz);
         
-        if (sz >= fh.size())
+        if (sz >= fh.size()) {
+            viewIntEn();
             return (fh.size()-RSZ(dhsz)) / RSZ(disz);
+        }
         CONSOLE("seek to: %d", sz);
         fh.seek(sz, SeekSet);
     }
@@ -367,17 +416,20 @@ int32_t logFileRead(
     while (fh.available() >= RSZ(disz)) {
         if (!fread(fh, data, disz)) {
             fh.close();
+            viewIntEn();
             return -1;
         }
         if ((hnditem != NULL) && !hnditem(data)) {
             CONSOLE("item[%d] hnd error");
             fh.close();
+            viewIntEn();
             return -1;
         }
         ibeg++;
     }
     
     fh.close();
+    viewIntEn();
     
     return ibeg;
 }
@@ -394,11 +446,16 @@ logchs_t logChkSumFull(size_t dsz, const char *_fname, uint8_t num) {
     uint8_t data[dsz];
     
     logFSuffix(fname+flen, num);
+    viewIntDis();
     File fh = DISKFS.open(fname);
-    if (!fh) return cks;
+    if (!fh) {
+        viewIntEn();
+        return cks;
+    }
     
     if (fh.read(data, dsz) != dsz) {
         fh.close();
+        viewIntEn();
         return cks;
     }
     cks.sz = fh.size();
@@ -414,6 +471,7 @@ logchs_t logChkSumFull(size_t dsz, const char *_fname, uint8_t num) {
         cks.csb = 0;
         cks.sz = 0;
         fh.close();
+        viewIntEn();
         return cks;
     }
     
@@ -423,6 +481,7 @@ logchs_t logChkSumFull(size_t dsz, const char *_fname, uint8_t num) {
     }
     
     fh.close();
+    viewIntEn();
     return cks;
 }
 
@@ -434,11 +493,16 @@ uint32_t logChkSumBeg(size_t dsz, const char *_fname, uint8_t num) {
     uint8_t data[dsz];
     
     logFSuffix(fname+flen, num);
+    viewIntDis();
     File fh = DISKFS.open(fname);
-    if (!fh) return 0;
+    if (!fh) {
+        viewIntEn();
+        return 0;
+    }
     
     if (fh.read(data, dsz) != dsz) {
         fh.close();
+        viewIntEn();
         return 0;
     }
     
@@ -450,6 +514,7 @@ uint32_t logChkSumBeg(size_t dsz, const char *_fname, uint8_t num) {
     }
     
     fh.close();
+    viewIntEn();
     return (csa << 24) | (csb << 16) | (dsz & 0xffff);
 }
 
@@ -508,6 +573,8 @@ bool logRenum(const char *_fname) {
     if (nn <= n) nn = n+1;
     nn=n+1;
     
+    viewIntDis();
+    
     while (nn < 100) {
         logFSuffix(src+flen, nn);
         bool ex = DISKFS.exists(src);
@@ -517,10 +584,12 @@ bool logRenum(const char *_fname) {
             fh.close();
             if (!DISKFS.rename(src, "/tmp")) {
                 CONSOLE("Rename fail1: %s -> %s", src, dst);
+                viewIntEn();
                 return false;
             }
             if (!DISKFS.rename("/tmp", dst)) {
                 CONSOLE("Rename fail2: %s -> %s", src, dst);
+                viewIntEn();
                 return false;
             }
             CONSOLE("Renum OK: %s -> %s", src, dst);
@@ -529,6 +598,8 @@ bool logRenum(const char *_fname) {
         }
         nn++;
     }
+    
+    viewIntEn();
     
     return true;
 }
@@ -556,10 +627,13 @@ int logRemoveLast(const char *_fname, bool removeFirst) {
         return -1;
     
     logFSuffix(fname+flen, n);
+    viewIntDis();
     if (!DISKFS.remove(fname)) {
         CONSOLE("Can't remove file '%'", fname);
+        viewIntEn();
         return -1;
     }
+    viewIntEn();
     CONSOLE("file '%s' removed", fname);
     
     return n;
@@ -577,11 +651,15 @@ int logRemoveAll(const char *_fname, bool removeFirst) {
         logFSuffix(fname+flen, n);
         if (!DISKFS.exists(fname))
             return n - (removeFirst ? 1 : 2);
+    
+        viewIntDis();
         
         if (!DISKFS.remove(fname)) {
             CONSOLE("Can't remove file '%s'", fname);
+            viewIntEn();
             return -1;
         }
+        viewIntEn();
         CONSOLE("file '%s' removed", fname);
     
         n++;

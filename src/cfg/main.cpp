@@ -6,6 +6,7 @@
 #include "webjoin.h"
 #include "../gps/proc.h"
 #include "../file/log.h"
+#include "../view/base.h"
 
 #include <FS.h>
 #include <SPIFFS.h>
@@ -102,13 +103,18 @@ bool Config<T>::save(bool force) {
         CONSOLE("config %s not changed", fname);
         return true;
     }
-    
-    if (SPIFFS.exists(fname) && !SPIFFS.remove(fname))
+
+    viewIntDis();
+    if (SPIFFS.exists(fname) && !SPIFFS.remove(fname)) {
+        viewIntEn();
         return false;
+    }
     
     File fh = SPIFFS.open(fname, FILE_WRITE);
-    if (!fh)
+    if (!fh) {
+        viewIntEn();
         return false;
+    }
 
     uint8_t h[2] = { CFG_MGC, (cfgid << 5) | (ver & 0x1f) };
     
@@ -116,15 +122,18 @@ bool Config<T>::save(bool force) {
     if (sz != 2) {
         CONSOLE("config %s header fail: %d of %d", fname, sz, 2);
         fh.close();
+        viewIntEn();
         return false;
     }
     
     if (!fwrite(fh, data)) {
         fh.close();
+        viewIntEn();
         return false;
     }
     
     fh.close();
+    viewIntEn();
     
     CONSOLE("config %s saved OK", fname);
     
@@ -194,17 +203,21 @@ bool cfgFactory() {
     */
     SPIFFS.end();
     CONSOLE("SPIFFS Unmount ok");
+    viewIntDis();
     if (!SPIFFS.format()) {
         CONSOLE("SPIFFS Format Failed");
+        viewIntEn();
         return false;
     }
     CONSOLE("SPIFFS Format ok");
 
     if(!SPIFFS.begin()) {
         CONSOLE("SPIFFS Mount Failed");
+        viewIntEn();
         return false;
     }
     CONSOLE("SPIFFS begin ok");
+    viewIntEn();
     
     return cfgLoad(true);
 }

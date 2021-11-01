@@ -2,6 +2,7 @@
 #include "log.h"
 #include "veravail.h"
 #include "../log.h"
+#include "../view/base.h"
 
 #define FNAMEINIT   \
     char fname[20]; \
@@ -24,19 +25,23 @@ bool verAvailClear() {
  * ------------------------------------------------------------------------------------------- */
 bool verAvailAdd(const char *ver) {
     FNAMEINIT
-    
+
+    viewIntDis();
     File fh = DISKFS.open(fname, FILE_APPEND);
-    if (!fh)
+    if (!fh) {
+        viewIntEn();
         return false;
+    }
     
     CONSOLE("save veravail: %s", ver);
-    
+
     fh.print(ver);
     // тут важно, чтобы был определённый строковый разделитель
     // во-первых, так будет легче искать построчно
     // во-вторых, котрольная сумма этого файла будет считаться и на сервере тоже, она должна совпадать
     fh.print('\n');
     fh.close();
+    viewIntEn();
     
     return true;
 }
@@ -50,20 +55,24 @@ uint32_t verAvailChkSum() {
     
     if (!DISKFS.exists(fname))
         return 0;
-    
+
+    viewIntDis();
     File fh = DISKFS.open(fname);
-    if (!fh)
+    if (!fh) {
+        viewIntEn();
         return 0;
+    }
     
     uint16_t csz = fh.size();
     uint8_t csa = 0;
     uint8_t csb = 0;
     uint8_t buf[256];
-    
+
     while (fh.available() > 0) {
         auto len = fh.read(buf, sizeof(buf));
         if (len <= 0) {
             fh.close();
+            viewIntEn();
             return 0;
         }
         
@@ -74,6 +83,7 @@ uint32_t verAvailChkSum() {
     }
     
     fh.close();
+    viewIntEn();
     
     return (csa << 24) | (csb << 16) | csz;
 }
@@ -89,10 +99,13 @@ bool verAvailGet(int num, char *ver) {
     
     if (!DISKFS.exists(fname))
         return false;
-    
+
+    viewIntDis();
     File fh = DISKFS.open(fname);
-    if (!fh)
+    if (!fh) {
+        viewIntEn();
         return false;
+    }
     
     CONSOLE("verAvailGet search: %d", num);
     
@@ -101,6 +114,7 @@ bool verAvailGet(int num, char *ver) {
     
     if (founded && (ver == NULL)) {
         fh.close();
+        viewIntEn();
         return true;
     }
     
@@ -131,6 +145,7 @@ bool verAvailGet(int num, char *ver) {
         *ver = '\0';
     
     fh.close();
+    viewIntEn();
     
     if (founded)
         CONSOLE("verAvailGet founded");
@@ -145,10 +160,13 @@ int verAvailCount() {
     
     if (!DISKFS.exists(fname))
         return false;
-    
+
+    viewIntDis();
     File fh = DISKFS.open(fname);
-    if (!fh)
+    if (!fh) {
+        viewIntEn();
         return false;
+    }
     
     int cnt = 0;
     bool newstr = true;
@@ -163,6 +181,7 @@ int verAvailCount() {
     }
     
     fh.close();
+    viewIntEn();
     
     CONSOLE("verAvailCount founded %d versions", cnt);
     

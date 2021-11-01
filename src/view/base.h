@@ -129,6 +129,9 @@ class ViewBase {
 void viewSet(ViewBase &v);
 bool viewIs(ViewBase &v);
 
+void viewIntDis();
+void viewIntEn();
+
 void viewInit();
 void viewProcess();
 

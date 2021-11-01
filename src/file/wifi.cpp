@@ -2,6 +2,7 @@
 #include "log.h"
 #include "wifi.h"
 #include "../log.h"
+#include "../view/base.h"
 
 #define FNAMEINIT   \
     char fname[20]; \
@@ -58,11 +59,13 @@ uint32_t wifiPassChkSum() {
     uint8_t csa = 0;
     uint8_t csb = 0;
     uint8_t buf[256];
-    
+
+    viewIntDis();
     while (fh.available() > 0) {
         auto len = fh.read(buf, sizeof(buf));
         if (len <= 0) {
             fh.close();
+            viewIntEn();
             return 0;
         }
         
@@ -73,6 +76,7 @@ uint32_t wifiPassChkSum() {
     }
     
     fh.close();
+    viewIntEn();
     
     return (csa << 24) | (csb << 16) | csz;
 }
@@ -85,10 +89,13 @@ bool wifiPassFind(const char *ssid, char *pass) {
     
     if (!DISKFS.exists(fname))
         return false;
-    
+
+    viewIntDis();
     File fh = DISKFS.open(fname);
-    if (!fh)
+    if (!fh) {
+        viewIntEn();
         return false;
+    }
     
 #define ISLINEEND(c) ((c == '\r') || (c == '\n'))
 #define ISSPACE(c)   ((c == ' ') || (c == '\t'))
@@ -98,7 +105,7 @@ bool wifiPassFind(const char *ssid, char *pass) {
     bool founded = false;
     
     CONSOLE("wifiPassFind search: |%s|", ssid);
-    
+
     while (fh.available() > 0) {
         ss = s;
         sz = sizeof(s);
@@ -150,11 +157,13 @@ bool wifiPassFind(const char *ssid, char *pass) {
                 CONSOLE("wifiPassFind return: |%s|", pass);
             }
             fh.close();
+            viewIntEn();
             return true;
         }
     }
     
     fh.close();
+    viewIntEn();
     
     CONSOLE("wifiPassFind not found");
     

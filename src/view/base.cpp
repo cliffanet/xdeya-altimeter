@@ -262,6 +262,33 @@ bool ViewBase::isblink() {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  прерывания иногда могут вызывать panic при операциях чтения/записи
+ * ------------------------------------------------------------------------------------------- */
+void viewIntDis() {
+    detachInterrupt(digitalPinToInterrupt(btnall[0].pin));
+    detachInterrupt(digitalPinToInterrupt(btnall[1].pin));
+    detachInterrupt(digitalPinToInterrupt(btnall[2].pin));
+}
+
+void viewIntEn() {
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[0].pin),
+        btnChkState0,
+        CHANGE
+    );
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[1].pin),
+        btnChkState1,
+        CHANGE
+    );
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[2].pin),
+        btnChkState2,
+        CHANGE
+    );
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  Инициализация view (кнопок и дисплея сразу)
  * ------------------------------------------------------------------------------------------- */
 void viewInit() {
@@ -292,21 +319,7 @@ void viewInit() {
     _btnstate = 0;
     _btnstatelast = utm() / 1000;
     
-    attachInterrupt(
-        digitalPinToInterrupt(btnall[0].pin),
-        btnChkState0,
-        CHANGE
-    );
-    attachInterrupt(
-        digitalPinToInterrupt(btnall[1].pin),
-        btnChkState1,
-        CHANGE
-    );
-    attachInterrupt(
-        digitalPinToInterrupt(btnall[2].pin),
-        btnChkState2,
-        CHANGE
-    );
+    viewIntEn();
 
 #ifdef USE4BUTTON
     pinMode(BUTTON_PIN_4, INPUT_PULLUP);
