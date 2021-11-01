@@ -3,6 +3,7 @@
 #include "log.h"
 #include "gps/proc.h"
 #include "cfg/main.h"
+#include "power.h"
 
 #include "RTClib.h"
 
@@ -38,6 +39,52 @@ uint32_t utm_diff32(uint32_t prev, uint32_t &curr) {
 uint32_t utm_diff32(uint32_t prev) {
     uint32_t curr;
     return utm_diff32(prev, curr);
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  время-считающие таймеры
+ * ------------------------------------------------------------------------------------------- */
+static RTC_DATA_ATTR uint64_t utm1 = 0;
+static RTC_DATA_ATTR struct {
+        uint64_t tm;
+        bool en;
+    } tmcnt[] = { { 0 }, { 0 } };
+
+void tmcntReset(tm_counter_t id, bool enable) {
+    if ((id < 0) || (id >= TMCNT_FAIL))
+        return;
+    auto &t = tmcnt[id];
+    t.en = enable;
+    t.tm = 0;
+}
+bool tmcntEnabled(tm_counter_t id) {
+    if ((id < 0) || (id >= TMCNT_FAIL))
+        return false;
+
+    return tmcnt[id].en;
+}
+uint32_t tmcntInterval(tm_counter_t id) {
+    if ((id < 0) || (id >= TMCNT_FAIL))
+        return 0;
+
+    return tmcnt[id].tm / 1000000;
+}
+void tmcntUpdate() {
+    uint64_t utm2 = utm();
+    uint64_t tmdiff = utm2 - utm1;
+    utm1 = utm2;
+    
+    for (auto &t : tmcnt)
+        if (t.en)
+            t.tm += tmdiff;
+    
+    if ((cfg.d().hrpwrafton > 0) && 
+        (tmcnt[TMCNT_UPTIME].tm > (cfg.d().hrpwrafton * 3600)))
+        pwrOff();
+    
+    if ((cfg.d().hrpwrnofly > 0) && 
+        (tmcnt[TMCNT_NOFLY].tm > (cfg.d().hrpwrnofly * 3600)))
+        pwrOff();
 }
 
 /* ------------------------------------------------------------------------------------------- *

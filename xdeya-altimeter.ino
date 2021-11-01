@@ -25,6 +25,11 @@ void setup() {
         return;
     
     CONSOLE("Firmware " FWVER_FILENAME "; Build Date: " __DATE__);
+    
+    if (pwrMode() != PWR_SLEEP) {
+        tmcntReset(TMCNT_UPTIME, true);
+        tmcntReset(TMCNT_NOFLY, true);
+    }
 
     // инициируем view
     viewInit();
@@ -59,6 +64,7 @@ void loop() {
     pwrRun([]() {
         pwrBattChk();
         clockProcess();
+        tmcntUpdate();
         gpsProcess();
         jmpProcess();
         trkProcess();

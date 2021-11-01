@@ -108,8 +108,10 @@ bool pwrInit() {
                 CONSOLE("pwrInit resume from sleep by Takeoff");
                 return true;
             }
-            else
+            else {
+                tmcntUpdate();
                 pwrDeepSleep(1000000);
+            }
             
             return false;
         

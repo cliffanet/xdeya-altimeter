@@ -15,6 +15,17 @@ uint64_t utm_diff(uint64_t prev);
 uint32_t utm_diff32(uint32_t prev, uint32_t &curr);
 uint32_t utm_diff32(uint32_t prev);
 
+
+typedef enum {
+    TMCNT_UPTIME   = 0,
+    TMCNT_NOFLY,
+    TMCNT_FAIL
+} tm_counter_t;
+void tmcntReset(tm_counter_t id, bool enable);
+bool tmcntEnabled(tm_counter_t id);
+uint32_t tmcntInterval(tm_counter_t id);
+void tmcntUpdate();
+
 #if HWVER >= 3
 #define CLOCK_PIN_INT       14
 #endif

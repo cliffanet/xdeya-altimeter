@@ -435,6 +435,11 @@ void jmpProcess() {
             !trkRunning(TRK_RUNBY_ALT))
             trkStart(TRK_RUNBY_ALT);
     }
+    
+    if ((ac.state() > ACST_TAKEOFF40) && tmcntEnabled(TMCNT_NOFLY))
+        tmcntReset(TMCNT_NOFLY, false);
+    if ((ac.state() == ACST_GROUND) && !tmcntEnabled(TMCNT_NOFLY))
+        tmcntReset(TMCNT_NOFLY, true);
 }
 
 /* ------------------------------------------------------------------------------------------- *

@@ -10,7 +10,7 @@
 
 class ViewInfoDebug : public ViewInfo {
     public:
-        ViewInfoDebug() : ViewInfo(37) {}
+        ViewInfoDebug() : ViewInfo(40) {}
         
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL) {
@@ -241,6 +241,24 @@ class ViewInfoDebug : public ViewInfo {
                 case 37:
                     PRNL("Sys tm valid");
                     PRNR("%d", tmValid() ? 1 : 0);
+                    break;
+                
+                case 38: {
+                        uint32_t tm = tmcntInterval(TMCNT_UPTIME);
+                        uint32_t m = tm / 60;
+                        uint32_t h = m / 60;
+                        PRNL("Uptime");
+                        PRNR("%d:%02d:%02d", h, m % 60, tm % 60);
+                    }
+                    break;
+                
+                case 39: {
+                        uint32_t tm = tmcntInterval(TMCNT_NOFLY);
+                        uint32_t m = tm / 60;
+                        uint32_t h = m / 60;
+                        PRNL("No-Fly time");
+                        PRNR("%d:%02d:%02d", h, m % 60, tm % 60);
+                    }
                     break;
             }
         }
