@@ -79,12 +79,16 @@ void tmcntUpdate() {
             t.tm += tmdiff;
     
     if ((cfg.d().hrpwrafton > 0) && 
-        (tmcnt[TMCNT_UPTIME].tm > (cfg.d().hrpwrafton * 3600)))
+        (tmcnt[TMCNT_UPTIME].tm > (cfg.d().hrpwrafton * 3600 * 1000000))) {
+        CONSOLE("pwrOff by %d hour after pwrOn", cfg.d().hrpwrafton);
         pwrOff();
+    }
     
     if ((cfg.d().hrpwrnofly > 0) && 
-        (tmcnt[TMCNT_NOFLY].tm > (cfg.d().hrpwrnofly * 3600)))
+        (tmcnt[TMCNT_NOFLY].tm > (cfg.d().hrpwrnofly * 3600 * 1000000))) {
+        CONSOLE("pwrOff by %d hour no fly", cfg.d().hrpwrnofly);
         pwrOff();
+    }
 }
 
 /* ------------------------------------------------------------------------------------------- *
