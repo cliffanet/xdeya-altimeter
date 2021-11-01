@@ -18,6 +18,15 @@
 #define CFG_MAIN_VER    1
 #define CFG_MAIN_NAME   "cfg"
 
+typedef enum {
+    BTNDO_NONE = 0,
+    BTNDO_LIGHT,
+    BTNDO_GPSPWR,
+    BTNDO_TRKREC,
+    BTNDO_PWROFF,
+    BTNDO_MAX
+} btndo_t;
+
 // Основной конфиг
 typedef struct __attribute__((__packed__)) {
     uint8_t _0;                                 // резерв для выравнивания до 4 байт
@@ -46,6 +55,9 @@ typedef struct __attribute__((__packed__)) {
     bool    _1 = false;                         // резерв для выравнивания до 4 байт
     
     uint16_t trkonalt = 0;                      // автоматически запускать запись трека на заданной высоте
+    
+    uint8_t btndo_up    = BTNDO_LIGHT;          // действие по кнопке "вверх"
+    uint8_t btndo_down  = BTNDO_GPSPWR;         // действие по кнопке "вниз"
 } cfg_main_t;
 
 template <class T>

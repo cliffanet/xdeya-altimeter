@@ -528,6 +528,70 @@ static const menu_el_t menugpson[] {
 static ViewMenuStatic vMenuGpsOn(menugpson, sizeof(menugpson)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Меню выбора функций кнопок вверх/вниз
+ * ------------------------------------------------------------------------------------------- */
+static void valBtnDo(char *txt, uint8_t op) {
+    switch (op) {
+        case BTNDO_NONE:
+            strcpy_P(txt, PSTR("no"));
+            break;
+            
+        case BTNDO_LIGHT:
+            strcpy_P(txt, PSTR("BackLight"));
+            break;
+            
+        case BTNDO_GPSPWR:
+            strcpy_P(txt, PSTR("GPS On/Off"));
+            break;
+            
+        case BTNDO_TRKREC:
+            strcpy_P(txt, PSTR("Track rec"));
+            break;
+            
+        case BTNDO_PWROFF:
+            strcpy_P(txt, PSTR("Power Off"));
+            break;
+    }
+}
+static const menu_el_t menubtndo[] {
+    {   // действие по кнопке "вверх"
+        .name       = PSTR("Btn Up"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valBtnDo(txt, cfg.d().btndo_up); },
+        .edit       = [] (int val) {
+            cfg.set().btndo_up = val > 0 ? (
+                    cfg.d().btndo_up < (BTNDO_MAX-1) ?
+                        cfg.d().btndo_up+1 :
+                        BTNDO_NONE
+                ) : (
+                    cfg.d().btndo_up > BTNDO_NONE ?
+                        cfg.d().btndo_up-1 :
+                        BTNDO_MAX-1
+                );
+        },
+    },
+    {   // действие по кнопке "вниз"
+        .name       = PSTR("Btn Down"),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valBtnDo(txt, cfg.d().btndo_down); },
+        .edit       = [] (int val) {
+            cfg.set().btndo_down = val > 0 ? (
+                    cfg.d().btndo_down < (BTNDO_MAX-1) ?
+                        cfg.d().btndo_down+1 :
+                        BTNDO_NONE
+                ) : (
+                    cfg.d().btndo_down > BTNDO_NONE ?
+                        cfg.d().btndo_down-1 :
+                        BTNDO_MAX-1
+                );
+        },
+    },
+};
+static ViewMenuStatic vMenuBtnDo(menubtndo, sizeof(menubtndo)/sizeof(menu_el_t));
+
+/* ------------------------------------------------------------------------------------------- *
  *  Меню работы с трэками
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menutrack[] {
@@ -656,6 +720,10 @@ static const menu_el_t menuoptions[] {
     {
         .name       = PSTR("Auto GPS-On"),
         .submenu    = &vMenuGpsOn,
+    },
+    {
+        .name       = PSTR("Button operation"),
+        .submenu    = &vMenuBtnDo,
     },
     {
         .name       = PSTR("Track"),

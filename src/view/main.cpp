@@ -10,11 +10,37 @@
 
 static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_GPSALT; // Текущая страница отображения, сохраняется при переходе в меню
 
+static void btnDo(uint8_t op) {
+    switch (op) {
+        case BTNDO_LIGHT:
+            CONSOLE("[%d] displayLightTgl", op);
+            displayLightTgl();
+            break;
+            
+        case BTNDO_GPSPWR:
+            CONSOLE("[%d] gpsPwrTgl", op);
+            gpsPwrTgl();
+            break;
+            
+        case BTNDO_TRKREC:
+            CONSOLE("[%d] trkStart/trkStop", op);
+            if (trkRunning())
+                trkStop();
+            else
+                trkStart(TRK_RUNBY_HAND);
+            break;
+            
+        case BTNDO_PWROFF:
+            CONSOLE("[%d] pwrOff", op);
+            pwrOff();
+            break;
+    }
+}
+
 void ViewMain::btnLong(btn_code_t btn) {
     switch (btn) {
         case BTN_UP:
-            //displayLightTgl();
-            gpsPwrTgl();
+            btnDo(cfg.d().btndo_up);
             return;
 
         case BTN_SEL:
@@ -22,10 +48,7 @@ void ViewMain::btnLong(btn_code_t btn) {
             return;
             
         case BTN_DOWN:
-            if (trkRunning())
-                trkStop();
-            else
-                trkStart(TRK_RUNBY_HAND);
+            btnDo(cfg.d().btndo_down);
             return;
     }
 }
