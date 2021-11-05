@@ -43,6 +43,21 @@ my @type    = (
     }
 );
 
+my @lang    = (
+    {
+        name    => 'en',
+        flags => [qw/
+            FWVER_LANG='E'
+        /],
+    },
+    {
+        name   => 'ru',
+        flags => [qw/
+            FWVER_LANG='R'
+        /],
+    },
+);
+
 my $cli     = 'arduino-cli';
 
 #==========================================================
@@ -79,13 +94,16 @@ my %cmd = (
 #==========================================================
 
 sub fname {
-    my ($hwver, $typename) = @_;
+    my ($hwver, $typename, $langname) = @_;
     
     my $ver = join('.', @version) || return;
     my $name = 'xdeya-altimeter.v'.$ver.'.hw'.$hwver;
     
     if ($typename) {
         $name .= '.' . $typename;
+    }
+    if ($langname) {
+        $name .= '.' . $langname;
     }
     
     return $name;
@@ -160,17 +178,17 @@ sub flags {
 }
 
 sub build {
-    my ($hwver, $type) = @_;
+    my ($hwver, $type, $lang) = @_;
     
     $cli || return;
     my $srcdir = $pathRoot;
     
-    my $fname = fname($hwver, $type->{name});
+    my $fname = fname($hwver, $type->{name}, $lang->{name});
     print "\n=======================================================\n";
     print "=== BUILD: $fname\n";
     print "=======================================================\n";
     
-    my $flags = flags('HWVER='.$hwver, $type);
+    my $flags = flags('HWVER='.$hwver, $type, $lang);
     #print "FLAGS: $flags\n";
     
     my $cmd = "$cli compile --fqbn $fqbn --output-dir $dir/.build $flags $srcdir";# --verbose --log-level trace --clean";
@@ -193,11 +211,11 @@ sub build {
 }
 
 sub burn {
-    my ($hwver, $type, $port) = @_;
+    my ($hwver, $type, $lang, $port) = @_;
     
     $cli || return;
     
-    my $fname = fname($hwver, $type->{name});
+    my $fname = fname($hwver, $type->{name}, $lang->{name});
     print "\n=======================================================\n";
     print "=== UPLOAD: $fname\n";
     print "=======================================================\n";
@@ -213,8 +231,9 @@ sub print_argver_usage {
     
     my $hwver = join ', ', @hwver;
     my $type = join '|', map { $_->{name} } grep { $_->{name} } @type;
+    my $lang = join '|', map { $_->{name} } grep { $_->{name} } @lang;
     my $hwvertype = '';
-    $hwvertype = " [hwver] [$type]" if $cmd ne 'showport';
+    $hwvertype = " [hwver] [$type] [$lang]" if $cmd ne 'showport';
     my $port = '';
     $port = ' <port>' if ($cmd eq 'upload') || ($cmd eq 'compileupload') || ($cmd eq 'showport');
     
@@ -225,7 +244,7 @@ sub print_argver_usage {
 sub argver {
     my $cmd = shift() || return;
     
-    my ($hwver, $type, $port);
+    my ($hwver, $type, $lang, $port);
     
     if ($cmd ne 'showport') {
         ($hwver) = reverse @hwver;
@@ -235,6 +254,12 @@ sub argver {
         if ($_[0] && (my ($t) = grep { $_->{name} eq $_[0] } @type)) {
             shift();
             $type = $t;
+        }
+    
+        ($lang) = @lang;
+        if ($_[0] && (my ($l) = grep { $_->{name} eq $_[0] } @lang)) {
+            shift();
+            $lang = $l;
         }
     }
     
@@ -256,7 +281,7 @@ sub argver {
         return;
     }
     
-    return ($hwver, $type, $port);
+    return ($hwver, $type, $lang, $port);
 }
 
 sub showtty {
@@ -269,7 +294,9 @@ sub showtty {
 sub compileall {
     foreach my $hwver (@hwver) {
         foreach my $type (@type) {
-            build($hwver, $type) || return;
+            foreach my $lang (@lang) {
+                build($hwver, $type, $lang) || return;
+            }
         }
     }
 }
@@ -277,35 +304,35 @@ sub compileall {
 #==========================================================
 
 sub upload {
-    my ($hwver, $type, $port) = argver('upload', @_);
+    my ($hwver, $type, $lang, $port) = argver('upload', @_);
     
     $hwver || return;
-    burn($hwver, $type, $port) || return;
+    burn($hwver, $type, $lang, $port) || return;
     showtty($port) || return;
     1;
 }
 
 sub compile {
-    my ($hwver, $type) = argver('compile', @_);
+    my ($hwver, $type, $lang) = argver('compile', @_);
     
     $hwver || return;
     
-    build($hwver, $type) || return;
+    build($hwver, $type, $lang) || return;
 }
 
 sub compileupload {
-    my ($hwver, $type, $port) = argver('compileupload', @_);
+    my ($hwver, $type, $lang, $port) = argver('compileupload', @_);
     
     $hwver || return;
     
-    build($hwver, $type) || return;
-    burn($hwver, $type, $port) || return;
+    build($hwver, $type, $lang) || return;
+    burn($hwver, $type, $lang, $port) || return;
     showtty($port) || return;
     1;
 }
 
 sub showport {
-    my ($hwver, $type, $port) = argver('showport', @_);
+    my ($hwver, $type, $lang, $port) = argver('showport', @_);
 
     showtty($port) || return;
     1;

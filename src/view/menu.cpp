@@ -75,7 +75,7 @@ void ViewMenu::updStr(int16_t i) {
         return;
     
     if (isExit(i)) {
-        strcpy_P(str[n].name, PSTR("Exit"));
+        strcpy_P(str[n].name, PTXT(MENU_EXIT));
         str[n].val[0] = '\0';
     }
     else {
@@ -165,12 +165,12 @@ void ViewMenu::btnSmpl(btn_code_t btn) {
  *  Прорисовка меню на дисплее
  * ------------------------------------------------------------------------------------------- */
 void ViewMenu::draw(U8G2 &u8g2) {
-    u8g2.setFont(u8g2_font_ncenB08_tr);
+    u8g2.setFont(menuFont);
     
     // Заголовок
     u8g2.drawBox(0,0,u8g2.getDisplayWidth(),12);
     u8g2.setDrawColor(0);
-    u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(title))/2, 10, title);
+    u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(title))/2, 10, title);
     
     // выделение пункта меню, текст будем писать поверх
     u8g2.setDrawColor(1);
@@ -189,20 +189,19 @@ void ViewMenu::draw(U8G2 &u8g2) {
             // Внимание зрителя в этот момент как раз сосредоточено на этом пункте,
             // ему не надо будет бегать глазами по экрану в ругое место,
             // а текстовая часть самого меню в момент отображения мигающего сообщения как раз не нужна.
-            if ((flashcnt--) % 8 <= 4) {
+            if ((flashcnt--) % 8 <= 4)
                 // алгоритм мигания. При отрисовке каждые 100мс полный цикла потухания и зажигания равен 0.8 сек
-                u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(flashstr))/2, y, flashstr);
-            }
+                u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(flashstr))/2, y, flashstr);
             continue;
         }
         
         const auto &m = str[n];
-        u8g2.drawStr(2, y, m.name);
+        u8g2.drawTxt(2, y, m.name);
         if ((m.val[0] != '\0') &&      // вывод значения
             ((valflash == 0) || (i != isel) || ((valflash++) % 8 <= 4))) // мерцание редактируемого значения
             // выводим значение, если есть обработчик
             // в режиме редактирования - мигаем, и только выбранным пунктом меню
-            u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(m.val)-2, y, m.val);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(m.val)-2, y, m.val);
     }
     u8g2.setDrawColor(1);
 }
@@ -218,7 +217,7 @@ void menuFlashP(const char *txt, int16_t count) {  // Запоминаем те�
 
 void menuFlashHold() {       // Стандартное сообщение о том, что для данной процедуры нужно удерживать
                                 // среднюю кнопку три секунды
-    menuFlashP(PSTR("Hold select 3 sec"), 30);
+    menuFlashP(PTXT(MENU_HOLD3SEC), 30);
 }
 
 void menuFlashClear() {      // Очистка моргающего сообщения в случае продолжения пользования меню

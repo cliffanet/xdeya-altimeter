@@ -9,6 +9,8 @@
 #define TOSTRING(x)         STRINGIFY(x)
 #define PPCAT_NX(A, B)      A ## B
 
+#define PTXT(s)             PSTR(TXT_ ## s)
+
 #ifndef HWVER
 #define HWVER               3
 #endif

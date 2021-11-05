@@ -8,6 +8,11 @@
 #include "../../def.h"
 #include <U8g2lib.h>
 
+#if defined(FWVER_LANG) && (FWVER_LANG == 'R')
+#include "text.ru.h"
+#else
+#include "text.en.h"
+#endif
 
 /* ------------------------------------------------------------------------------------------- *
  *  Дисплей

@@ -77,7 +77,7 @@ class ViewMenuStatic : public ViewMenu {
             if ((btn != BTN_SEL) || isExit(isel)) {
                 // Сохраняем настройки, если изменены
                 if (!cfgSave()) {
-                    menuFlashP(PSTR("Config save error"));
+                    menuFlashP(PTXT(MENU_CONFIG_SAVEERROR));
                     return;
                 }
                 ViewMenu::btnSmpl(btn);
@@ -165,22 +165,21 @@ static void valInt(char *txt, int val) {    // числовые
     sprintf_P(txt, PSTR("%d"), val);
 }
 static void valOn(char *txt, bool val) {    // On/Off
-    strcpy_P(txt, val ? PSTR("On") : PSTR("Off"));
+    strcpy_P(txt, val ? PTXT(MENU_ON) : PTXT(MENU_OFF));
 }
 static void valYes(char *txt, bool val) {   // Yes/No
-    strcpy_P(txt, val ? PSTR("Yes") : PSTR("No"));
+    strcpy_P(txt, val ? PTXT(MENU_YES) : PTXT(MENU_NO));
 }
 static void valOk(char *txt, bool val) {    // On/Off
-    strcpy_P(txt, val ? PSTR("OK") : PSTR("fail"));
+    strcpy_P(txt, val ? PTXT(MENU_OK) : PTXT(MENU_FAIL));
 }
 static void valDsplAuto(char *txt, int8_t val) {
     switch (val) {
-        case MODE_MAIN_NONE:    strcpy_P(txt, PSTR("No change")); break;
-        case MODE_MAIN_LAST:    strcpy_P(txt, PSTR("Last")); break;
-        //case MODE_MAIN_GPS:     strcpy_P(txt, PSTR("GPS")); break;
-        case MODE_MAIN_GPSALT:  strcpy_P(txt, PSTR("GPS+Alt")); break;
-        case MODE_MAIN_ALT:     strcpy_P(txt, PSTR("Alti")); break;
-        //case MODE_MAIN_TIME:    strcpy_P(txt, PSTR("Clock")); break;
+        case MODE_MAIN_NONE:    strcpy_P(txt, PTXT(MENU_MAINPAGE_NONE)); break;
+        case MODE_MAIN_LAST:    strcpy_P(txt, PTXT(MENU_MAINPAGE_LAST)); break;
+        //case MODE_MAIN_GPS:     strcpy_P(txt, PTXT(MENU_MAINPAGE_GPS)); break;
+        case MODE_MAIN_GPSALT:  strcpy_P(txt, PTXT(MENU_MAINPAGE_GPSALT)); break;
+        case MODE_MAIN_ALT:     strcpy_P(txt, PTXT(MENU_MAINPAGE_ALT)); break;
     }
 }
 
@@ -189,17 +188,17 @@ static void valDsplAuto(char *txt, int8_t val) {
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menugpsupoint[] {
     {   // Выбор текущей точки
-        .name = PSTR("Current"),
+        .name = PTXT(MENU_POINT_CURRENT),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             if (pnt.numValid()) {
                 valInt(txt, pnt.num());
                 if (!pnt.cur().used)
-                    strcpy_P(txt+strlen(txt), PSTR(" (no used)"));
+                    strcpy_P(txt+strlen(txt), PTXT(MENU_POINT_NOTUSED));
             }
             else
-                strcpy_P(txt, PSTR("[no point]"));
+                strcpy_P(txt, PTXT(MENU_POINT_NOCURR));
         },
         .edit = [] (int val) {
             if (val == 1)
@@ -210,54 +209,54 @@ static const menu_el_t menugpsupoint[] {
         },
     },
     {   // Сохранение текущих координат в выбранной точке
-        .name = PSTR("Save position"),
+        .name = PTXT(MENU_POINT_SAVE),
         .submenu = NULL,
         .enter = menuFlashHold, // Сохранение только по длинному нажатию, чтобы случайно не затереть точку
         .showval = NULL,
         .edit = NULL,
         .hold = [] () {
             if (!pnt.numValid()) { // Точка может быть не выбрана
-                menuFlashP(PSTR("Point not selected"));
+                menuFlashP(PTXT(MENU_POINT_NOTSELECT));
                 return;
             }
             
             auto &gps = gpsInf();
             if (!GPS_VALID_LOCATION(gps)) {
                 // Или к моменту срабатывания длинного нажатия может не быть валидных координат (потеряны спутники)
-                menuFlashP(PSTR("GPS not valid"));
+                menuFlashP(PTXT(MENU_POINT_NOGPS));
                 return;
             }
             
             // Сохраняем
             pnt.locSet(GPS_LATLON(gps.lat), GPS_LATLON(gps.lon));
             if (!pnt.save()) {
-                menuFlashP(PSTR("EEPROM fail"));
+                menuFlashP(PTXT(MENU_POINT_EEPROMFAIL));
                 return;
             }
             
-            menuFlashP(PSTR("Point saved"));
+            menuFlashP(PTXT(MENU_POINT_SAVED));
         },
     },
     {   // Стирание координат у выбранной точки
-        .name = PSTR("Clear"),
+        .name = PTXT(MENU_POINT_CLEAR),
         .submenu = NULL,
         .enter = menuFlashHold,  // Стирание только по длинному нажатию, чтобы случайно не затереть точку
         .showval = NULL,
         .edit = NULL,
         .hold = [] () {
             if (!pnt.numValid()) { // Точка может быть не выбрана
-                menuFlashP(PSTR("Point not selected"));
+                menuFlashP(PTXT(MENU_POINT_NOTSELECT));
                 return;
             }
             
             // Очищаем
             pnt.locClear();
             if (!pnt.save()) {
-                menuFlashP(PSTR("EEPROM fail"));
+                menuFlashP(PTXT(MENU_POINT_EEPROMFAIL));
                 return;
             }
             
-            menuFlashP(PSTR("Point cleared"));
+            menuFlashP(PTXT(MENU_POINT_CLEARED));
         },
     },
 };
@@ -268,13 +267,13 @@ static ViewMenuStatic vMenuGpsPoint(menugpsupoint, sizeof(menugpsupoint)/sizeof(
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menudisplay[] {
     {   // Включение / выключение подсветки
-        .name = PSTR("Light"),
+        .name = PTXT(MENU_DISPLAY_LIGHT),
         .submenu = NULL,
         .enter = displayLightTgl,           // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) { valOn(txt, displayLight()); },
     },
     {   // Уровень контраста
-        .name = PSTR("Contrast"),
+        .name = PTXT(MENU_DISPLAY_CONTRAST),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, cfg.d().contrast); },
@@ -295,24 +294,24 @@ static ViewMenuStatic vMenuDisplay(menudisplay, sizeof(menudisplay)/sizeof(menu_
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menugnd[] {
     {   // принудительная калибровка (On Ground)
-        .name = PSTR("Manual set"),
+        .name = PTXT(MENU_GND_MANUALSET),
         .submenu = NULL,
         .enter = menuFlashHold,  // Сброс только по длинному нажатию
         .showval = NULL,
         .edit = NULL,
         .hold = [] () {
             if (!cfg.d().gndmanual) {
-                menuFlashP(PSTR("Manual not allowed"));
+                menuFlashP(PTXT(MENU_GND_MANUALNOTALLOW));
                 return;
             }
             
             altCalc().gndreset();
             jmpReset();
-            menuFlashP(PSTR("GND corrected"));
+            menuFlashP(PTXT(MENU_GND_CORRECTED));
         },
     },
     {   // разрешение принудительной калибровки: нет, "на земле", всегда
-        .name = PSTR("Allow mnl set"),
+        .name = PTXT(MENU_GND_MANUALALLOW),
         .submenu = NULL,
         .enter = [] () {
             cfg.set().gndmanual = !cfg.d().gndmanual;
@@ -320,12 +319,12 @@ static const menu_el_t menugnd[] {
         .showval = [] (char *txt) { valYes(txt, cfg.d().gndmanual); },
     },
     {   // выбор автоматической калибровки: нет, автоматически на земле
-        .name = PSTR("Auto correct"),
+        .name = PTXT(MENU_GND_AUTOCORRECT),
         .submenu = NULL,
         .enter = [] () {
             cfg.set().gndauto = !cfg.d().gndauto;
         },
-        .showval = [] (char *txt) { strcpy_P(txt, cfg.d().gndauto ? PSTR("On GND") : PSTR("No")); },
+        .showval = [] (char *txt) { strcpy_P(txt, cfg.d().gndauto ? PTXT(MENU_GND_CORRECTONGND) : PTXT(MENU_NO)); },
     },
 };
 static ViewMenuStatic vMenuGnd(menugnd, sizeof(menugnd)/sizeof(menu_el_t));
@@ -335,7 +334,7 @@ static ViewMenuStatic vMenuGnd(menugnd, sizeof(menugnd)/sizeof(menu_el_t));
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menuinfo[] {
     {   // переключать ли экран в падении автоматически в отображение только высоты
-        .name = PSTR("Auto FF-screen"),
+        .name = PTXT(MENU_AUTOMAIN_FF),
         .submenu = NULL,
         .enter = [] () {
             cfg.set().dsplautoff = !cfg.d().dsplautoff;
@@ -343,7 +342,7 @@ static const menu_el_t menuinfo[] {
         .showval = [] (char *txt) { valYes(txt, cfg.d().dsplautoff); },
     },
     {   // куда переключать экран под куполом: не переключать, жпс, часы, жпс+высота (по умолч)
-        .name = PSTR("On CNP"),
+        .name = PTXT(MENU_AUTOMAIN_CNP),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplcnp); },
@@ -364,7 +363,7 @@ static const menu_el_t menuinfo[] {
         },
     },
     {   // куда переключать экран после приземления: не переключать, жпс (по умолч), часы, жпс+высота
-        .name = PSTR("After Land"),
+        .name = PTXT(MENU_AUTOMAIN_LAND),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplland); },
@@ -385,7 +384,7 @@ static const menu_el_t menuinfo[] {
         },
     },
     {   // куда переключать экран при длительном бездействии на земле
-        .name = PSTR("On GND"),
+        .name = PTXT(MENU_AUTOMAIN_ONGND),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplgnd); },
@@ -406,7 +405,7 @@ static const menu_el_t menuinfo[] {
         },
     },
     {   // куда переключать экран при включении: запоминать после выключения, все варианты экрана
-        .name = PSTR("Power On"),
+        .name = PTXT(MENU_AUTOMAIN_POWERON),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplpwron); },
@@ -433,15 +432,23 @@ static ViewMenuStatic vMenuInfo(menuinfo, sizeof(menuinfo)/sizeof(menu_el_t));
  *  Меню автоотключения питания
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menupoweroff[] {
+    {
+        .name = PTXT(MENU_POWEROFF_FORCE),
+        .submenu = NULL,
+        .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
+        .showval = NULL,
+        .edit = NULL,
+        .hold = pwrOff,
+    },
     {   // отключаться через N часов отсутствия взлётов
-        .name       = PSTR("No Fly hours"),
+        .name       = PTXT(MENU_POWEROFF_NOFLY),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().hrpwrnofly > 0)
                 valInt(txt, cfg.d().hrpwrnofly);
             else
-                strcpy_P(txt, PSTR("disable"));
+                strcpy_P(txt, PTXT(MENU_DISABLE));
         },
         .edit       = [] (int val) {
             int32_t c = cfg.d().hrpwrnofly;
@@ -453,14 +460,14 @@ static const menu_el_t menupoweroff[] {
         },
     },
     {   // отключаться через N часов после включения
-        .name       = PSTR("Aft. Pwr-On"),
+        .name       = PTXT(MENU_POWEROFF_AFTON),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().hrpwrafton > 0)
                 valInt(txt, cfg.d().hrpwrafton);
             else
-                strcpy_P(txt, PSTR("disable"));
+                strcpy_P(txt, PTXT(MENU_DISABLE));
         },
         .edit       = [] (int val) {
             int32_t c = cfg.d().hrpwrafton;
@@ -479,34 +486,34 @@ static ViewMenuStatic vMenuPowerOff(menupoweroff, sizeof(menupoweroff)/sizeof(me
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menugpson[] {
     {   // Включение / выключение питания GPS вручную
-        .name = PSTR("Current State"),
+        .name = PTXT(MENU_GPSON_CURRENT),
         .submenu = NULL,
         .enter = gpsPwrTgl,                 // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) { valOn(txt, gpsPwr()); },
     },
     {   // авто-включение сразу при включении питания
-        .name       = PSTR("Auto-On by Pwr-On"),
+        .name       = PTXT(MENU_GPSON_POWERON),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsonpwron); },
         .edit       = [] (int val) { cfg.set().gpsonpwron = !cfg.d().gpsonpwron; },
     },
     {   // автоматически включать при старте записи трека
-        .name       = PSTR("Auto-On by Track Rec"),
+        .name       = PTXT(MENU_GPSON_TRKREC),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsontrkrec); },
         .edit       = [] (int val) { cfg.set().gpsontrkrec = !cfg.d().gpsontrkrec; },
     },
     {   // авто-включение в подъёме на заданной высоте
-        .name       = PSTR("Auto-On by Takeoff Alt"),
+        .name       = PTXT(MENU_GPSON_TAKEOFF),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().gpsonalt > 0)
                 valInt(txt, cfg.d().gpsonalt);
             else
-                strcpy_P(txt, PSTR("disable"));
+                strcpy_P(txt, PTXT(MENU_DISABLE));
         },
         .edit       = [] (int val) {
             int32_t c = cfg.d().gpsonalt;
@@ -518,7 +525,7 @@ static const menu_el_t menugpson[] {
         },
     },
     {   // авто-отключать жпс всегда после приземления
-        .name       = PSTR("Force-Off by Landing"),
+        .name       = PTXT(MENU_GPSON_OFFLAND),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsoffland); },
@@ -533,29 +540,29 @@ static ViewMenuStatic vMenuGpsOn(menugpson, sizeof(menugpson)/sizeof(menu_el_t))
 static void valBtnDo(char *txt, uint8_t op) {
     switch (op) {
         case BTNDO_NONE:
-            strcpy_P(txt, PSTR("no"));
+            strcpy_P(txt, PTXT(MENU_BTNDO_NO));
             break;
             
         case BTNDO_LIGHT:
-            strcpy_P(txt, PSTR("BackLight"));
+            strcpy_P(txt, PTXT(MENU_BTNDO_BACKLIGHT));
             break;
             
         case BTNDO_GPSPWR:
-            strcpy_P(txt, PSTR("GPS On/Off"));
+            strcpy_P(txt, PTXT(MENU_BTNDO_GPSTGL));
             break;
             
         case BTNDO_TRKREC:
-            strcpy_P(txt, PSTR("Track rec"));
+            strcpy_P(txt, PTXT(MENU_BTNDO_TRKREC));
             break;
             
         case BTNDO_PWROFF:
-            strcpy_P(txt, PSTR("Power Off"));
+            strcpy_P(txt, PTXT(MENU_BTNDO_POWEROFF));
             break;
     }
 }
 static const menu_el_t menubtndo[] {
     {   // действие по кнопке "вверх"
-        .name       = PSTR("Btn Up"),
+        .name       = PTXT(MENU_BTNDO_UP),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valBtnDo(txt, cfg.d().btndo_up); },
@@ -572,7 +579,7 @@ static const menu_el_t menubtndo[] {
         },
     },
     {   // действие по кнопке "вниз"
-        .name       = PSTR("Btn Down"),
+        .name       = PTXT(MENU_BTNDO_DOWN),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valBtnDo(txt, cfg.d().btndo_down); },
@@ -596,17 +603,17 @@ static ViewMenuStatic vMenuBtnDo(menubtndo, sizeof(menubtndo)/sizeof(menu_el_t))
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menutrack[] {
     {   // Текущий режим записи трэка
-        .name = PSTR("Recording"),
+        .name = PTXT(MENU_TRACK_RECORDING),
         .submenu = NULL,
         .enter = menuFlashHold,           // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) {
             if (trkRunning(TRK_RUNBY_HAND))
-                strcpy_P(txt, PSTR("Force"));
+                strcpy_P(txt, PTXT(MENU_TRACK_FORCE));
             else
             if (trkRunning())
-                strcpy_P(txt, PSTR("Auto"));
+                strcpy_P(txt, PTXT(MENU_TRACK_AUTO));
             else
-                strcpy_P(txt, PSTR("no"));
+                strcpy_P(txt, PTXT(MENU_TRACK_NOREC));
         },
         .edit = NULL,
         .hold = [] () {
@@ -617,14 +624,14 @@ static const menu_el_t menutrack[] {
         },
     },
     {   // автоматически включать трек на заданной высоте в подъёме
-        .name       = PSTR("Auto Rec. by Alt"),
+        .name       = PTXT(MENU_TRACK_BYALT),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().trkonalt > 0)
                 valInt(txt, cfg.d().trkonalt);
             else
-                strcpy_P(txt, PSTR("disable"));
+                strcpy_P(txt, PTXT(MENU_DISABLE));
         },
         .edit       = [] (int val) {
             int32_t c = cfg.d().trkonalt;
@@ -636,13 +643,13 @@ static const menu_el_t menutrack[] {
         },
     },
     {   // Количество записей
-        .name = PSTR("Count"),
+        .name = PTXT(MENU_TRACK_COUNT),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, trkFileCount()); },
     },
     {   // Сколько времени доступно
-        .name = PSTR("Avail"),
+        .name = PTXT(MENU_TRACK_AVAIL),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -651,7 +658,7 @@ static const menu_el_t menutrack[] {
             if (avail >= 60)
                 sprintf_P(txt, PSTR("%d:%02d"), avail/60, avail%60);
             else
-                sprintf_P(txt, PSTR("%d s"), avail);
+                sprintf_P(txt, PTXT(MENU_TRACK_AVAILSEC), avail);
         },
     },
 };
@@ -662,7 +669,7 @@ static ViewMenuStatic vMenuTrack(menutrack, sizeof(menutrack)/sizeof(menu_el_t))
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menutime[] {
     {   // Выбор временной зоны, чтобы корректно синхронизироваться с службами времени
-        .name = PSTR("Zone"),
+        .name = PTXT(MENU_TIME_ZONE),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -702,61 +709,46 @@ static ViewMenuStatic vMenuTime(menutime, sizeof(menutime)/sizeof(menu_el_t));
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menuoptions[] {
     {
-        .name       = PSTR("Display"),
+        .name       = PTXT(MENU_OPTION_DISPLAY),
         .submenu    = &vMenuDisplay,
     },
     {
-        .name       = PSTR("Gnd Correct"),
+        .name       = PTXT(MENU_OPTION_GNDCORRECT),
         .submenu    = &vMenuGnd,
     },
     {
-        .name       = PSTR("Auto Screen-Mode"),
+        .name       = PTXT(MENU_OPTION_AUTOSCREEN),
         .submenu    = &vMenuInfo,
     },
     {
-        .name       = PSTR("Auto Power-Off"),
+        .name       = PTXT(MENU_OPTION_AUTOPOWER),
         .submenu    = &vMenuPowerOff,
     },
     {
-        .name       = PSTR("Auto GPS-On"),
+        .name       = PTXT(MENU_OPTION_AUTOGPS),
         .submenu    = &vMenuGpsOn,
     },
     {
-        .name       = PSTR("Button operation"),
+        .name       = PTXT(MENU_OPTION_BTNDO),
         .submenu    = &vMenuBtnDo,
     },
     {
-        .name       = PSTR("Track"),
+        .name       = PTXT(MENU_OPTION_TRACK),
         .submenu    = &vMenuTrack,
     },
     {
-        .name       = PSTR("Time"),
+        .name       = PTXT(MENU_OPTION_TIME),
         .submenu    = &vMenuTime,
     },
 };
 static ViewMenuStatic vMenuOptions(menuoptions, sizeof(menuoptions)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
- *  Меню управления питанием
- * ------------------------------------------------------------------------------------------- */
-static const menu_el_t menupower[] {
-    {
-        .name = PSTR("Off"),
-        .submenu = NULL,
-        .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
-        .showval = NULL,
-        .edit = NULL,
-        .hold = pwrOff,
-    },
-};
-static ViewMenuStatic vMenuPower(menupower, sizeof(menupower)/sizeof(menu_el_t));
-
-/* ------------------------------------------------------------------------------------------- *
  *  Меню Обновления прошивки
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menufirmware[] {
     {
-        .name = PSTR("FW version"),
+        .name = PTXT(MENU_FW_VERSION),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -764,7 +756,7 @@ static const menu_el_t menufirmware[] {
         },
     },
     {
-        .name = PSTR("FW type"),
+        .name = PTXT(MENU_FW_TYPE),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -772,7 +764,7 @@ static const menu_el_t menufirmware[] {
         },
     },
     {
-        .name = PSTR("Hardware rev."),
+        .name = PTXT(MENU_FW_HWREV),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -780,12 +772,12 @@ static const menu_el_t menufirmware[] {
         },
     },
     {
-        .name = PSTR("Update to:"),
+        .name = PTXT(MENU_FW_UPDATETO),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             if (cfg.d().fwupdind <= 0)
-                strcpy_P(txt, PSTR("-no-"));
+                strcpy_P(txt, PTXT(MENU_FW_NOUPD));
             else
             if (!verAvailGet(cfg.d().fwupdind, txt))
                 *txt = '\0';
@@ -812,7 +804,7 @@ static ViewMenuStatic vMenuFirmWare(menufirmware, sizeof(menufirmware)/sizeof(me
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menuhwtest[] {
     {
-        .name = PSTR("Clock"),
+        .name = PTXT(MENU_TEST_CLOCK),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -821,7 +813,7 @@ static const menu_el_t menuhwtest[] {
     },
 #if HWVER > 1
     {
-        .name = PSTR("Battery"),
+        .name = PTXT(MENU_TEST_BATTERY),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -834,14 +826,14 @@ static const menu_el_t menuhwtest[] {
 #endif
 #if HWVER >= 3
     {
-        .name = PSTR("Batt charge"),
+        .name = PTXT(MENU_TEST_BATTCHARGE),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valYes(txt, pwrBattCharge()); },
     },
 #endif
     {
-        .name = PSTR("Pressure"),
+        .name = PTXT(MENU_TEST_PRESSURE),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -849,11 +841,11 @@ static const menu_el_t menuhwtest[] {
             float press = altCalc().press();
             
             valOk(ok, (press > 60000) && (press < 150000));
-            sprintf_P(txt, PSTR("(%0.0fkPa) %s"), press / 1000, ok);
+            sprintf_P(txt, PTXT(MENU_TEST_PRESSVAL), press / 1000, ok);
         },
     },
     {
-        .name = PSTR("Light test"),
+        .name = PTXT(MENU_TEST_LIGHT),
         .submenu = NULL,
         .enter = [] () {
             displayLightTgl();
@@ -863,7 +855,7 @@ static const menu_el_t menuhwtest[] {
         .showval = [] (char *txt) { valOn(txt, displayLight()); },
     },
     {
-        .name = PSTR("GPS data"),
+        .name = PTXT(MENU_TEST_GPSDATA),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -872,27 +864,27 @@ static const menu_el_t menuhwtest[] {
             
             valOk(ok, gpsInf().rcvok);
             if (dage < 15)
-                sprintf_P(txt, PSTR("(%d ms) %s"), dage*GPS_TICK_INTERVAL, ok);
+                sprintf_P(txt, PTXT(MENU_TEST_DATADELAY), dage*GPS_TICK_INTERVAL, ok);
             else
-                strcpy_P(txt, PSTR("no data"));
+                strcpy_P(txt, PTXT(MENU_TEST_NOGPSDATA));
         },
     },
 #if HWVER > 1
     {
-        .name = PSTR("GPS power restart"),
+        .name = PTXT(MENU_TEST_GPSRESTART),
         .submenu = NULL,
         .enter = [] () {
             gpsRestart();
-            menuFlashP(PSTR("GPS restarted"), 10);
+            menuFlashP(PTXT(MENU_TEST_GPSRESTARTED), 10);
         },
     },
 #endif
     {
-        .name = PSTR("GPS init"),
+        .name = PTXT(MENU_TEST_GPSINIT),
         .submenu = NULL,
         .enter = [] () {
             gpsInit();
-            menuFlashP(PSTR("GPS inited"), 10);
+            menuFlashP(PTXT(MENU_TEST_GPSINITED), 10);
         },
     },
 };
@@ -901,40 +893,54 @@ static ViewMenuStatic vMenuHwTest(menuhwtest, sizeof(menuhwtest)/sizeof(menu_el_
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления остальными системными настройками
  * ------------------------------------------------------------------------------------------- */
+ViewMenu *menuFile();
+
 static const menu_el_t menusystem[] {
     {
-        .name = PSTR("Factory reset"),
+        .name = PTXT(MENU_POWEROFF_FORCE),
+        .submenu = NULL,
+        .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
+        .showval = NULL,
+        .edit = NULL,
+        .hold = pwrOff,
+    },
+    {
+        .name = PTXT(MENU_SYSTEM_FACTORYRES),
         .submenu = NULL,
         .enter = menuFlashHold,     // Сброс настроек только по длинному нажатию
         .showval = NULL,
         .edit = NULL,
         .hold = [] () {
-            menuFlashP(PSTR("formating eeprom"));
+            menuFlashP(PTXT(MENU_SYSTEM_FORMATROM));
             displayUpdate(); // чтобы сразу вывести текст на экран
             btnWaitRelease();   // Надо ожидать, пока будет отпущена кнопка,
                                 // иначе, если сработает прерывание во время cfgFactory(),
                                 // будет: Core  1 panic'ed (Cache disabled but cached memory region accessed)
             if (!cfgFactory()) {
-                menuFlashP(PSTR("EEPROM fail"));
+                menuFlashP(PTXT(MENU_SYSTEM_EEPROMFAIL));
                 return;
             }
-            menuFlashP(PSTR("Config reseted"));
+            menuFlashP(PTXT(MENU_SYSTEM_CFGRESETED));
             //displayUpdate(); // чтобы сразу вывести текст на экран
             //ESP.restart();
         },
     },
     {
-        .name       = PSTR("FirmWare update"),
+        .name       = PTXT(MENU_SYSTEM_FWUPDATE),
         .submenu    = &vMenuFirmWare,
     },
     {
-        .name = PSTR("GPS serial"),
+        .name       = PTXT(MENU_SYSTEM_FILES),
+        .submenu    = menuFile(),
+    },
+    {
+        .name = PTXT(MENU_SYSTEM_GPSSERIAL),
         .submenu = NULL,
         .enter = gpsDirectTgl,
         .showval = [] (char *txt) { valOn(txt, gpsDirect()); },
     },
     {
-        .name       = PSTR("Hardware test"),
+        .name       = PTXT(MENU_SYSTEM_HWTEST),
         .submenu    = &vMenuHwTest,
     },
 };
@@ -944,7 +950,6 @@ static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_
  *  Внешние подменю
  * ------------------------------------------------------------------------------------------- */
 ViewMenu *menuLogBook();
-ViewMenu *menuFile();
 ViewMenu *menuWifiSync();
 
 /* ------------------------------------------------------------------------------------------- *
@@ -952,11 +957,11 @@ ViewMenu *menuWifiSync();
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menumain[] {
     {
-        .name       = PSTR("GPS points"),
+        .name       = PTXT(MENU_ROOT_GPSPOINT),
         .submenu    = &vMenuGpsPoint,
     },
     {
-        .name       = PSTR("Jump count"),
+        .name       = PTXT(MENU_ROOT_JUMPCOUNT),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valInt(txt, jmp.d().count); },
@@ -968,32 +973,24 @@ static const menu_el_t menumain[] {
         },
     },
     {
-        .name       = PSTR("LogBook"),
+        .name       = PTXT(MENU_ROOT_LOGBOOK),
         .submenu    = menuLogBook(),
     },
     {
-        .name       = PSTR("Options"),
+        .name       = PTXT(MENU_ROOT_OPTIONS),
         .submenu    = &vMenuOptions,
     },
     {
-        .name       = PSTR("Power"),
-        .submenu    = &vMenuPower,
-    },
-    {
-        .name       = PSTR("System"),
+        .name       = PTXT(MENU_ROOT_SYSTEM),
         .submenu    = &vMenuSystem,
     },
     {
-        .name       = PSTR("Files"),
-        .submenu    = menuFile(),
-    },
-    {
-        .name       = PSTR("Wifi sync"),
+        .name       = PTXT(MENU_ROOT_WIFISYNC),
         .submenu    = menuWifiSync(),
     },
 };
 static ViewMenuStatic vMenuMain(menumain, sizeof(menumain)/sizeof(menu_el_t));
 void setViewMenu() {
     viewSet(vMenuMain);
-    vMenuMain.open(NULL, PSTR("Configuration"));
+    vMenuMain.open(NULL, PTXT(MENU_ROOT));
 }

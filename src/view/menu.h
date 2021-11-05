@@ -12,8 +12,14 @@
 #else
 #define MENU_STR_COUNT  8
 #endif
+
+#if defined(FWVER_LANG) && (FWVER_LANG == 'R')
+#define MENUSZ_NAME 40
+#define MENUSZ_VAL 30
+#else
 #define MENUSZ_NAME 20
 #define MENUSZ_VAL 15
+#endif
 
 #define MENU_TIMEOUT    15000
 
