@@ -8,9 +8,12 @@ class ViewMainAlt : public ViewMain {
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL)
                 return;
-    
-            //setViewMain(MODE_MAIN_GPSALT);
+            
+#ifdef FWVER_DEBUG
             setViewInfoDebug();
+#else
+            setViewMain(MODE_MAIN_GPSALT);
+#endif
         }
         
         void draw(U8G2 &u8g2) {

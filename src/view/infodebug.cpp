@@ -7,6 +7,7 @@
 #include "../jump/proc.h" // altCalc()
 #include "../gps/proc.h"
 
+#ifdef FWVER_DEBUG
 
 class ViewInfoDebug : public ViewInfo {
     public:
@@ -265,3 +266,5 @@ class ViewInfoDebug : public ViewInfo {
 };
 static ViewInfoDebug vInfDebug;
 void setViewInfoDebug() { viewSet(vInfDebug); }
+
+#endif // FWVER_DEBUG

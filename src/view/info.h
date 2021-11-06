@@ -40,7 +40,9 @@ class ViewInfo : public ViewBase {
         U8G2 *_u8g2;
         uint8_t iprn=0;
 };
-
+    
+#ifdef FWVER_DEBUG
 void setViewInfoDebug();
+#endif
 
 #endif // _view_info_H
