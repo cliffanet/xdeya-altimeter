@@ -72,6 +72,7 @@ class ViewNetSync : public ViewBase {
         void updTimeout(int16_t _timeout = 100) {
             if (_timeout > 0)
                 timeout = 1 + _timeout;
+            CONSOLE("timeout: %d", _timeout);
         }
         
         // изменение этапа
@@ -79,6 +80,7 @@ class ViewNetSync : public ViewBase {
             state = _state;
             updTimeout(_timeout);
             netsyncProgMax(0);
+            CONSOLE("state: %d", _state);
         }
         
         // вывод сообщения
@@ -104,7 +106,7 @@ class ViewNetSync : public ViewBase {
         void fin(const char *_title) {
             srvStop();
             wifiStop();
-            next(_title, NS_EXIT, 50);
+            next(_title, NS_EXIT, 70);
         }
         
         // завершение всего процесса синхронизации с мнгновенным переходом в главный экран
@@ -145,7 +147,7 @@ class ViewNetSync : public ViewBase {
                 return;
             }
             
-            NEXT(HELLO, NS_SERVER_HELLO, 30);
+            NEXT(HELLO, NS_SERVER_HELLO, 50);
         }
         
         // пересылка данных на сервер
@@ -277,7 +279,7 @@ class ViewNetSync : public ViewBase {
                         if (!srvRecv(cmd, d)) {
                             if (!chksrv())
                                 return;
-                            
+
                             static uint8_t n = 0;
                             n++;
                             if (n > 16) {
@@ -555,13 +557,13 @@ class ViewNetSync : public ViewBase {
             u8g2.setDrawColor(1);
             u8g2.drawBox(0,0,u8g2.getDisplayWidth(),12);
             u8g2.setDrawColor(0);
-            char s[33];
+            char s[64];
             strcpy_P(s, PTXT(WIFI_WEBSYNC));
             u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(s))/2, 10, s);
-    
+            
             u8g2.setDrawColor(1);
             int8_t y = 10-1+14;
-    
+            
             strcpy_P(s, PTXT(WIFI_NET));
             u8g2.drawTxt(0, y, s);
             
@@ -576,7 +578,7 @@ class ViewNetSync : public ViewBase {
                     break;
             }
             u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
-    
+            
             y += 10;
             if (state == NS_PROFILE_JOIN) {
                 strcpy_P(s, PTXT(WIFI_WAITJOIN));
@@ -589,7 +591,7 @@ class ViewNetSync : public ViewBase {
                 u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
                 return;
             }
-    
+
             if ((wifiStatus() == WIFI_STA_WAITIP) || (wifiStatus() == WIFI_STA_CONNECTED)) {
                 snprintf_P(s, sizeof(s), PTXT(WIFI_RSSI), rssi);
                 u8g2.drawTxt(0, y, s);
@@ -600,10 +602,10 @@ class ViewNetSync : public ViewBase {
                     u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
                 }
             }
-    
+            
             y += 10;
             u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(title))/2, y, title);
-    
+
             y += 10;
             if (wifiStatus() > WIFI_STA_NULL) {
                 if (progress_max > 0) {

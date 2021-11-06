@@ -15,7 +15,7 @@ void ViewLogo::draw(U8G2 &u8g2) {
     u8g2.setFont(FONTNAME);
     u8g2.drawGlyph((u8g2.getDisplayWidth()-FONTSIZE)/2, (u8g2.getDisplayHeight()-32)/2 + FONTSIZE/2, 0x40);
     
-    char s[30];
+    char s[40];
     u8g2.setFont(u8g2_font_ImpactBits_tr);
     strcpy_P(s, PSTR("XDEYA"));
     u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, u8g2.getDisplayHeight()-20, s);

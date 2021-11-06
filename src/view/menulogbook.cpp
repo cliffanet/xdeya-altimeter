@@ -59,7 +59,7 @@ class ViewMenuLogBookInfo : public ViewBase {
             u8g2.setFont(menuFont);
     
             // Заголовок
-            char s[20];
+            char s[64];
             snprintf_P(s, sizeof(s), PTXT(LOGBOOK_JUMPNUM), jmp.num);
             u8g2.setDrawColor(0);
             u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(s))/2, 10, s);
