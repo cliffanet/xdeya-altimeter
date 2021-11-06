@@ -5,7 +5,12 @@
 #ifndef _view_text_lang_H
 #define _view_text_lang_H
 
-#define menuFont        u8g2_font_6x12_t_cyrillic
+#include <stdint.h>
+#include <clib/u8g2.h>
+extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_robotobd_08_tx");
+
+//#define menuFont        u8g2_font_6x12_t_cyrillic
+#define menuFont        u8g2_font_robotobd_08_tx
 #define drawTxt         drawUTF8
 #define getTxtWidth     getUTF8Width
 
