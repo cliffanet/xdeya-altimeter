@@ -38,7 +38,13 @@
 #define FWVER_TYPE_CODE     'p'
 #endif
 
-#define FWVER_NAME          TOSTRING(FWVER_NUM) FWVER_TYPE_NAME ".hw" TOSTRING(HWVER)
+#if defined(FWVER_LANG) && (FWVER_LANG == 'R')
+#define FWVER_LANG_NAME     ".ru"
+#else
+#define FWVER_LANG_NAME     ".en"
+#endif
+
+#define FWVER_NAME          TOSTRING(FWVER_NUM) ".hw" TOSTRING(HWVER) FWVER_TYPE_NAME FWVER_LANG_NAME
 #define FWVER_FILENAME      "xdeya.v" FWVER_NAME
 
 #endif

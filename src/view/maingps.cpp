@@ -136,30 +136,30 @@ static void displayGpsState(U8G2 &u8g2) {
     auto &gps = gpsInf();
     char s[50];
     
-    u8g2.setFont(u8g2_font_helvB08_tf);
+    u8g2.setFont(menuFont);
     
     switch (gpsState()) {
         case GPS_STATE_OFF:
-            strcpy_P(s, PSTR("gps off"));
+            strcpy_P(s, PTXT(MAIN_GPSSTATE_OFF));
             break;
         
         case GPS_STATE_INIT:
-            strcpy_P(s, PSTR("gps init"));
+            strcpy_P(s, PTXT(MAIN_GPSSTATE_INIT));
             break;
         
         case GPS_STATE_FAIL:
-            strcpy_P(s, PSTR("gps init fail"));
+            strcpy_P(s, PTXT(MAIN_GPSSTATE_INITFAIL));
             break;
         
         case GPS_STATE_NODATA:
-            strcpy_P(s, PSTR("no gps data"));
+            strcpy_P(s, PTXT(MAIN_GPSSTATE_NODATA));
             break;
         
         case GPS_STATE_OK:
-            sprintf_P(s, PSTR("s: %d"), gps.numSV);
+            sprintf_P(s, PTXT(MAIN_GPSSTATE_SATCOUNT), gps.numSV);
             break;
     }
-    u8g2.drawStr(0, u8g2.getDisplayHeight()-1, s);
+    u8g2.drawTxt(0, u8g2.getDisplayHeight()-1, s);
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -273,9 +273,9 @@ class ViewMainGpsAlt : public ViewMain {
                         u8g2.drawGlyph(u8g2.getDisplayWidth()-64, 30, 0x40);
                         break;
                 }
-                u8g2.setFont(u8g2_font_helvB08_tf);
-                sprintf_P(s, PSTR("%0.1f m/s"), abs(ac.speedapp()));
-                u8g2.drawStr(u8g2.getDisplayWidth()-58, 30, s);
+                u8g2.setFont(menuFont);
+                sprintf_P(s, PTXT(MAIN_VSPEED_MS), abs(ac.speedapp()));
+                u8g2.drawTxt(u8g2.getDisplayWidth()-58, 30, s);
             }
     
             // Текущий режим высоты
@@ -321,9 +321,9 @@ class ViewMainGpsAlt : public ViewMain {
             }
     
             if (GPS_VALID_SPEED(gps)) {
-                u8g2.setFont(u8g2_font_helvB08_tf);
-                sprintf_P(s, PSTR("%0.1f m/s"), GPS_CM(gps.gSpeed));
-                u8g2.drawStr(u8g2.getDisplayWidth()-64, 64, s);
+                u8g2.setFont(menuFont);
+                sprintf_P(s, PTXT(MAIN_3DSPEED_MS), GPS_CM(gps.gSpeed));
+                u8g2.drawTxt(u8g2.getDisplayWidth()-64, 64, s);
             }
 #else // if HWVER < 4
             u8g2.drawHLine(u8g2.getDisplayWidth()-64, 47, 64);

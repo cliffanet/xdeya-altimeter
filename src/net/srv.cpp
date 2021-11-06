@@ -54,7 +54,7 @@ bool srvConnect() {
     struct addrinfo *res;
     int err = getaddrinfo(host, NULL, &hints, &res);
     if(err != 0 || res == NULL) {
-        last_err = PSTR("DNS lookup failed");
+        last_err = PTXT(SERVER_DNSFAIL);
         return false;
     }
     
@@ -82,7 +82,7 @@ static bool srvWait(size_t sz) {
         return true;
     
     if (!cli.connected())
-        last_err = PSTR("server connect lost");
+        last_err = PTXT(SERVER_LOST);
     
     return false;
 }
@@ -96,7 +96,7 @@ static bool srvReadData(uint8_t *data, uint16_t sz) {
     size_t sz1 = cli.read(data, sz);
     viewIntEn();
     if (sz1 != sz) {
-        last_err = PSTR("fail read from server");
+        last_err = PTXT(SERVER_READFAIL);
         return false;
     }
     
@@ -110,7 +110,7 @@ static bool srvWaitHdr(phdr_t &p) {
     if (!srvReadData(reinterpret_cast<uint8_t *>(&p), sizeof(phdr_t)))
         return false;
     if ((p.mgc != '#') || (p.cmd == 0)) {
-        last_err = PSTR("recv proto fail");
+        last_err = PTXT(SERVER_PROTOFAIL);
         return false;
     }
     
@@ -172,19 +172,19 @@ static bool _srvSend(const uint8_t *data, size_t sz) {
         if (sz1 < sz) {
             CONSOLE("not all sended: %d of %d; try avail: %d", sz1, sz, t);
             if (sz1 < 0) {
-                last_err = PSTR("server send fail");
+                last_err = PTXT(SERVER_SENDFAIL);
                 CONSOLE("write FAIL (%d)", sz1);
                 viewIntEn();
                 return false;
             }
             if (!cli.connected()) {
-                last_err = PSTR("server connect lost");
+                last_err = PTXT(SERVER_LOST);
                 CONSOLE("server connect lost while send");
                 viewIntEn();
                 return false;
             }
             if (t < 1) {
-                last_err = PSTR("server send timeout");
+                last_err = PTXT(SERVER_SENDTIMEOUT);
                 CONSOLE("no try avail");
                 viewIntEn();
                 return false;
@@ -203,7 +203,7 @@ static bool _srvSend(const uint8_t *data, size_t sz) {
 }
 bool srvSend(uint8_t cmd, const uint8_t *data, uint16_t sz) {
     if (!cli.connected()) {
-        last_err = PSTR("server connect lost");
+        last_err = PTXT(SERVER_LOST);
         CONSOLE("server connect lost");
         return false;
     }

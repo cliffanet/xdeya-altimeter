@@ -44,27 +44,27 @@ void netsyncProgInc(size_t val) {
     displayUpdate();
 }
 
-#define MSG(s)              msg(PSTR(s))
-#define NEXT(s, h, tout)    next(PSTR(s), h, tout)
-#define ERR(s)              fin(PSTR(s))
-#define FIN(s)              fin(PSTR(s))
+#define MSG(s)              msg(PSTR(TXT_WIFI_MSG_ ## s))
+#define NEXT(s, h, tout)    next(PSTR(TXT_WIFI_NEXT_ ## s), h, tout)
+#define ERR(s)              fin(PSTR(TXT_WIFI_ERR_ ## s))
+#define FIN(s)              fin(PSTR(TXT_WIFI_ ## s))
 
 class ViewNetSync : public ViewBase {
     public:
         // старт процедуры синхронизации
         void begin(const char *_ssid, const char *_pass) {
-            snprintf_P(title, sizeof(title), PSTR("wifi to %s"), _ssid);
+            snprintf_P(title, sizeof(title), PTXT(WIFI_CONNECTTONET), _ssid);
             setState(NS_WIFI_CONNECT, 200);
             joinnum = 0;
             netsyncProgMax(0);
     
             CONSOLE("wifi to: %s; pass: %s", _ssid, _pass == NULL ? "-no-" : _pass);
             if (!wifiStart()) {
-                ERR("WiFi init fail");
+                ERR(WIFIINIT);
                 return;
             }
             if (!wifiConnect(_ssid, _pass)) {
-                ERR("WiFi connect fail");
+                ERR(WIFICONNECT);
                 return;
             }
         }
@@ -123,7 +123,7 @@ class ViewNetSync : public ViewBase {
                 return false;
             }
             if (timeout == 1) {
-                ERR("timeout");
+                ERR(TIMEOUT);
                 return false;
             }
             return true;
@@ -133,7 +133,7 @@ class ViewNetSync : public ViewBase {
         void authStart() {
             ConfigWebJoin wjoin;
             if (!wjoin.load()) {
-                ERR("Can\'t load JOIN-inf");
+                ERR(JOINLOAD);
                 return;
             }
 
@@ -141,11 +141,11 @@ class ViewNetSync : public ViewBase {
 
             uint32_t id = htonl(wjoin.authid());
             if (!srvSend(0x01, id)) {
-                ERR("auth send fail");
+                ERR(SENDAUTH);
                 return;
             }
             
-            NEXT("wait hello", NS_SERVER_HELLO, 30);
+            NEXT(HELLO, NS_SERVER_HELLO, 30);
         }
         
         // пересылка данных на сервер
@@ -153,48 +153,48 @@ class ViewNetSync : public ViewBase {
             CONSOLE("dataToServer");
     
             if ((acc.ckscfg == 0) || (acc.ckscfg != cfg.chksum())) {
-                MSG("Sending config...");
+                MSG(SENDCONFIG);
                 if (!sendCfg()) {
-                    ERR("send cfg fail");
+                    ERR(SENDCONFIG);
                     return;
                 }
             }
     
             if ((acc.cksjmp == 0) || (acc.cksjmp != jmp.chksum())) {
-                MSG("Sending jump count...");
+                MSG(SENDJUMPCOUNT);
                 if (!sendJump()) {
-                    ERR("send cmp count fail");
+                    ERR(SENDJUMPCOUNT);
                     return;
                 }
             }
     
             if ((acc.ckspnt == 0) || (acc.ckspnt != pnt.chksum())) {
-                MSG("Sending point...");
+                MSG(SENDPOINT);
                 if (!sendPoint()) {
-                    ERR("send pnt fail");
+                    ERR(SENDPOINT);
                     return;
                 }
             }
     
-            MSG("Sending LogBook...");
+            MSG(SENDLOGBOOK);
             if (!sendLogBook(acc.ckslog, acc.poslog)) {
-                ERR("send LogBook fail");
+                ERR(SENDLOGBOOK);
                 return;
             }
     
-            MSG("Sending Tracks...");
+            MSG(SENDTRACK);
             if (!sendTrack(acc.ckstrack)) {
-                ERR("send Tracks fail");
+                ERR(SENDTRACK);
                 return;
             }
             
-            MSG("Sending fin...");
+            MSG(SENDFIN);
             if (!sendDataFin()) {
-                ERR("Finishing send fail");
+                ERR(SENDFIN);
                 return;
             }
     
-            NEXT("Wait server confirm...", NS_SERVER_DATA_CONFIRM, 300);
+            NEXT(CONFIRM, NS_SERVER_DATA_CONFIRM, 300);
         }
         
         // фоновый процессинг - обрабатываем этапы синхронизации
@@ -209,7 +209,7 @@ class ViewNetSync : public ViewBase {
                         CONSOLE("wifi ok, try to server connect");
                         // вифи подключилось, соединяемся с сервером
                         if (!srvConnect()) {
-                            ERR("server can't connect");
+                            ERR(SERVERCONNECT);
                             return;
                         }
                         
@@ -220,12 +220,12 @@ class ViewNetSync : public ViewBase {
                     
                     // проблемы при соединении с вифи
                     if (wifiStatus() == WIFI_STA_FAIL) {
-                        ERR("wifi connect fail");
+                        ERR(WIFICONNECT);
                         return;
                     }
     
                     if (timeout == 1)
-                        ERR("wifi timeout");
+                        ERR(WIFITIMEOUT);
                     return;
                 
                 case NS_SERVER_HELLO:
@@ -262,7 +262,7 @@ class ViewNetSync : public ViewBase {
                                 return;
                         }
     
-                        ERR("recv unknown cmd");
+                        ERR(RCVCMDUNKNOWN);
                     }
                     return;
                 
@@ -289,7 +289,7 @@ class ViewNetSync : public ViewBase {
                         }
     
                         if (cmd != 0x13) {
-                            ERR("recv unknown cmd");
+                            ERR(RCVCMDUNKNOWN);
                             return;
                         }
     
@@ -300,17 +300,17 @@ class ViewNetSync : public ViewBase {
     
                         ConfigWebJoin wjoin(d.authid, d.secnum);
                         if (!wjoin.save()) {
-                            ERR("save fail");
+                            ERR(SAVEJOIN);
                             return;
                         }
     
                         if (!srvSend(0x14)) {
-                            ERR("join send fail");
+                            ERR(SENDJOIN);
                             return;
                         }
     
                         joinnum = 0;
-                        MSG("join accepted");
+                        MSG(JOINACCEPT);
     
                         authStart();
                     }
@@ -330,30 +330,30 @@ class ViewNetSync : public ViewBase {
                         switch (cmd) {
                             case 0x41: // wifi beg
                                 if (!wifiPassClear()) {
-                                    ERR("WiFi clear Fail");
+                                    ERR(PASSCLEAR);
                                     return;
                                 }
-                                NEXT("Recv wifi pass", NS_RCV_WIFI_PASS, 30);
+                                NEXT(RCVPASS, NS_RCV_WIFI_PASS, 30);
                                 return;
                                 
                             case 0x44: // veravail beg
                                 if (!verAvailClear()) {
-                                    ERR("Versions clear Fail");
+                                    ERR(VERAVAILCLEAR);
                                     return;
                                 }
-                                NEXT("Recv FW-versions", NS_RCV_VER_AVAIL, 30);
+                                NEXT(RCVFWVER, NS_RCV_VER_AVAIL, 30);
                                 return;
                                 
                             case 0x47: // firmware update beg
-                                NEXT("FW-update", NS_RCV_FWUPDATE, 30);
+                                NEXT(FWUPDATE, NS_RCV_FWUPDATE, 30);
                                 return;
         
                             case 0x0f: // bye
-                                FIN("Sync finished");
+                                FIN(SYNCFINISHED);
                                 return;
                         }
     
-                        ERR("recv unknown cmd");
+                        ERR(RCVCMDUNKNOWN);
                     }
                     return;
                 
@@ -377,7 +377,7 @@ class ViewNetSync : public ViewBase {
                                     ntostrs(ssid, sizeof(ssid), d.s, &snext);
                                     ntostrs(pass, sizeof(pass), snext);
                                     if (!wifiPassAdd(ssid, pass)) {
-                                        ERR("WiFi add Fail");
+                                        ERR(WIFIADD);
                                         return;
                                     }
                                     updTimeout();
@@ -386,12 +386,12 @@ class ViewNetSync : public ViewBase {
                                 case 0x43: // wifi end
                                     cks = wifiPassChkSum();
                                     cks = htonl(cks);
-                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 30);
+                                    NEXT(FIN, NS_SERVER_DATA_CONFIRM, 30);
                                     srvSend(0x4a, cks); // wifiok
                                     return;
             
                                 default:
-                                    ERR("recv unknown cmd");
+                                    ERR(RCVCMDUNKNOWN);
                                     return;
                             }
                         }
@@ -414,7 +414,7 @@ class ViewNetSync : public ViewBase {
                                 case 0x45: // veravail item
                                     ntostrs(ver, sizeof(ver), s);
                                     if (!verAvailAdd(ver)) {
-                                        ERR("FW-version add Fail");
+                                        ERR(VERAVAIL);
                                         return;
                                     }
                                     updTimeout();
@@ -423,12 +423,12 @@ class ViewNetSync : public ViewBase {
                                 case 0x46: // veravail end
                                     cks = verAvailChkSum();
                                     cks = htonl(cks);
-                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 30);
+                                    NEXT(FIN, NS_SERVER_DATA_CONFIRM, 30);
                                     srvSend(0x4b, cks); // veravail ok
                                     return;
             
                                 default:
-                                    ERR("recv unknown cmd");
+                                    ERR(RCVCMDUNKNOWN);
                                     return;
                             }
                         }
@@ -466,14 +466,14 @@ class ViewNetSync : public ViewBase {
                                                 cursz, freesz, d.info.size, d.info.md5);
                                         
                                         if (d.info.size > freesz) {
-                                            ERR("FW-size too big");
+                                            ERR(FWSIZEBIG);
                                             return;
                                         }
             
                                         // start burn
                                         if (!Update.begin(d.info.size, U_FLASH) || !Update.setMD5(d.info.md5)) {
                                             CONSOLE("Upd begin fail: errno=%d", Update.getError());
-                                            ERR("FW-init fail");
+                                            ERR(FWINIT);
                                             return;
                                         }
                                         
@@ -486,7 +486,7 @@ class ViewNetSync : public ViewBase {
                                         d.data.sz = ntohs(d.data.sz);
                                         int sz1 = Update.write(d.data.buf, d.data.sz);
                                         if ((sz1 == 0) || (sz1 != d.data.sz)) {
-                                            ERR("FW-write fail");
+                                            ERR(FWWRITE);
                                             return;
                                         }
                                         
@@ -497,11 +497,11 @@ class ViewNetSync : public ViewBase {
                                     
                                 case 0x4a: // fwupd end
                                     if (!Update.end()) {
-                                        ERR("FW-finish fail");
+                                        ERR(FWFIN);
                                         return;
                                     }
                                     
-                                    NEXT("Wait server fin...", NS_SERVER_DATA_CONFIRM, 30);
+                                    NEXT(FIN, NS_SERVER_DATA_CONFIRM, 30);
                                     srvSend(0x4c); // fwupd ok
                                     cfg.set().fwupdind = 0;
                                     fwupd = cfg.save();
@@ -509,7 +509,7 @@ class ViewNetSync : public ViewBase {
                                     return;
             
                                 default:
-                                    ERR("recv unknown cmd");
+                                    ERR(RCVCMDUNKNOWN);
                                     return;
                             }
                         }
@@ -549,40 +549,40 @@ class ViewNetSync : public ViewBase {
         
         // отрисовка на экране
         void draw(U8G2 &u8g2) {
-            u8g2.setFont(u8g2_font_ncenB08_tr);
+            u8g2.setFont(menuFont);
     
             // Заголовок
             u8g2.setDrawColor(1);
             u8g2.drawBox(0,0,u8g2.getDisplayWidth(),12);
             u8g2.setDrawColor(0);
             char s[33];
-            strcpy_P(s, PSTR("Web Sync"));
-            u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, 10, s);
+            strcpy_P(s, PTXT(WIFI_WEBSYNC));
+            u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(s))/2, 10, s);
     
             u8g2.setDrawColor(1);
             int8_t y = 10-1+14;
     
-            strcpy_P(s, PSTR("WiFi"));
-            u8g2.drawStr(0, y, s);
+            strcpy_P(s, PTXT(WIFI_NET));
+            u8g2.drawTxt(0, y, s);
             
             int8_t rssi;
             switch (wifiStatus()) {
-                case WIFI_STA_NULL:         strcpy_P(s, PSTR("WiFi off"));          break;
-                case WIFI_STA_DISCONNECTED: strcpy_P(s, PSTR("Disconnected"));  break;
-                case WIFI_STA_FAIL:         strcpy_P(s, PSTR("Connect fail"));  break;
+                case WIFI_STA_NULL:         strcpy_P(s, PTXT(WIFI_STATUS_OFF));         break;
+                case WIFI_STA_DISCONNECTED: strcpy_P(s, PTXT(WIFI_STATUS_DISCONNECT));  break;
+                case WIFI_STA_FAIL:         strcpy_P(s, PTXT(WIFI_STATUS_FAIL));        break;
                 case WIFI_STA_WAITIP:
                 case WIFI_STA_CONNECTED:
                     wifiInfo(s, rssi);
                     break;
             }
-            u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
     
             y += 10;
             if (state == NS_PROFILE_JOIN) {
-                strcpy_P(s, PSTR("Wait to JOIN"));
-                u8g2.drawStr(0, y, s);
-                snprintf_P(s, sizeof(s), PSTR("%d sec"), timeout / 10);
-                u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+                strcpy_P(s, PTXT(WIFI_WAITJOIN));
+                u8g2.drawTxt(0, y, s);
+                snprintf_P(s, sizeof(s), PTXT(WIFI_WAIT_SEC), timeout / 10);
+                u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
                 y += 25;
                 u8g2.setFont(u8g2_font_fub20_tr);
                 snprintf_P(s, sizeof(s), PSTR("%04X"), joinnum);
@@ -591,8 +591,8 @@ class ViewNetSync : public ViewBase {
             }
     
             if ((wifiStatus() == WIFI_STA_WAITIP) || (wifiStatus() == WIFI_STA_CONNECTED)) {
-                snprintf_P(s, sizeof(s), PSTR("%3d dBm"), rssi);
-                u8g2.drawStr(0, y, s);
+                snprintf_P(s, sizeof(s), PTXT(WIFI_RSSI), rssi);
+                u8g2.drawTxt(0, y, s);
                 
                 if (wifiStatus() == WIFI_STA_CONNECTED) {
                     const auto &ip = wifiIP();
@@ -602,7 +602,7 @@ class ViewNetSync : public ViewBase {
             }
     
             y += 10;
-            u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(title))/2, y, title);
+            u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(title))/2, y, title);
     
             y += 10;
             if (wifiStatus() > WIFI_STA_NULL) {
@@ -630,7 +630,12 @@ class ViewNetSync : public ViewBase {
         }
         
     private:
-        char title[24], ssid[40], pass[40];
+#if defined(FWVER_LANG) && (FWVER_LANG == 'R')
+        char title[50];
+#else
+        char title[24];
+#endif
+        char ssid[40], pass[40];
         uint16_t timeout;
         uint16_t joinnum = 0;
         netsync_state_t state = NS_NONE;
@@ -691,7 +696,7 @@ class ViewMenuWifiSync : public ViewMenu {
                         return;
                         
                     case 1:
-                        strcpy_P(str.name, PSTR("... searching ..."));
+                        strcpy_P(str.name, PTXT(WIFI_SEARCHNET));
                         str.val[0] = '\0';
                         return;
                 }
@@ -739,7 +744,7 @@ class ViewMenuWifiSync : public ViewMenu {
             else {
                 char pass[64];
                 if (!wifiPassFind(n->ssid, pass)) {
-                    menuFlashP(PSTR("Password required!"));
+                    menuFlashP(PTXT(WIFI_NEEDPASSWORD));
                     return;
                 }
                 

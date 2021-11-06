@@ -55,9 +55,9 @@ class ViewMainAlt : public ViewMain {
                     break;
             }
 
-            u8g2.setFont(u8g2_font_ncenB08_tr);
-            sprintf_P(s, PSTR("%.0f km/h"), round(abs(ac.speedapp() * 3.6)));
-            u8g2.drawStr(10, u8g2.getDisplayHeight()-1, s);
+            u8g2.setFont(menuFont);
+            sprintf_P(s, PTXT(MAIN_VERTSPEED), round(abs(ac.speedapp() * 3.6)));
+            u8g2.drawTxt(10, u8g2.getDisplayHeight()-1, s);
         }
 };
 static ViewMainAlt vAlt;

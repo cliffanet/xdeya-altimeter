@@ -56,13 +56,13 @@ class ViewMenuLogBookInfo : public ViewBase {
             if (!readok)
                 return;
             
-            u8g2.setFont(u8g2_font_ncenB08_tr);
+            u8g2.setFont(menuFont);
     
             // Заголовок
             char s[20];
-            snprintf_P(s, sizeof(s), PSTR("Jump # %d"), jmp.num);
+            snprintf_P(s, sizeof(s), PTXT(LOGBOOK_JUMPNUM), jmp.num);
             u8g2.setDrawColor(0);
-            u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, 10, s);
+            u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(s))/2, 10, s);
     
             u8g2.setDrawColor(1);
             int8_t y = 10-1+14;
@@ -74,35 +74,35 @@ class ViewMenuLogBookInfo : public ViewBase {
             u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
     
             y += 10;
-            strcpy_P(s, PSTR("Alt"));
-            u8g2.drawStr(0, y, s);
+            strcpy_P(s, PTXT(LOGBOOK_ALTEXIT));
+            u8g2.drawTxt(0, y, s);
             snprintf_P(s, sizeof(s), PSTR("%d"), jmp.beg.alt);
-            u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
     
             y += 10;
-            strcpy_P(s, PSTR("Deploy"));
-            u8g2.drawStr(0, y, s);
+            strcpy_P(s, PTXT(LOGBOOK_ALTCNP));
+            u8g2.drawTxt(0, y, s);
             snprintf_P(s, sizeof(s), PSTR("%d"), jmp.cnp.alt);
-            u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
     
             y += 10;
-            strcpy_P(s, PSTR("Takeoff"));
-            u8g2.drawStr(0, y, s);
+            strcpy_P(s, PTXT(LOGBOOK_TIMETOFF));
+            u8g2.drawTxt(0, y, s);
             uint32_t toff = jmp.toff.tmoffset/1000;
             snprintf_P(s, sizeof(s), PSTR("%d:%02d"), toff/60, toff % 60);
-            u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
     
             y += 10;
-            strcpy_P(s, PSTR("FF time"));
-            u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%d s"), jmp.cnp.tmoffset/1000);
-            u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            strcpy_P(s, PTXT(LOGBOOK_TIMEFF));
+            u8g2.drawTxt(0, y, s);
+            snprintf_P(s, sizeof(s), PTXT(LOGBOOK_TIMESEC), jmp.cnp.tmoffset/1000);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
     
             y += 10;
-            strcpy_P(s, PSTR("CNP time"));
-            u8g2.drawStr(0, y, s);
-            snprintf_P(s, sizeof(s), PSTR("%d s"), (jmp.end.tmoffset-jmp.cnp.tmoffset)/1000);
-            u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            strcpy_P(s, PTXT(LOGBOOK_TIMECNP));
+            u8g2.drawTxt(0, y, s);
+            snprintf_P(s, sizeof(s), PTXT(LOGBOOK_TIMESEC), (jmp.end.tmoffset-jmp.cnp.tmoffset)/1000);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
         }
         
         void process() {
