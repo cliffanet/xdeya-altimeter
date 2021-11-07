@@ -2,6 +2,7 @@
 #include "main.h"
 #include "info.h"
 #include "../jump/proc.h"
+#include "../cfg/main.h"
 
 class ViewMainAlt : public ViewMain {
     public:
@@ -25,24 +26,25 @@ class ViewMainAlt : public ViewMain {
             
             if (ac.state() == ACST_INIT)
                 return;
-
+            
+            double alt = ac.alt() + cfg.d().altcorrect;
 #if HWVER < 4
             u8g2.setFont(u8g2_font_fub49_tn);
-            sprintf_P(s, PSTR("%0.1f"), abs(ac.alt() / 1000));
+            sprintf_P(s, PSTR("%0.1f"), abs(alt / 1000));
             //uint8_t x = 17; // Для немоноширных шрифтов автоцентровка не подходит (прыгает при смене цифр)
             //uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2;
             uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))-15;
             u8g2.drawStr(x, 52, s);
-            if (ac.alt() < -30) // чтобы минус не сдвигал цифры, пишем его отдельно
+            if (alt < -30) // чтобы минус не сдвигал цифры, пишем его отдельно
                 u8g2.drawGlyph(-5, 48, '-');
 #else // if HWVER < 4
             u8g2.setFont(u8g2_font_logisoso62_tn);
-            sprintf_P(s, PSTR("%0.1f"), abs(ac.alt() / 1000));
+            sprintf_P(s, PSTR("%0.1f"), abs(alt / 1000));
             //uint8_t x = 17; // Для немоноширных шрифтов автоцентровка не подходит (прыгает при смене цифр)
             //uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2;
             uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))-45;
             u8g2.drawStr(x, 80, s);
-            if (ac.alt() < -30) // чтобы минус не сдвигал цифры, пишем его отдельно
+            if (alt < -30) // чтобы минус не сдвигал цифры, пишем его отдельно
                 u8g2.drawGlyph(0, 70, '-');
 #endif // if HWVER < 4
             

@@ -29,7 +29,7 @@ typedef enum {
 
 // Основной конфиг
 typedef struct __attribute__((__packed__)) {
-    uint8_t _0;                                 // резерв для выравнивания до 4 байт
+    bool flipp180 = false;                      // перевернуть экран на 180
     
     uint8_t contrast = 10;                      // контраст дисплея (0..30)
     int16_t timezone = 180;                     // часовой пояс (в минутах)
@@ -58,6 +58,8 @@ typedef struct __attribute__((__packed__)) {
     
     uint8_t btndo_up    = BTNDO_LIGHT;          // действие по кнопке "вверх"
     uint8_t btndo_down  = BTNDO_GPSPWR;         // действие по кнопке "вниз"
+    
+    int16_t altcorrect = 0;                     // Превышение площадки приземления
 } cfg_main_t;
 
 template <class T>

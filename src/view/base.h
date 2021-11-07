@@ -31,6 +31,7 @@ void displayOff();
 void displayLightTgl();
 bool displayLight();
 void displayContrast(uint8_t value);
+void displayFlipp180(bool flipp);
 
 
 /* ------------------------------------------------------------------------------------------- *
@@ -107,6 +108,8 @@ uint32_t btnPressed(uint8_t &btn);
 bool btnPushed(btn_code_t btn);
 // Ожидание, пока кнопка будет отпущена
 void btnWaitRelease();
+// Переворот на 180
+void btnFlipp180(bool flipp);
 
 #ifdef USE4BUTTON
 // нажатие на дополнительную 4ую кнопку

@@ -115,6 +115,10 @@ void displayContrast(uint8_t val) {
 #endif
 }
 
+void displayFlipp180(bool flipp) {
+    u8g2.setFlipMode(flipp);
+}
+
 
 /* ------------------------------------------------------------------------------------------- *
  *  Обработчик кнопок
@@ -243,6 +247,24 @@ void btnWaitRelease() {
         delay(100);
     }
 }
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Переворот на 180
+ * ------------------------------------------------------------------------------------------- */
+void btnFlipp180(bool flipp) {
+    uint8_t pinu = flipp ? BUTTON_PIN_DOWN : BUTTON_PIN_UP;
+    uint8_t pind = flipp ? BUTTON_PIN_UP : BUTTON_PIN_DOWN;
+    
+    if ((btnall[0].pin == pinu) && (btnall[2].pin == pind))
+        return;
+    
+    viewIntDis();
+    btnall[0].pin = pinu;
+    btnall[2].pin = pind;
+    btnInit();
+    viewIntEn();
+}
+
 
 #ifdef USE4BUTTON
 /* ------------------------------------------------------------------------------------------- *

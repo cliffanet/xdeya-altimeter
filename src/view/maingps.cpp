@@ -4,6 +4,7 @@
 #include "../gps/proc.h"
 #include "../jump/proc.h"
 #include "../file/track.h"
+#include "../cfg/main.h"
 #include "../cfg/point.h"
 
 
@@ -253,7 +254,7 @@ class ViewMainGpsAlt : public ViewMain {
             auto &ac = altCalc();
             if (ac.state() > ACST_INIT) {
                 u8g2.setFont(u8g2_font_ncenB08_tr);
-                int16_t alt = round(ac.alt());
+                int16_t alt = round(ac.alt() + cfg.d().altcorrect);
                 int16_t o = alt % ALT_STEP;
                 alt -= o;
                 if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
@@ -332,7 +333,7 @@ class ViewMainGpsAlt : public ViewMain {
             auto &ac = altCalc();
             if (ac.state() > ACST_INIT) {
                 u8g2.setFont(u8g2_font_ncenB08_tr);
-                int16_t alt = round(ac.alt());
+                int16_t alt = round(ac.alt() + cfg.d().altcorrect);
                 int16_t o = alt % ALT_STEP;
                 alt -= o;
                 if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;

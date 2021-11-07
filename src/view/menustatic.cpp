@@ -286,6 +286,16 @@ static const menu_el_t menudisplay[] {
             displayContrast(cfg.set().contrast = c);  // Сразу же применяем настройку, чтобы увидеть наглядно результат
         },
     },
+    {   // Переворот на 180
+        .name = PTXT(MENU_DISPLAY_FLIPP180),
+        .submenu = NULL,
+        .enter = [] () {
+            cfg.set().flipp180 = !cfg.d().flipp180;
+            displayFlipp180(cfg.d().flipp180);
+            btnFlipp180(cfg.d().flipp180);
+        },
+        .showval = [] (char *txt) { valYes(txt, cfg.d().flipp180); },
+    },
 };
 static ViewMenuStatic vMenuDisplay(menudisplay, sizeof(menudisplay)/sizeof(menu_el_t));
 
@@ -325,6 +335,25 @@ static const menu_el_t menugnd[] {
             cfg.set().gndauto = !cfg.d().gndauto;
         },
         .showval = [] (char *txt) { strcpy_P(txt, cfg.d().gndauto ? PTXT(MENU_GND_CORRECTONGND) : PTXT(MENU_NO)); },
+    },
+    {   // превышение площадки приземления
+        .name       = PTXT(MENU_GND_ALTCORRECT),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            if (cfg.d().altcorrect == 0)
+                strcpy_P(txt, PTXT(MENU_DISABLE));
+            else
+                valInt(txt, cfg.d().altcorrect);
+        },
+        .edit       = [] (int val) {
+            int32_t c = cfg.d().altcorrect;
+            c += val;
+            if (c < -6000) c = -6000;
+            if (c > 6000) c = 6000;
+            if (c == cfg.d().altcorrect) return;
+            cfg.set().altcorrect = c;
+        },
     },
 };
 static ViewMenuStatic vMenuGnd(menugnd, sizeof(menugnd)/sizeof(menu_el_t));

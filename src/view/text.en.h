@@ -41,6 +41,7 @@
 
 #define TXT_MENU_DISPLAY_LIGHT      "Light"
 #define TXT_MENU_DISPLAY_CONTRAST   "Contrast"
+#define TXT_MENU_DISPLAY_FLIPP180   "Flipped 180"
 
 #define TXT_MENU_GND_MANUALSET      "Manual set"
 #define TXT_MENU_GND_MANUALNOTALLOW "Manual not allowed"
@@ -48,6 +49,7 @@
 #define TXT_MENU_GND_MANUALALLOW    "Allow mnl set"
 #define TXT_MENU_GND_AUTOCORRECT    "Auto correct"
 #define TXT_MENU_GND_CORRECTONGND   "On GND"
+#define TXT_MENU_GND_ALTCORRECT     "Alt correction"
 
 #define TXT_MENU_AUTOMAIN_FF        "Auto FF-screen"
 #define TXT_MENU_AUTOMAIN_CNP       "On CNP"

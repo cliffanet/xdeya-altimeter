@@ -70,7 +70,7 @@ static void jmpPreLogAdd(uint16_t interval) {
         flags       : 0,
         state       : 'U',
         direct      : 'U',
-        alt         : ac.alt(),
+        alt         : ac.alt() + cfg.d().altcorrect,
         altspeed    : ac.speedapp()*100,
         lon         : gps.lon,
         lat         : gps.lat,

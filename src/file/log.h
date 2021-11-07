@@ -37,11 +37,11 @@ bool logRotate(const char *_fname, uint8_t count);
  *  Базовый ввод/вывод
  * ------------------------------------------------------------------------------------------ */
 class File;
-bool fread(File &fh, uint8_t *data, uint16_t dsz);
+bool fread(File &fh, uint8_t *data, uint16_t dsz, bool tailnull = true);
 
 template <typename T>
-bool fread(File &fh, T &data) {
-    return fread(fh, reinterpret_cast<uint8_t *>(&data), sizeof(T));
+bool fread(File &fh, T &data, bool tailnull = true) {
+    return fread(fh, reinterpret_cast<uint8_t *>(&data), sizeof(T), tailnull);
 }
 
 bool fwrite(File &fh, const uint8_t *data, uint16_t dsz);

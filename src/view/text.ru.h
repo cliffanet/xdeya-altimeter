@@ -46,6 +46,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 
 #define TXT_MENU_DISPLAY_LIGHT      "Подсветка"
 #define TXT_MENU_DISPLAY_CONTRAST   "Контраст"
+#define TXT_MENU_DISPLAY_FLIPP180   "Развернуть на 180"
 
 #define TXT_MENU_GND_MANUALSET      "Сбросить вручную"
 #define TXT_MENU_GND_MANUALNOTALLOW "Ручной сброс запрещён"
@@ -53,6 +54,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_GND_MANUALALLOW    "Разрешение ручн. сбр."
 #define TXT_MENU_GND_AUTOCORRECT    "Автоподстройка"
 #define TXT_MENU_GND_CORRECTONGND   "На земле"
+#define TXT_MENU_GND_ALTCORRECT     "Превышение площадки"
 
 #define TXT_MENU_AUTOMAIN_FF        "Своб. падение"
 #define TXT_MENU_AUTOMAIN_CNP       "После раскрытия"

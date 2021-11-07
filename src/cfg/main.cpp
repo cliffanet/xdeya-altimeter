@@ -82,7 +82,7 @@ bool Config<T>::load() {
     }
     else {
         T d;
-        if (!fread(fh, d)) {
+        if (!fread(fh, d, false)) {
             fh.close();
             return false;
         }
@@ -180,6 +180,8 @@ bool cfgLoad(bool apply) {
     
     if (apply) {
         displayContrast(cfg.d().contrast);
+        displayFlipp180(cfg.d().flipp180);
+        btnFlipp180(cfg.d().flipp180);
         if (cfg.d().gpsonpwron)
             gpsOn(GPS_PWRBY_PWRON);
     }

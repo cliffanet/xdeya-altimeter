@@ -28,7 +28,7 @@ static void fcks(uint8_t c, uint8_t &cka, uint8_t &ckb) {
 
 #define RSZ(sz)     LOG_REC_SIZE(sz)
 
-bool fread(File &fh, uint8_t *data, uint16_t dsz) {
+bool fread(File &fh, uint8_t *data, uint16_t dsz, bool tailnull) {
     uint16_t sz = 0;
     uint8_t bs[2];
     uint8_t cka = 0, ckb = 0;
@@ -73,8 +73,9 @@ bool fread(File &fh, uint8_t *data, uint16_t dsz) {
         sz--;
     }
     
-    while (dsz > 0) {
+    while (tailnull && (dsz > 0)) {
         *data = 0;
+        data++;
         dsz--;
     }
     
