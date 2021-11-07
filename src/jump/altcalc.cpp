@@ -44,6 +44,8 @@ void AltCalc::tick(float press, uint16_t tinterval)
     _dircnt ++;
     _statetm += tinterval;
     _statecnt ++;
+    _jmptm += tinterval;
+    _jmpcnt ++;
     
     stateupdate();
 }
@@ -114,6 +116,8 @@ ac_state_t AltCalc::stateupdate() {
         _dirtm = 0;
     }
     
+    // state определяется исходя из направления движения и скорости
+    // т.е. это состояние на текущее мнгновение
     ac_state_t st = _state;
     if (_dir == ACDIR_UP) {
         st = altapp() < 40 ? ACST_TAKEOFF40 : ACST_TAKEOFF;
@@ -143,6 +147,104 @@ ac_state_t AltCalc::stateupdate() {
         _state = st;
         _statecnt = 0;
         _statetm = 0;
+    }
+    
+    // jmpmode - определение режима прыжка, исходя из продолжительности
+    // одного и того же состояния
+    // т.е. тут переключение всегда происходит с задержкой, но 
+    // jmptm и jmpcnt после переключения будут всегда с учётом этой задержки
+    ac_jmpmode_t jmp = _jmpmode;
+    auto tint = _data[_c].interval;
+    switch (_jmpmode) {
+        case ACJMP_NONE:
+            if (state() > ACST_GROUND) {
+                _jmpccnt++;
+                _jmpctm += tint;
+                if ((_jmpccnt >= AC_JMP_TOFF_COUNT) && (_jmpctm >= AC_JMP_TOFF_TIME))
+                    jmp = ACJMP_TAKEOFF;
+            }
+            else
+            if (_jmpccnt > 0) {
+                _jmpccnt = 0;
+                _jmpctm = 0;
+            }
+            break;
+            
+        case ACJMP_TAKEOFF:
+            if ((_jmpccnt == 0) && (speedapp() < -AC_JMP_SPEED_MIN)) {
+                // При скорости снижения выше пороговой
+                // включаем счётчик времени прыжка
+                _jmpccnt++;
+                _jmpctm += tint;
+            }
+            if ((_jmpccnt > 0) && (
+                    // После взвода счётчика на скорости AC_JMP_SPEED_MIN
+                    // Нам уже достаточно удерживать минимальную скорость AC_JMP_SPEED_CANCEL
+                    // в течение AC_JMP_SPEED_COUNT / AC_JMP_SPEED_TIME,
+                    // а после этого времени мы уже не будем проверять скорость снижения для отмены счёта
+                    // С этого момента это уже считается прыжком - осталось только выяснить, есть ли тут свободное падение
+                    ((_jmpccnt >= AC_JMP_SPEED_COUNT) && (_jmpctm >= AC_JMP_SPEED_TIME)) ||
+                    (speedapp() < -AC_JMP_SPEED_CANCEL)
+                )) {
+                _jmpccnt++;
+                _jmpctm += tint;
+                // выясняем, есть ли тут свободное падение
+                if ((state() == ACST_FREEFALL) && 
+                    (statecnt() >= AC_JMP_FF_COUNT) && (statetm() >= AC_JMP_FF_TIME))
+                     // скорость достигла фрифольной и остаётся такой более 5 сек,
+                    jmp = ACJMP_FREEFALL;
+                else
+                if ((_jmpccnt >= AC_JMP_NOFF_COUNT) && (_jmpctm >= AC_JMP_NOFF_TIME))
+                    // если за 80 тиков скорость так и не достигла фрифольной,
+                    // значит было открытие под бортом
+                    jmp = ACJMP_CANOPY;
+            }
+            else
+            if (_jmpccnt > 0) {
+                _jmpccnt = 0;
+                _jmpctm = 0;
+            }
+            break;
+            
+        case ACJMP_FREEFALL:
+            // Переход в режим CNP после начала прыга,
+            // Дальше только окончание прыга может быть, даже если начнётся снова FF,
+            // Для jmp только такой порядок переходов,
+            // это гарантирует прибавление только одного прыга на счётчике при одном фактическом
+            if (speedapp() >= -AC_JMP_SPEED_CANOPY) {
+                _jmpccnt++;
+                _jmpctm += tint;
+                if ((_jmpccnt >= AC_JMP_CNP_COUNT) && (_jmpctm >= AC_JMP_CNP_TIME))
+                    jmp = ACJMP_CANOPY;
+            }
+            else
+            if (_jmpccnt > 0) {
+                _jmpccnt = 0;
+                _jmpctm = 0;
+            }
+            break;
+            
+        case ACJMP_CANOPY:
+            if (state() == ACST_GROUND) {
+                _jmpccnt++;
+                _jmpctm += tint;
+                if ((_jmpccnt >= AC_JMP_GND_COUNT) && (_jmpctm >= AC_JMP_GND_TIME))
+                    jmp = ACJMP_NONE;
+            }
+            else
+            if (_jmpccnt > 0) {
+                _jmpccnt = 0;
+                _jmpctm = 0;
+            }
+            break;
+    }
+    
+    if (jmp != _jmpmode) {
+        _jmpmode = jmp;
+        _jmpcnt = _jmpccnt;
+        _jmptm = _jmpctm;
+        _jmpccnt = 0;
+        _jmpctm = 0;
     }
 }
 

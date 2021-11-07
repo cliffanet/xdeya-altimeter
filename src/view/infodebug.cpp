@@ -116,11 +116,16 @@ class ViewInfoDebug : public ViewInfo {
                 
                 case 14:
                     PRNL("Jmp state");
-                    switch (jmpState()) {
-                        case 0: PRNR("-");      break;
-                        case 1: PRNR("FF");     break;
-                        case 2: PRNR("CNP");    break;
-                    }
+                    PRNR("p: %s / ac: %s / %d s",
+                        jmpState() == 0 ? "-" :
+                        jmpState() == 1 ? "FF" :
+                        jmpState() == 2 ? "CNP" : "?",
+                        altCalc().jmpmode() == ACJMP_NONE       ? "-" :
+                        altCalc().jmpmode() == ACJMP_TAKEOFF    ? "TOFF" :
+                        altCalc().jmpmode() == ACJMP_FREEFALL   ? "FF" :
+                        altCalc().jmpmode() == ACJMP_CANOPY     ? "CNP" : "-",
+                        altCalc().jmptm()/1000
+                    );
                     break;
                 
                 case 15:
