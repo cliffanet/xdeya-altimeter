@@ -102,8 +102,6 @@ uint32_t jmpPreLogInterval(uint16_t old = 0);
 uint16_t jmpPreLogFirst(log_item_t *li = NULL);
 bool jmpPreLogNext(uint16_t &cursor, log_item_t *li = NULL);
 
-uint8_t jmpState();
-
 bool jmpTakeoffCheck();
 
 void jmpInit();

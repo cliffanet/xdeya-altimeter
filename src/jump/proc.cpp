@@ -22,31 +22,6 @@ static log_item_t logall[JMP_PRELOG_SIZE] = { { 0 } };
 static uint16_t logcur = 0xffff;
 
 /* ------------------------------------------------------------------------------------------- *
- *  Обработка изменения режима высотомера
- * ------------------------------------------------------------------------------------------- */
-static void altState(ac_state_t prev, ac_state_t curr) {
-    if ((prev == ACST_FREEFALL) && (curr != ACST_FREEFALL) && cfg.d().dsplautoff) {
-        // Восстанавливаем обработчики после принудительного FF-режима
-        setViewMain();
-    }
-    
-    switch (curr) {
-        case ACST_GROUND:
-            setViewMain(cfg.d().dsplland);
-            break;
-        
-        case ACST_FREEFALL:
-            if (cfg.d().dsplautoff)
-                setViewMain(MODE_MAIN_ALT, false);
-            break;
-        
-        case ACST_CANOPY:
-            setViewMain(cfg.d().dsplcnp, false);
-            break;
-    }
-}
-
-/* ------------------------------------------------------------------------------------------- *
  * Базовые функции
  * ------------------------------------------------------------------------------------------- */
 
@@ -193,12 +168,6 @@ bool jmpPreLogNext(uint16_t &cursor, log_item_t *li) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  Текущий статус прыжка для отладки
- * ------------------------------------------------------------------------------------------- */
-static uint8_t state = 0;
-uint8_t jmpState() { return state; }
-
-/* ------------------------------------------------------------------------------------------- *
  *  Текущее давление "у земли", нужно для отслеживания начала подъёма в режиме "сон"
  * ------------------------------------------------------------------------------------------- */
 static RTC_DATA_ATTR float _pressgnd = 101325, _altlast = 0;
@@ -243,6 +212,79 @@ bool jmpTakeoffCheck() {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Обработка изменения режима высотомера
+ * ------------------------------------------------------------------------------------------- */
+static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
+    if ((prev == ACJMP_FREEFALL) && cfg.d().dsplautoff) {
+        // Восстанавливаем обработчики после принудительного FF-режима
+        setViewMain();
+    }
+
+    uint32_t jmpcnt = ac.jmpcnt();
+
+    if ((prev <= ACJMP_TAKEOFF) && (jmpmode > ACJMP_TAKEOFF)) {
+        // Начало прыга
+        // Т.к. прыг по версии altcalc начинается не с самого момента отделения,
+        // а с момента, когда вертикальная скорость превысила порог,
+        // эта скорость наступает не сразу, а примерно через 3 сек после отделения,
+        // Однако, это справедливо только для начала прыга, поэтому это значение прибавляем
+        // только из перехода из статичного состояния (prev <= ACJMP_TAKEOFF)
+        jmpcnt += 30;
+        // для удобства отладки помечаем текущий jmpPreLog
+        // флагом LI_FLAG_JMPDECISS - момент принятия решения о начале прыжка
+        logall[logcur].flags            |= LI_FLAG_JMPDECISS;
+        // А момент, который мы считаем отделением - флагом LI_FLAG_JMPBEG
+        logall[old2index(jmpcnt)].flags  |= LI_FLAG_JMPBEG;
+
+        // Временно сделаем, чтобы при автозапуске трека, он начинал писать чуть заранее до отделения
+        trkStart(TRK_RUNBY_JMPBEG, jmpcnt+50);
+    }
+    
+    switch (jmpmode) {
+        case ACJMP_TAKEOFF:
+            jmp.toff(ac.jmpcnt() + 50);
+            break;
+        
+        case ACJMP_FREEFALL:
+            if (cfg.d().dsplautoff)
+                setViewMain(MODE_MAIN_ALT, false);
+            
+            jmp.beg(jmpcnt);
+            break;
+        
+        case ACJMP_CANOPY:
+            setViewMain(cfg.d().dsplcnp, false);
+            
+            logall[old2index(jmpcnt)].flags  |= LI_FLAG_JMPCNP;
+            jmp.cnp(jmpcnt);
+            break;
+            
+        case ACJMP_NONE:
+            setViewMain(cfg.d().dsplland);
+            
+            // Прыг закончился совсем, сохраняем результат
+            logall[logcur].flags  |= LI_FLAG_JMPEND;
+        
+            // Сохраняем
+            jmp.end();
+            
+            // Остановка трека, запущенного автоматически
+            trkStop(TRK_RUNBY_JMPBEG | TRK_RUNBY_ALT);
+
+            // на земле выключаем gps после включения на заданной высоте
+            gpsOff(GPS_PWRBY_ALT);
+
+            // Принудительное отключение gps после приземления
+            if (cfg.d().gpsoffland && gpsPwr())
+                gpsOff();
+            
+            break;
+    }
+    
+    tmcntReset(TMCNT_NOFLY, jmpmode == ACJMP_NONE);
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  Инициализация
  * ------------------------------------------------------------------------------------------- */
 void jmpInit() {
@@ -279,167 +321,24 @@ void jmpProcess() {
     }
     
     // Обработка изменения режима высотомера
-    static auto altstate = ac.state();
-    if (altstate != ac.state())
-        altState(altstate, ac.state());
-    altstate = ac.state();
+    static auto jmpmode = ac.jmpmode();
+    if (jmpmode != ac.jmpmode())
+        altState(jmpmode, ac.jmpmode());
+    jmpmode = ac.jmpmode();
     
-    // Определение старта прыжка
-    static enum {
-        JMP_NONE,
-        JMP_FREEFALL,
-        JMP_CANOPY
-    } jmpst = JMP_NONE;
-    
-    if (jmpst == JMP_NONE) {
-        if ((jmp.state() == LOGJMP_NONE) && ((ac.state() == ACST_TAKEOFF40) || (ac.state() == ACST_TAKEOFF))) {
-            jmp.toff(50);
-        }
-        else
-        if ((jmp.state() == LOGJMP_TOFF) && (ac.state() == ACST_GROUND)) {
-            jmp.end();
-        }
-        
-        static uint16_t dncnt = 0;
-        if (dncnt == 0) {
-            if (ac.speedapp() < -JMP_SPEED_MIN)     // При скорости снижения выше пороговой
-                dncnt ++;                           // включаем счётчик тиков, пока это скорость сохраняется
-        }
-        else
-        if (dncnt < JMP_SPEED_COUNT) {
-            // В зоне времени до JMP_SPEED_COUNT
-            // проверяем на выход из диапазона скорости снижения JMP_SPEED_CANCEL
-            if (ac.speedapp() < -JMP_SPEED_CANCEL)  // При сохранении скорости снижения, увеличиваем счётчик тиков
-                dncnt ++;
-            else
-                dncnt = 0;                          // либо сбрасываем его
-            // По окончании времени JMP_SPEED_COUNT мы уже не будем проверять скорость снижения
-            // по порогам JMP_SPEED_MIN и JMP_SPEED_CANCEL
-            // С этого момента это уже считается прыжком - осталось только выяснить, есть ли тут свободное падение
-        }
-        else
-            // Как только приняли решение, что это всё-таки прыг, просто отсчитываем
-            // dncnt дальше, пока не примем решение, есть ли в этом прыге FF, чтобы уже стартовать сам прыг,
-            // При этом нам понадобится dncnt, стобы получить момент старта
-            dncnt ++;
-        
-        // счётчик тиков увеличивается в промежуточном состоянии, когда мы ещё не определили,
-        // начался ли прыжок, но вертикальная скорость уже достаточно высокая - возможно,
-        // это кратковременное снижение ЛА
-        
-        if (
-            (dncnt > 0) && (                        // если идёт отсчёт промежуточного состояния и при этом
-                ((ac.state() == ACST_FREEFALL) && (ac.statecnt() >= 50)) ||    // скорость достигла фрифольной и остаётся такой более 5 сек,
-                (dncnt >= 80)                       // либо пороговая скорость сохраняется 80 тиков (8 сек) - 
-            )) {                                    // считаем, что прыг начался
-            // Момент начала отсчёта dncnt начинается с превышения скорости снижения JMP_SPEED_MIN,
-            // Однако, это не сам момент отделения, а чуть позже - на JMP_SPEED_PREFIX тиков,
-            // прибавляем их к dncnt
-            dncnt += JMP_SPEED_PREFIX;
-            
-            // для удобства отладки помечаем текущий jmpPreLog
-            // флагом LI_FLAG_JMPDECISS - момент принятия решения о начале прыжка
-            logall[logcur].flags            |= LI_FLAG_JMPDECISS;
-            // А момент, который мы считаем отделением - флагом LI_FLAG_JMPBEG
-            logall[old2index(dncnt)].flags  |= LI_FLAG_JMPBEG;
-            
-            if (ac.state() == ACST_FREEFALL) {
-                // если скорость всё же успела достигнуть фрифольной,
-                // значит, фрифол считаем с самого начала снижения
-                // и до текущего момента, пока скорость не снизится до ACST_CANOPY
-                jmpst = JMP_FREEFALL;
-                jmp.beg(dncnt);
-            }
-            else {
-                // если за 80 тиков скорость так и не достигла фрифольной,
-                // значит было открытие под бортом
-                jmpst = JMP_CANOPY;
-                logall[old2index(dncnt)].flags  |= LI_FLAG_JMPCNP;
-                jmp.cnp(dncnt);
-            }
-            // после установки jmpst далее просто контролируем режим ac.state()
-
-            // Временно сделаем, чтобы при автозапуске трека, он начинал писать чуть заранее до отделения
-            trkStart(TRK_RUNBY_JMPBEG, dncnt+50);
-            
-            dncnt = 0;                              // при старте лога прыга обнуляем счётчик тиков пограничного состояния,
-                                                    // он нам больше не нужен, чтобы в след раз не было ложных срабатываний
-        }
-    }
-    
-    if (jmpst == JMP_FREEFALL) {
-        static uint8_t cnpcnt = 0;
-        //if (ac.state() == ACST_CANOPY) {
-        if (ac.speedapp() >= -JMP_SPEED_CANOPY) {
-            // Переход в режим CNP после начала прыга,
-            // Дальше только окончание прыга может быть, даже если начнётся снова FF,
-            // Для jmp только такой порядок переходов,
-            // это гарантирует прибавление только одного прыга на счётчике при одном фактическом
-            cnpcnt++;
-        
-            if (cnpcnt >= 60) {
-                jmpst = JMP_CANOPY;
-                logall[logcur].flags  |= LI_FLAG_JMPCNP;
-        
-                // Сохраняем промежуточный результат
-                jmp.cnp(cnpcnt);
-                
-                cnpcnt = 0;
-            }
-        }
-        else {
-            cnpcnt = 0;
-        }
-    }
-    
-    if ((jmpst > JMP_NONE) && (
-            (ac.state() == ACST_GROUND) ||
-            (jmp.state() == LOGJMP_NONE)
-        )) {
-        // Прыг закончился совсем, сохраняем результат
-        jmpst = JMP_NONE;
-        logall[logcur].flags  |= LI_FLAG_JMPEND;
-        
-        // Сохраняем
-        jmp.end();
-
-        // на земле выключаем gps после включения на заданной высоте
-        gpsOff(GPS_PWRBY_ALT);
-
-        // Принудительное отключение gps после приземления
-        if (cfg.d().gpsoffland && gpsPwr())
-            gpsOff();
-    }
-    
-    if ((jmpst == JMP_NONE) && trkRunning(TRK_RUNBY_JMPBEG | TRK_RUNBY_ALT)) {
-        static uint8_t gndcnt = 0;
-        gndcnt++;
-        if (gndcnt >= 100) {
-            trkStop(TRK_RUNBY_JMPBEG | TRK_RUNBY_ALT);
-            gndcnt = 0;
-        }
-    }
-    
-    state = jmpst;
-    
-    if (ac.state() > ACST_GROUND) {
+    if (ac.jmpmode() == ACJMP_TAKEOFF) {
         // автовключение gps на заданной высоте
         if ((cfg.d().gpsonalt > 0) &&
             (ac.alt() >= cfg.d().gpsonalt) &&
             !gpsPwr(GPS_PWRBY_ALT))
             gpsOn(GPS_PWRBY_ALT);
-        
+    
         // автовключение записи трека на заданной высоте
         if ((cfg.d().trkonalt > 0) &&
             (ac.alt() >= cfg.d().trkonalt) &&
             !trkRunning(TRK_RUNBY_ALT))
             trkStart(TRK_RUNBY_ALT);
     }
-    
-    if ((ac.state() > ACST_TAKEOFF40) && tmcntEnabled(TMCNT_NOFLY))
-        tmcntReset(TMCNT_NOFLY, false);
-    if ((ac.state() == ACST_GROUND) && !tmcntEnabled(TMCNT_NOFLY))
-        tmcntReset(TMCNT_NOFLY, true);
 }
 
 /* ------------------------------------------------------------------------------------------- *
