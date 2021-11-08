@@ -120,6 +120,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_TEST_GPSINIT       "Инициализир. GPS"
 #define TXT_MENU_TEST_GPSINITED     "GPS переинициализирован"
 
+#define TXT_MENU_SYSTEM_RESTART     "Перезагрузка"
 #define TXT_MENU_SYSTEM_FACTORYRES  "Сброс всех настроек"
 #define TXT_MENU_SYSTEM_FORMATROM   "Форматирование"
 #define TXT_MENU_SYSTEM_EEPROMFAIL  "Ошибка EEPROM"

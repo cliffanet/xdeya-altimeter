@@ -934,6 +934,14 @@ static const menu_el_t menusystem[] {
         .hold = pwrOff,
     },
     {
+        .name = PTXT(MENU_SYSTEM_RESTART),
+        .submenu = NULL,
+        .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
+        .showval = NULL,
+        .edit = NULL,
+        .hold = [] () { esp_restart(); },
+    },
+    {
         .name = PTXT(MENU_SYSTEM_FACTORYRES),
         .submenu = NULL,
         .enter = menuFlashHold,     // Сброс настроек только по длинному нажатию

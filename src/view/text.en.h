@@ -115,6 +115,7 @@
 #define TXT_MENU_TEST_GPSINIT       "GPS init"
 #define TXT_MENU_TEST_GPSINITED     "GPS inited"
 
+#define TXT_MENU_SYSTEM_RESTART     "Restart system"
 #define TXT_MENU_SYSTEM_FACTORYRES  "Factory reset"
 #define TXT_MENU_SYSTEM_FORMATROM   "formating eeprom"
 #define TXT_MENU_SYSTEM_EEPROMFAIL  "EEPROM fail"
