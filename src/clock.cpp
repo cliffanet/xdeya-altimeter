@@ -9,7 +9,7 @@
 
 #include "soc/rtc.h"
 extern "C" {
-  #include <esp_clk.h>
+  #include <esp32/clk.h>
 }
 
 #include "esp32-hal-gpio.h" // OPEN_DRAIN

@@ -8,9 +8,9 @@
 
 #include <esp_err.h>
 #include <esp_wifi.h>
-#include <esp_event_loop.h>
+#include <esp_event.h>
 #include "freertos/event_groups.h"
-#include "driver/adc.h";
+#include "driver/adc.h"
 #include "soc/soc.h" // brownout detector
 #include "soc/rtc_cntl_reg.h"
 
@@ -65,7 +65,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
         
         case SYSTEM_EVENT_STA_GOT_IP:
             setStatus(WIFI_STA_CONNECTED);
-            CONSOLE("got ip:%s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
+            //CONSOLE("got ip:%s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
             break;
             
         case SYSTEM_EVENT_STA_LOST_IP:
@@ -84,7 +84,7 @@ bool wifiStart() {
     wifiall.clear();
     
     CONSOLE("adc_power_on");
-    adc_power_on();
+    adc_power_acquire();
     
     static bool tcpip_init = false;
     if (!tcpip_init) {
@@ -207,7 +207,7 @@ bool wifiStop() {
     CONSOLE("wifi stopped");
     
     clockIntEnable();
-    adc_power_off();
+    adc_power_release();
     
     return true;
 }
@@ -295,7 +295,7 @@ void wifiScanClean() {
  * ------------------------------------------------------------------------------------------- */
 
 bool wifiConnect(const char* ssid, const char *pass) {
-    if (!ssid || (*ssid == NULL) || (strlen(ssid) > 32)) {
+    if ((ssid == NULL) || (strlen(ssid) > 32)) {
         CONSOLE("SSID too long or missing!");
         return false;
     }

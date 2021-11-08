@@ -246,6 +246,8 @@ ac_state_t AltCalc::stateupdate() {
         _jmpccnt = 0;
         _jmpctm = 0;
     }
+    
+    return st;
 }
 
 void AltCalc::gndreset() {
