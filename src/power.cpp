@@ -9,15 +9,10 @@
 #include "file/track.h"
 
 
-#include "driver/adc.h"
-
-
 static RTC_DATA_ATTR power_mode_t mode = PWR_ACTIVE;
 
 // Уход в сон без таймера - pwroff
 static void pwrDeepSleep() {
-    adc_power_release();
-    
   /*
     First we configure the wake up source
     We set our ESP32 to wake up for an external trigger.
@@ -41,8 +36,6 @@ static void pwrDeepSleep() {
 
 // Уход в сон с таймером - sleep
 static void pwrDeepSleep(uint64_t timer) {
-    adc_power_release();
-    
     esp_sleep_enable_ext0_wakeup(BUTTON_GPIO_PWR, LOW); //1 = High, 0 = Low
     
     if (timer > 0)

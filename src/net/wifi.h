@@ -31,7 +31,6 @@ typedef struct {
 
 bool wifiStart();
 bool wifiStop();
-bool wifiStarted();
 
 uint16_t wifiScan(bool show_hidden = false, bool passive = false, uint32_t max_ms_per_chan = 300, uint8_t channel = 0);
 const wifi_net_t * wifiScanInfo(uint16_t i);
