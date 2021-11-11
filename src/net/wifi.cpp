@@ -37,6 +37,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
     CONSOLE("event_handler: [%d]%d", event_base, event_id);
+    
     if (event_base == WIFI_EVENT)
         switch (event_id) {
             case WIFI_EVENT_STA_START:
@@ -44,7 +45,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 break;
             
             case WIFI_EVENT_STA_STOP:
-                //setStatus(WIFI_STA_NULL);
+                setStatus(WIFI_STA_NULL);
                 break;
             
             case WIFI_EVENT_STA_CONNECTED:
@@ -53,13 +54,14 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             
             case WIFI_EVENT_STA_DISCONNECTED: {
                     wifi_event_sta_disconnected_t * event = (wifi_event_sta_disconnected_t*)event_data;
-                    switch (event->reason) {
+                    CONSOLE("disconnected, reason: %u", event->reason);
+                    switch (event->reason)  {
                         case WIFI_REASON_NO_AP_FOUND:
                         case WIFI_REASON_AUTH_FAIL:
+                        case WIFI_REASON_AUTH_EXPIRE:
                         case WIFI_REASON_ASSOC_FAIL:
                         case WIFI_REASON_BEACON_TIMEOUT:
                         case WIFI_REASON_HANDSHAKE_TIMEOUT:
-                        case WIFI_REASON_AUTH_EXPIRE:
                             setStatus(WIFI_STA_FAIL);
                             break;
                         default:
@@ -93,6 +95,7 @@ static bool _wifiStart() {
 #define ERR(txt, ...)   { CONSOLE(txt, ##__VA_ARGS__); return false; }
 #define ESPRUN(func)    { CONSOLE(TOSTRING(func)); if ((err = func) != ESP_OK) ERR(TOSTRING(func) ": %d", err); }
     
+    // event
     if (sta_status == NULL) {
         CONSOLE("xEventGroupCreate");
         sta_status = xEventGroupCreate();
@@ -100,30 +103,8 @@ static bool _wifiStart() {
             ERR("xEventGroupCreate fail");
     }
     
-    static bool netif_init = false;
-    if (!netif_init) {
-#if CONFIG_IDF_TARGET_ESP32
-        uint8_t mac[8];
-        if (esp_efuse_mac_get_default(mac) == ESP_OK)
-            esp_base_mac_addr_set(mac);
-#endif
-        
-        ESPRUN(esp_netif_init());
-        netif_init = true;
-    }
-    
-    ESPRUN(esp_event_loop_create_default());
-    
-    if (sta_netif == NULL) {
-        CONSOLE("esp_netif_create_default_wifi_sta");
-        sta_netif = esp_netif_create_default_wifi_sta();
-        if (sta_netif == NULL)
-            ERR("esp_netif_create_default_wifi_sta fail");
-    }
-    
-    setStatus(WIFI_STA_NULL);
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESPRUN(esp_wifi_init(&cfg));
+    if ((instance_any_id == NULL) && (instance_any_ip == NULL))
+        ESPRUN(esp_event_loop_create_default());
     
     if (instance_any_id == NULL)
         ESPRUN(esp_event_handler_instance_register(
@@ -141,6 +122,31 @@ static bool _wifiStart() {
             NULL,
             &instance_any_ip
         ));
+    
+    // netif
+    static bool netif_init = false;
+    if (!netif_init) {
+#if CONFIG_IDF_TARGET_ESP32
+        uint8_t mac[8];
+        if (esp_efuse_mac_get_default(mac) == ESP_OK)
+            esp_base_mac_addr_set(mac);
+#endif
+        
+        ESPRUN(esp_netif_init());
+        netif_init = true;
+    }
+    
+    if (sta_netif == NULL) {
+        CONSOLE("esp_netif_create_default_wifi_sta");
+        sta_netif = esp_netif_create_default_wifi_sta();
+        if (sta_netif == NULL)
+            ERR("esp_netif_create_default_wifi_sta fail");
+    }
+    
+    // config
+    setStatus(WIFI_STA_NULL);
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESPRUN(esp_wifi_init(&cfg));
     
     // esp32-sdk не умеет устанавливать максимальную мощность wifi
     // до выполнения esp_wifi_start();
@@ -164,6 +170,7 @@ static bool _wifiStart() {
     
     ESPRUN(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     ESPRUN(esp_wifi_set_mode(WIFI_MODE_STA));
+    // staart
     ESPRUN(esp_wifi_start());
     ESPRUN(esp_wifi_set_max_tx_power(60));
 
@@ -192,28 +199,13 @@ bool wifiStop() {
     bool ret = true;
     
 #define ERR(txt, ...)   { CONSOLE(txt, ##__VA_ARGS__); ret = false; }
-#define ESPRUN(func)    { if ((err = func) != ESP_OK) ERR(TOSTRING(func) ": %d", err); }
+#define ESPRUN(func)    { CONSOLE(TOSTRING(func)); if ((err = func) != ESP_OK) ERR(TOSTRING(func) ": %d", err); }
     
     if (wifiStatus() > WIFI_STA_NULL)
         ESPRUN(esp_wifi_disconnect());
     
     ESPRUN(esp_wifi_stop());
     ESPRUN(esp_wifi_deinit());
-    
-    if (sta_status != NULL) {
-        vEventGroupDelete(sta_status);
-        sta_status = NULL;
-    }
-
-    if (instance_any_id != NULL) {
-        ESPRUN(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
-        instance_any_id = NULL;
-    }
-    if (instance_any_ip != NULL) {
-        ESPRUN(esp_event_handler_instance_unregister(IP_EVENT, ESP_EVENT_ANY_ID, instance_any_ip));
-        instance_any_ip = NULL;
-    }
-    ESPRUN(esp_event_loop_delete_default());
     
     if (sta_netif != NULL) {
         ESPRUN(esp_netif_dhcpc_stop(sta_netif));
@@ -223,6 +215,23 @@ bool wifiStop() {
     
     // Из описания: Note: Deinitialization is not supported yet
     // ESPRUN(esp_netif_deinit());
+    
+    if (instance_any_id != NULL) {
+        ESPRUN(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
+        instance_any_id = NULL;
+    }
+    if (instance_any_ip != NULL) {
+        ESPRUN(esp_event_handler_instance_unregister(IP_EVENT, ESP_EVENT_ANY_ID, instance_any_ip));
+        instance_any_ip = NULL;
+    }
+    
+    ESPRUN(esp_event_loop_delete_default());
+    
+    if (sta_status != NULL) {
+        auto sta = sta_status;
+        sta_status = NULL;
+        vEventGroupDelete(sta);
+    }
     
     CONSOLE("wifi stopped");
     
