@@ -11,7 +11,7 @@
 
 class ViewInfoDebug : public ViewInfo {
     public:
-        ViewInfoDebug() : ViewInfo(40) {}
+        ViewInfoDebug() : ViewInfo(41) {}
         
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL) {
@@ -46,51 +46,56 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 3:
+                    PRNL("btnIdle");
+                    PRNR("%0.1f s", ((float)btnIdle())/1000);
+                    break;
+                
+                case 4:
                     PRNL("BMP280");
                     PRNR("%.3f kPa", altCalc().press()/1000);
                     break;
                 
-                case 4:
+                case 5:
                     PRNL("Press GND");
                     PRNR("%.3f kPa", altCalc().pressgnd()/1000);
                     break;
                 
-                case 5:
+                case 6:
                     PRNL("Alt");
                     PRNR("%.1f m", altCalc().alt());
                     break;
                 
-                case 6:
+                case 7:
                     PRNL("Alt avg");
                     PRNR("%.1f m", altCalc().altavg());
                     break;
                 
-                case 7:
+                case 8:
                     PRNL("Alt appr");
                     PRNR("%.1f m", altCalc().altapp());
                     break;
                 
-                case 8:
+                case 9:
                     PRNL("VSpeed avg");
                     PRNR("%.1f m/s", altCalc().speedavg());
                     break;
                 
-                case 9:
+                case 10:
                     PRNL("VSpeed appr");
                     PRNR("%.1f m/s", altCalc().speedapp());
                     break;
                 
-                case 10:
+                case 11:
                     PRNL("app kb");
                     PRNR("%.3f", altCalc().kb());
                     break;
                 
-                case 11:
+                case 12:
                     PRNL("sqdiff");
                     PRNR("%.3f", altCalc().sqdiff());
                     break;
                 
-                case 12:
+                case 13:
                     PRNL("Alt dir");
                     switch (altCalc().direct()) {
                         case ACDIR_INIT:    PRNR("init / %d s", altCalc().dirtm()/1000);    break;
@@ -101,7 +106,7 @@ class ViewInfoDebug : public ViewInfo {
                     }
                     break;
                 
-                case 13:
+                case 14:
                     PRNL("Alt mode");
                     switch (altCalc().state()) {
                         case ACST_INIT:     PRNR("init / %d s", altCalc().statetm()/1000);  break;
@@ -114,7 +119,7 @@ class ViewInfoDebug : public ViewInfo {
                     }
                     break;
                 
-                case 14:
+                case 15:
                     PRNL("Jmp mode");
                     PRNR("%s / %d s",
                         altCalc().jmpmode() == ACJMP_NONE       ? "-" :
@@ -125,27 +130,27 @@ class ViewInfoDebug : public ViewInfo {
                     );
                     break;
                 
-                case 15:
+                case 16:
                     PRNL("GPS lon");
                     PRNR("%f", GPS_LATLON(gpsInf().lon));
                     break;
                 
-                case 16:
+                case 17:
                     PRNL("GPS lat");
                     PRNR("%f", GPS_LATLON(gpsInf().lat));
                     break;
                 
-                case 17:
+                case 18:
                     PRNL("GPS numSV");
                     PRNR("%u", gpsInf().numSV);
                     break;
                 
-                case 18:
+                case 19:
                     PRNL("GPS gpsFix");
                     PRNR("%u", gpsInf().gpsFix);
                     break;
                 
-                case 19:
+                case 20:
                     PRNL("GPS recv bytes");
                     if (gpsRecv() > 1024*1024)
                         PRNR("%lu M", gpsRecv()/1024/1024);
@@ -156,97 +161,97 @@ class ViewInfoDebug : public ViewInfo {
                         PRNR("%lu b", gpsRecv());
                     break;
                 
-                case 20:
+                case 21:
                     PRNL("GPS recv error");
                     PRNR("%lu", gpsRecvError());
                     break;
                 
-                case 21:
+                case 22:
                     PRNL("GPS cmd unknown");
                     PRNR("%lu", gpsCmdUnknown());
                     break;
                 
-                case 22:
+                case 23:
                     PRNL("GPS hMSL");
                     PRNR("%.2f m", GPS_MM(gpsInf().hMSL));
                     break;
                 
-                case 23:
+                case 24:
                     PRNL("GPS hAcc");
                     PRNR("%.2f m", GPS_MM(gpsInf().hAcc));
                     break;
                 
-                case 24:
+                case 25:
                     PRNL("GPS vAcc");
                     PRNR("%.2f m", GPS_MM(gpsInf().vAcc));
                     break;
                 
-                case 25:
+                case 26:
                     PRNL("GPS velN");
                     PRNR("%.2f m/s", GPS_CM(gpsInf().velN));
                     break;
                 
-                case 26:
+                case 27:
                     PRNL("GPS velE");
                     PRNR("%.2f m/s", GPS_CM(gpsInf().velE));
                     break;
                 
-                case 27:
+                case 28:
                     PRNL("GPS velD");
                     PRNR("%.2f m/s", GPS_CM(gpsInf().velD));
                     break;
                 
-                case 28:
+                case 29:
                     PRNL("GPS speed");
                     PRNR("%.2f m/s", GPS_CM(gpsInf().speed));
                     break;
                 
-                case 29:
+                case 30:
                     PRNL("GPS gSpeed");
                     PRNR("%.2f m/s", GPS_CM(gpsInf().gSpeed));
                     break;
                 
-                case 30:
+                case 31:
                     PRNL("GPS heading");
                     PRNR("%.1f deg", GPS_DEG(gpsInf().heading));
                     break;
                 
-                case 31:
+                case 32:
                     PRNL("GPS sAcc");
                     PRNR("%.2f m/s", GPS_CM(gpsInf().sAcc));
                     break;
                 
-                case 32:
+                case 33:
                     PRNL("GPS cAcc");
                     PRNR("%.1f deg", GPS_DEG(gpsInf().cAcc));
                     break;
                 
-                case 33:
+                case 34:
                     PRNL("GPS date");
                     PRNR("%d.%02d.%02d", gpsInf().tm.day, gpsInf().tm.mon, gpsInf().tm.year);
                     break;
                 
-                case 34:
+                case 35:
                     PRNL("GPS time");
                     PRNR("%d:%02d:%02d.%d", gpsInf().tm.h, gpsInf().tm.m, gpsInf().tm.s, gpsInf().tm.tick);
                     break;
                 
-                case 35:
+                case 36:
                     PRNL("Sys date");
                     PRNR("%d.%02d.%02d", tmNow().day, tmNow().mon, tmNow().year);
                     break;
                 
-                case 36:
+                case 37:
                     PRNL("Sys time");
                     PRNR("%d:%02d:%02d.%d", tmNow().h, tmNow().m, tmNow().s, tmNow().tick);
                     break;
                 
-                case 37:
+                case 38:
                     PRNL("Sys tm valid");
                     PRNR("%d", tmValid() ? 1 : 0);
                     break;
                 
-                case 38: {
+                case 39: {
                         uint32_t tm = tmcntInterval(TMCNT_UPTIME);
                         uint32_t m = tm / 60;
                         uint32_t h = m / 60;
@@ -255,7 +260,7 @@ class ViewInfoDebug : public ViewInfo {
                     }
                     break;
                 
-                case 39: {
+                case 40: {
                         uint32_t tm = tmcntInterval(TMCNT_NOFLY);
                         uint32_t m = tm / 60;
                         uint32_t h = m / 60;

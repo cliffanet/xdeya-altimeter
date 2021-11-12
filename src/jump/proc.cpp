@@ -302,8 +302,8 @@ void jmpInit() {
  *  Определяем текущее состояние прыга и переключаем по необходимости
  * ------------------------------------------------------------------------------------------- */
 void jmpProcess() {
-    static uint32_t ut = utm();
-    uint32_t interval = utm_diff32(ut, ut);
+    static uint32_t tck;
+    uint32_t interval = utm_diff32(tck, tck);
     ac.tick(bmp.readPressure(), interval / 1000);
     jmpPreLogAdd(interval / 1000);
     _pressgnd = ac.pressgnd();

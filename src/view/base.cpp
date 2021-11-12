@@ -154,8 +154,8 @@ static bool btnUseLong(btn_code_t btn) {
 
 void IRAM_ATTR btnChkState(volatile btn_t &b) {
     uint8_t val = digitalRead(b.pin);
-    uint32_t m = utm() / 1000;
-    uint32_t tm = m-b.lastchg;
+    uint32_t tck;
+    uint32_t tm = utm_diff32(b.lastchg, tck) / 1000;
     
     if (tm >= BTN_FILTER_TIME) { // Защита от дребезга
         bool pushed = b.val == LOW; // Была ли нажата кнопка всё это время
@@ -168,7 +168,7 @@ void IRAM_ATTR btnChkState(volatile btn_t &b) {
                 b.pushed |= BTN_PUSHED_SIMPLE;
                 b.evsmpl = true;
             }
-            if (((b.pushed & BTN_PUSHED_LONG) == 0) && ((m-b.lastchg) >= BTN_LONG_TIME)) {
+            if (((b.pushed & BTN_PUSHED_LONG) == 0) && (tm >= BTN_LONG_TIME)) {
                 b.pushed |= BTN_PUSHED_LONG | BTN_PUSHED_SIMPLE; // чтобы после длинного нажатия не сработало простое, помечаем простое тоже сработавшим
                 b.evlong = true;
             }
@@ -176,7 +176,7 @@ void IRAM_ATTR btnChkState(volatile btn_t &b) {
     }
     
     if (b.val != val)
-        b.lastchg = m; // время крайнего изменения состояния кнопки
+        b.lastchg = tck; // время крайнего изменения состояния кнопки
     b.val = val;
     
     // текущее положение всех кнопок и их крайнее изменение
@@ -184,7 +184,7 @@ void IRAM_ATTR btnChkState(volatile btn_t &b) {
     uint8_t state = (_btnstate & ~bmask) | ((val == LOW ? 1 : 0) << (b.code-1));
     if (_btnstate != state) {
         _btnstate = state;
-        _btnstatelast = m;
+        _btnstatelast = tck;
     }
 }
 void IRAM_ATTR btnChkState0() { btnChkState(btnall[0]); }
@@ -208,7 +208,7 @@ void btnInit() {
 uint32_t btnIdle() { // используется только для выхода из меню
     if (_btnstate != 0)
         return 0;
-    return utm() / 1000 - _btnstatelast;
+    return utm_diff32(_btnstatelast) / 1000;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -228,7 +228,7 @@ uint32_t btnPressed(uint8_t &btn) { // используется только д�
     if (_btnstate == 0)
         return 0;
     btn = _btnstate;
-    return utm() / 1000 - _btnstatelast;
+    return utm_diff32(_btnstatelast) / 1000;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -339,7 +339,7 @@ void viewInit() {
         b.evlong = false;
     }
     _btnstate = 0;
-    _btnstatelast = utm() / 1000;
+    _btnstatelast = utick();
     
     viewIntEn();
 

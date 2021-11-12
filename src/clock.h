@@ -10,10 +10,11 @@
 #include <stdint.h>
 
 uint64_t utm();
-uint64_t utm_diff(uint64_t prev, uint64_t &curr);
-uint64_t utm_diff(uint64_t prev);
-uint32_t utm_diff32(uint32_t prev, uint32_t &curr);
-uint32_t utm_diff32(uint32_t prev);
+uint64_t utick();
+uint64_t utm_diff(uint64_t utick_prev, uint64_t &utick_curr);
+uint64_t utm_diff(uint64_t utick_prev);
+uint32_t utm_diff32(uint32_t utick_prev, uint32_t &utick_curr);
+uint32_t utm_diff32(uint32_t utick_prev);
 
 
 typedef enum {

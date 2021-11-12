@@ -163,7 +163,7 @@ void pwrModeUpd() {
 }
 
 void pwrRun(void (*run)()) {
-    uint64_t u = utm();
+    uint64_t u = utick();
     
     if (run != NULL)
         run();
