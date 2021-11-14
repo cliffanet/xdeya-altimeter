@@ -6,8 +6,8 @@
 ***
 ## Разделы
 
-* [Первое знакомство](01.firstuse.md)
-* [Главные экраны](02.maindisplay.md)
+* [Первое знакомство](01.getting-started.md)
+* [Главные экраны](02.main-display.md)
 * [Меню](03.menu.md)
 * [Высотомер](04.altimeter.md)
 * [Навигация](05.navigation.md)
