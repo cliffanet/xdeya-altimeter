@@ -16,3 +16,4 @@
 * [Синхронизация](08.syncronization.md)
 * [Обновление ПО](09.firmware.md)
 * [Системные операции](10.system.md)
+* [Документация](11.documentation.md)
