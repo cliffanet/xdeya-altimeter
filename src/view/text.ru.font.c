@@ -2,6 +2,8 @@
     View: Text font
 */
 
+#include "../../def.h"
+
 #if defined(FWVER_LANG) && (FWVER_LANG == 'R')
 
 #include "text.ru.h"

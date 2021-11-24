@@ -15,6 +15,16 @@
 #define HWVER               3
 #endif
 
+#if !defined(FWVER_NUM1) && !defined(FWVER_NUM2) && !defined(FWVER_NUM3)
+#define FWVER_NUM1          1
+#define FWVER_NUM2          0
+#define FWVER_NUM3          0
+#endif
+
+#ifndef FWVER_LANG
+#define FWVER_LANG          'R'
+#endif
+
 #if defined(FWVER_DEV) && !defined(FWVER_DEBUG)
 #define FWVER_DEBUG
 #endif

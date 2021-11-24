@@ -45,13 +45,13 @@
 
 ### Загрузка прошивки на устройство
 
-* [Берём готовые файлы прошивки](https://github.com/cliffanet/xdeya-altimeter/releases)
+* Берём [готовый файл](https://github.com/cliffanet/xdeya-altimeter/releases) прошивки (один нужной версии)
 
-* [Дополнительные файлы прошивки](https://github.com/cliffanet/xdeya-altimeter/raw/master/boot.zip).
+* [Дополнительные файлы прошивки](https://github.com/cliffanet/xdeya-altimeter/raw/master/boot.zip)
 
 * Скачиваем и запускаем [Flash Download Tools](https://www.espressif.com/en/support/download/other-tools)
 
-* Нажимаем кнопку ESP32
+* Нажимаем кнопку `ESP32`
 
 ![](dltool.png "Espressif Flash Download Tools"){ width=500 }
 
@@ -66,7 +66,7 @@
 
 * Выбираем COM-порт, через который подключено устройство.
 
-* BAUD : Это скорость, на которой будет заливаться прошивка. Должна работать любоя, в т.ч. максимальная. Но может оказаться, что при высоких скоростях запись будет прерываться.
+* BAUD : Это скорость, на которой будет заливаться прошивка. Должна работать любая, в т.ч. максимальная. Но может оказаться, что при высоких скоростях запись будет прерываться.
 
 * Жмем кнопку `START`
 
@@ -81,13 +81,41 @@
 
 ### Используемые сторонние библиотеки для среды Arduino
 
-* 
+* [Adafruit_BMP280_Library](https://github.com/adafruit/Adafruit_BMP280_Library)
+* [Adafruit_BusIO](https://github.com/adafruit/Adafruit_BusIO) `ver1.9.6` (Необходимая зависимость для Adafruit_BMP280_Library)
+* [Adafruit_Unified_Sensor](https://github.com/adafruit/Adafruit_Sensor) (Необходимая зависимость для Adafruit_BMP280_Library)
+* [RTClib](https://github.com/adafruit/RTClib)
+* [U8g2](https://github.com/olikraus/u8g2)
 
 ### В среде Arduino
 
+* Испольщуемая плата: ESP32 Dev Module
+
+    В настройках среды Arduino в поле `Дополнительные ссылки для Менеджера плат` добавить:
+    
+    https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json
+    
+    В Менеджере плат найти esp32 и установить версию 2.0.0
+    
+    **ВНИМАНИЕ** В версии 2.0.1 есть бага, при которой повторная WiFi-синхронизация вызывает перезагрузку устройства.
+
 * Откройте в Arduino файл xdeya-altimeter.ino
-* В файл def.h
+* Компилируйте, загружайте
+
 
 ### С помощью arduino-cli
 
-* необходимо 
+Этот способ не работает в Windows, т.к. там нет привычного shell.
+
+Потребуются:
+
+* установленные для Arduino библиотеки
+* установленная для Arduino плата
+* arduino-cli
+* perl
+
+Для компиляции использыется скрипт [`fw`](../../fw), который находится в этих исходниках.
+
+Пример запуска:
+
+    ./fw compileupload 4 ru /dev/cu.SLAB_USBtoUART
