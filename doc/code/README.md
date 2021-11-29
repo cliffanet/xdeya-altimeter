@@ -18,17 +18,17 @@
 
 * Исходный код прошивки
 
-    К ним относятся: директория `src`, файлы `def.h` и `xdeya-altimeter.ino`. Для компиляции в среде Arduino нужно только это.
+    К ним относятся: директория [`src`](https://github.com/cliffanet/xdeya-altimeter/tree/master/src), файлы [`def.h`](https://github.com/cliffanet/xdeya-altimeter/blob/master/def.h) и [`xdeya-altimeter.ino`](https://github.com/cliffanet/xdeya-altimeter/blob/master/xdeya-altimeter.ino). Для компиляции в среде Arduino нужно только это.
     
-    Есть ещё скрипт `fw` - он написан на языке perl и служид для удобства компиляции и загрузки прошивки из консоли с помощью утилиты arduino-cli. Про это подробно расписано в подразделе [Как собрать исходный код у себя](#как-собрать-исходный-код-у-себя)
+    Есть ещё скрипт [`fw`](https://github.com/cliffanet/xdeya-altimeter/blob/master/fw) - он написан на языке [perl](https://www.perl.org/) и служит для удобства компиляции и загрузки прошивки из консоли с помощью утилиты arduino-cli. Про это подробно расписано в подразделе [Как собрать исходный код у себя](#как-собрать-исходный-код-у-себя)
 
 * Исходники электрической схемы и печатной платы
 
-    Всё находится в директории `hw`. Среда разработки: [KiCad EDA](https://www.kicad.org/)
+    Всё находится в директории [`hw`](https://github.com/cliffanet/xdeya-altimeter/tree/master/hw). Среда разработки: [KiCad EDA](https://www.kicad.org/)
 
 * Исходники 3D-моделей для печати корпуса
 
-    Директория `box`. Среда: [SketchUp](https://www.sketchup.com/ru)
+    Директория [`box`](https://github.com/cliffanet/xdeya-altimeter/tree/master/box). Среда: [SketchUp](https://www.sketchup.com/ru)
     
     В имени skp-файла может встречаться `noroundcorner` - это исходник без скруглённых краёв. Оставлен, чтобы было проще поправить, а скругление краёв я всегда делаю в самом конце, т.к. отменить это действие никак нельзя. Файл xdeya.skp - это тот же файл, но  уже конечный вариант со скруглением.
     
@@ -41,7 +41,7 @@
 
 * Архив
     
-    Директория `arch.hw`. Тут лежат исходники под различные модификации: `плата` (включая gerber-файлы для печати) и `корпус`.
+    Директория [`arch.hw`](https://github.com/cliffanet/xdeya-altimeter/tree/master/arch.hw). Тут лежат исходники под различные модификации: `плата` (включая gerber-файлы для печати) и `корпус`.
 
 
 ## Как прошить с помощью программатора
