@@ -134,9 +134,14 @@ class ViewInfoSat : public ViewInfo {
             char ids[10];
             strncpy_P(ids, id, sizeof(ids)-1);
             
-            PRNL("[%02x/%02x %s] q-%d %c", s.gnssId, s.svId, ids, s.flags&0x7, s.flags&0x8 ? '*' : ' ');
+#if HWVER >= 4
+            PRNL("[%02x %s] q-%d %c (%d/%d)", s.svId, ids, s.flags&0x7, s.flags&0x8 ? '*' : ' ',
+                        s.elev, s.azim);
+#else
+            PRNL("%02x %s q-%d %c", s.svId, ids, s.flags&0x7, s.flags&0x8 ? '*' : ' ');
+#endif
             if (s.cno)
-                PRNR("%d dBHz", s.cno);
+                PRNR("%u dB", s.cno);
         }
 };
 static ViewInfoSat vInfSat;
