@@ -1,5 +1,6 @@
 
 #include "menu.h"
+#include "info.h"
 #include "../log.h"
 #include "../power.h"
 #include "../clock.h"
@@ -975,6 +976,11 @@ static const menu_el_t menusystem[] {
         .submenu = NULL,
         .enter = gpsDirectTgl,
         .showval = [] (char *txt) { valOn(txt, gpsDirect()); },
+    },
+    {
+        .name = PTXT(MENU_SYSTEM_GPSSATINFO),
+        .submenu = NULL,
+        .enter = setViewInfoSat,
     },
     {
         .name       = PTXT(MENU_SYSTEM_HWTEST),

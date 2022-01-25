@@ -64,5 +64,5 @@
 
 Меня зовут Николай, веду проект `Высотомер + Навигация`. Связаться со мной можно:
 
-* Здесь будет контакт в Telegram
+* Telegram: [https://t.me/cliffa_net](Cliff)
 * cliff_mail@mail.ru

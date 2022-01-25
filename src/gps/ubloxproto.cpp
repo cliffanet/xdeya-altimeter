@@ -143,7 +143,7 @@ bool UbloxGpsProto::rcvconfirm(bool isok) {
     return true;
 }
 
-bool UbloxGpsProto::bufcopy(uint8_t *data, uint16_t dsz) {
+bool UbloxGpsProto::bufcopy(uint8_t *data, uint16_t dsz, uint16_t offs) {
     if (rcv_bytewait != UBXWB_CKB)
         return false;
     
@@ -151,6 +151,14 @@ bool UbloxGpsProto::bufcopy(uint8_t *data, uint16_t dsz) {
     uint16_t bsz = sizeof(buf);
     if (bsz > rcv_plen)
         bsz = rcv_plen;
+    
+    if (offs < bsz) {
+        bsz -= offs;
+        b += offs;
+    }
+    else {
+        bsz = 0;
+    }
     
     while ((dsz > 0) && (bsz > 0)) {
         *d = *b;

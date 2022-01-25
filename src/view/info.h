@@ -45,4 +45,6 @@ class ViewInfo : public ViewBase {
 void setViewInfoDebug();
 #endif
 
+void setViewInfoSat();
+
 #endif // _view_info_H

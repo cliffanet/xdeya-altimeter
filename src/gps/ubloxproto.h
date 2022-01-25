@@ -30,6 +30,7 @@
 #define UBX_NAV_PVT         0x07
 #define UBX_NAV_VELNED      0x12
 #define UBX_NAV_TIMEUTC     0x21
+#define UBX_NAV_SAT         0x35
 
 #define UBX_NMEA            0xf0
 #define UBX_NMEA_GPGGA      0x00
@@ -63,6 +64,12 @@ typedef struct {
 #define UBX_HND_SIZE    10
 #define UBX_CONFIRM_TIMEOUT 1000
 
+typedef struct {
+    	uint8_t msgClass;  // Message class
+    	uint8_t msgID;     // Message identifier
+    	uint8_t rate;      // Send rate
+    } ubx_cfg_rate_t;
+
 class UbloxGpsProto
 {
     public:
@@ -81,7 +88,7 @@ class UbloxGpsProto
         
         UbloxGpsProto& operator << (const char &c) { if (!recv(c)) rcvclear(); return *this; }
         
-        bool bufcopy(uint8_t *data, uint16_t dsz);
+        bool bufcopy(uint8_t *data, uint16_t dsz, uint16_t offs = 0);
         template <typename T>
         bool bufcopy(T &data) {
             return bufcopy(reinterpret_cast<uint8_t *>(&data), sizeof(T));
@@ -109,7 +116,7 @@ class UbloxGpsProto
         ubloxgps_bytewait_t rcv_bytewait;
         uint8_t rcv_class, rcv_ident, rcv_cka, rcv_ckb;
         uint16_t rcv_plen, bufi;
-        uint8_t buf[128];
+        uint8_t buf[256];
         uint16_t sndcnt;
         ubloxgps_hnditem_t hndall[UBX_HND_SIZE];
         

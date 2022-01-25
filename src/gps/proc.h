@@ -67,7 +67,10 @@ typedef enum {
     GPS_STATE_OK
 } gps_state_t;
 
+class UbloxGpsProto;
+
 const gps_data_t &gpsInf();
+UbloxGpsProto * gpsProto();
 uint32_t gpsRecv();
 uint32_t gpsRecvError();
 uint32_t gpsCmdUnknown();

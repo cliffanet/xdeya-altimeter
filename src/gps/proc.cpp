@@ -184,6 +184,7 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
  *  Данные о GPS для внешнего использования
  * ------------------------------------------------------------------------------------------- */
 
+UbloxGpsProto * gpsProto() { return &gps; }
 const gps_data_t &gpsInf() { return data; };
 
 uint32_t gpsRecv() { return gps.cntRecv(); }
@@ -306,11 +307,7 @@ static bool gpsInitCmd() {
     gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
     gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
     
-    struct {
-    	uint8_t msgClass;  // Message class
-    	uint8_t msgID;     // Message identifier
-    	uint8_t rate;      // Send rate
-    } cfg_rate[] = {
+    ubx_cfg_rate_t cfg_rate[] = {
 		{ UBX_NMEA, UBX_NMEA_GPGGA,     0 },
 		{ UBX_NMEA, UBX_NMEA_GPGLL,     0 },
 		{ UBX_NMEA, UBX_NMEA_GPGSA,     0 },

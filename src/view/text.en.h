@@ -123,6 +123,7 @@
 #define TXT_MENU_SYSTEM_FWUPDATE    "FirmWare update"
 #define TXT_MENU_SYSTEM_FILES       "Files"
 #define TXT_MENU_SYSTEM_GPSSERIAL   "GPS serial"
+#define TXT_MENU_SYSTEM_GPSSATINFO  "GPS sat-info"
 #define TXT_MENU_SYSTEM_HWTEST      "Hardware test"
 
 #define TXT_MENU_ROOT_GPSPOINT      "GPS points"
