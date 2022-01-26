@@ -220,6 +220,12 @@ bool UbloxGpsProto::send(uint8_t cl, uint8_t id, const uint8_t *data, uint16_t d
     
     return true;
 }
+
+bool UbloxGpsProto::get(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd) {
+    if (!hndadd(cl, id, hnd, true))
+        return false;
+    return send(cl, id);
+}
         
 bool UbloxGpsProto::hndadd(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd, bool istmp) {
     for (auto &h : hndall)

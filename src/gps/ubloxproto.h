@@ -22,6 +22,7 @@
 #define UBX_CFG_RST         0x04
 #define UBX_CFG_RATE        0x08
 #define UBX_CFG_NAV5        0x24
+#define UBX_CFG_GNSS        0x3E
 
 #define UBX_NAV             0x01
 #define UBX_NAV_POSLLH      0x02
@@ -93,6 +94,10 @@ class UbloxGpsProto
         bool bufcopy(T &data) {
             return bufcopy(reinterpret_cast<uint8_t *>(&data), sizeof(T));
         }
+        template <typename T, typename TH>
+        bool bufitem(TH &hdr, T &item, uint16_t n) {
+            return bufcopy(reinterpret_cast<uint8_t *>(&item), sizeof(item), sizeof(hdr)+(n*sizeof(item)));
+        }
         uint16_t plen() { return rcv_plen; }
         
         bool send(uint8_t cl, uint8_t id, const uint8_t *data = NULL, uint16_t len = 0);
@@ -100,6 +105,8 @@ class UbloxGpsProto
         bool send(uint8_t cl, uint8_t id, const T &data) {
             return send(cl, id, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
         }
+        
+        bool get(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd);
         
         bool hndadd(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd, bool istmp = false);
         bool hnddel(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd);

@@ -293,6 +293,62 @@ static bool gpsUartSpeed(uint32_t baudRate) {
     return false;
 }
 
+
+#ifdef FWVER_DEBUG
+static void gpsRecvGnss(UbloxGpsProto &gps) {
+    struct {
+    	uint8_t  msgVer;        // Message version (0x00 for this version)
+    	uint8_t  numTrkChHw;    // Number of tracking channels available in hardware (read only)
+    	uint8_t  numTrkChUse;   // (Read only in protocol versions greater
+                                // than 23) Number of tracking channels to
+                                // use. Must be > 0, <= numTrkChHw. If
+                                // 0xFF, then number of tracking channels to
+                                // use will be set to numTrkChHw.
+    	uint8_t  numConfigBlocks; // Number of configuration blocks following
+    } hdr;
+    
+    if (!gps.bufcopy(hdr))
+        return;
+    
+    struct {
+    	uint8_t  gnssId;        // System identifier
+    	uint8_t  resTrkCh;      // (Read only in protocol versions greater
+                                // than 23) Number of reserved (minimum)
+                                // tracking channels for this system.
+    	uint8_t  maxTrkCh;      // (Read only in protocol versions greater
+                                // than 23) Maximum number of tracking
+                                // channels used for this system. Must be >
+                                // 0, >= resTrkChn, <= numTrkChUse and <=
+                                // maximum number of tracking channels
+                                // supported for this system.
+    	uint8_t  _;             // Reserved
+        uint32_t flags;         // Bitfield of flags. At least one signal must
+                                // be configured in every enabled system.
+    } b;
+    
+    uint8_t n = 0;
+    CONSOLE("GNSS config: %u items; numTrkChHw=%u, numTrkChUse=%u",
+        hdr.numConfigBlocks, hdr.numTrkChHw, hdr.numTrkChUse);
+    while (hdr.numConfigBlocks > 0) {
+        gps.bufitem(hdr, b, n);
+        CONSOLE("[0x%02x %s] resTrkCh=%u, maxTrkCh=%u, en=%d, sigCfgMask=0x%02x",
+                b.gnssId,
+                b.gnssId == 0 ? "GPS" :
+                b.gnssId == 1 ? "SBAS" :
+                b.gnssId == 2 ? "Galileo" :
+                b.gnssId == 3 ? "BeiDou" :
+                b.gnssId == 4 ? "IMES" :
+                b.gnssId == 5 ? "QZSS" :
+                b.gnssId == 6 ? "GLONASS" : "-",
+                b.resTrkCh, b.maxTrkCh,
+                b.flags&0x01, (b.flags>>16)&0xff);
+        
+        hdr.numConfigBlocks --;
+        n++;
+    }
+}
+#endif // FWVER_DEBUG
+
 static bool gpsInitCmd() {
     if (!gpsUartSpeed(34800)) {
         CONSOLE("Can't set GPS-UART baudRate");
@@ -364,6 +420,11 @@ static bool gpsInitCmd() {
 	};
     if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5) || !gpsCmdConfirm())
         return false;
+
+#ifdef FWVER_DEBUG
+    gps.get(UBX_CFG, UBX_CFG_GNSS, gpsRecvGnss);
+    gpsCmdConfirm();
+#endif // FWVER_DEBUG
     
     struct {
     	uint16_t navBbrMask; // BBR sections to clear

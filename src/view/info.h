@@ -7,6 +7,12 @@
 
 #include "base.h"
 
+#if HWVER < 4
+#define INFO_STR_COUNT  6
+#else
+#define INFO_STR_COUNT  10
+#endif
+
 typedef enum {
     TXT_NONE,
     TXT_LEFT,

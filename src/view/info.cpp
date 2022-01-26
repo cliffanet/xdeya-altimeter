@@ -53,7 +53,7 @@ void ViewInfo::btnSmpl(btn_code_t btn) {
 
         case BTN_DOWN:
             {
-                const uint8_t scnt = title == NULL ? 7 : 6;
+                const uint8_t scnt = title == NULL ? INFO_STR_COUNT : INFO_STR_COUNT-1;
                 const uint16_t itopmax = sz > scnt ? sz-scnt : 0;
                 if (itop < itopmax)
                     itop++;
