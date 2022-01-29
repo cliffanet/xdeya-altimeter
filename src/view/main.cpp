@@ -148,11 +148,9 @@ void setViewMain(int8_t m, bool save) {
             setViewMainAlt();
             break;
         
-        /*
-        case MODE_MAIN_TIME:
-            CONSOLE("click to time");
-            setViewMainTime();
+        case MODE_MAIN_NAV:
+            CONSOLE("click to nav");
+            setViewMainNav();
             break;
-        */
     }
 }

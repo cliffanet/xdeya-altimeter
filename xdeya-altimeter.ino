@@ -6,6 +6,7 @@
 #include "src/clock.h"
 #include "src/view/main.h"
 #include "src/gps/proc.h"
+#include "src/gps/compass.h"
 #include "src/jump/proc.h"
 #include "src/file/track.h"
 #include "src/cfg/main.h"
@@ -55,6 +56,8 @@ void setup() {
     // Загружаем конфиги, но apply делаем только при холодном старте (не из sleep)    
     cfgLoad(pwrMode() != PWR_SLEEP);
     
+    compInit();
+    
     CONSOLE("begin");
 }
 
@@ -66,6 +69,7 @@ void loop() {
         clockProcess();
         tmcntUpdate();
         gpsProcess();
+        compProcess();
         jmpProcess();
         trkProcess();
         viewProcess();

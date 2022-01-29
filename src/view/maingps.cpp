@@ -235,7 +235,7 @@ class ViewMainGpsAlt : public ViewMain {
             if (btn != BTN_SEL)
                 return;
     
-            setViewMain(MODE_MAIN_ALT);
+            setViewMain(MODE_MAIN_NAV);
         }
         
         void draw(U8G2 &u8g2) {

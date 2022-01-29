@@ -6,12 +6,13 @@
 #include "../clock.h" // sys time
 #include "../jump/proc.h" // altCalc()
 #include "../gps/proc.h"
+#include "../gps/compass.h"
 
 #ifdef FWVER_DEBUG
 
 class ViewInfoDebug : public ViewInfo {
     public:
-        ViewInfoDebug() : ViewInfo(41) {}
+        ViewInfoDebug() : ViewInfo(51) {}
         
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL) {
@@ -267,6 +268,56 @@ class ViewInfoDebug : public ViewInfo {
                         PRNL("No-Fly time");
                         PRNR("%d:%02d:%02d", h, m % 60, tm % 60);
                     }
+                    break;
+                
+                case 41:
+                    PRNL("Compas Head");
+                    PRNR("%0.1f", compass().head);
+                    break;
+                
+                case 42:
+                    PRNL("Magnetic X");
+                    PRNR("%d", compass().mag.x);
+                    break;
+                
+                case 43:
+                    PRNL("Magnetic Y");
+                    PRNR("%d", compass().mag.y);
+                    break;
+                
+                case 44:
+                    PRNL("Magnetic Z");
+                    PRNR("%d", compass().mag.z);
+                    break;
+                
+                case 45:
+                    PRNL("Accel X");
+                    PRNR("%d", compass().acc.x);
+                    break;
+                
+                case 46:
+                    PRNL("Accel Y");
+                    PRNR("%d", compass().acc.y);
+                    break;
+                
+                case 47:
+                    PRNL("Accel Z");
+                    PRNR("%d", compass().acc.z);
+                    break;
+                
+                case 48:
+                    PRNL("E X");
+                    PRNR("%ld", compass().e.x);
+                    break;
+                
+                case 49:
+                    PRNL("E Y");
+                    PRNR("%ld", compass().e.y);
+                    break;
+                
+                case 50:
+                    PRNL("E Z");
+                    PRNR("%ld", compass().e.z);
                     break;
             }
         }
