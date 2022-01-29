@@ -368,10 +368,11 @@ void compProcess() {
         // Поэтому нам фактически нужен даже не вектор N,
         // а как раз подходит вектор E - его математические
         // градусы равны навигационным градусам вектора N
-        double head = atan2(static_cast<double>(E.y), E.x);
-        while (head < 0) head += 2*PI;
-        while (head > 2*PI) head -= 2*PI;
-        _cmp.head = head * 180 / PI;
+        _cmp.head = atan2(static_cast<double>(E.y), E.x);
+        while (_cmp.head < 0)
+            _cmp.head += 2*PI;
+        while (_cmp.head > 2*PI)
+            _cmp.head -= 2*PI;
     }
 }
 

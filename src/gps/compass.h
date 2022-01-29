@@ -17,7 +17,7 @@ typedef vec_t<float> vecf_t;
 typedef struct {
     vec16_t mag;
     vec16_t acc;
-	float   head;
+	double  head;
     vec32_t e;
     uint8_t ok;
 } compass_t;
