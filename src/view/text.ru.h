@@ -114,6 +114,8 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_TEST_PRESSURE      "Давление"
 #define TXT_MENU_TEST_PRESSVAL      "(%0.0fкПа) %s"
 #define TXT_MENU_TEST_LIGHT         "Подсветка"
+#define TXT_MENU_TEST_COMPASS       "Компас"
+#define TXT_MENU_TEST_COMPVAL       "(%d) %s"
 #define TXT_MENU_TEST_GPSDATA       "GPS данные"
 #define TXT_MENU_TEST_DATADELAY     "(%d мс) %s"
 #define TXT_MENU_TEST_NOGPSDATA     "нет данных"

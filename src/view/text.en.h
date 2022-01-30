@@ -108,6 +108,8 @@
 #define TXT_MENU_TEST_PRESSURE      "Pressure"
 #define TXT_MENU_TEST_PRESSVAL      "(%0.0fkPa) %s"
 #define TXT_MENU_TEST_LIGHT         "Light test"
+#define TXT_MENU_TEST_COMPASS       "Compass"
+#define TXT_MENU_TEST_COMPVAL       "(%d) %s"
 #define TXT_MENU_TEST_GPSDATA       "GPS data"
 #define TXT_MENU_TEST_DATADELAY     "(%d ms) %s"
 #define TXT_MENU_TEST_NOGPSDATA     "no data"

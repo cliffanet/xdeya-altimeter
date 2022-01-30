@@ -40,7 +40,7 @@ class ViewMenuStatic : public ViewMenu {
     
             strncpy_P(str.name, m.name, sizeof(str.name));
             str.name[sizeof(str.name)-1] = '\0';
-    
+            
             if (m.showval == NULL)
                 str.val[0] = '\0';
             else
@@ -861,7 +861,7 @@ static const menu_el_t menuhwtest[] {
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
-            char ok[10];
+            char ok[15];
             uint16_t bval = pwrBattRaw();
             valOk(ok, (bval > 2400) && (bval < 3450));
             sprintf_P(txt, PSTR("(%0.2fv) %s"), pwrBattValue(), ok);
@@ -881,7 +881,7 @@ static const menu_el_t menuhwtest[] {
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
-            char ok[10];
+            char ok[15];
             float press = altCalc().press();
             
             valOk(ok, (press > 60000) && (press < 150000));
@@ -899,11 +899,22 @@ static const menu_el_t menuhwtest[] {
         .showval = [] (char *txt) { valOn(txt, displayLight()); },
     },
     {
+        .name = PTXT(MENU_TEST_COMPASS),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            char ok[15];
+
+            valOk(ok, compass().ok==0x3);
+            int n = sprintf_P(txt, PTXT(MENU_TEST_COMPVAL), compass().ok, ok);
+        },
+    },
+    {
         .name = PTXT(MENU_TEST_GPSDATA),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
-            char ok[10];
+            char ok[15];
             uint16_t dage = gpsDataAge();
             
             valOk(ok, gpsInf().rcvok);
