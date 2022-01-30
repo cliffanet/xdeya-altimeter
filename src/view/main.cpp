@@ -8,7 +8,7 @@
 #include "../file/track.h"
 #include "../gps/proc.h"
 
-static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_GPSALT; // Текущая страница отображения, сохраняется при переходе в меню
+static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_ALTNAV; // Текущая страница отображения, сохраняется при переходе в меню
 
 static void btnDo(uint8_t op) {
     switch (op) {
@@ -123,7 +123,7 @@ void setViewMain(int8_t m, bool save) {
     
     if (m == MODE_MAIN_LAST) {
         if ((mode < MODE_MAIN_MIN) || (mode > MODE_MAIN_MAX))
-            mode = MODE_MAIN_GPSALT;
+            mode = MODE_MAIN_ALTNAV;
         m = mode;
     }
     else
@@ -138,9 +138,9 @@ void setViewMain(int8_t m, bool save) {
             break;
         */
             
-        case MODE_MAIN_GPSALT:
+        case MODE_MAIN_ALTNAV:
             CONSOLE("click to gps-alt");
-            setViewMainGpsAlt();
+            setViewMainAltNav();
             break;
             
         case MODE_MAIN_ALT:

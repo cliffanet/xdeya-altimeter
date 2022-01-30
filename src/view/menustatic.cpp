@@ -178,9 +178,9 @@ static void valDsplAuto(char *txt, int8_t val) {
     switch (val) {
         case MODE_MAIN_NONE:    strcpy_P(txt, PTXT(MENU_MAINPAGE_NONE)); break;
         case MODE_MAIN_LAST:    strcpy_P(txt, PTXT(MENU_MAINPAGE_LAST)); break;
-        //case MODE_MAIN_GPS:     strcpy_P(txt, PTXT(MENU_MAINPAGE_GPS)); break;
-        case MODE_MAIN_GPSALT:  strcpy_P(txt, PTXT(MENU_MAINPAGE_GPSALT)); break;
+        case MODE_MAIN_ALTNAV:  strcpy_P(txt, PTXT(MENU_MAINPAGE_ALTNAV)); break;
         case MODE_MAIN_ALT:     strcpy_P(txt, PTXT(MENU_MAINPAGE_ALT)); break;
+        case MODE_MAIN_NAV:     strcpy_P(txt, PTXT(MENU_MAINPAGE_NAV)); break;
     }
 }
 

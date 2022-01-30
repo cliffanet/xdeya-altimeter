@@ -102,7 +102,7 @@ static char modeton(int8_t mode) {
         case MODE_MAIN_NONE:    return 'N';
         case MODE_MAIN_LAST:    return 'L';
         //case MODE_MAIN_GPS:     return 'g';
-        case MODE_MAIN_GPSALT:  return 'm';
+        case MODE_MAIN_ALTNAV:  return 'm';
         case MODE_MAIN_ALT:     return 'a';
         //case MODE_MAIN_TIME:    return 't';
     };
@@ -113,7 +113,7 @@ static int8_t ntomode(char n) {
         case 'N': return MODE_MAIN_NONE;
         case 'L': return MODE_MAIN_LAST;
         //case 'g': return MODE_MAIN_GPS;
-        case 'm': return MODE_MAIN_GPSALT;
+        case 'm': return MODE_MAIN_ALTNAV;
         case 'a': return MODE_MAIN_ALT;
         //case 't': return MODE_MAIN_TIME;
     };

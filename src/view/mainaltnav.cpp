@@ -373,7 +373,7 @@ static void drawCompass(ARG_COMP_DEF, double head = 0) {
  *  GPS + высотомер
  * ------------------------------------------------------------------------------------------- */
 
-class ViewMainGpsAlt : public ViewMain {
+class ViewMainAltNav : public ViewMain {
     public:
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL)
@@ -403,5 +403,5 @@ class ViewMainGpsAlt : public ViewMain {
             drawCompass(ARG_COMP_CALL, 2*PI - compass().head);
         }
 };
-static ViewMainGpsAlt vGpsAlt;
-void setViewMainGpsAlt() { viewSet(vGpsAlt); }
+static ViewMainAltNav vAltNav;
+void setViewMainAltNav() { viewSet(vAltNav); }

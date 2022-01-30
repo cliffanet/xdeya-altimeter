@@ -17,7 +17,7 @@
 // Экран отображения только показаний GPS
 //#define MODE_MAIN_GPS       1
 // Экран отображения высоты и GPS
-#define MODE_MAIN_GPSALT    1
+#define MODE_MAIN_ALTNAV    1
 // Экран отображения высоты (большими цифрами)
 #define MODE_MAIN_ALT       2
 // Экран отображения навигации
@@ -35,7 +35,7 @@ class ViewMain : public ViewBase {
 void setViewMain(int8_t mode = MODE_MAIN_LAST, bool save = true);
 
 //void setViewMainGps();
-void setViewMainGpsAlt();
+void setViewMainAltNav();
 void setViewMainAlt();
 void setViewMainNav();
 

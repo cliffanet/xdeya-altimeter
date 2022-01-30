@@ -13,7 +13,7 @@ class ViewMainAlt : public ViewMain {
 #ifdef FWVER_DEBUG
             setViewInfoDebug();
 #else
-            setViewMain(MODE_MAIN_GPSALT);
+            setViewMain(MODE_MAIN_ALTNAV);
 #endif
         }
         

@@ -24,9 +24,9 @@
 
 #define TXT_MENU_MAINPAGE_NONE      "No change"
 #define TXT_MENU_MAINPAGE_LAST      "Last"
-#define TXT_MENU_MAINPAGE_GPS       "GPS"
-#define TXT_MENU_MAINPAGE_GPSALT    "GPS+Alt"
+#define TXT_MENU_MAINPAGE_ALTNAV    "Nav+Alt"
 #define TXT_MENU_MAINPAGE_ALT       "Alti"
+#define TXT_MENU_MAINPAGE_NAV       "Navi"
 
 #define TXT_MENU_POINT_CURRENT      "Current"
 #define TXT_MENU_POINT_NOTUSED      " (no used)"

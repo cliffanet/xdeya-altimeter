@@ -30,9 +30,9 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 
 #define TXT_MENU_MAINPAGE_NONE      "не менять"
 #define TXT_MENU_MAINPAGE_LAST      "предыдущая"
-#define TXT_MENU_MAINPAGE_GPS       "GPS"
-#define TXT_MENU_MAINPAGE_GPSALT    "GPS+Высот"
+#define TXT_MENU_MAINPAGE_ALTNAV    "Нав+Высот"
 #define TXT_MENU_MAINPAGE_ALT       "Высотомер"
+#define TXT_MENU_MAINPAGE_NAV       "Навигация"
 
 #define TXT_MENU_POINT_CURRENT      "Выбранная точка"
 #define TXT_MENU_POINT_NOTUSED      " (нет)"

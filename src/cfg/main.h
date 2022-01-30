@@ -38,7 +38,7 @@ typedef struct __attribute__((__packed__)) {
     bool gndauto = true;                        // Разрешение на автокорректировку нуля
     
     bool dsplautoff = true;                     // Разрешить авто-режим своб падения (переключать экран на высотомер и запрет переключений)
-    int8_t dsplcnp  = MODE_MAIN_GPSALT;         // смена экрана при повисании под куполом (высотомер+жпс)
+    int8_t dsplcnp  = MODE_MAIN_ALTNAV;         // смена экрана при повисании под куполом (высотомер+жпс)
     int8_t dsplland = MODE_MAIN_NONE;           // смена экрана сразу после приземления (не менять)
     int8_t dsplgnd  = MODE_MAIN_NONE;           // смена экрана при длительном нахождении на земле
     int8_t dsplpwron= MODE_MAIN_LAST;           // смена экрана при включении питания
