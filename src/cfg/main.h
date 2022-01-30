@@ -52,7 +52,7 @@ typedef struct __attribute__((__packed__)) {
     bool    gpsontrkrec = false;                // автоматическое включение gps при старте записи трека
     uint16_t gpsonalt   = 0;                    // автоматическое включение gps на заданной высоте
     bool    gpsoffland  = false;                // всегда автоматически отключать gps после приземления
-    bool    _1 = false;                         // резерв для выравнивания до 4 байт
+    bool    compen      = true;                 // использовать компас
     
     uint16_t trkonalt = 0;                      // автоматически запускать запись трека на заданной высоте
     

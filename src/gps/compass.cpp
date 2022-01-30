@@ -192,6 +192,10 @@ static bool magInit() {
     return true;
 }
 
+static void magStop() {
+    wwrite8(HMC5883_ADDR, HMC5883_REG_MODE, HMC5883_MODE_IDLE);
+}
+
 static vec16_t magRead() {
     if (!wreq(HMC5883_ADDR, HMC5883_REG_OUT_X_H, 6))
         return { 0 };
@@ -306,6 +310,10 @@ static bool accInit() {
     return true;
 }
 
+static void accStop() {
+    wwrite8(MPU6050_ADDR, MPU6050_REG_PWR_MGMT_1, MPU6050_PWR1_CLK_STOP | MPU6050_PWR1_SLEEP | MPU6050_PWR1_DEV_RST);
+}
+
 static vec16_t accRead() {
     if (!wreq(MPU6050_ADDR, MPU6050_REG_ACCEL_OUT, 6))
         return { 0 };
@@ -344,6 +352,14 @@ void compInit() {
     
     if (_cmp.ok == 3)
         CONSOLE("compas & accel/gyro init ok");
+}
+
+void compStop() {
+    if (_cmp.ok & 1)
+        magStop();
+    if (_cmp.ok & 2)
+        accStop();
+    _cmp = { 0 };
 }
 
 void compProcess() {

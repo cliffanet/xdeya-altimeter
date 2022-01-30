@@ -91,6 +91,7 @@
 #define TXT_MENU_OPTION_AUTOSCREEN  "Auto Screen-Mode"
 #define TXT_MENU_OPTION_AUTOPOWER   "Auto Power-Off"
 #define TXT_MENU_OPTION_AUTOGPS     "Auto GPS-On"
+#define TXT_MENU_OPTION_COMPEN      "Enable Compass"
 #define TXT_MENU_OPTION_BTNDO       "Button operation"
 #define TXT_MENU_OPTION_TRACK       "Track"
 #define TXT_MENU_OPTION_TIME        "Time"

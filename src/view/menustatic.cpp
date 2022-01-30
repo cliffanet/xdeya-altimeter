@@ -6,6 +6,7 @@
 #include "../clock.h"
 #include "../view/base.h"
 #include "../gps/proc.h"
+#include "../gps/compass.h"
 #include "../cfg/main.h"
 #include "../cfg/point.h"
 #include "../cfg/jump.h"
@@ -757,6 +758,19 @@ static const menu_el_t menuoptions[] {
     {
         .name       = PTXT(MENU_OPTION_AUTOGPS),
         .submenu    = &vMenuGpsOn,
+    },
+    {   // использовать компас
+        .name       = PTXT(MENU_OPTION_COMPEN),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().compen); },
+        .edit       = [] (int val) {
+            cfg.set().compen = !cfg.d().compen;
+            if (cfg.d().compen)
+                compInit();
+            else
+                compStop();
+        },
     },
     {
         .name       = PTXT(MENU_OPTION_BTNDO),

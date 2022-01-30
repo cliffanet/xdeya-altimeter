@@ -97,6 +97,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_OPTION_AUTOSCREEN  "Автоперекл. экрана"
 #define TXT_MENU_OPTION_AUTOPOWER   "Автовыключение"
 #define TXT_MENU_OPTION_AUTOGPS     "Управление режимом GPS"
+#define TXT_MENU_OPTION_COMPEN      "Использовать Компас"
 #define TXT_MENU_OPTION_BTNDO       "Функции кнопок"
 #define TXT_MENU_OPTION_TRACK       "Трэк"
 #define TXT_MENU_OPTION_TIME        "Часы"

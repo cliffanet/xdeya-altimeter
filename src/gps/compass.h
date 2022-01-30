@@ -25,6 +25,7 @@ typedef struct {
 const compass_t &compass();
 
 void compInit();
+void compStop();
 void compProcess();
 
 #endif // _compass_H
