@@ -120,6 +120,8 @@ bool btn4Pushed();
  *  View
  * ------------------------------------------------------------------------------------------- */
 
+typedef struct { int x, y; } pnt_t;
+
 class ViewBase {
     public:
         virtual void btnSmpl(btn_code_t btn) { }

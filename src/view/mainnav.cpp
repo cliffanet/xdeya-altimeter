@@ -14,12 +14,17 @@
 #define PNT(x,y,ang,cx,cy)          static_cast<int>(round(cos(ang) * ((x) - (cx)) - sin(ang) * ((y) - (cy))) + (cx)),\
                                     static_cast<int>(round(sin(ang) * ((x) - (cx)) + cos(ang) * ((y) - (cy))) + (cy))
 
-#define ARG_DEF   U8G2 &u8g2, int cx, int cy, int w, int h
-#define ARG_CALL  u8g2, cx, cy, w, h
+#define ARG_COMP_DEF   U8G2 &u8g2, int cx, int cy, int w, int h
+#define ARG_COMP_CALL  u8g2, cx, cy, w, h
 
-typedef struct { int x, y; } pnt_t;
+static void drawCircleSeg(U8G2 &u8g2, int x, int y, int cx, int cy) {
+    u8g2.drawPixel(cx-x, cy-y);
+    u8g2.drawPixel(cx-y, cy-x);
+    u8g2.drawPixel(cx+x, cy-y);
+    u8g2.drawPixel(cx+y, cy-x);
+}
 
-static void drawBase(ARG_DEF) {
+static void drawGrid(ARG_COMP_DEF) {
     u8g2.drawDisc(cx, cy, 2);
     
     int rad = h-20;
@@ -30,10 +35,7 @@ static void drawBase(ARG_DEF) {
         dx = 1,
         dy = (0-rad)*2;
     
-    u8g2.drawPixel(cx-x, cy-y);
-    u8g2.drawPixel(cx-y, cy-x);
-    u8g2.drawPixel(cx+x, cy-y);
-    u8g2.drawPixel(cx+y, cy-x);
+    drawCircleSeg(u8g2, x, y, cx, cy);
     
     while (x < y) {
         if (f > 0) {
@@ -47,14 +49,12 @@ static void drawBase(ARG_DEF) {
         f += dx;
         if ((x & 0x3) != 0x3) // для каждого 0, 1, 2, 3 - пропускаем 0, 1 и 2
             continue;
-        u8g2.drawPixel(cx-x, cy-y);
-        u8g2.drawPixel(cx-y, cy-x);
-        u8g2.drawPixel(cx+x, cy-y);
-        u8g2.drawPixel(cx+y, cy-x);
+    
+        drawCircleSeg(u8g2, x, y, cx, cy);
     }
 }
 
-static void drawText(ARG_DEF) {
+static void drawText(ARG_COMP_DEF) {
     char s[50];
     
     // Шрифт для высоты и расстояния
@@ -144,7 +144,7 @@ static void drawPntC(U8G2 &u8g2, int x, int y) {
     u8g2.setDrawColor(1);
 }
 
-static void drawPoint(ARG_DEF, double head = 0) {
+static void drawPoint(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
     
     double dist =
@@ -176,7 +176,7 @@ static void drawPoint(ARG_DEF, double head = 0) {
     drawPntC(u8g2, PNT(cx,cy-prad, courseto, cx,cy));
 }
 
-static void drawMoveArr(ARG_DEF, int n = 0, double head = 0) {
+static void drawMoveArr(ARG_COMP_DEF, int n = 0, double head = 0) {
     u8g2.drawTriangle(
 #if HWVER < 4
         PNT(cx-5,cy-(n*6), head, cx,cy),
@@ -190,7 +190,7 @@ static void drawMoveArr(ARG_DEF, int n = 0, double head = 0) {
     );
 }
 
-static void drawMove(ARG_DEF, double head = 0) {
+static void drawMove(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
     head += DEG_TO_RAD*GPS_DEG(gps.heading);
     
@@ -198,22 +198,22 @@ static void drawMove(ARG_DEF, double head = 0) {
     
     if (speed < 1.5)
         return;
-    drawMoveArr(ARG_CALL, 0, head);
+    drawMoveArr(ARG_COMP_CALL, 0, head);
     if (speed < 5)
         return;
-    drawMoveArr(ARG_CALL, 1, head);
+    drawMoveArr(ARG_COMP_CALL, 1, head);
     if (speed < 12)
         return;
-    drawMoveArr(ARG_CALL, 2, head);
+    drawMoveArr(ARG_COMP_CALL, 2, head);
     if (speed < 22)
         return;
-    drawMoveArr(ARG_CALL, 3, head);
+    drawMoveArr(ARG_COMP_CALL, 3, head);
     if (speed < 35)
         return;
-    drawMoveArr(ARG_CALL, 4, head);
+    drawMoveArr(ARG_COMP_CALL, 4, head);
 }
 
-static void drawNavi(ARG_DEF, double head = 0) {
+static void drawNavi(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
 
     if (!GPS_VALID(gps)) {
@@ -223,13 +223,13 @@ static void drawNavi(ARG_DEF, double head = 0) {
     }
     
     if (GPS_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used)
-        drawPoint(ARG_CALL, head);
+        drawPoint(ARG_COMP_CALL, head);
     
     if (GPS_VALID_LOCATION(gps) && GPS_VALID_HEAD(gps) && GPS_VALID_SPEED(gps))
-        drawMove(ARG_CALL, head);
+        drawMove(ARG_COMP_CALL, head);
 }
 
-static void drawCompass(ARG_DEF, double head = 0) {
+static void drawCompass(ARG_COMP_DEF, double head = 0) {
     int rad = h-20;
     pnt_t p;
     
@@ -242,7 +242,7 @@ static void drawCompass(ARG_DEF, double head = 0) {
     u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.drawGlyph(p.x-3, p.y+4, 'N');
     
-    drawNavi(ARG_CALL, head);
+    drawNavi(ARG_COMP_CALL, head);
 }
 
 class ViewMainNav : public ViewMain {
@@ -259,10 +259,10 @@ class ViewMainNav : public ViewMain {
             int h = u8g2.getDisplayHeight();
             int cx = w/2-1, cy = h-12;
             
-            drawBase(ARG_CALL);
-            drawText(ARG_CALL); // Весь текст пишем в самом начале, чтобы графика рисовалась поверх
+            drawGrid(ARG_COMP_CALL);
+            drawText(ARG_COMP_CALL); // Весь текст пишем в самом начале, чтобы графика рисовалась поверх
             
-            drawCompass(ARG_CALL, 2*PI - compass().head);
+            drawCompass(ARG_COMP_CALL, 2*PI - compass().head);
         }
 };
 static ViewMainNav vNav;
