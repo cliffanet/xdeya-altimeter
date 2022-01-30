@@ -299,7 +299,7 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
         ) * DEG_TO_RAD;
     courseto += head;
     
-    int prad = dist > 500 ? cy-5 : dist * (cy-5) / 500;
+    int prad = dist > 200 ? cy-5 : dist * (cy-5) / 200;
     drawPntC(u8g2, PNT(cx,cy-prad, courseto, cx,cy));
 }
 
@@ -323,16 +323,16 @@ static void drawMove(ARG_COMP_DEF, double head = 0) {
     
     double speed = GPS_CM(gps.gSpeed);
     
-    if (speed < 1.5)
+    if (speed < 0.5)
         return;
     drawMoveArr(ARG_COMP_CALL, 0, head);
-    if (speed < 7)
+    if (speed < 5)
         return;
     drawMoveArr(ARG_COMP_CALL, 1, head);
-    if (speed < 18)
+    if (speed < 15)
         return;
     drawMoveArr(ARG_COMP_CALL, 2, head);
-    if (speed < 30)
+    if (speed < 25)
         return;
     drawMoveArr(ARG_COMP_CALL, 3, head);
 }
