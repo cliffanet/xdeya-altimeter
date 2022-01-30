@@ -130,7 +130,7 @@ class ViewBase {
         
         virtual void process() {}
         
-        bool isblink();
+        static bool isblink();
     private:
 };
 

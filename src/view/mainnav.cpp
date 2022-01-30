@@ -5,6 +5,7 @@
 #include "../gps/proc.h"
 #include "../cfg/point.h"
 #include "../jump/proc.h"
+#include "../file/track.h"
 
 /* ------------------------------------------------------------------------------------------- *
  *  Навигация
@@ -51,9 +52,19 @@ static void drawBase(ARG_DEF) {
         u8g2.drawPixel(cx+x, cy-y);
         u8g2.drawPixel(cx+y, cy-x);
     }
+}
+
+static void drawText(ARG_DEF) {
+    char s[50];
+    
+    // Шрифт для высоты и расстояния
+#if HWVER < 4
+    u8g2.setFont(u8g2_font_helvB08_tr);
+#else // if HWVER < 4
+    u8g2.setFont(u8g2_font_fub20_tf);
+#endif
     
     // Высота
-    char s[50];
     auto &ac = altCalc();
     int16_t alt = round(ac.alt() + cfg.d().altcorrect);
     int16_t o = alt % ALT_STEP;
@@ -61,11 +72,65 @@ static void drawBase(ARG_DEF) {
     if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
     sprintf_P(s, PSTR("%d"), alt);
     
-    if (w > 100)
-        u8g2.setFont(u8g2_font_fub20_tf);
-    else
-        u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.drawStr(0, u8g2.getAscent(), s);
+    
+    // Расстояние до точки
+    int y1 = u8g2.getAscent();
+    auto &gps = gpsInf();
+    if (GPS_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used) {
+        double dist =
+            gpsDistance(
+                GPS_LATLON(gps.lat),
+                GPS_LATLON(gps.lon),
+                pnt.cur().lat, 
+                pnt.cur().lng
+            );
+    
+        if (dist < 950) 
+            sprintf_P(s, PSTR("%0.0fm"), dist);
+        else if (dist < 9500) 
+            sprintf_P(s, PSTR("%0.1fk"), dist/1000);
+        else if (dist < 950000) 
+            sprintf_P(s, PSTR("%0.0fk"), dist/1000);
+        else
+            sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
+        u8g2.drawStr(w-u8g2.getStrWidth(s), y1, s);
+    }
+    
+    // Количество спутников
+    u8g2.setFont(menuFont);
+    switch (gpsState()) {
+        case GPS_STATE_OFF:
+            strcpy_P(s, PTXT(MAIN_GPSSTATE_OFF));
+            break;
+        
+        case GPS_STATE_INIT:
+            strcpy_P(s, PTXT(MAIN_GPSSTATE_INIT));
+            break;
+        
+        case GPS_STATE_FAIL:
+            strcpy_P(s, PTXT(MAIN_GPSSTATE_INITFAIL));
+            break;
+        
+        case GPS_STATE_NODATA:
+            strcpy_P(s, PTXT(MAIN_GPSSTATE_NODATA));
+            break;
+        
+        case GPS_STATE_OK:
+            sprintf_P(s, PTXT(MAIN_GPSSTATE_SATCOUNT), gps.numSV);
+            break;
+    }
+    y1 += 2+u8g2.getAscent();
+    u8g2.drawTxt(w-u8g2.getTxtWidth(s), y1, s);
+    
+    // запись трека
+#if HWVER < 4
+    u8g2.setFont(u8g2_font_tom_thumb_4x6_mn);
+#else // if HWVER < 4
+    u8g2.setFont(menuFont);
+#endif
+    if (trkRunning() && ViewBase::isblink())
+        u8g2.drawGlyph(0, h-u8g2.getAscent(), 'R');
 }
 
 static void drawPntC(U8G2 &u8g2, int x, int y) {
@@ -81,7 +146,6 @@ static void drawPntC(U8G2 &u8g2, int x, int y) {
 
 static void drawPoint(ARG_DEF, double head = 0) {
     auto &gps = gpsInf();
-    char s[50];
     
     double dist =
         gpsDistance(
@@ -90,20 +154,6 @@ static void drawPoint(ARG_DEF, double head = 0) {
             pnt.cur().lat, 
             pnt.cur().lng
         );
-    
-    if (dist < 950) 
-        sprintf_P(s, PSTR("%0.0fm"), dist);
-    else if (dist < 9500) 
-        sprintf_P(s, PSTR("%0.1fk"), dist/1000);
-    else if (dist < 950000) 
-        sprintf_P(s, PSTR("%0.0fk"), dist/1000);
-    else
-        sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
-    if (w > 100)
-        u8g2.setFont(u8g2_font_fub20_tf);
-    else
-        u8g2.setFont(u8g2_font_helvB08_tr);
-    u8g2.drawStr(w-u8g2.getStrWidth(s), u8g2.getAscent(), s);
     
     if (dist < 8) {
         // in point
@@ -182,15 +232,15 @@ static void drawNavi(ARG_DEF, double head = 0) {
 static void drawCompass(ARG_DEF, double head = 0) {
     int rad = h-20;
     pnt_t p;
+    
+    p = { PNT(cx,cy-rad-6, head, cx,cy) };
+    if (p.y > h-7) p.y = h-7;
+    u8g2.setDrawColor(0);
+    u8g2.drawDisc(p.x, p.y, 7);
+
+    u8g2.setDrawColor(1);
     u8g2.setFont(u8g2_font_helvB08_tr);
-    
-    p = { PNT(cx-4,cy-rad-4, head, cx-4,cy+4) };
-    if (p.y >= h) p.y = h-1;
-    u8g2.drawGlyph(p.x, p.y, 'N');
-    
-    //p = { PNT(cx, 20, head, cx, cy) };
-    //if (p.y > cy+2) p.y = cy+2;
-    //u8g2.drawDisc(p.x, p.y, 2);
+    u8g2.drawGlyph(p.x-3, p.y+4, 'N');
     
     drawNavi(ARG_CALL, head);
 }
@@ -210,6 +260,7 @@ class ViewMainNav : public ViewMain {
             int cx = w/2-1, cy = h-12;
             
             drawBase(ARG_CALL);
+            drawText(ARG_CALL); // Весь текст пишем в самом начале, чтобы графика рисовалась поверх
             
             drawCompass(ARG_CALL, 2*PI - compass().head);
         }
