@@ -18,6 +18,7 @@ typedef struct {
     vec16_t mag;
     vec16_t acc;
 	double  head;
+	double  speed;
     vec32_t e;
     uint8_t ok;
 } compass_t;

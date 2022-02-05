@@ -2,16 +2,14 @@
 #include "compass.h"
 #include "../log.h"
 #include "../clock.h"
+#include "../filtlib/filter_avgdeg.h"
 
 #include <Wire.h>
 
 static compass_t _cmp = { 0 };
 static vec16_t bias = { 766, 766, 713 };
 
-#define FILTSZ 7
-static double filt_sin[FILTSZ] = { 0 };
-static double filt_cos[FILTSZ] = { 0 };
-static uint8_t filt_cur=0;
+static FilterAvgDeg <double>filt(7);
 
 
 /* --------------------------------------------------
@@ -390,20 +388,17 @@ void compProcess() {
         // а как раз подходит вектор E - его математические
         // градусы равны навигационным градусам вектора N
         _cmp.head = atan2(static_cast<double>(E.y), E.x);
-
-        filt_sin[filt_cur] = sin(_cmp.head);
-        filt_cos[filt_cur] = cos(_cmp.head);
-        filt_cur ++;
-        filt_cur %= FILTSZ;
-        double ssin = 0, scos = 0;
-        for (auto &f : filt_sin) ssin += f;
-        for (auto &f : filt_cos) scos += f;
-        _cmp.head = atan2(ssin, scos);
         
-        while (_cmp.head < 0)
+        // фильтр - среднее арифметическое для круглых величин
+        static uint32_t tck;
+        uint32_t interval = utm_diff32(tck, tck);
+        filt.tick(_cmp.head, interval / 1000);
+        
+        _cmp.head = filt.value();
+        if (_cmp.head < 0)
             _cmp.head += 2*PI;
-        while (_cmp.head > 2*PI)
-            _cmp.head -= 2*PI;
+        
+        _cmp.speed = filt.speed();
     }
 }
 

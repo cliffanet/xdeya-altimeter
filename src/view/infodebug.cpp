@@ -12,7 +12,7 @@
 
 class ViewInfoDebug : public ViewInfo {
     public:
-        ViewInfoDebug() : ViewInfo(51) {}
+        ViewInfoDebug() : ViewInfo(52) {}
         
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL) {
@@ -276,46 +276,51 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 42:
+                    PRNL("Compas H-Speed");
+                    PRNR("%0.3f", compass().speed * 1000);
+                    break;
+                
+                case 43:
                     PRNL("Magnetic X");
                     PRNR("%d", compass().mag.x);
                     break;
                 
-                case 43:
+                case 44:
                     PRNL("Magnetic Y");
                     PRNR("%d", compass().mag.y);
                     break;
                 
-                case 44:
+                case 45:
                     PRNL("Magnetic Z");
                     PRNR("%d", compass().mag.z);
                     break;
                 
-                case 45:
+                case 46:
                     PRNL("Accel X");
                     PRNR("%d", compass().acc.x);
                     break;
                 
-                case 46:
+                case 47:
                     PRNL("Accel Y");
                     PRNR("%d", compass().acc.y);
                     break;
                 
-                case 47:
+                case 48:
                     PRNL("Accel Z");
                     PRNR("%d", compass().acc.z);
                     break;
                 
-                case 48:
+                case 49:
                     PRNL("E X");
                     PRNR("%ld", compass().e.x);
                     break;
                 
-                case 49:
+                case 50:
                     PRNL("E Y");
                     PRNR("%ld", compass().e.y);
                     break;
                 
-                case 50:
+                case 51:
                     PRNL("E Z");
                     PRNR("%ld", compass().e.z);
                     break;
