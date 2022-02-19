@@ -7,6 +7,7 @@
 #include "gps/proc.h"
 #include "jump/proc.h"
 #include "file/track.h"
+#include "core/worker.h"
 
 
 static RTC_DATA_ATTR power_mode_t mode = PWR_ACTIVE;
@@ -126,6 +127,8 @@ static power_mode_t pwrModeCalc() {
         return PWR_ACTIVE;
     if (menuIsWifi())
         return PWR_ACTIVE;
+    if (!wrkEmpty())
+        return PWR_ACTIVE;
     
     if (trkRunning())
         return PWR_PASSIVE;
@@ -189,6 +192,11 @@ void pwrRun(void (*run)()) {
             break;
             
         case PWR_ACTIVE:
+            {
+                uint64_t u1 = utm_diff(u);
+                if (u1 < 90000)
+                    wrkProcess((100000-u1) / 1000);
+            }
             u = utm_diff(u);
             if (u < 99000)
                 delay((100000-u) / 1000);

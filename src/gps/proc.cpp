@@ -2,6 +2,8 @@
 #include "proc.h"
 #include "../log.h"
 #include "../clock.h"
+#include "../core/worker.h"
+#include "../core/workerkey.h"
 
 // будем использовать стандартный экземпляр класса HardwareSerial, 
 // т.к. он и так в системе уже есть и память под него выделена
@@ -16,6 +18,228 @@ static gps_data_t data = { 0 };
 
 static bool direct = false;
 static gps_state_t state = GPS_STATE_OFF;
+
+/* ------------------------------------------------------------------------------------------- *
+ *  GPS-инициализация
+ *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
+ * ------------------------------------------------------------------------------------------- */
+class WorkerGpsInit : public WorkerProc
+{
+    private:
+        enum {
+            BoudSet,
+            BoudChk,
+            CfgRate,
+            CfgMRate,
+            CfgNav,
+            CfgRst
+        };
+        
+        uint8_t m_op;
+
+        bool m_cnfwait;
+        uint8_t m_cnfcnt;
+        
+        const struct {
+        	uint8_t  portID;       // Port identifier number
+        	uint8_t  reserved0;    // Reserved
+        	uint16_t txReady;      // TX ready pin configuration
+        	uint32_t mode;         // UART mode
+        	uint32_t baudRate;     // Baud rate (bits/sec)
+        	uint16_t inProtoMask;  // Input protocols
+        	uint16_t outProtoMask; // Output protocols
+        	uint16_t flags;        // Flags
+        	uint16_t reserved5;    // Always set to zero
+        } cfg_prt =
+    	{
+    		.portID       = 1,      // UART 1
+    		.reserved0    = 0,      // Reserved
+    		.txReady      = 0,      // no TX ready
+    		.mode         = 0x08d0, // 8N1
+    		.baudRate     = 34800,  // Baudrate in bits/second
+    		.inProtoMask  = 0x0001, // UBX protocol
+    		.outProtoMask = 0x0001, // UBX protocol
+    		.flags        = 0,      // Flags bit mask
+    		.reserved5    = 0       // Reserved, set to 0
+    	};
+        
+        const ubx_cfg_rate_t cfg_rate[11] = {
+    		{ UBX_NMEA, UBX_NMEA_GPGGA,     0 },
+    		{ UBX_NMEA, UBX_NMEA_GPGLL,     0 },
+    		{ UBX_NMEA, UBX_NMEA_GPGSA,     0 },
+    		{ UBX_NMEA, UBX_NMEA_GPGSV,     0 },
+    		{ UBX_NMEA, UBX_NMEA_GPRMC,     0 },
+    		{ UBX_NMEA, UBX_NMEA_GPVTG,     0 },
+        
+    		{ UBX_NAV,  UBX_NAV_POSLLH,     1 },
+    		{ UBX_NAV,  UBX_NAV_VELNED,     1 },
+    		{ UBX_NAV,  UBX_NAV_TIMEUTC,    1 },
+        
+            { UBX_NAV,  UBX_NAV_SOL,        1 },
+            { UBX_NAV,  UBX_NAV_PVT,        1 }
+        };
+        
+        const ubx_cfg_rate_t *m_rateit;
+
+        const struct {
+        	uint16_t measRate;  // Measurement rate             (ms)
+        	uint16_t navRate;   // Nagivation rate, in number 
+        	                       //   of measurement cycles
+        	uint16_t timeRef;   // Alignment to reference time:
+        	                       //   0 = UTC time; 1 = GPS time
+        } cfg_mrate = {
+    		.measRate   = 200,      // Measurement rate (ms)
+    		.navRate    = 1,        // Navigation rate (cycles)
+    		.timeRef    = 0         // UTC time
+    	};
+	
+        const struct {
+        	uint16_t mask;              // Only masked parameters will be applied
+        	uint8_t  dynModel;          // Dynamic platform model
+        	uint8_t  fixMode;           // Position fixing mode
+        	int32_t  fixedAlt;          // Fixed altitude (MSL) for 2D mode       (m)
+        	uint32_t fixedAltVar;       // Fixed altitude variance for 2D mode    (m^2)
+        	int8_t   minElev;           // Minimum elevation for satellite        (deg)
+        	uint8_t  drLimit;           // Maximum time to perform dead reckoning (s)
+        	uint16_t pDop;              // Position DOP mask
+        	uint16_t tDop;              // Time DOP mask
+        	uint16_t pAcc;              // Position accuracy mask                 (m)
+        	uint16_t tAcc;              // Time accuracy mask                     (m)
+        	uint8_t  staticHoldThresh;  // Static hold threshold                  (cm/s)
+        	uint8_t  res1;              // Reserved, set to 0
+        	uint32_t res2;              // Reserved, set to 0
+        	uint32_t res3;              // Reserved, set to 0
+        	uint32_t res4;              // Reserved, set to 0
+        } cfg_nav5 = {
+    		.mask       = 0x0001,       // Apply dynamic model settings
+    		.dynModel   = 7             // Airborne with < 1 g acceleration
+    	};
+    
+        const struct {
+        	uint16_t navBbrMask; // BBR sections to clear
+        	uint8_t  resetMode;  // Reset type
+        	uint8_t  res;        // Reserved
+        } cfg_rst =	{
+    		.navBbrMask = 0x0000,   // Hot start
+    		.resetMode  = 0x09      // Controlled GPS start
+    	};
+    
+    public:
+        void begin() {
+            m_op = BoudSet;
+            m_cnfwait = false;
+            m_cnfcnt = 0;
+            m_rateit = cfg_rate;
+            state = GPS_STATE_INIT;
+        }
+        
+        state_t errsnd() {
+            CONSOLE("GPS config-send (op: %d) fail", m_op);
+            state = GPS_STATE_FAIL;
+            return STATE_END;
+        }
+        
+        state_t tocmdwait() {
+            m_cnfwait = true;
+            m_cnfcnt = 0;
+            return STATE_RUN;
+        }
+        
+        state_t process() {
+            if (m_cnfwait) {
+                // Ожидание подтверждения от предыдущей команды
+                delay(5);
+                if (!gps.tick()) {
+                    CONSOLE("Wait cmd-confirm fail");
+                    state = GPS_STATE_FAIL;
+                    return STATE_END;
+                }
+                if (gps.cnfneed() > 0) {
+                    // всё ещё ждём
+                    m_cnfcnt ++;
+                    if (m_cnfcnt > 50) {
+                        CONSOLE("Wait cmd-confirm (op: %d) timeout", m_op);
+                        state = GPS_STATE_FAIL;
+                        return STATE_END;
+                    }
+                    return STATE_RUN;
+                }
+                // Дождались подтверждения
+                //CONSOLE("Wait cmd-confirm (op: %d) ok after %d attempts", m_op, m_cnfcnt);
+                m_cnfwait = false;
+            }
+            
+            //CONSOLE("GPS-op: %d", m_op);
+            // Отправка очередной команды
+            switch (m_op) {
+                case BoudSet:
+                    CONSOLE("Set UART(gps) default speed 9600");
+                    ss.updateBaudRate(9600);
+        
+                    if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
+                        return errsnd();
+                    
+                    delay(20);
+                    
+                    m_op ++;
+                    return STATE_RUN;
+
+                case BoudChk:
+                    gps.cnfclear();
+                    gps.rcvclear();
+                    ss.flush();
+                    while (ss.available()) ss.read();
+            
+                    CONSOLE("Set UART(gps) speed %d", cfg_prt.baudRate);
+                    ss.updateBaudRate(cfg_prt.baudRate);
+                    
+                    delay(20);
+                    
+                    if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
+                        return errsnd();
+
+                    m_op ++;
+                    return tocmdwait();
+                
+                case CfgRate:
+                    if (!gps.send(UBX_CFG, UBX_CFG_MSG, *m_rateit))
+                        return errsnd();
+                    m_rateit++;
+                    if (m_rateit >= cfg_rate + sizeof(cfg_rate)/sizeof(ubx_cfg_rate_t))
+                        m_op ++;
+                    return tocmdwait();
+                
+                case CfgMRate:
+                    if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate))
+                        return errsnd();
+                    m_op ++;
+                    return tocmdwait();
+                
+                case CfgNav:
+                    if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5))
+                        return errsnd();
+                    m_op ++;
+                    return tocmdwait();
+                
+                case CfgRst:
+                    // В документации пишут, что на старых версиях прошивки подтверждение этой
+                    // команды приходит нестабильно, а в новых - специально убрали подтверждение
+                    // этой команды, т.к. всё равно, до перезагрузки устройства это подтверждение
+                    // не успевает отправиться
+                    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst))
+                        return errsnd();
+                    gps.cnfclear();
+    
+                    CONSOLE("GPS-UART config ok");
+                    state = GPS_STATE_OK;
+                    return STATE_END;
+            }
+            
+            CONSOLE("GPS init unknown error");
+            state = GPS_STATE_FAIL;
+            return STATE_END;
+        }
+};
 
 /* ------------------------------------------------------------------------------------------- *
  *  GPS-получение данных
@@ -232,68 +456,6 @@ static bool gpsCmdConfirm() {
     return false;
 }
 
-static bool gpsUartSpeed(uint32_t baudRate) {
-    // инициируем uart-порт GPS-приёмника
-    ss.begin(9600);
-    ss.setRxBufferSize(512); // По умолчанию = 256 и этого не хватает, чтобы принять сразу все присылаемые от GPS данные за один цикл
-    
-    char cnt = 0;
-    
-    while (cnt < 5) {
-        cnt++;
-        
-        CONSOLE("Set UART(gps) default speed 9600 [try #%d]", cnt);
-        ss.updateBaudRate(9600);
-        
-        struct
-        {
-        	uint8_t  portID;       // Port identifier number
-        	uint8_t  reserved0;    // Reserved
-        	uint16_t txReady;      // TX ready pin configuration
-        	uint32_t mode;         // UART mode
-        	uint32_t baudRate;     // Baud rate (bits/sec)
-        	uint16_t inProtoMask;  // Input protocols
-        	uint16_t outProtoMask; // Output protocols
-        	uint16_t flags;        // Flags
-        	uint16_t reserved5;    // Always set to zero
-        } cfg_prt =
-    	{
-    		.portID       = 1,      // UART 1
-    		.reserved0    = 0,      // Reserved
-    		.txReady      = 0,      // no TX ready
-    		.mode         = 0x08d0, // 8N1
-    		.baudRate     = baudRate,  // Baudrate in bits/second
-    		.inProtoMask  = 0x0001, // UBX protocol
-    		.outProtoMask = 0x0001, // UBX protocol
-    		.flags        = 0,      // Flags bit mask
-    		.reserved5    = 0       // Reserved, set to 0
-    	};
-        
-        if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
-            return false;
-        
-        delay(10);
-        
-        gps.cnfclear();
-        gps.rcvclear();
-        ss.flush();
-        while (ss.available()) ss.read();
-        
-        CONSOLE("Set UART(gps) speed %d", baudRate);
-        ss.updateBaudRate(baudRate);
-        delay(10);
-        
-        if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
-            return false;
-        
-        if (gpsCmdConfirm())
-            return true;
-    }
-    
-    return false;
-}
-
-
 #ifdef FWVER_DEBUG
 static void gpsRecvGnss(UbloxGpsProto &gps) {
     struct {
@@ -349,12 +511,10 @@ static void gpsRecvGnss(UbloxGpsProto &gps) {
 }
 #endif // FWVER_DEBUG
 
-static bool gpsInitCmd() {
-    if (!gpsUartSpeed(34800)) {
-        CONSOLE("Can't set GPS-UART baudRate");
-        return false;
-    }
-    CONSOLE("GPS-UART baudRate init ok");
+void gpsInit() {
+    // инициируем uart-порт GPS-приёмника
+    ss.begin(9600);
+    ss.setRxBufferSize(512); // По умолчанию = 256 и этого не хватает, чтобы принять сразу все присылаемые от GPS данные за один цикл
     
     gps.hndclear();
     gps.hndadd(UBX_NAV,  UBX_NAV_POSLLH,     gpsRecvPosllh);
@@ -363,98 +523,7 @@ static bool gpsInitCmd() {
     gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
     gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
     
-    ubx_cfg_rate_t cfg_rate[] = {
-		{ UBX_NMEA, UBX_NMEA_GPGGA,     0 },
-		{ UBX_NMEA, UBX_NMEA_GPGLL,     0 },
-		{ UBX_NMEA, UBX_NMEA_GPGSA,     0 },
-		{ UBX_NMEA, UBX_NMEA_GPGSV,     0 },
-		{ UBX_NMEA, UBX_NMEA_GPRMC,     0 },
-		{ UBX_NMEA, UBX_NMEA_GPVTG,     0 },
-        
-		{ UBX_NAV,  UBX_NAV_POSLLH,     1 },
-		{ UBX_NAV,  UBX_NAV_VELNED,     1 },
-		{ UBX_NAV,  UBX_NAV_TIMEUTC,    1 },
-        
-        { UBX_NAV,  UBX_NAV_SOL,        1 },
-        { UBX_NAV,  UBX_NAV_PVT,        1 }
-    };
-    
-    for (auto r : cfg_rate)
-        if (!gps.send(UBX_CFG, UBX_CFG_MSG, r) || !gpsCmdConfirm())
-            return false;
-
-    struct {
-    	uint16_t measRate;  // Measurement rate             (ms)
-    	uint16_t navRate;   // Nagivation rate, in number 
-    	                       //   of measurement cycles
-    	uint16_t timeRef;   // Alignment to reference time:
-    	                       //   0 = UTC time; 1 = GPS time
-    } cfg_mrate = {
-		.measRate   = 200,      // Measurement rate (ms)
-		.navRate    = 1,        // Navigation rate (cycles)
-		.timeRef    = 0         // UTC time
-	};
-    if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate) || !gpsCmdConfirm())
-        return false;
-	
-    struct {
-    	uint16_t mask;              // Only masked parameters will be applied
-    	uint8_t  dynModel;          // Dynamic platform model
-    	uint8_t  fixMode;           // Position fixing mode
-    	int32_t  fixedAlt;          // Fixed altitude (MSL) for 2D mode       (m)
-    	uint32_t fixedAltVar;       // Fixed altitude variance for 2D mode    (m^2)
-    	int8_t   minElev;           // Minimum elevation for satellite        (deg)
-    	uint8_t  drLimit;           // Maximum time to perform dead reckoning (s)
-    	uint16_t pDop;              // Position DOP mask
-    	uint16_t tDop;              // Time DOP mask
-    	uint16_t pAcc;              // Position accuracy mask                 (m)
-    	uint16_t tAcc;              // Time accuracy mask                     (m)
-    	uint8_t  staticHoldThresh;  // Static hold threshold                  (cm/s)
-    	uint8_t  res1;              // Reserved, set to 0
-    	uint32_t res2;              // Reserved, set to 0
-    	uint32_t res3;              // Reserved, set to 0
-    	uint32_t res4;              // Reserved, set to 0
-    } cfg_nav5 = {
-		.mask       = 0x0001,       // Apply dynamic model settings
-		.dynModel   = 7             // Airborne with < 1 g acceleration
-	};
-    if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5) || !gpsCmdConfirm())
-        return false;
-
-#ifdef FWVER_DEBUG
-    gps.get(UBX_CFG, UBX_CFG_GNSS, gpsRecvGnss);
-    gpsCmdConfirm();
-#endif // FWVER_DEBUG
-    
-    struct {
-    	uint16_t navBbrMask; // BBR sections to clear
-    	uint8_t  resetMode;  // Reset type
-    	uint8_t  res;        // Reserved
-    } cfg_rst =	{
-		.navBbrMask = 0x0000,   // Hot start
-		.resetMode  = 0x09      // Controlled GPS start
-	};
-    // В документации пишут, что на старых версиях прошивки подтверждение этой
-    // команды приходит нестабильно, а в новых - специально убрали подтверждение
-    // этой команды, т.к. всё равно, до перезагрузки устройства это подтверждение
-    // не успевает отправиться
-    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst)) // || !gpsCmdConfirm())
-        return false;
-    gps.cnfclear();
-    
-    CONSOLE("GPS-UART config ok");
-    
-    return true;
-}
-
-void gpsInit() {
-    state = GPS_STATE_INIT;
-    if (gpsInitCmd())
-        state = GPS_STATE_OK;
-    else {
-        state = GPS_STATE_FAIL;
-        CONSOLE("GPS init fail");
-    }
+    wrkAdd(WORKER_GPS_INIT, new WorkerGpsInit());
 }
 
 static void gpsDirectToSerial(uint8_t c) {
