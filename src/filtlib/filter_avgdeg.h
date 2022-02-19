@@ -30,6 +30,7 @@ public:
         m_data(size)
     { }
 
+    bool isvalid()          const { return m_data.size() > 0; }
     const_reference value() const { return m_val; }
     const_reference speed() const { return m_speed; }
 

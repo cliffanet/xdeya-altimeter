@@ -30,6 +30,7 @@ public:
         m_data(size)
     { }
 
+    bool isvalid()          const { return m_data.size() > 0; }
     const_reference value() const { return m_val; }
     const_reference speed() const { return m_ka; }
     const time_type & tm()  const { return m_tm; }
@@ -65,8 +66,14 @@ public:
         }
 
         m_tm = x;
-        m_ka = (sxy * m_data.size() - (sx * sy)) / (sx2 * m_data.size() - (sx * sx));
-        m_kb = (sy - (m_ka * sx)) / m_data.size();
+        if (m_tm > 0) {
+            m_ka = (sxy * m_data.size() - (sx * sy)) / (sx2 * m_data.size() - (sx * sx));
+            m_kb = (sy - (m_ka * sx)) / m_data.size();
+        }
+        else {
+            m_ka = 0;
+            m_kb = _val;
+        }
         m_val = m_ka * m_tm + m_kb;
     }
 };

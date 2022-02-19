@@ -3,7 +3,6 @@
 */
 
 #include "worker.h"
-#include "../log.h"
 
 #include <Arduino.h> // millis()
 

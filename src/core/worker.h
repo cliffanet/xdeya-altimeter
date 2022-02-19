@@ -35,6 +35,8 @@ class WorkerProc {
 void wrkAdd(WorkerProc::key_t key, WorkerProc *proc, bool autodel = true);
 void wrkDel(WorkerProc::key_t key);
 bool wrkEmpty();
+
+// исполнение всех существующих воркеров в течение времени tmmax (мс)
 void wrkProcess(uint32_t tmmax = 50);
 
 #endif // _core_worker_H
