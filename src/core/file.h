@@ -15,6 +15,8 @@ void fileName(char *fname, size_t sz, const char *fname_P, bool external = false
 bool fileExists(const char *fname_P, bool external = false);
 bool fileRemove(const char *fname_P, bool external = false);
 
+void fileProcess();
+
 /* ------------------------------------------------------------------------------------------- *
  *  FileMy - базовый класс для файлов с множественными чтением/записью
  * ------------------------------------------------------------------------------------------- */
@@ -28,10 +30,14 @@ class FileMy {
         } mode_t;
         
         FileMy();
+        FileMy(const FileMy &f);
+        FileMy(const char *fname_P, mode_t mode = MODE_READ, bool external = false);
         bool open(const char *fname_P, mode_t mode = MODE_READ, bool external = false);
         bool close();
         bool isvalid();
         size_t available() const;
+        uint8_t read();
+        bool seekback(size_t sz = 1);
         size_t read(uint8_t *data, size_t sz);
         size_t write(const uint8_t *data, size_t sz);
         size_t size() const;
@@ -42,9 +48,5 @@ class FileMy {
         uint8_t m_num;
         uint32_t m_id;
 };
-
-/* ------------------------------------------------------------------------------------------- *
- *  FileTxt - работа с текстовыми файлами
- * ------------------------------------------------------------------------------------------- */
 
 #endif // _core_file_H

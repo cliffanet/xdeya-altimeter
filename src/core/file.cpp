@@ -1,5 +1,6 @@
 
 #include "file.h"
+#include "../log.h"
 
 #include "FS.h"
 #include <SPIFFS.h>
@@ -32,6 +33,7 @@ static bool file_remove(const char *fname, bool external = false) {
 }
 
 static File file_open(const char *fname, FileMy::mode_t mode, bool external) {
+    CONSOLE("fname: %s", fname);
     if (external)
         return file_open(fname, mode, false);
     
@@ -119,6 +121,23 @@ static file_hnd_t *fhget(uint8_t num, uint32_t id) {
     return &f;
 }
 
+void fileProcess() {
+    for (auto &f : fhall) {
+        if (f.id == 0)
+            continue;
+        
+        if (f.io > 0)
+            f.io --;
+        if (f.io > 0)
+            continue;
+        
+        CONSOLE("file[globid=%d] timeout: %s", f.id, f.fh.name());
+        f.fh.close();
+        f.id = 0;
+        f.io = 0;
+    }
+}
+
 /* ------------------------------------------------------------------------------------------- *
  *  FileMy - базовый класс для файлов с множественными чтением/записью
  * ------------------------------------------------------------------------------------------- */
@@ -127,6 +146,16 @@ FileMy::FileMy() :
     m_id(0)
 {
     
+}
+
+FileMy::FileMy(const FileMy &f) {
+    *this = f;
+}
+
+FileMy::FileMy(const char *fname_P, mode_t mode, bool external) :
+    FileMy()
+{
+    open(fname_P, mode, external);
 }
 
 bool FileMy::open(const char *fname_P, mode_t mode, bool external) {
@@ -138,7 +167,7 @@ bool FileMy::open(const char *fname_P, mode_t mode, bool external) {
         return false;
     
     auto &f = fhall[m_num-1];
-    f.fh = file_open(fname_P, mode, external);
+    f.fh = file_open_P(fname_P, mode, external);
     if (!f.fh) {
         m_num = 0;
         return false;
@@ -148,6 +177,8 @@ bool FileMy::open(const char *fname_P, mode_t mode, bool external) {
     m_id = globid;
     f.id = globid;
     f.io = FILE_IO_TIMEOUT;
+    
+    CONSOLE("num: %d, globid: %d, mode: %d, ok: %d", m_num, globid, mode, f.fh ? 1 : 0);
     
     return true;
 }
@@ -170,15 +201,41 @@ bool FileMy::isvalid() {
 size_t FileMy::available() const {
     auto *f = fhget(m_num, m_id);
     if (f == NULL)
-        return false;
+        return -1;
     
     return f->fh.available();
+}
+
+uint8_t FileMy::read() {
+    auto *f = fhget(m_num, m_id);
+    if (f == NULL)
+        return 0;
+    
+    f->io = FILE_IO_TIMEOUT;
+    
+    return f->fh.read();
+}
+
+bool FileMy::seekback(size_t sz) {
+    auto *f = fhget(m_num, m_id);
+    if (f == NULL)
+        return false;
+    
+    f->io = FILE_IO_TIMEOUT;
+    
+    size_t pos = f->fh.position();
+    if (sz > pos)
+        sz = pos;
+    pos -= sz;
+    return f->fh.seek(pos, SeekSet);
 }
 
 size_t FileMy::read(uint8_t *data, size_t sz) {
     auto *f = fhget(m_num, m_id);
     if (f == NULL)
-        return false;
+        return -1;
+    
+    f->io = FILE_IO_TIMEOUT;
     
     return f->fh.read(data, sz);
 }
@@ -186,7 +243,9 @@ size_t FileMy::read(uint8_t *data, size_t sz) {
 size_t FileMy::write(const uint8_t *data, size_t sz) {
     auto *f = fhget(m_num, m_id);
     if (f == NULL)
-        return false;
+        return -1;
+    
+    f->io = FILE_IO_TIMEOUT;
     
     return f->fh.write(data, sz);
 }
@@ -194,7 +253,7 @@ size_t FileMy::write(const uint8_t *data, size_t sz) {
 size_t FileMy::size() const {
     auto *f = fhget(m_num, m_id);
     if (f == NULL)
-        return false;
+        return -1;
     
     return f->fh.size();
 }

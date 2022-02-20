@@ -7,8 +7,8 @@
 #include "srv.h"
 #include "../cfg/main.h"
 #include "../cfg/point.h"
+#include "../core/filetxt.h"
 #include "../file/track.h"
-#include "../file/wifi.h"
 #include "../file/veravail.h"
 
 #include <lwip/inet.h>      // htonl
@@ -395,7 +395,9 @@ bool sendTrack(logchs_t _cks) {
 }
 
 bool sendDataFin() {
-    uint32_t ckswifi = wifiPassChkSum();
+    FileTxt f(PSTR(WIFIPASS_FILE));
+    uint32_t ckswifi = f.chksum();
+    f.close();
     uint32_t cksver = verAvailChkSum();
     
     struct __attribute__((__packed__)) {

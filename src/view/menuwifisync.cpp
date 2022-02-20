@@ -4,6 +4,7 @@
 
 #include "../log.h"
 #include "../file/wifi.h"
+#include "../core/filetxt.h"
 #include "../file/veravail.h"
 #include "../cfg/webjoin.h"
 #include "../cfg/point.h"
@@ -15,6 +16,54 @@
 #include <Update.h>         // Обновление прошивки
 #include <vector>
 #include <lwip/inet.h>      // htonl
+
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Поиск пароля по имени wifi-сети
+ * ------------------------------------------------------------------------------------------- */
+static bool wifiPassRemove() {
+    if (!fileExists(PSTR(WIFIPASS_FILE)))
+        return true;
+    return fileRemove(PSTR(WIFIPASS_FILE));
+}
+static bool wifiPassFind(const char *ssid, char *pass = NULL) {
+    size_t len = strlen(ssid);
+    char ssid1[len+1];
+    FileTxt f(PSTR(WIFIPASS_FILE));
+    
+    CONSOLE("need ssid: %s (avail: %d)", ssid, f.available());
+    
+    if (!f)
+        return false;
+    
+    while (f.available() > 0) {
+        if (!f.find_param(PSTR("ssid")))
+            break;
+        f.read_line(ssid1, sizeof(ssid1));
+        if (strcmp(ssid1, ssid) != 0)
+            continue;
+        
+        char param[30];
+        f.read_param(param, sizeof(param));
+        if (strcmp_P(param, PSTR("pass")) == 0)
+            f.read_line(pass, 33);
+        else
+        if (pass != NULL)
+            *pass = 0;
+        if (pass != NULL)
+            CONSOLE("found pass: %s", pass);
+        else
+            CONSOLE("founded");
+        f.close();
+        return true;
+    }
+    
+    CONSOLE("EOF");
+
+    f.close();
+    return false;
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  ViewNetSync - процесс синхронизации с сервером
@@ -104,6 +153,7 @@ class ViewNetSync : public ViewBase {
         // завершение всего процесса, но выход не сразу, а через несколько сек,
         // чтобы прочитать сообщение
         void fin(const char *_title) {
+            f.close();
             srvStop();
             wifiStop();
             next(_title, NS_EXIT, 70);
@@ -111,6 +161,7 @@ class ViewNetSync : public ViewBase {
         
         // завершение всего процесса синхронизации с мнгновенным переходом в главный экран
         void close() {
+            f.close();
             srvStop();
             wifiStop();
             netsyncProgMax(0);
@@ -331,8 +382,12 @@ class ViewNetSync : public ViewBase {
     
                         switch (cmd) {
                             case 0x41: // wifi beg
-                                if (!wifiPassClear()) {
+                                if (!wifiPassRemove()) {
                                     ERR(PASSCLEAR);
+                                    return;
+                                }
+                                if (!f.open(PSTR(WIFIPASS_FILE), FileMy::MODE_APPEND)) {
+                                    ERR(PASSCREATE);
                                     return;
                                 }
                                 NEXT(RCVPASS, NS_RCV_WIFI_PASS, 30);
@@ -378,15 +433,24 @@ class ViewNetSync : public ViewBase {
                                 case 0x42: // wifi net
                                     ntostrs(ssid, sizeof(ssid), d.s, &snext);
                                     ntostrs(pass, sizeof(pass), snext);
-                                    if (!wifiPassAdd(ssid, pass)) {
-                                        ERR(WIFIADD);
+                                    CONSOLE("add wifi: {%s}, {%s}", ssid, pass);
+                                    if (
+                                            !FileTxt(f).print_param(PSTR("ssid"), ssid) ||
+                                            !FileTxt(f).print_param(PSTR("pass"), pass)
+                                        ) {
+                                        ERR(PASSADD);
                                         return;
                                     }
                                     updTimeout();
                                     break;
             
                                 case 0x43: // wifi end
-                                    cks = wifiPassChkSum();
+                                    if (!f.open(PSTR(WIFIPASS_FILE))) {
+                                        ERR(PASSADD);
+                                        return;
+                                    }
+                                    cks = FileTxt(f).chksum();
+                                    f.close();
                                     cks = htonl(cks);
                                     NEXT(FIN, NS_SERVER_DATA_CONFIRM, 30);
                                     srvSend(0x4a, cks); // wifiok
@@ -642,6 +706,7 @@ class ViewNetSync : public ViewBase {
         uint16_t joinnum = 0;
         netsync_state_t state = NS_NONE;
         bool fwupd = false;
+        FileMy f;
 };
 ViewNetSync vNetSync;
 

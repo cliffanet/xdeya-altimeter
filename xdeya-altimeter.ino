@@ -4,6 +4,7 @@
 #include "src/log.h"
 #include "src/power.h"
 #include "src/clock.h"
+#include "src/core/file.h"
 #include "src/view/main.h"
 #include "src/gps/proc.h"
 #include "src/gps/compass.h"
@@ -74,6 +75,7 @@ void loop() {
         jmpProcess();
         trkProcess();
         viewProcess();
+        fileProcess();
     });
     pwrRun([]() {
         clockProcess();
