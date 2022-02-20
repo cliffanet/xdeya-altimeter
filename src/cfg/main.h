@@ -65,7 +65,7 @@ typedef struct __attribute__((__packed__)) {
 template <class T>
 class Config {
     public:
-        Config(const char *_fname, uint8_t _cfgid, uint8_t _ver = 1);
+        Config(const char *_fname_P, uint8_t _cfgid, uint8_t _ver = 1);
         bool load();
         bool save(bool force = false);
         void reset();
@@ -78,7 +78,7 @@ class Config {
         bool modifed() { return _modifed; }
     
     protected:
-        char fname[10];
+        const char *fname_P;
         uint8_t cfgid;
         uint8_t ver;
         T data;

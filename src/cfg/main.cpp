@@ -5,7 +5,7 @@
 #include "jump.h"
 #include "webjoin.h"
 #include "../gps/proc.h"
-#include "../file/log.h"
+#include "../core/filebin.h"
 #include "../view/base.h"
 
 #include <FS.h>
@@ -25,17 +25,19 @@ template class Config<cfg_webjoin_t>;
  * ------------------------------------------------------------------------------------------- */
 
 template <typename T>
-Config<T>::Config(const char *_fname, uint8_t _cfgid, uint8_t _ver) {
-    fname[0] = '/';
-    strncpy_P(fname+1, _fname, sizeof(fname)-1);
-    fname[sizeof(fname)-1] = '\0';
-    cfgid = _cfgid;
-    ver = _ver;
+Config<T>::Config(const char *_fname_P, uint8_t _cfgid, uint8_t _ver) :
+    fname_P(_fname_P),
+    cfgid(_cfgid),
+    ver(_ver)
+{
     reset();
 }
 
 template <typename T>
 bool Config<T>::load() {
+    char fname[30];
+    fileName(fname, sizeof(fname), fname_P);
+    
     if (!SPIFFS.exists(fname)) {
         reset();
         _modifed = false;
@@ -74,7 +76,7 @@ bool Config<T>::load() {
     if (ver1 < ver) {
         CONSOLE("config %s version earler: ver=%d", fname, ver1);
         uint8_t buf[sizeof(T)*2];
-        if (!fread(fh, buf, sizeof(buf))) {
+        if (!recBinRead(fh, buf, sizeof(buf))) {
             fh.close();
             return false;
         }
@@ -82,7 +84,7 @@ bool Config<T>::load() {
     }
     else {
         T d;
-        if (!fread(fh, d, false)) {
+        if (!recBinRead(fh, d, false)) {
             fh.close();
             return false;
         }
@@ -99,41 +101,38 @@ bool Config<T>::load() {
 
 template <typename T>
 bool Config<T>::save(bool force) {
+    char fname[30];
+    fileName(fname, sizeof(fname), fname_P);
+    
     if (!force && !_modifed) {
         CONSOLE("config %s not changed", fname);
         return true;
     }
 
-    viewIntDis();
     if (SPIFFS.exists(fname) && !SPIFFS.remove(fname)) {
-        viewIntEn();
+        CONSOLE("config %s remove fail", fname);
         return false;
     }
     
     File fh = SPIFFS.open(fname, FILE_WRITE);
-    if (!fh) {
-        viewIntEn();
+    if (!fh)
         return false;
-    }
 
-    uint8_t h[2] = { CFG_MGC, (cfgid << 5) | (ver & 0x1f) };
+    uint8_t h[2] = { CFG_MGC, static_cast<uint8_t>((cfgid << 5) | (ver & 0x1f)) };
     
     size_t sz = fh.write(h, 2);
     if (sz != 2) {
         CONSOLE("config %s header fail: %d of %d", fname, sz, 2);
         fh.close();
-        viewIntEn();
         return false;
     }
     
-    if (!fwrite(fh, data)) {
+    if (!recBinWrite(fh, data)) {
         fh.close();
-        viewIntEn();
         return false;
     }
     
     fh.close();
-    viewIntEn();
     
     CONSOLE("config %s saved OK", fname);
     
@@ -205,21 +204,17 @@ bool cfgFactory() {
     */
     SPIFFS.end();
     CONSOLE("SPIFFS Unmount ok");
-    viewIntDis();
     if (!SPIFFS.format()) {
         CONSOLE("SPIFFS Format Failed");
-        viewIntEn();
         return false;
     }
     CONSOLE("SPIFFS Format ok");
 
     if(!SPIFFS.begin()) {
         CONSOLE("SPIFFS Mount Failed");
-        viewIntEn();
         return false;
     }
     CONSOLE("SPIFFS begin ok");
-    viewIntEn();
     
     return cfgLoad(true);
 }

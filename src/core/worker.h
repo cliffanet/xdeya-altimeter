@@ -33,6 +33,7 @@ class WorkerProc {
 };
 
 void wrkAdd(WorkerProc::key_t key, WorkerProc *proc, bool autodel = true);
+WorkerProc::key_t wrkAddRand(WorkerProc::key_t key_min, WorkerProc::key_t key_max, WorkerProc *proc, bool autodel = true);
 void wrkDel(WorkerProc::key_t key);
 bool wrkEmpty();
 

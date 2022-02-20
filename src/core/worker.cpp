@@ -20,6 +20,16 @@ void wrkAdd(WorkerProc::key_t key, WorkerProc *proc, bool autodel) {
     }
 }
 
+WorkerProc::key_t wrkAddRand(WorkerProc::key_t key_min, WorkerProc::key_t key_max, WorkerProc *proc, bool autodel) {
+    for (auto key = key_min; key <= key_max; key++)
+        if (wrkall.find(key) == wrkall.end()) {
+            wrkAdd(key, proc, autodel);
+            return key;
+        }
+    
+    return 0;
+}
+
 static void wrkDel(worker_list_t::iterator it) {
     if (it == wrkall.end())
         return;

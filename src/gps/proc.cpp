@@ -2,8 +2,7 @@
 #include "proc.h"
 #include "../log.h"
 #include "../clock.h"
-#include "../core/worker.h"
-#include "../core/workerkey.h"
+#include "../core/workerloc.h"
 
 // будем использовать стандартный экземпляр класса HardwareSerial, 
 // т.к. он и так в системе уже есть и память под него выделена
