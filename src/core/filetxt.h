@@ -41,6 +41,9 @@ class FileTxt : public FileMy {
         bool print_param(const char *name_P, const char *str);
         
         uint32_t chksum();
+        
+        size_t line_count();
+        bool seek2line(size_t num);
 };
 
 #endif // _core_filetxt_H

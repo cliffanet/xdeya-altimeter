@@ -15,8 +15,7 @@ static char pathToFileName_S[15];
 const char * pathToFileName_P(const char * path) {
     int l = strlen_P(path);
     char s[l+1];
-    strncpy_P(s, path, sizeof(s));
-    s[l] = '\0';
+    strcpy_P(s, path);
     strncpy(pathToFileName_S, pathToFileName(s), sizeof(pathToFileName_S));
     pathToFileName_S[sizeof(pathToFileName_S) - 1] = '\0';
     return pathToFileName_S;
@@ -48,7 +47,7 @@ void conslog_P(const char *s, ...) {
 
     strcpy_P(str, s);
     
-    va_start (ap, str);
+    va_start (ap, s);
     vtxtlog(str, ap);
     va_end (ap);
 }

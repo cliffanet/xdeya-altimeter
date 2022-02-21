@@ -148,3 +148,55 @@ uint32_t FileTxt::chksum() {
     
     return cks.full();
 }
+
+size_t FileTxt::line_count() {
+    size_t count = available() > 0 ? 1 : 0;
+    uint8_t buf[256];
+    
+    while (available() > 0) {
+        auto sz = read(buf, sizeof(buf));
+        if (sz <= 0)
+            return 0;
+        
+        for (auto &d : buf) {
+            sz --;
+            if ((d == LINEEND) && ((sz > 0) || (available() > 0)))
+                count++;
+            
+            if (sz < 1)
+                break;
+        }
+    }
+    
+    CONSOLE("count: %d", count);
+    
+    return count;
+}
+
+bool FileTxt::seek2line(size_t num) {
+    CONSOLE("find line #%d", num);
+    
+    while ((num > 0) && (available() > 0)) {
+        uint8_t buf[256];
+        auto sz = read(buf, sizeof(buf));
+        if (sz <= 0)
+            return 0;
+        
+        for (auto &d : buf) {
+            sz --;
+            if (d == LINEEND)
+                num--;
+            
+            if ((sz < 1) || (num < 1))
+                break;
+        }
+        
+        if ((num == 0) && (sz > 0))
+            seekback(sz);
+    }
+    
+    if (num != 0)
+        return false;
+    
+    return true;
+}

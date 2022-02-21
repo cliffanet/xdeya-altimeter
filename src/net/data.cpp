@@ -9,7 +9,6 @@
 #include "../cfg/point.h"
 #include "../core/filetxt.h"
 #include "../file/track.h"
-#include "../file/veravail.h"
 
 #include <lwip/inet.h>      // htonl
 
@@ -398,7 +397,9 @@ bool sendDataFin() {
     FileTxt f(PSTR(WIFIPASS_FILE));
     uint32_t ckswifi = f.chksum();
     f.close();
-    uint32_t cksver = verAvailChkSum();
+    f.open(PSTR(VERAVAIL_FILE));
+    uint32_t cksver = f.chksum();
+    f.close();
     
     struct __attribute__((__packed__)) {
         uint32_t    ckswifi;
@@ -421,7 +422,12 @@ bool sendDataFin() {
     };
     
     if (cfg.d().fwupdind > 0) {
-        verAvailGet(cfg.d().fwupdind, d.fwupdver);
+        FileTxt f(PSTR(VERAVAIL_FILE));
+        if (!f.seek2line(cfg.d().fwupdind-1) ||
+            (f.read_line(d.fwupdver, sizeof(d.fwupdver)) < 1))
+            d.fwupdver[0] = '\0';
+        f.close();
+        CONSOLE("update ver: %s", d.fwupdver);
     }
     
     return srvSend(0x3f, d); // datafin

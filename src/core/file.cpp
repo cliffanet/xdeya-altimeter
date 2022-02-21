@@ -226,6 +226,7 @@ bool FileMy::seekback(size_t sz) {
     size_t pos = f->fh.position();
     if (sz > pos)
         sz = pos;
+    CONSOLE("seek from %d to %d", pos, pos-sz);
     pos -= sz;
     return f->fh.seek(pos, SeekSet);
 }

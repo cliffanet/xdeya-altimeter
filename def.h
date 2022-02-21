@@ -65,4 +65,7 @@
 
 #define PI 3.1415926535897932384626433832795
 
+#define WIFIPASS_FILE   "wifi.txt"
+#define VERAVAIL_FILE   "veravail.txt"
+
 #endif // _def_H

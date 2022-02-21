@@ -12,7 +12,7 @@
 #include "../cfg/jump.h"
 #include "../jump/proc.h"
 #include "../file/track.h"
-#include "../file/veravail.h"
+#include "../core/filetxt.h"
 #include "../../def.h" // time/pwr
 
 
@@ -822,20 +822,28 @@ static const menu_el_t menufirmware[] {
         .showval = [] (char *txt) {
             if (cfg.d().fwupdind <= 0)
                 strcpy_P(txt, PTXT(MENU_FW_NOUPD));
-            else
-            if (!verAvailGet(cfg.d().fwupdind, txt))
-                *txt = '\0';
+            else {
+                FileTxt f(PSTR(VERAVAIL_FILE));
+                if (!f.seek2line(cfg.d().fwupdind-1) ||
+                    (f.read_line(txt, MENUSZ_VAL) < 1))
+                    *txt = '\0';
+                f.close();
+            }
         },
         .edit = [] (int val) {
+            FileTxt f(PSTR(VERAVAIL_FILE));
+            size_t count = f.line_count();
+            f.close();
+            
             if (val > 0) {
                 cfg.set().fwupdind --;
                 if (cfg.d().fwupdind < 0)
-                    cfg.set().fwupdind = verAvailCount();
+                    cfg.set().fwupdind = count;
             }
             else
             if (val < 0) {
                 cfg.set().fwupdind ++;
-                if (!verAvailGet(cfg.d().fwupdind))
+                if (cfg.d().fwupdind > count)
                     cfg.set().fwupdind = 0;
             }
         },

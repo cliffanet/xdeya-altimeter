@@ -3,9 +3,7 @@
 #include "main.h"
 
 #include "../log.h"
-#include "../file/wifi.h"
 #include "../core/filetxt.h"
-#include "../file/veravail.h"
 #include "../cfg/webjoin.h"
 #include "../cfg/point.h"
 #include "../cfg/jump.h"
@@ -63,6 +61,12 @@ static bool wifiPassFind(const char *ssid, char *pass = NULL) {
 
     f.close();
     return false;
+}
+
+static bool verAvailRemove() {
+    if (!fileExists(PSTR(VERAVAIL_FILE)))
+        return true;
+    return fileRemove(PSTR(VERAVAIL_FILE));
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -394,8 +398,12 @@ class ViewNetSync : public ViewBase {
                                 return;
                                 
                             case 0x44: // veravail beg
-                                if (!verAvailClear()) {
+                                if (!verAvailRemove()) {
                                     ERR(VERAVAILCLEAR);
+                                    return;
+                                }
+                                if (!f.open(PSTR(VERAVAIL_FILE), FileMy::MODE_APPEND)) {
+                                    ERR(VERAVAILCREATE);
                                     return;
                                 }
                                 NEXT(RCVFWVER, NS_RCV_VER_AVAIL, 30);
@@ -479,15 +487,21 @@ class ViewNetSync : public ViewBase {
                             switch (cmd) {
                                 case 0x45: // veravail item
                                     ntostrs(ver, sizeof(ver), s);
-                                    if (!verAvailAdd(ver)) {
-                                        ERR(VERAVAIL);
+                                    CONSOLE("add veravail: {%s}", ver);
+                                    if (!FileTxt(f).print_line(ver)) {
+                                        ERR(VERAVAILADD);
                                         return;
                                     }
                                     updTimeout();
                                     break;
             
                                 case 0x46: // veravail end
-                                    cks = verAvailChkSum();
+                                    if (!f.open(PSTR(VERAVAIL_FILE))) {
+                                        ERR(VERAVAILADD);
+                                        return;
+                                    }
+                                    cks = FileTxt(f).chksum();
+                                    f.close();
                                     cks = htonl(cks);
                                     NEXT(FIN, NS_SERVER_DATA_CONFIRM, 30);
                                     srvSend(0x4b, cks); // veravail ok
