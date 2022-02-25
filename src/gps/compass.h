@@ -10,6 +10,7 @@
 
 template <typename T> struct vec_t { T x, y, z; };
 
+typedef vec_t<int8_t> vec8_t;
 typedef vec_t<int16_t> vec16_t;
 typedef vec_t<int32_t> vec32_t;
 typedef vec_t<float> vecf_t;

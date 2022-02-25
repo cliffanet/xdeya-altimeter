@@ -122,15 +122,6 @@ class WorkerGpsInit : public WorkerProc
     		.navBbrMask = 0x0000,   // Hot start
     		.resetMode  = 0x09      // Controlled GPS start
     	};
-    
-    public:
-        void begin() {
-            m_op = BoudSet;
-            m_cnfwait = false;
-            m_cnfcnt = 0;
-            m_rateit = cfg_rate;
-            state = GPS_STATE_INIT;
-        }
         
         state_t errsnd() {
             CONSOLE("GPS config-send (op: %d) fail", m_op);
@@ -142,6 +133,15 @@ class WorkerGpsInit : public WorkerProc
             m_cnfwait = true;
             m_cnfcnt = 0;
             return STATE_RUN;
+        }
+    
+    public:
+        void begin() {
+            m_op = BoudSet;
+            m_cnfwait = false;
+            m_cnfcnt = 0;
+            m_rateit = cfg_rate;
+            state = GPS_STATE_INIT;
         }
         
         state_t process() {
