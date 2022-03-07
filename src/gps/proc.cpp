@@ -26,8 +26,9 @@ class WorkerGpsInit : public WorkerProc
 {
     private:
         enum {
-            BoudSet,
+            BoudBeg,
             BoudChk,
+            BoudCnf,
             CfgRate,
             CfgMRate,
             CfgNav,
@@ -129,59 +130,47 @@ class WorkerGpsInit : public WorkerProc
             return STATE_END;
         }
         
-        state_t tocmdwait() {
-            m_cnfwait = true;
-            m_cnfcnt = 0;
-            return STATE_RUN;
+        state_t cnfwait() {
+            // всё ещё ждём
+            m_cnfcnt ++;
+            if (m_cnfcnt > 50) {
+                CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d) timeout", m_op, gps.cnfneed());
+                state = GPS_STATE_FAIL;
+                return STATE_END;
+            }
+            //CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d, cnfcnt: %d)", m_op, gps.cnfneed(), m_cnfcnt);
+            return STATE_WAIT;
         }
     
     public:
         void begin() {
-            m_op = BoudSet;
-            m_cnfwait = false;
+            m_op = BoudBeg;
             m_cnfcnt = 0;
             m_rateit = cfg_rate;
             state = GPS_STATE_INIT;
         }
         
         state_t process() {
-            if (m_cnfwait) {
-                // Ожидание подтверждения от предыдущей команды
-                delay(5);
-                if (!gps.tick()) {
-                    CONSOLE("Wait cmd-confirm fail");
-                    state = GPS_STATE_FAIL;
-                    return STATE_END;
-                }
-                if (gps.cnfneed() > 0) {
-                    // всё ещё ждём
-                    m_cnfcnt ++;
-                    if (m_cnfcnt > 50) {
-                        CONSOLE("Wait cmd-confirm (op: %d) timeout", m_op);
-                        state = GPS_STATE_FAIL;
-                        return STATE_END;
-                    }
-                    return STATE_RUN;
-                }
-                // Дождались подтверждения
-                //CONSOLE("Wait cmd-confirm (op: %d) ok after %d attempts", m_op, m_cnfcnt);
-                m_cnfwait = false;
+            if (!gps.tick()) {
+                CONSOLE("Wait cmd-confirm fail");
+                state = GPS_STATE_FAIL;
+                return STATE_END;
             }
             
             //CONSOLE("GPS-op: %d", m_op);
             // Отправка очередной команды
             switch (m_op) {
-                case BoudSet:
+                case BoudBeg:
                     CONSOLE("Set UART(gps) default speed 9600");
                     ss.updateBaudRate(9600);
+                    
+                    delay(20);
         
                     if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
                         return errsnd();
                     
-                    delay(20);
-                    
                     m_op ++;
-                    return STATE_RUN;
+                    return STATE_WAIT;
 
                 case BoudChk:
                     gps.cnfclear();
@@ -198,7 +187,15 @@ class WorkerGpsInit : public WorkerProc
                         return errsnd();
 
                     m_op ++;
-                    return tocmdwait();
+                    m_cnfcnt = 0;
+                    return STATE_WAIT;
+                
+                case BoudCnf:
+                    if (gps.cnfneed() > 0)
+                        return cnfwait();
+                    CONSOLE("Confirmed speed %d", cfg_prt.baudRate);
+                    m_op ++;
+                    return STATE_RUN;
                 
                 case CfgRate:
                     if (!gps.send(UBX_CFG, UBX_CFG_MSG, *m_rateit))
@@ -206,21 +203,24 @@ class WorkerGpsInit : public WorkerProc
                     m_rateit++;
                     if (m_rateit >= cfg_rate + sizeof(cfg_rate)/sizeof(ubx_cfg_rate_t))
                         m_op ++;
-                    return tocmdwait();
+                    return STATE_RUN;
                 
                 case CfgMRate:
                     if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate))
                         return errsnd();
                     m_op ++;
-                    return tocmdwait();
+                    return STATE_RUN;
                 
                 case CfgNav:
                     if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5))
                         return errsnd();
                     m_op ++;
-                    return tocmdwait();
+                    m_cnfcnt = 0;
+                    return STATE_RUN;
                 
                 case CfgRst:
+                    if (gps.cnfneed() > 0)
+                        return cnfwait();
                     // В документации пишут, что на старых версиях прошивки подтверждение этой
                     // команды приходит нестабильно, а в новых - специально убрали подтверждение
                     // этой команды, т.к. всё равно, до перезагрузки устройства это подтверждение
