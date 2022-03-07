@@ -26,6 +26,7 @@ class WorkerGpsInit : public WorkerProc
 {
     private:
         enum {
+            InitBeg,
             BoudBeg,
             BoudChk,
             BoudCnf,
@@ -144,7 +145,7 @@ class WorkerGpsInit : public WorkerProc
     
     public:
         void begin() {
-            m_op = BoudBeg;
+            m_op = InitBeg;
             m_cnfcnt = 0;
             m_rateit = cfg_rate;
             state = GPS_STATE_INIT;
@@ -160,6 +161,16 @@ class WorkerGpsInit : public WorkerProc
             //CONSOLE("GPS-op: %d", m_op);
             // Отправка очередной команды
             switch (m_op) {
+                case InitBeg:
+                    // Пустое ожидание сразу после запуска процесса инициализации.
+                    // Необходимо, чтобы дождаться инициализации чипа навигации сразу после подачи питания
+                    m_cnfcnt++;
+                    if (m_cnfcnt < 3)
+                        return STATE_WAIT;
+                    
+                    m_op ++;
+                    return STATE_RUN;
+                
                 case BoudBeg:
                     CONSOLE("Set UART(gps) default speed 9600");
                     ss.updateBaudRate(9600);
@@ -511,6 +522,9 @@ static void gpsRecvGnss(UbloxGpsProto &gps) {
 #endif // FWVER_DEBUG
 
 void gpsInit() {
+    if (wrkExists(WORKER_GPS_INIT))
+        return;
+    
     // инициируем uart-порт GPS-приёмника
     ss.begin(9600);
     ss.setRxBufferSize(512); // По умолчанию = 256 и этого не хватает, чтобы принять сразу все присылаемые от GPS данные за один цикл
@@ -629,7 +643,10 @@ void gpsOn(uint8_t by) {
         return;
     
 #if HWVER > 1
-    if (digitalRead(GPS_PIN_POWER) == LOW)
+    // При перезагрузке state сбрасывается в GPS_STATE_OFF, а gpspwr в GPS_PWRBY_PWRON.
+    // И, казалось бы, надо включить, но пин остаётся LOW.
+    // И если мы будем проверять только пин, то будем ложно считать, что gps у нас включен и проинициализирован
+    if ((digitalRead(GPS_PIN_POWER) == LOW) && (state == GPS_STATE_OK))
         return;
     digitalWrite(GPS_PIN_POWER, LOW);
     pinMode(GPS_PIN_POWER, OUTPUT);
@@ -637,13 +654,12 @@ void gpsOn(uint8_t by) {
     
     state = GPS_STATE_OK;
     
-    delay(200);
     gpsInit();
 }
 
 void gpsPwrDown() {
 #if HWVER > 1
-    if (digitalRead(GPS_PIN_POWER) == HIGH)
+    if ((digitalRead(GPS_PIN_POWER) == HIGH) && (state == GPS_STATE_OFF))
         return;
     digitalWrite(GPS_PIN_POWER, HIGH);
     pinMode(GPS_PIN_POWER, OUTPUT);
@@ -680,6 +696,17 @@ void gpsPwrTgl() {
         gpsOn(GPS_PWRBY_HAND);
 }
 void gpsRestore() {
+#if HWVER > 1
+    if ((digitalRead(GPS_PIN_POWER) == LOW) && (state == GPS_STATE_OFF)) {
+        // при перезагрузке state вбрасывается в GPS_STATE_OFF, но пин при этом
+        // не гасится.
+        // И у нас нет достоверной информации, проинициализирован gps или нет.
+        // В этом случае отключаем питание принудительно
+        digitalWrite(GPS_PIN_POWER, HIGH);
+        delay(100);
+    }
+#endif
+    
     if (gpspwr > 0)
         gpsOn(0);
     else

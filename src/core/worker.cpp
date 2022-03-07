@@ -44,6 +44,10 @@ void wrkDel(WorkerProc::key_t key) {
     wrkDel(wrkall.find(key));
 }
 
+bool wrkExists(WorkerProc::key_t key) {
+    return wrkall.find(key) != wrkall.end();
+}
+
 bool wrkEmpty() {
     return wrkall.size() == 0;
 }
