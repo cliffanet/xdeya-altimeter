@@ -52,6 +52,10 @@ void wrkProcess(uint32_t tmmax) {
     if (wrkall.size() == 0)
         return;
     
+    for (auto &it : wrkall)
+        // сбрасываем флаг needwait
+        it.second.needwait = false;
+    
     uint32_t beg = millis();
     bool run = true;
     
@@ -59,7 +63,15 @@ void wrkProcess(uint32_t tmmax) {
         run = false;
         for(auto it = wrkall.begin(), itnxt = it; it != wrkall.end(); it = itnxt) {
             itnxt++; // такие сложности, чтобы проще было удалить текущий элемент
+            if (it->second.needwait)
+                continue;
             switch (it->second.proc->process()) {
+                case WorkerProc::STATE_WAIT:
+                    // При возвращении STATE_WAIT мы больше не должны
+                    // выполнять этот процесс в текущем вызове wrkProcess()
+                    it->second.needwait = true;
+                    break;
+                
                 case WorkerProc::STATE_RUN:
                     run = true;
                     break;

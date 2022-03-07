@@ -19,6 +19,7 @@ class WorkerProc {
         typedef struct {
             WorkerProc *proc;
             bool autodel;
+            bool needwait;
         } elem_t;
         
         typedef enum {
