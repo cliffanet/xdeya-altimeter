@@ -13,7 +13,7 @@ bool FileBin::get(uint8_t *data, uint16_t dsz, bool tailnull) {
     uint8_t bs[2];
     uint8_t cka = 0, ckb = 0;
     
-    if (read(bs, 2) != 2)
+    if (fh.read(bs, 2) != 2)
         return false;
     
     cks8(bs[0], cka, ckb);
@@ -24,7 +24,7 @@ bool FileBin::get(uint8_t *data, uint16_t dsz, bool tailnull) {
     sz+=2;
     
     uint8_t buf[sz], *b = buf;
-    size_t sz1 = read(buf, sz);
+    size_t sz1 = fh.read(buf, sz);
     
     if (sz1 != sz)
         return false;
@@ -80,7 +80,7 @@ bool FileBin::add(const uint8_t *data, uint16_t dsz) {
     b++;
     *b = ckb;
     
-    size_t sz1 = write(buf, sz);
+    size_t sz1 = fh.write(buf, sz);
     if (sz1 != sz)
         return false;
     
@@ -102,8 +102,8 @@ bool FileBinNum::open(uint8_t n, mode_t mode, bool external) {
 }
 
 bool FileBinNum::renum(bool external) {
-    if (isvalid())
-        close();
+    if (fh)
+        fh.close();
     if (m_fname_P == NULL)
         return false;
     
@@ -111,8 +111,8 @@ bool FileBinNum::renum(bool external) {
 }
 
 bool FileBinNum::rotate(uint8_t count, bool external) {
-    if (isvalid())
-        close();
+    if (fh)
+        fh.close();
     if (m_fname_P == NULL)
         return false;
     

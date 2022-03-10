@@ -75,7 +75,6 @@ void loop() {
         jmpProcess();
         trkProcess();
         viewProcess();
-        fileProcess();
     });
     pwrRun([]() {
         clockProcess();

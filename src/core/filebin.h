@@ -19,12 +19,14 @@ class FileBin : public FileMy {
             FileMy(fname_P, mode, external)
             {}
         
+        size_t read(uint8_t *data, uint16_t sz) { return fh.read(data, sz); }
         bool get(uint8_t *data, uint16_t dsz, bool tailnull = true);
         template <typename T>
         bool get(T &data, bool tailnull = true) {
             return get(reinterpret_cast<uint8_t *>(&data), sizeof(T), tailnull);
         }
-
+        
+        size_t write(uint8_t *data, uint16_t sz) { return fh.write(data, sz); }
         bool add(const uint8_t *data, uint16_t dsz);
         template <typename T>
         bool add(const T &data) {

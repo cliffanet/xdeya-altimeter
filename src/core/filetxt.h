@@ -44,6 +44,9 @@ class FileTxt : public FileMy {
         
         size_t line_count();
         bool seek2line(size_t num);
+    
+    private:
+        bool seekback(size_t sz = 1);
 };
 
 #endif // _core_filetxt_H

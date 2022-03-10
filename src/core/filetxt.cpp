@@ -15,8 +15,8 @@ int FileTxt::read_param(char *str, size_t sz) {
     int len = 0;
     uint8_t c = '\0';
     
-    while (available() > 0) {
-        c = read();
+    while (fh.available() > 0) {
+        c = fh.read();
         if (ISLINEEND(c)) {
             seekback();
             break;
@@ -34,8 +34,8 @@ int FileTxt::read_param(char *str, size_t sz) {
     
     if (ISSPACE(c)) {
         // стравливаем все пробелы после параметра
-        while (available() > 0) {
-            c = read();
+        while (fh.available() > 0) {
+            c = fh.read();
             if (!ISSPACE(c) || ISLINEEND(c)) {
                 // Возвращаем обратно "не пробел" или переход на след строку
                 seekback();
@@ -54,8 +54,8 @@ int FileTxt::read_line(char *str, size_t sz) {
     int len = 0;
     uint8_t c = '\0';
     
-    while (available() > 0) {
-        c = read();
+    while (fh.available() > 0) {
+        c = fh.read();
         if (ISLINEEND(c))
             break;
         
@@ -68,9 +68,9 @@ int FileTxt::read_line(char *str, size_t sz) {
         len++;
     }
     
-    while ((available() > 0) && (c != LINEEND))
+    while ((fh.available() > 0) && (c != LINEEND))
         // стравливаем все варианты окончания строки, пока не наткнёмся на '\n'
-        c = read();
+        c = fh.read();
     
     if ((str != NULL) && (sz > 0))
         *str = '\0';
@@ -88,7 +88,7 @@ bool FileTxt::find_param(const char *name_P) {
     
     strcpy_P(name, name_P);
     
-    while (available() > 0) {
+    while (fh.available() > 0) {
         read_param(str, sizeof(str));
         if (strcmp(str, name) == 0)
             return true;
@@ -105,7 +105,7 @@ bool FileTxt::print_line(const char *str) {
     strcpy(s, str);
     s[len] = LINEEND;
     
-    return write(reinterpret_cast<uint8_t *>(s), len+1) == len+1;
+    return fh.write(reinterpret_cast<uint8_t *>(s), len+1) == len+1;
 }
 
 bool FileTxt::print_param(const char *name_P) {
@@ -115,7 +115,7 @@ bool FileTxt::print_param(const char *name_P) {
     strcpy_P(s, name_P);
     s[len] = ' ';
     
-    return write(reinterpret_cast<uint8_t *>(s), len+1) == len+1;
+    return fh.write(reinterpret_cast<uint8_t *>(s), len+1) == len+1;
 }
 
 bool FileTxt::print_param(const char *name_P, const char *str) {
@@ -128,7 +128,7 @@ bool FileTxt::print_param(const char *name_P, const char *str) {
     strcpy(s+nlen+1, str);
     s[nlen+1+slen] = LINEEND;
     
-    return write(reinterpret_cast<uint8_t *>(s), nlen+1+slen+1) == nlen+1+slen+1;
+    return fh.write(reinterpret_cast<uint8_t *>(s), nlen+1+slen+1) == nlen+1+slen+1;
 }
 
 uint32_t FileTxt::chksum() {
@@ -137,8 +137,8 @@ uint32_t FileTxt::chksum() {
     cks.clear();
     uint8_t buf[256];
     
-    while (available() > 0) {
-        auto sz = read(buf, sizeof(buf));
+    while (fh.available() > 0) {
+        auto sz = fh.read(buf, sizeof(buf));
         CONSOLE("read: %d", sz);
         if (sz <= 0)
             return 0;
@@ -150,17 +150,17 @@ uint32_t FileTxt::chksum() {
 }
 
 size_t FileTxt::line_count() {
-    size_t count = available() > 0 ? 1 : 0;
+    size_t count = fh.available() > 0 ? 1 : 0;
     uint8_t buf[256];
     
-    while (available() > 0) {
-        auto sz = read(buf, sizeof(buf));
+    while (fh.available() > 0) {
+        auto sz = fh.read(buf, sizeof(buf));
         if (sz <= 0)
             return 0;
         
         for (auto &d : buf) {
             sz --;
-            if ((d == LINEEND) && ((sz > 0) || (available() > 0)))
+            if ((d == LINEEND) && ((sz > 0) || (fh.available() > 0)))
                 count++;
             
             if (sz < 1)
@@ -176,9 +176,9 @@ size_t FileTxt::line_count() {
 bool FileTxt::seek2line(size_t num) {
     CONSOLE("find line #%d", num);
     
-    while ((num > 0) && (available() > 0)) {
+    while ((num > 0) && (fh.available() > 0)) {
         uint8_t buf[256];
-        auto sz = read(buf, sizeof(buf));
+        auto sz = fh.read(buf, sizeof(buf));
         if (sz <= 0)
             return 0;
         
@@ -199,4 +199,14 @@ bool FileTxt::seek2line(size_t num) {
         return false;
     
     return true;
+}
+
+bool FileTxt::seekback(size_t sz) {
+    size_t pos = fh.position();
+    if (sz > pos)
+        sz = pos;
+    CONSOLE("seek from %d to %d", pos, pos-sz);
+    pos -= sz;
+    return fh.seek(pos, SeekSet);
+    
 }

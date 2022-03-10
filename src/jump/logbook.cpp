@@ -5,7 +5,7 @@
 #include "logbook.h"
 
 bool FileLogBook::append(const item_t &item) {
-    if (!isvalid() && !open(MODE_APPEND))
+    if (!fh && !open(MODE_APPEND))
         return false;
     
     if ((sizefile()+1) > JMPLOGBOOK_ITEM_COUNT) {

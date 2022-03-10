@@ -32,7 +32,7 @@ class FileLogBook : public FileBinNum {
         
         FileLogBook() : FileBinNum(PSTR(JMPLOGBOOK_NAME)) {}
         
-        size_t sizefile() const { return size() / sizeof(item_t); }
+        size_t sizefile() const { return fh.size() / sizeof(item_t); }
         
         bool append(const item_t &item);
 };
