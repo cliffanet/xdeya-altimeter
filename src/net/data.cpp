@@ -397,7 +397,7 @@ bool sendDataFin() {
     FileTxt f(PSTR(WIFIPASS_FILE));
     uint32_t ckswifi = f.chksum();
     f.close();
-    f.open(PSTR(VERAVAIL_FILE));
+    f.open_P(PSTR(VERAVAIL_FILE));
     uint32_t cksver = f.chksum();
     f.close();
     

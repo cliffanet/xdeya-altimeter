@@ -1,6 +1,7 @@
 
 #include "jump.h"
 #include "../file/log.h"
+#include "../jump/logbook.h"
 #include "../clock.h"
 
 #include "esp_system.h"
@@ -128,8 +129,10 @@ bool ConfigJump::end() {
     if (!save(true))
         return false;
     
-    if (!logAppend(PSTR(JMPLOG_SIMPLE_NAME), data.last, JMPLOG_SIMPLE_ITEM_COUNT, JMPLOG_SIMPLE_FILE_COUNT))
+    FileLogBook flb;
+    if (!flb.append(data.last))
         return false;
+    flb.close();
 
     data.last.key = 0;
     

@@ -6,7 +6,7 @@
 #define _cfg_jump_H
 
 #include "main.h"
-#include "../jump/proc.h"
+#include "../jump/logbook.h"
 
 typedef enum {
     LOGJMP_NONE,
@@ -23,7 +23,7 @@ typedef enum {
 //  Сохранение информации о прыжках
 typedef struct __attribute__((__packed__)) {
     uint32_t count = 0;                      // Сколько всего прыжков у владельца
-    log_jmp_t last;
+    FileLogBook::item_t last;
     log_jmp_state_t state = LOGJMP_NONE;
 } cfg_jump_t;
 
@@ -40,7 +40,7 @@ class ConfigJump : public Config<cfg_jump_t> {
         
         uint32_t        count() const { return data.count; }
         log_jmp_state_t state() const { return data.state; }
-        const log_jmp_t & last() const{ return data.last; }
+        const FileLogBook::item_t & last() const{ return data.last; }
 };
 
 extern ConfigJump jmp;

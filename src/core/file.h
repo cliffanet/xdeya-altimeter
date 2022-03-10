@@ -11,9 +11,14 @@
 /* ------------------------------------------------------------------------------------------- *
  *  Стандартная обвязка с файлами
  * ------------------------------------------------------------------------------------------- */
-void fileName(char *fname, size_t sz, const char *fname_P, bool external = false);
+#define FILE_NUM_SUFFIX     ".%02d"
+
+void fileName(char *fname, size_t sz, const char *fname_P, uint8_t num = 0);
 bool fileExists(const char *fname_P, bool external = false);
 bool fileRemove(const char *fname_P, bool external = false);
+
+bool fileRenum(const char *fname_P, bool external = false);
+bool fileRotate(const char *fname_P, uint8_t count, bool external = false);
 
 void fileProcess();
 
@@ -32,7 +37,8 @@ class FileMy {
         FileMy();
         FileMy(const FileMy &f);
         FileMy(const char *fname_P, mode_t mode = MODE_READ, bool external = false);
-        bool open(const char *fname_P, mode_t mode = MODE_READ, bool external = false);
+        bool open(const char *fname, mode_t mode = MODE_READ, bool external = false);
+        bool open_P(const char *fname_P, mode_t mode = MODE_READ, bool external = false);
         bool close();
         bool isvalid();
         size_t available() const;

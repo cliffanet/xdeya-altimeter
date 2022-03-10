@@ -390,7 +390,7 @@ class ViewNetSync : public ViewBase {
                                     ERR(PASSCLEAR);
                                     return;
                                 }
-                                if (!f.open(PSTR(WIFIPASS_FILE), FileMy::MODE_APPEND)) {
+                                if (!f.open_P(PSTR(WIFIPASS_FILE), FileMy::MODE_APPEND)) {
                                     ERR(PASSCREATE);
                                     return;
                                 }
@@ -402,7 +402,7 @@ class ViewNetSync : public ViewBase {
                                     ERR(VERAVAILCLEAR);
                                     return;
                                 }
-                                if (!f.open(PSTR(VERAVAIL_FILE), FileMy::MODE_APPEND)) {
+                                if (!f.open_P(PSTR(VERAVAIL_FILE), FileMy::MODE_APPEND)) {
                                     ERR(VERAVAILCREATE);
                                     return;
                                 }
@@ -453,7 +453,7 @@ class ViewNetSync : public ViewBase {
                                     break;
             
                                 case 0x43: // wifi end
-                                    if (!f.open(PSTR(WIFIPASS_FILE))) {
+                                    if (!f.open_P(PSTR(WIFIPASS_FILE))) {
                                         ERR(PASSADD);
                                         return;
                                     }
@@ -496,7 +496,7 @@ class ViewNetSync : public ViewBase {
                                     break;
             
                                 case 0x46: // veravail end
-                                    if (!f.open(PSTR(VERAVAIL_FILE))) {
+                                    if (!f.open_P(PSTR(VERAVAIL_FILE))) {
                                         ERR(VERAVAILADD);
                                         return;
                                     }
