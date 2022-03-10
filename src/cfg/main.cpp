@@ -8,8 +8,7 @@
 #include "../core/filebin.h"
 #include "../view/base.h"
 
-#include <FS.h>
-#include <SPIFFS.h>
+#include <SPIFFS.h> // cfg reset default = format
 
 template class Config<cfg_main_t>;
 Config<cfg_main_t> cfg(PSTR(CFG_MAIN_NAME), CFG_MAIN_ID, CFG_MAIN_VER);
@@ -35,65 +34,62 @@ Config<T>::Config(const char *_fname_P, uint8_t _cfgid, uint8_t _ver) :
 
 template <typename T>
 bool Config<T>::load() {
-    char fname[30];
-    fileName(fname, sizeof(fname), fname_P);
-    
-    if (!SPIFFS.exists(fname)) {
+    if (!fileExists(fname_P)) {
         reset();
         _modifed = false;
-        CONSOLE("config %s not exists: default", fname);
+        CONSOLE("config [%d] not exists: default", cfgid);
         return true;
     }
     
-    File fh = SPIFFS.open(fname, FILE_READ);
-    if (!fh)
+    FileBin f(fname_P);
+    if (!f)
         return false;
     
     uint8_t h[2];
-    size_t sz = fh.read(h, 2);
+    size_t sz = f.read(h, 2);
     if (sz != 2) {
-        CONSOLE("config %s header fail: %d of %d", fname, sz, 2);
-        fh.close();
+        CONSOLE("config [%d] header fail: %d of %d", cfgid, sz, 2);
+        f.close();
         return false;
     }
     
     uint8_t id1 = h[1] >> 5;
     uint8_t ver1 = h[1] & 0x1f;
     if ((h[0] != CFG_MGC) || (id1 != cfgid) || (ver1 == 0)) {
-        CONSOLE("config %s is not valid: mgc=0x%02x, h2=0x%02x, cfgid=%d, ver=%d", fname, h[0], h[1], id1, ver1);
+        CONSOLE("config [%d] is not valid: mgc=0x%02x, h2=0x%02x, cfgid=%d, ver=%d", cfgid, h[0], h[1], id1, ver1);
         reset();
-        fh.close();
+        f.close();
         return false;
     }
     
     if (ver1 > ver) {
-        CONSOLE("config %s version later: ver=%d", fname, ver1);
+        CONSOLE("config [%d] version later: ver=%d", cfgid, ver1);
         reset();
-        fh.close();
+        f.close();
         return false;
     }
     
     if (ver1 < ver) {
-        CONSOLE("config %s version earler: ver=%d", fname, ver1);
+        CONSOLE("config [%d] version earler: ver=%d", cfgid, ver1);
         uint8_t buf[sizeof(T)*2];
-        if (!recBinRead(fh, buf, sizeof(buf))) {
-            fh.close();
+        if (!f.get(buf, sizeof(buf))) {
+            f.close();
             return false;
         }
         upgrade(ver1, buf);
     }
     else {
         T d;
-        if (!recBinRead(fh, d, false)) {
-            fh.close();
+        if (!f.get(d, false)) {
+            f.close();
             return false;
         }
         data = d;
     }
 
-    fh.close();
+    f.close();
     
-    CONSOLE("config %s read ok", fname);
+    CONSOLE("config [%d] read ok", cfgid);
     
     _modifed = false;
     return true;
@@ -101,40 +97,37 @@ bool Config<T>::load() {
 
 template <typename T>
 bool Config<T>::save(bool force) {
-    char fname[30];
-    fileName(fname, sizeof(fname), fname_P);
-    
     if (!force && !_modifed) {
-        CONSOLE("config %s not changed", fname);
+        CONSOLE("config [%d] not changed", cfgid);
         return true;
     }
 
-    if (SPIFFS.exists(fname) && !SPIFFS.remove(fname)) {
-        CONSOLE("config %s remove fail", fname);
+    if (fileExists(fname_P) && !fileRemove(fname_P)) {
+        CONSOLE("config [%d] remove fail", cfgid);
         return false;
     }
     
-    File fh = SPIFFS.open(fname, FILE_WRITE);
-    if (!fh)
+    FileBin f(fname_P, FileMy::MODE_WRITE);
+    if (!f)
         return false;
 
     uint8_t h[2] = { CFG_MGC, static_cast<uint8_t>((cfgid << 5) | (ver & 0x1f)) };
     
-    size_t sz = fh.write(h, 2);
+    size_t sz = f.write(h, 2);
     if (sz != 2) {
-        CONSOLE("config %s header fail: %d of %d", fname, sz, 2);
-        fh.close();
+        CONSOLE("config [%d] header fail: %d of %d", cfgid, sz, 2);
+        f.close();
         return false;
     }
     
-    if (!recBinWrite(fh, data)) {
-        fh.close();
+    if (!f.add(data)) {
+        f.close();
         return false;
     }
     
-    fh.close();
+    f.close();
     
-    CONSOLE("config %s saved OK", fname);
+    CONSOLE("config [%d] saved OK", cfgid);
     
     _modifed = false;
     return true;

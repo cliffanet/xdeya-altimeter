@@ -5,15 +5,15 @@
 #include "FS.h"
 
 /* ------------------------------------------------------------------------------------------- *
- *  Прямая работа с записью в файле
+ *  FileBin - работа с бинарными файлами
  * ------------------------------------------------------------------------------------------- */
-
-bool recBinRead(fs::File &fh, uint8_t *data, uint16_t dsz, bool tailnull) {
+        
+bool FileBin::get(uint8_t *data, uint16_t dsz, bool tailnull) {
     uint16_t sz = 0;
     uint8_t bs[2];
     uint8_t cka = 0, ckb = 0;
     
-    if (fh.read(bs, 2) != 2)
+    if (read(bs, 2) != 2)
         return false;
     
     cks8(bs[0], cka, ckb);
@@ -24,7 +24,7 @@ bool recBinRead(fs::File &fh, uint8_t *data, uint16_t dsz, bool tailnull) {
     sz+=2;
     
     uint8_t buf[sz], *b = buf;
-    size_t sz1 = fh.read(buf, sz);
+    size_t sz1 = read(buf, sz);
     
     if (sz1 != sz)
         return false;
@@ -56,7 +56,7 @@ bool recBinRead(fs::File &fh, uint8_t *data, uint16_t dsz, bool tailnull) {
     return true;
 }
 
-bool recBinWrite(fs::File &fh, const uint8_t *data, uint16_t dsz) {
+bool FileBin::add(const uint8_t *data, uint16_t dsz) {
     uint16_t sz = dsz + 4;
     uint8_t buf[sz], *b = buf;
     uint8_t cka = 0, ckb = 0;
@@ -80,9 +80,41 @@ bool recBinWrite(fs::File &fh, const uint8_t *data, uint16_t dsz) {
     b++;
     *b = ckb;
     
-    size_t sz1 = fh.write(buf, sz);
+    size_t sz1 = write(buf, sz);
     if (sz1 != sz)
         return false;
     
     return true;
+}
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  FileBinNum - работа с бинарными файлами, которые пишуться как лог файлы с суффиксом .N
+ * ------------------------------------------------------------------------------------------- */
+bool FileBinNum::open(uint8_t n, mode_t mode, bool external) {
+    if (m_fname_P == NULL)
+        return false;
+    
+    char fname[30];
+    fileName(fname, sizeof(fname), m_fname_P, n);
+    
+    return FileBin::open(fname, mode, external);
+}
+
+bool FileBinNum::renum(bool external) {
+    if (isvalid())
+        close();
+    if (m_fname_P == NULL)
+        return false;
+    
+    return fileRenum(m_fname_P, external);
+}
+
+bool FileBinNum::rotate(uint8_t count, bool external) {
+    if (isvalid())
+        close();
+    if (m_fname_P == NULL)
+        return false;
+    
+    return fileRotate(m_fname_P, count, external);
 }
