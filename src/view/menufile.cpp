@@ -3,6 +3,7 @@
 #include "main.h"
 
 #include "../log.h"
+#include "../jump/logbook.h"
 #include "../file/log.h"
 #include "../file/track.h"
 
@@ -163,13 +164,17 @@ class ViewMenuFile : public ViewMenu {
             
             switch (sel()) {
                 case 0:
-                    if (logRenum(PSTR(JMPLOG_SIMPLE_NAME)))
+                    menuFlashP(PSTR("ReNum begin..."));
+                    displayUpdate();
+                    if (FileLogBook().renum())
                         menuFlashP(PSTR("ReNum OK"));
                     else
                         menuFlashP(PSTR("ReNum fail"));
                     updStr();
                     return;
                 case 1:
+                    menuFlashP(PSTR("ReNum begin..."));
+                    displayUpdate();
                     if (!logRenum(PSTR(TRK_FILE_NAME)))
                         menuFlashP(PSTR("ReNum OK"));
                     else

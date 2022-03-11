@@ -3,8 +3,7 @@
 #include "main.h"
 
 #include "../log.h"
-#include "../file/log.h"
-#include "../cfg/jump.h"
+#include "../jump/logbook.h"
 
 /* ------------------------------------------------------------------------------------------- *
  *  LogBook
@@ -22,7 +21,7 @@ class ViewMenuLogBookInfo : public ViewBase {
         }
         
         void read() {
-            readok = logRead(jmp, PSTR(JMPLOG_SIMPLE_NAME), isel);
+            readok = FileLogBook().getfull(jmp, isel);
         }
         
         void btnSmpl(btn_code_t btn) {
@@ -112,7 +111,7 @@ class ViewMenuLogBookInfo : public ViewBase {
         
     private:
         size_t isel=0, sz=0;
-        log_jmp_t jmp;
+        FileLogBook::item_t jmp;
         bool readok = false;
 };
 
@@ -123,8 +122,7 @@ static ViewMenuLogBookInfo vLogBookInfo;
 class ViewMenuLogBook : public ViewMenu {
     public:
         void restore() {
-            size_t cnt = logRCountFull(PSTR(JMPLOG_SIMPLE_NAME), log_jmp_t);
-            setSize(cnt);
+            setSize(FileLogBook().sizeall());
             
             ViewMenu::restore();
         }
@@ -132,8 +130,8 @@ class ViewMenuLogBook : public ViewMenu {
         void getStr(menu_dspl_el_t &str, int16_t i) {
             CONSOLE("ViewMenuLogBook::getStr: %d", i);
     
-            log_jmp_t jmp;
-            if (logRead(jmp, PSTR(JMPLOG_SIMPLE_NAME), i)) {
+            FileLogBook::item_t jmp;
+            if (FileLogBook().getfull(jmp, i)) {
                 auto &tm = jmp.tm;
                 snprintf_P(str.name, sizeof(str.name), PSTR("%2d.%02d.%02d %2d:%02d"),
                                 tm.day, tm.mon, tm.year % 100, tm.h, tm.m);

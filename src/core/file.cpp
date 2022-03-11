@@ -99,7 +99,7 @@ bool fileRenum(const char *fname_P, bool external) {
     // теперь ищем пробел и первый занятый номер - src
     ns=nd+1;
     
-    while (ns < 100) {
+    while (ns < 30) {
         fileName(src, sizeof(src), fname_P, ns);
         fileName(dst, sizeof(dst), fname_P, nd);
         if (file_exists(src, external)) {
@@ -186,7 +186,7 @@ FileMy::FileMy(const char *fname_P, mode_t mode, bool external) :
 
 bool FileMy::open(const char *fname, mode_t mode, bool external) {
     fh = file_open(fname, mode, external);
-    if (!fh)
+    if (!fh || fh.isDirectory())
         return false;
     
     return true;
