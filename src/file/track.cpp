@@ -13,6 +13,66 @@ static uint16_t prelogcur = 0;
 File fh;
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Файл трека
+ * ------------------------------------------------------------------------------------------- */
+FileTrack::chs_t FileTrack::chksum() {
+    if (!fh)
+        return { 0, 0, 0 };
+    
+    size_t sz = sizehead() + sizeitem();
+    uint8_t data[sz];
+    chs_t cks = { 0, 0, 0 };
+    
+    fh.seek(0, SeekSet);
+    if (fh.read(data, sz) != sz)
+        return { 0, 0, 0 };
+
+    for (const auto &d : data) {
+        cks.csa += d;
+        cks.csb += cks.csa;
+    }
+    
+    cks.sz = fh.size();
+    
+    fh.seek(cks.sz - sz);
+    if (fh.read(data, sz) != sz)
+        return { 0, 0, 0 };
+    
+    for (const auto &d : data) {
+        cks.csa += d;
+        cks.csb += cks.csa;
+    }
+    
+    return cks;
+}
+
+FileTrack::chs_t FileTrack::chksum(uint8_t n) {
+    if (fh)
+        fh.close();
+    
+    if (!open(n))
+        return { 0, 0, 0 };
+    
+    auto cks = chksum();
+    
+    fh.close();
+    
+    return cks;
+}
+
+uint8_t FileTrack::findfile(chs_t cks) {
+    for (uint8_t n = 1; n < 99; n++) {
+        uint32_t cks1 = chksum(n);
+        if (!cks1)
+            return 0;
+        if (cks1 == cks)
+            return n;
+    }
+    
+    return 0;
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  Запуск трекинга
  * ------------------------------------------------------------------------------------------- */
 static bool trkCheckAvail(bool removeFirst = false);

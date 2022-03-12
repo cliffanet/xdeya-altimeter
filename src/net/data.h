@@ -8,6 +8,7 @@
 #include "../../def.h"
 
 #include "../file/log.h"
+#include "../file/track.h"
 #include "../clock.h"
 
 typedef struct __attribute__((__packed__)) {
@@ -21,7 +22,7 @@ typedef struct __attribute__((__packed__)) {
     uint32_t ckspnt;
     uint32_t ckslog;
     uint32_t poslog;
-    logchs_t ckstrack;
+    FileTrack::chs_t ckstrack;
 } daccept_t;
 
 /* ------------------------------------------------------------------------------------------- *
@@ -38,8 +39,8 @@ dnet_t dton(double val);
 tm_t tmton(const tm_t &tm);
 tm_t ntotm(const tm_t &n);
 
-logchs_t ckston(const logchs_t &cks);
-logchs_t ntocks(const logchs_t &n);
+FileTrack::chs_t ckston(const FileTrack::chs_t &cks);
+FileTrack::chs_t ntocks(const FileTrack::chs_t &n);
 
 /* ------------------------------------------------------------------------------------------- *
  *  строковые преобразования
@@ -53,7 +54,7 @@ bool sendCfg();
 bool sendJump();
 bool sendPoint();
 bool sendLogBook(uint32_t _cks, uint32_t _pos);
-bool sendTrack(logchs_t _cks);
+bool sendTrack(FileTrack::chs_t _cks);
 bool sendDataFin();
 
 

@@ -9,11 +9,57 @@
 
 #include "../cfg/jump.h"
 #include "../cfg/main.h"
+#include "../core/filebin.h"
 #include "../clock.h"
 
 #define TRK_FILE_NAME       "track"
 #define TRK_PRESERV_COUNT   32
 #define ALL_SIZE_MAX        786432
+
+class FileTrack : public FileBinNum {
+    public:
+        // Контрольная сумма трека
+        typedef struct  __attribute__((__packed__)) chs_s {
+            uint16_t    csa;
+            uint16_t    csb;
+            uint32_t    sz;
+    
+            bool operator== (const struct chs_s & cks) {
+                return (this == &cks) || ((this->csa == cks.csa) && (this->csb == cks.csb) && (this->sz == cks.sz));
+            };
+            operator bool() { return (csa != 0) && (csb != 0) && (sz != 0); }
+        } chs_t;
+        
+        // Заголовок трека
+        typedef struct __attribute__((__packed__)) {
+            uint32_t id = 0;                        // пока не ведётся, но нужно запоминать ID в отдельном файле и делать ему inc
+                                                    // при каждом новом треке,
+                                                    // чтобы при синхронизации понимать где последний отправленный на веб
+            uint32_t flags = 0;                     // флаги - пока не используются
+            uint32_t jmpnum;                        // текущий номер прыга на момент старта записи
+            uint32_t jmpkey;                        // ключ прыга на момент старта записи
+            tm_t     tmbeg;                         // дата/время старта записи трека
+    
+            uint8_t _[8] = { 0 };                   // резерв
+        } head_t;
+        
+        typedef log_item_t item_t;
+        
+        FileTrack() : FileBinNum(PSTR(TRK_FILE_NAME)) {}
+        FileTrack(uint8_t n) : FileTrack() { open(n); }
+
+        inline size_t sizehead() const { return sizeof(head_t)+4; }
+        inline size_t sizeitem() const { return sizeof(item_t)+4; }
+        size_t pos() const { return (fh.position() - sizehead()) / sizeitem(); }
+        size_t avail() { return (fh.available() - sizehead()) / sizeitem(); }
+        size_t sizefile() const { return (fh.size() - sizehead()) / sizeitem(); }
+        
+        chs_t chksum();
+        chs_t chksum(uint8_t n);
+        uint8_t findfile(chs_t cks);
+};
+
+
 
 // Заголовок трека
 typedef struct __attribute__((__packed__)) {

@@ -8,7 +8,6 @@
 #include "../cfg/main.h"
 #include "../cfg/point.h"
 #include "../core/filetxt.h"
-#include "../file/track.h"
 #include "../jump/logbook.h"
 
 #include <lwip/inet.h>      // htonl
@@ -59,15 +58,15 @@ tm_t ntotm(const tm_t &n) {
     return tm;
 }
 
-logchs_t ckston(const logchs_t &cks) {
-    logchs_t n;
+FileTrack::chs_t ckston(const FileTrack::chs_t &cks) {
+    FileTrack::chs_t n;
     n.csa = htons(cks.csa);
     n.csb = htons(cks.csb);
     n.sz = htonl(cks.sz);
     return n;
 }
-logchs_t ntocks(const logchs_t &n) {
-    logchs_t cks;
+FileTrack::chs_t ntocks(const FileTrack::chs_t &n) {
+    FileTrack::chs_t cks;
     cks.csa = ntohs(n.csa);
     cks.csb = ntohs(n.csb);
     cks.sz = ntohl(n.sz);
@@ -317,50 +316,14 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
     return srvSend(0x33, d) && (pos > 0);
 }
 
-static bool sendTrackBeg(const trk_head_t *th) {
-    struct __attribute__((__packed__)) {
-        uint32_t id;
-        uint32_t flags;
-        uint32_t jmpnum;
-        uint32_t jmpkey;
-        tm_t     tmbeg;
-    } d = {
-        .id         = htonl(th->id),
-        .flags      = htonl(th->flags),
-        .jmpnum     = htonl(th->jmpnum),
-        .jmpkey     = htonl(th->jmpkey),
-        .tmbeg      = tmton(th->tmbeg),
-    };
-    
-    netsyncProgInc(LOG_REC_SIZE(sizeof(trk_head_t)));
-    
-    return srvSend(0x34, d);
-}
-
-static bool sendTrackItem(const log_item_t *ti) {
-    log_item_t d = jmpton(*ti);
-    
-    if (!srvSend(0x35, d))
-        return false;
-    
-    netsyncProgInc(LOG_REC_SIZE(sizeof(log_item_t)));
-    
-    return true;
-}
-
-bool sendTrack(logchs_t _cks) {
+bool sendTrack(FileTrack::chs_t _cks) {
     int max;
     int32_t ibeg = 0;
     
     CONSOLE("sendTrack: chksum: %04x%04x%08x", _cks.csa, _cks.csb, _cks.sz);
     
     if (_cks) {
-        max =
-            logFind(
-                PSTR(TRK_FILE_NAME),
-                LOG_REC_SIZE(sizeof(trk_head_t)) + LOG_REC_SIZE(sizeof(log_item_t)),
-                _cks
-            );
+        max = FileTrack().findfile(_cks);
         if (max == 1) {// самый свежий и есть тот, который мы уже передавали - больше передавать не надо
             CONSOLE("sendTrack: by chksum finded num 1; no need send");
             return true;
@@ -369,11 +332,11 @@ bool sendTrack(logchs_t _cks) {
             max--;
         if (max <= 0) {// тот, что мы раньше передавали уже не найден, будем передавать всё заного
             CONSOLE("sendTrack: nothing finded by chksum");
-            max = logCount(PSTR(TRK_FILE_NAME));
+            max = FileTrack().count();
         }
     }
     else { // ещё ничего не передавали, передаём всё заного
-        max = logCount(PSTR(TRK_FILE_NAME));
+        max = FileTrack().count();
     }
     
     if (max <= 0) // либо ошибка, либо вообще файлов нет - в любом случае выходим
@@ -381,22 +344,53 @@ bool sendTrack(logchs_t _cks) {
     
     // Общий размер файла
     size_t fsz = 0;
-    for (int num = max; num > 0; num--)
-        fsz += logSize(PSTR(TRK_FILE_NAME), num);
+    for (int n = max; n > 0; n--) {
+        FileTrack tr(n);
+        fsz += 1+tr.sizefile();
+    }
     netsyncProgMax(fsz);
     
-    for (int num = max; num > 0; num--) {
-        uint8_t n = num;
+    for (int n = max; n > 0; n--) {
+        FileTrack tr(n);
         
-        bool ok = logFileRead(sendTrackBeg, sendTrackItem, PSTR(TRK_FILE_NAME), num) >= 0;
-        auto cks =
-            logChkSumFull(
-                LOG_REC_SIZE(sizeof(trk_head_t)) + LOG_REC_SIZE(sizeof(log_item_t)),
-                PSTR(TRK_FILE_NAME),
-                num
-            );
+        FileTrack::head_t th;
+        if (tr.get(th)) {
+            struct __attribute__((__packed__)) {
+                uint32_t id;
+                uint32_t flags;
+                uint32_t jmpnum;
+                uint32_t jmpkey;
+                tm_t     tmbeg;
+            } d = {
+                .id         = htonl(th.id),
+                .flags      = htonl(th.flags),
+                .jmpnum     = htonl(th.jmpnum),
+                .jmpkey     = htonl(th.jmpkey),
+                .tmbeg      = tmton(th.tmbeg),
+            };
+    
+            if (!srvSend(0x34, d))
+                return false;
+    
+            netsyncProgInc(1);
+        }
+        else
+            return false;
         
-        if (!srvSend(0x36, ckston(cks)) || !ok)
+        while (tr.available() >= tr.sizeitem()) {
+            FileTrack::item_t ti;
+            if (!tr.get(ti))
+                return false;
+            ti = jmpton(ti);
+            if (!srvSend(0x35, ti))
+                return false;
+            
+            netsyncProgInc(1);
+        }
+        
+        auto cks = tr.chksum();
+        
+        if (!srvSend(0x36, ckston(cks)))
             return false;
         CONSOLE("track sended ok: %d", n);
     }

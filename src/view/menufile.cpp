@@ -4,7 +4,6 @@
 
 #include "../log.h"
 #include "../jump/logbook.h"
-#include "../file/log.h"
 #include "../file/track.h"
 
 #include <SPIFFS.h>
@@ -117,7 +116,7 @@ class ViewMenuFile : public ViewMenu {
             auto i = sel()-2;
             auto f = fileall[i];
             CONSOLE("ViewMenuFile::btnSmpl: dump: %s", f.name);
-            File fh = DISKFS.open(f.name, FILE_READ);
+            File fh = SPIFFS.open(f.name, FILE_READ);
             if (!fh) {
                 CONSOLE("ViewMenuFile::btnSmpl: open fail");
                 return;
@@ -175,7 +174,7 @@ class ViewMenuFile : public ViewMenu {
                 case 1:
                     menuFlashP(PSTR("ReNum begin..."));
                     displayUpdate();
-                    if (!logRenum(PSTR(TRK_FILE_NAME)))
+                    if (FileTrack().renum())
                         menuFlashP(PSTR("ReNum OK"));
                     else
                         menuFlashP(PSTR("ReNum fail"));
