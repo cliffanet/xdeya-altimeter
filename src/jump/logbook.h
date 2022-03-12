@@ -31,14 +31,21 @@ class FileLogBook : public FileBinNum {
         } item_t;
         
         FileLogBook() : FileBinNum(PSTR(JMPLOGBOOK_NAME)) {}
-        
+
         inline size_t sizeitem() const { return sizeof(item_t)+4; }
+        size_t pos() const { return fh.position() / sizeitem(); }
+        size_t avail() { return fh.available() / sizeitem(); }
         size_t sizefile() const { return fh.size() / sizeitem(); }
         size_t sizeall();
         
         bool getfull(item_t &item, size_t index);
         
+        uint32_t chksum();
+        uint32_t chksum(uint8_t n);
+        uint8_t findfile(uint32_t cks);
+        
         bool append(const item_t &item);
+        bool seekto(size_t index);
 };
 
 #endif // _jump_logbook_H

@@ -53,6 +53,52 @@ bool FileLogBook::getfull(item_t &item, size_t index) {
     return false;
 }
 
+uint32_t FileLogBook::chksum() {
+    if (!fh)
+        return 0;
+    
+    fh.seek(0, SeekSet);
+    
+    uint8_t data[sizeitem()];
+    if (fh.read(data, sizeof(data)) != sizeof(data))
+        return 0;
+    
+    uint8_t csa = 0;
+    uint8_t csb = 0;
+    for (const auto &d : data) {
+        csa += d;
+        csb += csa;
+    }
+    
+    return (csa << 24) | (csb << 16) | (sizeof(data) & 0xffff);
+}
+
+uint32_t FileLogBook::chksum(uint8_t n) {
+    if (fh)
+        fh.close();
+    
+    if (!open(n))
+        return 0;
+    
+    uint32_t cks = chksum();
+    
+    fh.close();
+    
+    return cks;
+}
+
+uint8_t FileLogBook::findfile(uint32_t cks) {
+    for (uint8_t n = 1; n < 99; n++) {
+        uint32_t cks1 = chksum(n);
+        if (cks1 == 0)
+            return 0;
+        if (cks1 == cks)
+            return n;
+    }
+    
+    return 0;
+}
+
 bool FileLogBook::append(const item_t &item) {
     if (!fh && !open(MODE_APPEND))
         return false;
@@ -65,4 +111,8 @@ bool FileLogBook::append(const item_t &item) {
     }
     
     return add(item);
+}
+
+bool FileLogBook::seekto(size_t index) {
+    return fh.seek( index * sizeitem(), SeekSet );
 }

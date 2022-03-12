@@ -49,6 +49,7 @@ class FileBinNum : public FileBin {
             return open(1, mode, external);
         }
         
+        size_t count(bool external = false);
         bool renum(bool external = false);
         bool rotate(uint8_t count = 0, bool external = false);
     

@@ -9,6 +9,7 @@
 #include "../cfg/point.h"
 #include "../core/filetxt.h"
 #include "../file/track.h"
+#include "../jump/logbook.h"
 
 #include <lwip/inet.h>      // htonl
 
@@ -230,51 +231,32 @@ bool sendPoint() {
     return true;
 }
 
-static bool sendLogBookItem(const log_jmp_t *jmp) {
-    struct __attribute__((__packed__)) { // Для передачи по сети
-        uint32_t    num;
-        uint32_t    key;
-        tm_t        tm;
-        log_item_t  toff;
-        log_item_t  beg;
-        log_item_t  cnp;
-        log_item_t  end;
-    } d = {
-        .num    = htonl(jmp->num),
-        .key    = htonl(jmp->key),
-        .tm     = tmton(jmp->tm),
-        .toff   = jmpton(jmp->toff),
-        .beg    = jmpton(jmp->beg),
-        .cnp    = jmpton(jmp->cnp),
-        .end    = jmpton(jmp->end)
-    };
-    
-    return srvSend(0x32, d);
-}
-
 bool sendLogBook(uint32_t _cks, uint32_t _pos) {
     int max;
-    int32_t ibeg = 0;
+    FileLogBook lb;
     
     CONSOLE("sendLogBook: chksum: %08x, pos: %d", _cks, _pos);
     
     if (_cks > 0) {
-        max = logFind(PSTR(JMPLOG_SIMPLE_NAME), LOG_REC_SIZE(sizeof(log_jmp_t)), _cks);
+        max = lb.findfile(_cks);
         if (max > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
             CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %d", max, _pos);
-            ibeg = _pos;
-            if ((max == 1) && (_pos*LOG_REC_SIZE(sizeof(log_jmp_t)) >= logSize(PSTR(JMPLOG_SIMPLE_NAME)))) {
+            if (!lb.open(max))
+                return false;
+            if ((max == 1) && (_pos >= lb.sizefile())) {
                 CONSOLE("sendLogBook: by chksum finded num 1 and pos is last; no need send");
                 return true;
             }
+            if (!lb.seekto(_pos))
+                return false;
         }
-        if (max <= 0) {// тот, что мы раньше передавали уже не найден, будем передавать всё заного
+        else { // тот, что мы раньше передавали уже не найден, будем передавать всё заного
             CONSOLE("sendLogBook: nothing finded by chksum");
-            max = logCount(PSTR(JMPLOG_SIMPLE_NAME));
+            max = lb.count();
         }
     }
     else { // ещё ничего не передавали, передаём всё заного
-        max = logCount(PSTR(JMPLOG_SIMPLE_NAME));
+        max = lb.count();
     }
     
     if (max <= 0) // либо ошибка, либо вообще файлов нет - в любом случае выходим
@@ -284,14 +266,45 @@ bool sendLogBook(uint32_t _cks, uint32_t _pos) {
         return false;
     
     int32_t pos = 0;
-    for (int num = max; num > 0; num--) {
-        pos = logFileReadMono(sendLogBookItem, PSTR(JMPLOG_SIMPLE_NAME), num, ibeg);
+    for (int n = max; n > 0; n--) {
+        if (!lb && !lb.open(n)) {
+            pos = 0;
+            break;
+        }
+        size_t beg = lb.pos();
+        while (lb.avail() > 0) {
+            FileLogBook::item_t jmp;
+            if (!lb.get(jmp))
+                break;
+
+            struct __attribute__((__packed__)) { // Для передачи по сети
+                uint32_t    num;
+                uint32_t    key;
+                tm_t        tm;
+                log_item_t  toff;
+                log_item_t  beg;
+                log_item_t  cnp;
+                log_item_t  end;
+            } d = {
+                .num    = htonl(jmp.num),
+                .key    = htonl(jmp.key),
+                .tm     = tmton(jmp.tm),
+                .toff   = jmpton(jmp.toff),
+                .beg    = jmpton(jmp.beg),
+                .cnp    = jmpton(jmp.cnp),
+                .end    = jmpton(jmp.end)
+            };
+    
+            if (!srvSend(0x32, d))
+                return false;
+        }
+        pos = lb.pos();
         if (pos < 0)
             break;
-        CONSOLE("logbook sended ok: %d (ibeg: %d, pos: %d)", num, ibeg, pos);
-        ibeg = 0;
+        CONSOLE("logbook sended ok: %d (beg: %d, pos: %d)", n, beg, pos);
+        lb.close();
     }
-    auto cks = logChkSumBeg(LOG_REC_SIZE(sizeof(log_jmp_t)), PSTR(JMPLOG_SIMPLE_NAME), 1);
+    auto cks = lb.chksum(1);
     
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t    chksum;

@@ -80,6 +80,19 @@ bool fileRemove(const char *fname_P, bool external) {
     return file_remove(fname, external);
 }
 
+size_t fileCount(const char *fname_P, bool external) {
+    int n = 1;
+    char fname[37];
+    
+    while (n < 99) {
+        fileName(fname, sizeof(fname), fname_P, n);
+        if (!file_exists(fname, external))
+            return n-1;
+        n++;
+    }
+    
+    return -1;
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Ренумерация файлов

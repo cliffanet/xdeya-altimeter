@@ -20,13 +20,6 @@
 // Интервал обнуления высоты (ms)
 #define ALT_AUTOGND_INTERVAL    600000
 
-// имя файла для хранения простых логов
-#define JMPLOG_SIMPLE_NAME          "logsimple"
-// Сколько прыжков в одном файле
-#define JMPLOG_SIMPLE_ITEM_COUNT    50
-// Сколько файлов прыгов максимум
-#define JMPLOG_SIMPLE_FILE_COUNT    5
-
 // хранимый буфер для заранее сохранённых log_item_t
 #define JMP_PRELOG_SIZE         160
 

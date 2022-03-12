@@ -101,6 +101,13 @@ bool FileBinNum::open(uint8_t n, mode_t mode, bool external) {
     return FileBin::open(fname, mode, external);
 }
 
+size_t FileBinNum::count(bool external) {
+    if (m_fname_P == NULL)
+        return false;
+    
+    return fileCount(m_fname_P, external);
+}
+
 bool FileBinNum::renum(bool external) {
     if (fh)
         fh.close();
