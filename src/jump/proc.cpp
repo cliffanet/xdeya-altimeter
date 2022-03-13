@@ -3,7 +3,7 @@
 #include "track.h"
 #include "../log.h"
 #include "../cfg/main.h"
-#include "../gps/proc.h"
+#include "../navi/proc.h"
 #include "../view/base.h"   // btnPushed()
 #include "../power.h"       // pwrBattRaw()
 #include "../clock.h"

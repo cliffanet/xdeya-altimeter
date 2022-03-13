@@ -2,7 +2,7 @@
 #include "track.h"
 #include "proc.h"
 #include "../core/workerloc.h"
-#include "../gps/proc.h"
+#include "../navi/proc.h"
 #include "../log.h"
 #include "../clock.h"
 

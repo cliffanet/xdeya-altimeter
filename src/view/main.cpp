@@ -6,7 +6,7 @@
 #include "../power.h" // pwrBattRaw()
 #include "../clock.h"
 #include "../jump/track.h"
-#include "../gps/proc.h"
+#include "../navi/proc.h"
 
 static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_ALTNAV; // Текущая страница отображения, сохраняется при переходе в меню
 

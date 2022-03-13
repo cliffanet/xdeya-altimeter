@@ -144,10 +144,14 @@ void compStop() {
     or
     mpu9250 + ak8963
 */
-    if (_cmp.ok & 1)
+    if (_cmp.ok & 1) {
         magStop();
-    if (_cmp.ok & 2)
+        CONSOLE("compas stop");
+    }
+    if (_cmp.ok & 2) {
         accStop();
+        CONSOLE("accel stop");
+    }
     
     _cmp = { 0 };
 }

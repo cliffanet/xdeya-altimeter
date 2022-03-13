@@ -3,7 +3,7 @@
 
 #ifdef FWVER_DEBUG
 
-#include "gps/proc.h"
+#include "navi/proc.h"
 #include "clock.h"
 
 #include <Arduino.h>

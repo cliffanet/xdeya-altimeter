@@ -4,8 +4,8 @@
 #include "info.h"
 #include "main.h"
 
-#include "../gps/proc.h"
-#include "../gps/ubloxproto.h"
+#include "../navi/proc.h"
+#include "../navi/ubloxproto.h"
 
 #include "../log.h"
 

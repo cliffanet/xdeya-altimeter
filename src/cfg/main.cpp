@@ -4,7 +4,7 @@
 #include "point.h"
 #include "jump.h"
 #include "webjoin.h"
-#include "../gps/proc.h"
+#include "../navi/proc.h"
 #include "../core/filebin.h"
 #include "../view/base.h"
 

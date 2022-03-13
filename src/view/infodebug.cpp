@@ -5,8 +5,8 @@
 #include "../power.h" // pwrBattRaw()
 #include "../clock.h" // sys time
 #include "../jump/proc.h" // altCalc()
-#include "../gps/proc.h"
-#include "../gps/compass.h"
+#include "../navi/proc.h"
+#include "../navi/compass.h"
 
 #ifdef FWVER_DEBUG
 

@@ -1,7 +1,7 @@
 
 #include "clock.h"
 #include "log.h"
-#include "gps/proc.h"
+#include "navi/proc.h"
 #include "cfg/main.h"
 #include "power.h"
 

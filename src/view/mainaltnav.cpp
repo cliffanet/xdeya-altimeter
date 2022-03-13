@@ -1,8 +1,8 @@
 
 #include "main.h"
 
-#include "../gps/compass.h"
-#include "../gps/proc.h"
+#include "../navi/compass.h"
+#include "../navi/proc.h"
 #include "../jump/proc.h"
 #include "../jump/track.h"
 #include "../cfg/main.h"

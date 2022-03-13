@@ -4,7 +4,7 @@
 #include "clock.h"
 #include "view/base.h"
 #include "view/menu.h"
-#include "gps/proc.h"
+#include "navi/proc.h"
 #include "jump/proc.h"
 #include "jump/track.h"
 #include "core/worker.h"
