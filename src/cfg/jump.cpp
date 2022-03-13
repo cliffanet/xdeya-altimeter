@@ -1,6 +1,5 @@
 
 #include "jump.h"
-#include "../file/log.h"
 #include "../jump/logbook.h"
 #include "../clock.h"
 

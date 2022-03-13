@@ -7,8 +7,7 @@
 
 #include "../../def.h"
 
-#include "../file/log.h"
-#include "../file/track.h"
+#include "../jump/track.h"
 #include "../clock.h"
 
 typedef struct __attribute__((__packed__)) {
