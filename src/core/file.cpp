@@ -30,9 +30,9 @@ static bool file_rename(const char *fname1, const char *fname2, bool external = 
 }
 
 static File file_open(const char *fname, FileMy::mode_t mode, bool external) {
-    CONSOLE("fname: %s", fname);
     if (external)
         return file_open(fname, mode, false);
+    CONSOLE("fname: %s", fname);
     
     switch (external) {
         case false:
@@ -66,16 +66,16 @@ void fileName(char *fname, size_t sz, const char *fname_P, uint8_t num) {
     }
 }
 
-bool fileExists(const char *fname_P, bool external) {
+bool fileExists(const char *fname_P, uint8_t num, bool external) {
     char fname[30];
-    fileName(fname, sizeof(fname), fname_P);
+    fileName(fname, sizeof(fname), fname_P, num);
     
     return file_exists(fname, external);
 }
 
-bool fileRemove(const char *fname_P, bool external) {
+bool fileRemove(const char *fname_P, uint8_t num, bool external) {
     char fname[30];
-    fileName(fname, sizeof(fname), fname_P);
+    fileName(fname, sizeof(fname), fname_P, num);
     
     return file_remove(fname, external);
 }
@@ -92,6 +92,16 @@ size_t fileCount(const char *fname_P, bool external) {
     }
     
     return -1;
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Свободное место
+ * ------------------------------------------------------------------------------------------- */
+size_t fileSizeAvail(bool external) {
+    if (external)
+        return fileSizeAvail(false);
+    else
+        return SPIFFS.usedBytes();
 }
 
 /* ------------------------------------------------------------------------------------------- *

@@ -18,6 +18,7 @@ static Adafruit_BMP280 bmp(5); // hardware SPI on IO5
 
 static AltCalc ac;
 
+static jmp_cur_t logcursor;
 static log_item_t logall[JMP_PRELOG_SIZE] = { { 0 } };
 static uint16_t logcur = 0xffff;
 
@@ -35,10 +36,9 @@ AltCalc & altCalc() {
 static void jmpPreLogAdd(uint16_t interval) {
     auto &gps = gpsInf();
     
-    logcur ++;
-    if (logcur >= JMP_PRELOG_SIZE)
-        logcur = 0;
-    auto &li = logall[logcur];
+    logcursor ++;
+    logcur = *logcursor;
+    auto &li = logall[*logcursor];
     
     li = {
         tmoffset    : interval,
@@ -105,6 +105,16 @@ static void jmpPreLogAdd(uint16_t interval) {
         case ACDIR_FLAT:        li.direct = 'f'; break;
         case ACDIR_DOWN:        li.direct = 'd'; break;
     }
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Получение текущего индекса и данных по любому индексу
+ * ------------------------------------------------------------------------------------------- */
+const jmp_cur_t &jmpPreCursor() {
+    return logcursor;
+}
+const log_item_t &jmpPreLog(const jmp_cur_t &cursor) {
+    return logall[*cursor];
 }
 
 /* ------------------------------------------------------------------------------------------- *

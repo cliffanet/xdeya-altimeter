@@ -125,3 +125,10 @@ bool FileBinNum::rotate(uint8_t count, bool external) {
     
     return fileRotate(m_fname_P, count, external);
 }
+
+bool FileBinNum::remove(uint8_t n, bool external) {
+    if (m_fname_P == NULL)
+        return false;
+    
+    return fileRemove(m_fname_P, n, external);
+}

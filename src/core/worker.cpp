@@ -48,6 +48,13 @@ bool wrkExists(WorkerProc::key_t key) {
     return wrkall.find(key) != wrkall.end();
 }
 
+WorkerProc *wrkGet(WorkerProc::key_t key) {
+    auto it = wrkall.find(key);
+    if (it == wrkall.end())
+        return NULL;
+    return it->second.proc;
+}
+
 bool wrkEmpty() {
     return wrkall.size() == 0;
 }

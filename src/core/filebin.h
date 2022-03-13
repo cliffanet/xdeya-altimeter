@@ -49,9 +49,15 @@ class FileBinNum : public FileBin {
             return open(1, mode, external);
         }
         
-        size_t count(bool external = false);
-        bool renum(bool external = false);
-        bool rotate(uint8_t count = 0, bool external = false);
+        size_t count(bool external);
+        virtual size_t count() { return count(false); }
+        bool renum(bool external);
+        virtual bool renum() { return renum(false); }
+        bool rotate(uint8_t count, bool external);
+        virtual bool rotate(uint8_t count = 0) { return rotate(count, false); }
+        
+        bool remove(uint8_t n, bool external);
+        virtual bool remove(uint8_t n) { return remove(n, false); }
     
     private:
         const char *m_fname_P;    

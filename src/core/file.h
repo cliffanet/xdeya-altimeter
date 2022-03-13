@@ -15,12 +15,14 @@
 #define FILE_NUM_SUFFIX     ".%02d"
 
 void fileName(char *fname, size_t sz, const char *fname_P, uint8_t num = 0);
-bool fileExists(const char *fname_P, bool external = false);
-bool fileRemove(const char *fname_P, bool external = false);
+bool fileExists(const char *fname_P, uint8_t num = 0, bool external = false);
+bool fileRemove(const char *fname_P, uint8_t num = 0, bool external = false);
 
 size_t fileCount(const char *fname_P, bool external = false);
 bool fileRenum(const char *fname_P, bool external = false);
 bool fileRotate(const char *fname_P, uint8_t count, bool external = false);
+
+size_t fileSizeAvail(bool external = false);
 
 /* ------------------------------------------------------------------------------------------- *
  *  FileMy - базовый класс для файлов с множественными чтением/записью

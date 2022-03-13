@@ -46,10 +46,10 @@ class FileTrack : public FileBinNum {
         typedef log_item_t item_t;
         
         FileTrack() : FileBinNum(PSTR(TRK_FILE_NAME)) {}
-        FileTrack(uint8_t n) : FileTrack() { open(n); }
+        FileTrack(uint8_t n, mode_t mode = MODE_READ) : FileTrack() { open(n, mode, true); }
 
-        inline size_t sizehead() const { return sizeof(head_t)+4; }
-        inline size_t sizeitem() const { return sizeof(item_t)+4; }
+        static inline size_t sizehead() { return sizeof(head_t)+4; }
+        static inline size_t sizeitem() { return sizeof(item_t)+4; }
         size_t pos() const { return (fh.position() - sizehead()) / sizeitem(); }
         size_t avail() { return (fh.available() - sizehead()) / sizeitem(); }
         size_t sizefile() const { return (fh.size() - sizehead()) / sizeitem(); }
@@ -57,7 +57,17 @@ class FileTrack : public FileBinNum {
         chs_t chksum();
         chs_t chksum(uint8_t n);
         uint8_t findfile(chs_t cks);
+
+        virtual size_t count() { return FileBinNum::count(true); }
+        virtual bool renum() { return FileBinNum::renum(true); }
+        virtual bool rotate(uint8_t count = 0) { return FileBinNum::rotate(count, true); }
+        virtual bool remove(uint8_t n) { return FileBinNum::remove(n, true); }
+        
+        bool create(const head_t &head);
 };
+
+// Под сколько ещё записей доступно место
+size_t trkCountAvail();
 
 
 
@@ -83,9 +93,6 @@ typedef struct __attribute__((__packed__)) {
 bool trkStart(uint8_t by = TRK_RUNBY_HAND, uint16_t old = 0);
 void trkStop(uint8_t by = TRK_RUNBY_ANY);
 bool trkRunning(uint8_t by = TRK_RUNBY_ANY);
-
-int trkFileCount();
-size_t trkCountAvail();
 
 void trkProcess();
 

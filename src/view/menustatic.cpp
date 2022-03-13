@@ -677,7 +677,7 @@ static const menu_el_t menutrack[] {
         .name = PTXT(MENU_TRACK_COUNT),
         .submenu = NULL,
         .enter = NULL,
-        .showval = [] (char *txt) { valInt(txt, trkFileCount()); },
+        .showval = [] (char *txt) { valInt(txt, FileTrack().count()); },
     },
     {   // Сколько времени доступно
         .name = PTXT(MENU_TRACK_AVAIL),

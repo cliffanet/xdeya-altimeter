@@ -37,6 +37,7 @@ void wrkAdd(WorkerProc::key_t key, WorkerProc *proc, bool autodel = true);
 WorkerProc::key_t wrkAddRand(WorkerProc::key_t key_min, WorkerProc::key_t key_max, WorkerProc *proc, bool autodel = true);
 void wrkDel(WorkerProc::key_t key);
 bool wrkExists(WorkerProc::key_t key);
+WorkerProc *wrkGet(WorkerProc::key_t key);
 bool wrkEmpty();
 
 // исполнение всех существующих воркеров в течение времени tmmax (мс)
