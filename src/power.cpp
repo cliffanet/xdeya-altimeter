@@ -5,6 +5,7 @@
 #include "view/base.h"
 #include "view/menu.h"
 #include "navi/proc.h"
+#include "navi/compass.h"
 #include "jump/proc.h"
 #include "jump/track.h"
 #include "core/worker.h"
@@ -209,6 +210,7 @@ void pwrSleep() {
     
     displayOff();
     gpsPwrDown();
+    compStop();
     setCpuFrequencyMhz(10);
     
     CONSOLE("pwr sleep");
@@ -220,6 +222,7 @@ void pwrOff() {
     
     displayOff();
     gpsPwrDown();
+    compStop();
     setCpuFrequencyMhz(10);
     
     // перед тем, как уйти в сон окончательно, дождёмся отпускания кнопки питания
