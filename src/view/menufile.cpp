@@ -51,7 +51,8 @@ class ViewMenuFile : public ViewMenu {
                 */
         
                 filei_t f;
-                strncpy(f.name, fh.name(), sizeof(f.name));
+                f.name[0] = '/';
+                strncpy(f.name+1, fh.name(), sizeof(f.name)-1);
                 f.name[sizeof(f.name)-1]='\0';
                 f.sz = fh.size();
                 fileall.push_back(f);
