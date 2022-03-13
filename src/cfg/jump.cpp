@@ -56,9 +56,11 @@ bool ConfigJump::toff(uint16_t old) {
     data.state = LOGJMP_TOFF;
     
     data.last.num = data.count;
-    data.last.tm = tmNow(jmpPreLogInterval(old));
     
-    data.last.toff = jmpPreLog(old);
+    auto cur = jmpPreCursor()-old;
+    data.last.tm = tmNow(jmpPreInterval(cur));
+    
+    data.last.toff = jmpPreLog(cur);
     data.last.toff.tmoffset = 0;
     data.last.toff.msave = utm() / 1000;
     
@@ -75,7 +77,9 @@ bool ConfigJump::beg(uint16_t old) {
     data.count++;
     data.last.num = data.count;
     
-    auto tm = tmNow(jmpPreLogInterval(old));
+    auto cur = jmpPreCursor()-old;
+    
+    auto tm = tmNow(jmpPreInterval(cur));
     if (data.state == LOGJMP_TOFF)
         data.last.toff.tmoffset = tmInterval(data.last.tm, tm);
     data.last.tm = tm;
@@ -83,7 +87,7 @@ bool ConfigJump::beg(uint16_t old) {
     data.state = LOGJMP_BEG;
     key(); // перегенерируем key только если он нулевой (не используется никем)
     
-    data.last.beg = jmpPreLog(old);
+    data.last.beg = jmpPreLog(cur);
     data.last.beg.tmoffset = 0;
     data.last.beg.msave = utm() / 1000;
     data.last.cnp = data.last.beg;
@@ -101,9 +105,11 @@ bool ConfigJump::cnp(uint16_t old) {
     
     data.state = LOGJMP_CNP;
     
-    auto tm = tmNow(jmpPreLogInterval(old));
+    auto cur = jmpPreCursor()-old;
     
-    data.last.cnp = jmpPreLog(old);
+    auto tm = tmNow(jmpPreInterval(cur));
+    
+    data.last.cnp = jmpPreLog(cur);
     data.last.cnp.tmoffset = tmInterval(data.last.tm, tm);
     data.last.cnp.msave = utm() / 1000;
     data.last.end = data.last.cnp;

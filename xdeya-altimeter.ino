@@ -73,7 +73,6 @@ void loop() {
         gpsProcess();
         compProcess();
         jmpProcess();
-        trkProcess();
         viewProcess();
     });
     pwrRun([]() {

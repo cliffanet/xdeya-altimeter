@@ -95,12 +95,8 @@ AltCalc & altCalc();
 typedef RingCursor<uint16_t, JMP_PRELOG_SIZE> jmp_cur_t;
 
 const jmp_cur_t &jmpPreCursor();
-const log_item_t &jmpPreLog(const jmp_cur_t &cursor);
-
-const log_item_t &jmpPreLog(uint16_t old = 0);
-uint32_t jmpPreLogInterval(uint16_t old = 0);
-uint16_t jmpPreLogFirst(log_item_t *li = NULL);
-bool jmpPreLogNext(uint16_t &cursor, log_item_t *li = NULL);
+const log_item_t &jmpPreLog(const jmp_cur_t &cursor = jmpPreCursor());
+uint32_t jmpPreInterval(const jmp_cur_t &from);
 
 bool jmpTakeoffCheck();
 

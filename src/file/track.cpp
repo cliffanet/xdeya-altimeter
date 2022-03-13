@@ -7,12 +7,6 @@
 #include "../clock.h"
 #include "../core/workerloc.h"
 
-static uint8_t state = 0;
-static bool runned = false;
-static uint32_t tmoffset = 0;
-static uint16_t prelogcur = 0;
-File fh;
-
 /* ------------------------------------------------------------------------------------------- *
  *  Файл трека
  * ------------------------------------------------------------------------------------------- */
@@ -126,12 +120,13 @@ class WorkerTrkSave : public WorkerProc
 {
     private:
         uint8_t m_by;
+        uint8_t m_cnt;
         uint32_t tmoffset;
         jmp_cur_t prelogcur;
         FileTrack tr;
         
     public:
-        WorkerTrkSave(uint8_t by, uint16_t old = 0) : m_by(by) {
+        WorkerTrkSave(uint8_t by, uint16_t old = 0) : m_by(by), m_cnt(0) {
             prelogcur = jmpPreCursor()-old;
             tmoffset = 0;
             if (old > 0)
@@ -171,7 +166,7 @@ class WorkerTrkSave : public WorkerProc
                 if (jmp.state() == LOGJMP_NONE) // в случае, если прыг не начался (включение трека до начала прыга),
                     th.jmpnum ++;          // за номер прыга считаем следующий
                 th.jmpkey = jmp.key();
-                th.tmbeg = tmNow(); //tmNow(jmpPreLogInterval(old));
+                th.tmbeg = tmNow(jmpPreInterval(prelogcur));
                 
                 return
                    tr.create(th) ? STATE_RUN : STATE_END;
@@ -195,6 +190,9 @@ class WorkerTrkSave : public WorkerProc
             }
             
             //CONSOLE("save[%d]: %d", *prelogcur, tmoffset);
+            
+            if ((((m_cnt++) & 0b111) == 0) && !trkCheckAvail(false))
+                return STATE_END;
             
             return STATE_RUN;
         }
@@ -221,87 +219,10 @@ bool trkStart(uint8_t by, uint16_t old) {
         return true;
     }
     
-    wrkAdd(WORKER_TRK_SAVE, new WorkerTrkSave(by, 30));
+    wrkAdd(WORKER_TRK_SAVE, new WorkerTrkSave(by, old));
     
     return true;
 }
-
-/*
-    if (runned)
-        return true;
-    
-    if (!trkCheckAvail(true))
-        return false;
-    
-    // открываем файл
-    const auto *_fname = PSTR(TRK_FILE_NAME);
-    if (!logRotate(_fname, 0))
-        return false;
-    
-    char fname[36];
-    
-    fname[0] = '/';
-    strncpy_P(fname+1, _fname, 30);
-    fname[30] = '\0';
-    const byte flen = strlen(fname);
-    sprintf_P(fname+flen, PSTR(LOGFILE_SUFFIX), 1);
-    viewIntDis();
-    fh = DISKFS.open(fname, FILE_WRITE);
-    if (!fh) {
-        viewIntEn();
-        return false;
-    }
-    
-    // пишем заголовок - время старта и номер прыга
-    trk_head_t th;
-    th.jmpnum = jmp.count();
-    if (jmp.state() == LOGJMP_NONE) // в случае, если прыг не начался (включение трека до начала прыга),
-        th.jmpnum ++;          // за номер прыга считаем следующий
-    th.jmpkey = jmp.key();
-    th.tmbeg = tmNow(jmpPreLogInterval(old));
-    
-    if (!fwrite(fh, th)) {
-        fh.close();
-        viewIntEn();
-        return false;
-    }
-    
-    // сбрасываем tmoffset, чтобы у самой первой записи он был равен нулю
-    tmoffset = 0;
-    tmoffset -= jmpPreLog(old).tmoffset;
-    
-    // Скидываем сразу все презапомненные данные
-    // даже если old == 0, мы всё равно запишем текущую позицию
-    while (1) {
-        log_item_t log;
-        log = jmpPreLog(old);
-        tmoffset += log.tmoffset;
-        log.tmoffset = tmoffset;
-        
-        log.msave = utm() / 1000;
-    
-        if (!fwrite(fh, log)) {
-            fh.close();
-            viewIntEn();
-            return false;
-        }
-        
-        if (old == 0)
-            break;
-        old--;
-    }
-    viewIntEn();
-    
-    prelogcur = jmpPreLogFirst();
-    runned = true;
-    CONSOLE("track started by 0x%02x", by);
-    
-    if (cfg.d().gpsontrkrec)
-        gpsOn(GPS_PWRBY_TRKREC);
-    
-    return true;
-}
-*/
 
 /* ------------------------------------------------------------------------------------------- *
  *  Остановка
@@ -314,53 +235,10 @@ void trkStop(uint8_t by) {
     if (proc != NULL)
         proc->bydel(by);
 }
-/*
-    state &= ~by;
-    if ((state > 0) || !runned)
-        return;
-    
-    fh.close();
-    
-    runned = false;
-    jmp.keyreset();
-    CONSOLE("track stopped");
-    
-    if (cfg.d().gpsontrkrec)
-        gpsOff(GPS_PWRBY_TRKREC);
-}
-    */
 
 /* ------------------------------------------------------------------------------------------- *
  *  Текущее состояние
  * ------------------------------------------------------------------------------------------- */
 bool trkRunning(uint8_t by) {
     return wrkExists(WORKER_TRK_SAVE);
-}
-
-/* ------------------------------------------------------------------------------------------- *
- *  Запись (на каждый тик тут приходится два тика высотомера и один тик жпс)
- * ------------------------------------------------------------------------------------------- */
-void trkProcess() {
-    if (state == 0)
-        return;
-    
-    if (!fh)
-        return;
-    
-    static uint8_t cnt = 0;
-    if ((((cnt++) & 0b111) == 0) && !trkCheckAvail(false)) {
-        trkStop();
-        return;
-    }
-
-    log_item_t log;
-    while (jmpPreLogNext(prelogcur, &log)) {
-        tmoffset += log.tmoffset;
-        log.tmoffset = tmoffset;
-        
-        log.msave = utm() / 1000;
-        
-        if (!fwrite(fh, log))
-            trkStop();
-    }
 }

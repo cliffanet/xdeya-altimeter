@@ -20,7 +20,6 @@ static AltCalc ac;
 
 static jmp_cur_t logcursor;
 static log_item_t logall[JMP_PRELOG_SIZE] = { { 0 } };
-static uint16_t logcur = 0xffff;
 
 /* ------------------------------------------------------------------------------------------- *
  * Базовые функции
@@ -37,7 +36,6 @@ static void jmpPreLogAdd(uint16_t interval) {
     auto &gps = gpsInf();
     
     logcursor ++;
-    logcur = *logcursor;
     auto &li = logall[*logcursor];
     
     li = {
@@ -117,64 +115,16 @@ const log_item_t &jmpPreLog(const jmp_cur_t &cursor) {
     return logall[*cursor];
 }
 
-/* ------------------------------------------------------------------------------------------- *
- *  Получение данных по old-индексу (old=0 - текущие данные, old=1 - на 1 тик ранее, ...)
- * ------------------------------------------------------------------------------------------- */
-static uint16_t old2index(uint16_t old) {
-    if (old >= JMP_PRELOG_SIZE) {
-        uint16_t ind = logcur+1;
-        return ind >= JMP_PRELOG_SIZE ? 0 : ind;
-    }
-    
-    uint16_t ind = logcur;
-    if (ind < old) {
-        old -= ind+1;
-        ind = JMP_PRELOG_SIZE-1;
-    }
-    return ind - old;
-}
-
-const log_item_t &jmpPreLog(uint16_t old) {
-    return logall[old2index(old)];
-}
-
-uint32_t jmpPreLogInterval(uint16_t old) {
-    if (old >= JMP_PRELOG_SIZE)
-        old = JMP_PRELOG_SIZE-1;
-    uint16_t cur = logcur;
+uint32_t jmpPreInterval(const jmp_cur_t &from) {
+    jmp_cur_t cursor = logcursor;
     uint32_t interval = 0;
     
-    while (old > 0) {
-        // интервал до текущего (old = 0) равен 0
-        // до предыдущего (old = 1) = tmoffset текущего и т.д.
-        interval += logall[cur].tmoffset;
-        old --;
-        cur = cur > 0 ? cur-1 : JMP_PRELOG_SIZE-1;
+    while (cursor != from) {
+        interval += logall[*cursor].tmoffset;
+        cursor--;
     }
     
     return interval;
-}
-
-/* ------------------------------------------------------------------------------------------- *
- *  Получение данных, начиная от текущего положения
- * ------------------------------------------------------------------------------------------- */
-uint16_t jmpPreLogFirst(log_item_t *li) {
-    if (li != NULL)
-        *li = logall[logcur];
-    return logcur;
-}
-// При обращении к jmpPreLogNext по индексу полученному ранее из jmpPreLogFirst,
-// пока next не вернёт false, мы гаранируем, что проёдёмся по всем данным, не пропустив ничего 
-bool jmpPreLogNext(uint16_t &cursor, log_item_t *li) {
-    if (cursor == logcur)
-        return false;
-    
-    cursor ++;
-    if (cursor >= JMP_PRELOG_SIZE)
-        cursor = 0;
-    if (li != NULL)
-        *li = logall[cursor];
-    return true;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -242,9 +192,9 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
         jmpcnt += 30;
         // для удобства отладки помечаем текущий jmpPreLog
         // флагом LI_FLAG_JMPDECISS - момент принятия решения о начале прыжка
-        logall[logcur].flags            |= LI_FLAG_JMPDECISS;
+        logall[*logcursor].flags            |= LI_FLAG_JMPDECISS;
         // А момент, который мы считаем отделением - флагом LI_FLAG_JMPBEG
-        logall[old2index(jmpcnt)].flags  |= LI_FLAG_JMPBEG;
+        logall[*(logcursor - jmpcnt)].flags |= LI_FLAG_JMPBEG;
 
         // Временно сделаем, чтобы при автозапуске трека, он начинал писать чуть заранее до отделения
         trkStart(TRK_RUNBY_JMPBEG, jmpcnt+50);
@@ -265,7 +215,7 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
         case ACJMP_CANOPY:
             setViewMain(cfg.d().dsplcnp, false);
             
-            logall[old2index(jmpcnt)].flags  |= LI_FLAG_JMPCNP;
+            logall[*(logcursor - jmpcnt)].flags  |= LI_FLAG_JMPCNP;
             jmp.cnp(jmpcnt);
             break;
             
@@ -273,7 +223,7 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
             setViewMain(cfg.d().dsplland);
             
             // Прыг закончился совсем, сохраняем результат
-            logall[logcur].flags  |= LI_FLAG_JMPEND;
+            logall[*logcursor].flags  |= LI_FLAG_JMPEND;
         
             // Сохраняем
             jmp.end();

@@ -94,6 +94,4 @@ bool trkStart(uint8_t by = TRK_RUNBY_HAND, uint16_t old = 0);
 void trkStop(uint8_t by = TRK_RUNBY_ANY);
 bool trkRunning(uint8_t by = TRK_RUNBY_ANY);
 
-void trkProcess();
-
 #endif // _file_track_H
