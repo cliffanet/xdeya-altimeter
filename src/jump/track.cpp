@@ -17,6 +17,13 @@ FileTrack::chs_t FileTrack::chksum() {
     uint8_t data[sz];
     chs_t cks = { 0, 0, 0 };
     
+    cks.sz = fh.size();
+    if (cks.sz == 0)
+        return { 0, 0, 0 };
+    
+    if (sz > cks.sz)
+        sz = cks.sz;
+    
     fh.seek(0, SeekSet);
     if (fh.read(data, sz) != sz)
         return { 0, 0, 0 };
@@ -26,7 +33,8 @@ FileTrack::chs_t FileTrack::chksum() {
         cks.csb += cks.csa;
     }
     
-    cks.sz = fh.size();
+    if (fh.available() == 0)
+        return cks;
     
     fh.seek(cks.sz - sz);
     if (fh.read(data, sz) != sz)
@@ -56,7 +64,8 @@ FileTrack::chs_t FileTrack::chksum(uint8_t n) {
 
 uint8_t FileTrack::findfile(chs_t cks) {
     for (uint8_t n = 1; n < 99; n++) {
-        uint32_t cks1 = chksum(n);
+        auto cks1 = chksum(n);
+        CONSOLE("chksum[%d]: %04x%04x%08x ok:%d", n, cks1.csa, cks1.csb, cks1.sz, cks1 ? 1 : 0);
         if (!cks1)
             return 0;
         if (cks1 == cks)
