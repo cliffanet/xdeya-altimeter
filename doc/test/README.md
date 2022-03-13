@@ -50,5 +50,5 @@
 
 ### Где взять прошивку
 
-Поддерживается прошивкой, начиная с [https://github.com/cliffanet/xdeya-altimeter/releases/tag/v0.6.0](v0.6.0)
+Поддерживается прошивкой, начиная с [v0.6.0](https://github.com/cliffanet/xdeya-altimeter/releases/tag/v0.6.0)
 
