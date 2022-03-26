@@ -5,7 +5,10 @@
 #include "wifi.h"
 #include "../log.h"
 #include "../clock.h"
+#include "binproto.h"
+#include "../view/text.h"
 
+#include <WiFiClient.h>
 #include <esp_err.h>
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -14,6 +17,10 @@
 #include "soc/rtc_cntl_reg.h"
 
 #include "esp_log.h"
+
+#include "lwip/sockets.h"       // host -> ip
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
 
 #include <vector>
 #include <string.h> // strcpy
@@ -444,3 +451,59 @@ int8_t wifiPower() {
     return power;
 }
 
+/* ------------------------------------------------------------------------------------------- *
+ *  WiFi-клиент
+ * ------------------------------------------------------------------------------------------- */
+class NetSocketWiFi : public NetSocket {
+    public:
+        bool connect() {
+            disconnect();
+            
+            char host[64];
+            strcpy_P(host, PSTR(WIFI_SRV_HOST));
+    
+            struct addrinfo hints = {};
+            hints.ai_family = AF_INET;
+            hints.ai_socktype = SOCK_STREAM;
+            struct addrinfo *res;
+            int err = getaddrinfo(host, NULL, &hints, &res);
+            if(err != 0 || res == NULL) {
+                m_err = PTXT(SERVER_DNSFAIL);
+                return false;
+            }
+    
+            IPAddress ip(reinterpret_cast<struct sockaddr_in *>(res->ai_addr)->sin_addr.s_addr);
+            CONSOLE("host %s -> ip %d.%d.%d.%d", host, ip[0], ip[1], ip[2], ip[3]);
+
+            return m_cli.connect(ip, WIFI_SRV_PORT);
+        }
+        
+        void disconnect() {
+            m_cli.stop();
+        }
+        
+        bool connected() {
+            return m_cli.connected();
+        }
+        
+        size_t available() {
+            return m_cli.available();
+        }
+        
+        size_t recv(uint8_t *data, size_t sz) {
+            return m_cli.read(data, sz);
+        }
+        
+        size_t send(const uint8_t *data, size_t sz) {
+            return m_cli.write(data, sz);
+        }
+        
+        const char *err_P() const { return m_err; }
+    
+    private:
+        WiFiClient m_cli;
+        const char *m_err = NULL;
+};
+
+static NetSocketWiFi _wificli;
+NetSocket *wifiCli() { return &_wificli; }

@@ -157,6 +157,9 @@
 #define TXT_WIFI_SEARCHNET          "... searching ..."
 #define TXT_WIFI_NEEDPASSWORD       "Password required!"
 
+#define TXT_WIFI_MSG_WIFICONNECT    "WiFi connecting..."
+#define TXT_WIFI_MSG_SRVCONNECT     "Server connecting..."
+#define TXT_WIFI_MSG_SRVAUTH        "Server auth..."
 #define TXT_WIFI_MSG_SENDCONFIG     "Sending config..."
 #define TXT_WIFI_MSG_SENDJUMPCOUNT  "Sending jump count..."
 #define TXT_WIFI_MSG_SENDPOINT      "Sending point..."
@@ -164,6 +167,7 @@
 #define TXT_WIFI_MSG_SENDTRACK      "Sending Tracks..."
 #define TXT_WIFI_MSG_SENDFIN        "Sending fin..."
 #define TXT_WIFI_MSG_JOINACCEPT     "join accepted"
+#define TXT_WIFI_MSG_USERCANCEL     "Cancel by user"
 
 #define TXT_WIFI_NEXT_HELLO         "wait hello"
 #define TXT_WIFI_NEXT_CONFIRM       "Wait server confirm..."

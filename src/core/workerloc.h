@@ -9,8 +9,11 @@
 
 enum {
     WORKER_NONE = 0,
+    
     WORKER_GPS_INIT,
     WORKER_TRK_SAVE,
+    WORKER_WIFI_SYNC,
+    
     WORKER_RAND_MIN,
     WORKER_RAND_MAX = WORKER_RAND_MIN + 20
 };

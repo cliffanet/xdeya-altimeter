@@ -163,6 +163,9 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_WIFI_SEARCHNET          "... поиск сетей ..."
 #define TXT_WIFI_NEEDPASSWORD       "Требуется пароль!"
 
+#define TXT_WIFI_MSG_WIFICONNECT    "WiFi подключение..."
+#define TXT_WIFI_MSG_SRVCONNECT     "Соединение с сервером..."
+#define TXT_WIFI_MSG_SRVAUTH        "Авторизация на сервере..."
 #define TXT_WIFI_MSG_SENDCONFIG     "Отправка настроек..."
 #define TXT_WIFI_MSG_SENDJUMPCOUNT  "Отправка кол-ва прыжков..."
 #define TXT_WIFI_MSG_SENDPOINT      "Отправка точек..."
@@ -170,6 +173,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_WIFI_MSG_SENDTRACK      "Отправка треков..."
 #define TXT_WIFI_MSG_SENDFIN        "Завершение отправки..."
 #define TXT_WIFI_MSG_JOINACCEPT     "Привязка к Web завершена"
+#define TXT_WIFI_MSG_USERCANCEL     "Отменено пользователем"
 
 #define TXT_WIFI_NEXT_HELLO         "Ожидание ответа сервера"
 #define TXT_WIFI_NEXT_CONFIRM       "Ожидание подтверждения..."

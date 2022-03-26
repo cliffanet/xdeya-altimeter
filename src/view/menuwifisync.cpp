@@ -10,6 +10,7 @@
 #include "../net/srv.h"
 #include "../net/data.h"
 #include "../net/wifi.h"
+#include "../net/wifisync.h"
 
 #include <Update.h>         // Обновление прошивки
 #include <vector>
@@ -726,6 +727,135 @@ ViewNetSync vNetSync;
 
 
 
+class ViewNetSync2 : public ViewBase {
+    public:
+        void btnSmpl(btn_code_t btn) {
+            // короткое нажатие на любую кнопку ускоряет выход,
+            // если процес завершился и ожидается таймаут финального сообщения
+            auto *w = wifiSyncProc();
+            if ((w != NULL) && (w->op() == WorkerWiFiSync::stCloseMsg)) {
+                // Переход в ViewMain будет и так автоматически в методе draw(),
+                // как только закончится процесс wifiSync, но это будет с задержкой.
+                // Чтобы переключение произошло сразу, сделаем его тут
+                //setViewMain();
+                w->stop();
+            }
+        }
+        
+        bool useLong(btn_code_t btn) {
+            return btn == BTN_SEL;
+        }
+        void btnLong(btn_code_t btn) {
+            // длинное нажатие из любой стадии завершает процесс синхнонизации принудительно
+            if (btn != BTN_SEL)
+                return;
+            auto *w = wifiSyncProc();
+            if (w != NULL)
+                w->cancel();
+        }
+        
+        // отрисовка на экране
+        void draw(U8G2 &u8g2) {
+            auto *w = wifiSyncProc();
+            if (w == NULL) {
+                setViewMain();
+                return;
+            }
+            
+            u8g2.setFont(menuFont);
+    
+            // Заголовок
+            u8g2.setDrawColor(1);
+            u8g2.drawBox(0,0,u8g2.getDisplayWidth(),12);
+            u8g2.setDrawColor(0);
+            char s[64];
+            strcpy_P(s, PTXT(WIFI_WEBSYNC));
+            u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(s))/2, 10, s);
+            
+            u8g2.setDrawColor(1);
+            int8_t y = 10-1+14;
+            
+            strcpy_P(s, PTXT(WIFI_NET));
+            u8g2.drawTxt(0, y, s);
+            
+            int8_t rssi;
+            switch (wifiStatus()) {
+                case WIFI_STA_NULL:         strcpy_P(s, PTXT(WIFI_STATUS_OFF));         break;
+                case WIFI_STA_DISCONNECTED: strcpy_P(s, PTXT(WIFI_STATUS_DISCONNECT));  break;
+                case WIFI_STA_FAIL:         strcpy_P(s, PTXT(WIFI_STATUS_FAIL));        break;
+                case WIFI_STA_WAITIP:
+                case WIFI_STA_CONNECTED:
+                    wifiInfo(s, rssi);
+                    break;
+            }
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
+            
+            y += 10;
+            /*
+            
+            if (state == NS_PROFILE_JOIN) {
+                strcpy_P(s, PTXT(WIFI_WAITJOIN));
+                u8g2.drawTxt(0, y, s);
+                snprintf_P(s, sizeof(s), PTXT(WIFI_WAIT_SEC), timeout / 10);
+                u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
+                y += 25;
+                u8g2.setFont(u8g2_font_fub20_tr);
+                snprintf_P(s, sizeof(s), PSTR("%04X"), joinnum);
+                u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
+                return;
+            }
+            */
+
+            if ((wifiStatus() == WIFI_STA_WAITIP) || (wifiStatus() == WIFI_STA_CONNECTED)) {
+                snprintf_P(s, sizeof(s), PTXT(WIFI_RSSI), rssi);
+                u8g2.drawTxt(0, y, s);
+                
+                if (wifiStatus() == WIFI_STA_CONNECTED) {
+                    const auto &ip = wifiIP();
+                    snprintf_P(s, sizeof(s), PSTR("%d.%d.%d.%d"), ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3]);
+                    u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+                }
+            }
+            
+            y += 10;
+            if (w->msg_P() != NULL) {
+                char title[60];
+                strncpy_P(title, w->msg_P(), sizeof(title));
+                title[sizeof(title)-1] = 0;
+                u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(title))/2, y, title);
+            }
+            
+            /*
+            y += 10;
+            if (wifiStatus() > WIFI_STA_NULL) {
+                if (progress_max > 0) {
+                    uint8_t p = progress_val * 20 / progress_max;
+                    char *ss = s;
+                    *ss = '|';
+                    ss++;
+                    for (uint8_t i=0; i< 20; i++, ss++)
+                        *ss = i < p ? '.' : ' ';
+                    *ss = '|';
+                    ss++;
+                    *ss = '\0';
+                }
+                else {
+                    uint16_t t = (millis() & 0x3FFF) >> 10;
+                    s[t] = '\0';
+                    while (t > 0) {
+                        s[t-1] = '.';
+                        t--;
+                    }
+                }
+                u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
+            }
+            */
+        }
+};
+ViewNetSync2 vNetSync2;
+
+
+
 /* ------------------------------------------------------------------------------------------- *
  *  ViewMenuWifiSync - список wifi-сетей
  * ------------------------------------------------------------------------------------------- */
@@ -818,9 +948,10 @@ class ViewMenuWifiSync : public ViewMenu {
             auto n = wifiScanInfo(sel());
             if (n == NULL)
                 return;
+            
             if (n->isopen) {
-                viewSet(vNetSync);
-                vNetSync.begin(n->ssid, NULL);
+                wifiSyncBegin(n->ssid);
+                viewSet(vNetSync2);
             }
             else {
                 char pass[64];
@@ -828,9 +959,9 @@ class ViewMenuWifiSync : public ViewMenu {
                     menuFlashP(PTXT(WIFI_NEEDPASSWORD));
                     return;
                 }
-                
-                viewSet(vNetSync);
-                vNetSync.begin(n->ssid, pass);
+
+                wifiSyncBegin(n->ssid, pass);
+                viewSet(vNetSync2);
             }
         }
         

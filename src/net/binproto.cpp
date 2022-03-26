@@ -9,10 +9,10 @@
 
 size_t NetSocket::recv(size_t sz) {
     size_t avail = available();
-    if (avail > sz)
-        avail = sz;
     if (avail == 0)
         return 0;
+    if (avail > sz)
+        avail = sz;
     
     uint8_t data[avail];
     size_t sz1 = recv(data, avail);
@@ -30,7 +30,8 @@ BinProto::BinProto() :
 BinProto::BinProto(NetSocket * nsock) :
     m_connected(false),
     m_waitcmd(0),
-    m_waitsz(0)
+    m_waitsz(0),
+    m_datasz(0)
 {
     sock_set(nsock);
 }
@@ -48,6 +49,7 @@ void BinProto::sock_clear() {
     m_nsock = NULL;
     m_waitcmd = 0;
     m_waitsz = 0;
+    m_datasz = 0;
 }
 
 void BinProto::recv_set(uint8_t cmd, recv_hnd_t hnd, uint16_t sz, uint16_t timeout, hnd_t on_timeout) {
@@ -71,7 +73,9 @@ void BinProto::recv_clear() {
     m_recv.clear();
 }
 
-void BinProto::process() {
+bool BinProto::process() {
+    bool isrun = false;
+    
     if ((m_nsock != NULL) &&
         (m_waitcmd == 0) &&
         (m_waitsz == 0) &&
@@ -89,55 +93,66 @@ void BinProto::process() {
         else {
             m_waitcmd = p.cmd;
             m_waitsz  = ntohs(p.sz);
+            
+            auto it = m_recv.find(m_waitcmd);
+            m_datasz = 
+                it == m_recv.end() ? 0 :
+                m_waitsz < it->second.sz ? m_waitsz :
+                it->second.sz;
         }
+        isrun = true;
     }
 
-    if ((m_nsock != NULL) && (m_waitcmd > 0)) {
+    if ((m_nsock != NULL) &&
+        (m_waitcmd > 0) &&
+        (m_nsock->available() >= m_datasz)) {
         // Принимаем данные по ожидаемой команде
         auto it = m_recv.find(m_waitcmd);
         if (it == m_recv.end()) {
-            m_waitcmd = 0;
             onerror(ERR_RECVUNKNOWN);
         }
         else
-        if (it->second.hnd == NULL) {
-            m_waitcmd = 0;
-        }
-        else
-        if (it->second.sz > 0) {
-            uint8_t data[it->second.sz];
-            size_t sz1 = m_waitsz < it->second.sz ? m_waitsz : it->second.sz;
-            size_t sz2 = m_nsock->recv(data, sz1);
-            if (sz2 == sz1) {
-                if (sz2 < it->second.sz)
-                    bzero(data + sz2, it->second.sz - sz2);
-                it->second.hnd(data);
-                m_waitsz -= sz2;
+        if (it->second.hnd != NULL) {
+            if (m_datasz > 0) {
+                uint8_t data[it->second.sz];
+                size_t sz = m_nsock->recv(data, m_datasz);
+                if (sz == m_datasz) {
+                    if (sz < it->second.sz)
+                        bzero(data + sz, it->second.sz - sz);
+                    it->second.hnd(data);
+                    m_waitsz -= sz;
+                }
+                else {
+                    onerror(ERR_RECV);
+                    if (sz > m_waitsz)
+                        m_waitsz = 0;
+                    else
+                    if (sz > 0)
+                        m_waitsz -= sz;
+                }
             }
             else {
-                onerror(ERR_RECV);
-                if (sz2 > m_waitsz)
-                    m_waitsz = 0;
-                else
-                if (sz2 > 0)
-                    m_waitsz -= sz2;
+                it->second.hnd(NULL);
             }
-            
-            m_waitcmd = 0;
         }
+        
+        m_waitcmd = 0;
+        m_datasz = 0;
+        isrun = true;
     }
 
     if ((m_nsock != NULL) &&
         (m_waitcmd == 0) &&
         (m_waitsz > 0) &&
-        (m_nsock->available() >= sizeof(hdr_t))) {
+        (m_nsock->available() >= 0)) {
         // Стравливание остатков данных команды, 
         // которых мы не ожидали.
-        size_t sz1 = m_nsock->recv(m_waitsz);
-        if (sz1 >= 0)
-            m_waitsz -= sz1;
+        size_t sz = m_nsock->recv(m_waitsz);
+        if (sz >= 0)
+            m_waitsz -= sz;
         else
             onerror(ERR_RECV);
+        isrun = true;
     }
     
     if (m_connected && ((m_nsock == NULL) || !m_nsock->connected())) {
@@ -145,10 +160,13 @@ void BinProto::process() {
         m_connected = false;
         m_waitcmd = 0;
         m_waitsz = 0;
+        m_datasz = 0;
     }
     else
     if (!m_connected && (m_nsock != NULL) && m_nsock->connected()) {
         onconnect();
         m_connected = true;
     }
+    
+    return isrun;
 }

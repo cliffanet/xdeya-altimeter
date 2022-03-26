@@ -56,4 +56,14 @@ bool wifiInfo(char *ssid, int8_t &rssi);
 
 int8_t wifiPower();
 
+#ifdef FWVER_DEV
+#define WIFI_SRV_HOST    "sync.xdeya.dev.cliffa.net"
+#else
+#define WIFI_SRV_HOST    "sync.xdeya.cliffa.net"
+#endif
+#define WIFI_SRV_PORT    9971
+
+class NetSocket;
+NetSocket *wifiCli();
+
 #endif // _net_wifi_H

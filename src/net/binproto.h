@@ -16,11 +16,12 @@ class NetSocket {
     public:
         virtual bool connect() = 0;
         virtual void disconnect() = 0;
-        virtual bool connected() const = 0;
-        virtual size_t available() const = 0;
+        virtual bool connected() = 0;
+        virtual size_t available() = 0;
         virtual size_t recv(uint8_t *data, size_t sz) = 0;
         virtual size_t recv(size_t sz); // стравливание буфера
         virtual size_t send(const uint8_t *data, size_t sz) = 0;
+        virtual const char *err_P() const { return NULL; }
 };
 
 /* ------------------------------------------------------------------------------------------- *
@@ -61,7 +62,7 @@ class BinProto {
         void recv_set(uint8_t cmd, recv_hnd_t hnd, uint16_t sz = 0, uint16_t timeout = 0, hnd_t on_timeout = NULL);
         void recv_del(uint8_t cmd);
         void recv_clear();
-        void process();
+        bool process();
     
     protected:
         virtual void onconnect() {}
@@ -75,6 +76,7 @@ class BinProto {
         bool m_connected;
         uint8_t m_waitcmd;
         uint16_t m_waitsz;
+        uint16_t m_datasz;
 };
 
 #endif // _net_binproto_H
