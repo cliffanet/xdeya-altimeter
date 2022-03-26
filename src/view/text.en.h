@@ -160,6 +160,7 @@
 #define TXT_WIFI_MSG_WIFICONNECT    "WiFi connecting..."
 #define TXT_WIFI_MSG_SRVCONNECT     "Server connecting..."
 #define TXT_WIFI_MSG_SRVAUTH        "Server auth..."
+#define TXT_WIFI_MSG_WAITAUTH       "Wait auth..."
 #define TXT_WIFI_MSG_SENDCONFIG     "Sending config..."
 #define TXT_WIFI_MSG_SENDJUMPCOUNT  "Sending jump count..."
 #define TXT_WIFI_MSG_SENDPOINT      "Sending point..."

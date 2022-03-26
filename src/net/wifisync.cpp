@@ -8,6 +8,7 @@
 #include "wifi.h"
 #include "binproto.h"
 #include "../view/text.h"
+#include "../cfg/webjoin.h"
 
 
 #define NEXT(op,tmr)        next(st ## op, PSTR(TXT_WIFI_MSG_ ## op), tmr)
@@ -18,7 +19,11 @@
 #define RETURN_ERR(s)           { ERR(s); return STATE_WAIT; }
 #define RETURN_FIN(s)           { FIN(s); return STATE_WAIT; }
 
-WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) {
+WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
+    m_sock(NULL),
+    bpo(NULL)
+{
+    CONSOLE("[%08x] create", this);
     if (!wifiStart()) {
         ERR(WIFIINIT);
         return;
@@ -30,6 +35,13 @@ WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) {
     
     NEXT(WIFICONNECT, 300);
 }
+WorkerWiFiSync::~WorkerWiFiSync() {
+    CONSOLE("[%08x] destroy", this);
+    if (m_sock != NULL)
+        delete m_sock;
+    if (bpo != NULL)
+        delete bpo;
+}
 
 void WorkerWiFiSync::next(op_t op, const char *msg_P, uint32_t tmr) {
     m_msg_P = msg_P;
@@ -40,11 +52,36 @@ void WorkerWiFiSync::next(op_t op, const char *msg_P, uint32_t tmr) {
 void WorkerWiFiSync::stop(const char *msg_P) {
     m_msg_P = msg_P;
     m_op = stOff;
+    clrtimer();
 }
 
 void WorkerWiFiSync::cancel() {
     if (m_op > stCloseMsg)
         FIN(USERCANCEL);
+}
+
+void WorkerWiFiSync::initbpo() {
+    if ((m_sock == NULL) || (bpo != NULL))
+        return;
+    
+    bpo = new BinProtoSend(m_sock, '%');
+    // auth
+    bpo->add( 0x01, PSTR("N") );
+}
+
+void WorkerWiFiSync::end() {
+    if (m_sock != NULL) {
+        m_sock->disconnect();
+        CONSOLE("delete m_sock");
+        delete m_sock;
+        m_sock = NULL;
+    }
+    if (bpo != NULL) {
+        CONSOLE("delete bpo");
+        delete bpo;
+        bpo = NULL;
+    }
+    wifiStop();
 }
 
 WorkerWiFiSync::state_t
@@ -56,8 +93,7 @@ WorkerWiFiSync::process() {
     
     switch (m_op) {
         case stOff:
-            wifiCli()->disconnect();
-            wifiStop();
+            end();
             if (m_msg_P != NULL) {
                 m_op = stCloseMsg;
                 return STATE_WAIT;
@@ -80,16 +116,29 @@ WorkerWiFiSync::process() {
         
         case stSRVCONNECT:
         // ожидаем соединения к серверу
-            if (!wifiCli()->connect())
+            if (m_sock == NULL)
+                m_sock = wifiCliCreate();
+            if (!m_sock->connect())
                 RETURN_ERR(SERVERCONNECT);
+            
+            initbpo();
             
             RETURN_NEXT(SRVAUTH, 100);
         
         case stSRVAUTH:
         // авторизируемся на сервере
-            //authStart();
-            //return;
-            return STATE_WAIT;
+            {
+                ConfigWebJoin wjoin;
+                if (!wjoin.load())
+                    RETURN_ERR(JOINLOAD);
+
+                CONSOLE("[authStart] authid: %lu", wjoin.authid());
+            
+                if (!bpo->send(0x01, wjoin.authid()))
+                    RETURN_ERR(SENDAUTH);
+            }
+            
+            RETURN_NEXT(WAITAUTH, 200);
     }
     
     return STATE_WAIT;

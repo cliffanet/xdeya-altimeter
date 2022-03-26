@@ -505,5 +505,4 @@ class NetSocketWiFi : public NetSocket {
         const char *m_err = NULL;
 };
 
-static NetSocketWiFi _wificli;
-NetSocket *wifiCli() { return &_wificli; }
+NetSocket *wifiCliCreate() { return new NetSocketWiFi; }

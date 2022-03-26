@@ -27,8 +27,46 @@ class NetSocket {
 /* ------------------------------------------------------------------------------------------- *
  *  Процессинг по передаче упакованных данных
  * ------------------------------------------------------------------------------------------- */
-
 class BinProto {
+    public:
+        typedef uint8_t cmdkey_t;
+        
+        typedef struct {
+            const char *pk_P;
+        } item_t;
+        
+        typedef struct {
+            cmdkey_t cmd;
+            const char *pk_P;
+        } elem_t;
+        
+        BinProto(char mgc = '#', const elem_t *all = NULL, size_t count = 0);
+        void add(const cmdkey_t &cmd, const char *pk_P);
+        void add(const elem_t *all, size_t count);
+        void del(const cmdkey_t &cmd);
+
+        int vpack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, va_list va);
+        int pack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, ...);
+        bool unpack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, ...);
+    
+    private:
+        char m_mgc;
+        std::map<cmdkey_t, item_t> m_all;
+};
+
+class BinProtoSend : public BinProto {
+    public:
+        BinProtoSend(NetSocket * nsock = NULL, char mgc = '#', const elem_t *all = NULL, size_t count = 0);
+        void sock_set(NetSocket * nsock);
+        void sock_clear();
+        bool send(const cmdkey_t &cmd, ...);
+    
+    private:
+        NetSocket *m_nsock;
+};
+
+/*
+class BinProtoRecv : public BinProto {
     public:
     
         typedef void (*hnd_t)();
@@ -40,13 +78,6 @@ class BinProto {
             hnd_t on_timeout;
         } recv_item_t;
     
-        // Заголовок данных при сетевой передаче
-        typedef struct __attribute__((__packed__)) {
-            char    mgc;
-            uint8_t cmd;
-            uint16_t sz;
-        } hdr_t;
-    
         typedef enum {
             ERR_NONE = 0,
             ERR_PROTO,
@@ -55,8 +86,8 @@ class BinProto {
             ERR_SEND
         } err_t;
     
-        BinProto();
-        BinProto(NetSocket * nsock);
+        BinProtoRecv();
+        BinProtoRecv(NetSocket * nsock);
         void sock_set(NetSocket * nsock);
         void sock_clear();
         void recv_set(uint8_t cmd, recv_hnd_t hnd, uint16_t sz = 0, uint16_t timeout = 0, hnd_t on_timeout = NULL);
@@ -78,5 +109,6 @@ class BinProto {
         uint16_t m_waitsz;
         uint16_t m_datasz;
 };
+*/
 
 #endif // _net_binproto_H

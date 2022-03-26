@@ -27,6 +27,9 @@ class WorkerProc {
             STATE_RUN,
             STATE_END
         } state_t;
+        
+        virtual ~WorkerProc() {}    // Для корректного срабатывания деструкторов-потомков,
+                                    // этот деструктор должен быть виртуальным
 
         virtual void begin() {};
         virtual state_t process() = 0;
