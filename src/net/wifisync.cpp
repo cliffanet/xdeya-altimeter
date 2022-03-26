@@ -10,27 +10,31 @@
 #include "../view/text.h"
 
 
-#define MSG(s)              m_msg_P = PSTR(TXT_WIFI_MSG_ ## s)
-#define NEXT(st,s) { \
-        m_op = st; \
-        MSG(s); \
-        return STATE_RUN; \
-    }
-#define ERR(s)              { stop(PSTR(TXT_WIFI_ERR_ ## s)); return STATE_WAIT; }
+#define NEXT(op,tmr)        next(st ## op, PSTR(TXT_WIFI_MSG_ ## op), tmr)
+#define ERR(s)              stop(PSTR(TXT_WIFI_ERR_ ## s))
 #define FIN(s)              stop(PSTR(TXT_WIFI_MSG_ ## s))
 
-WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
-    m_msg_P(PSTR(TXT_WIFI_MSG_WIFICONNECT)),
-    m_op(stWiFi)
-{
+#define RETURN_NEXT(op,tmr)     { NEXT(op,tmr); return STATE_RUN; }
+#define RETURN_ERR(s)           { ERR(s); return STATE_WAIT; }
+#define RETURN_FIN(s)           { FIN(s); return STATE_WAIT; }
+
+WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) {
     if (!wifiStart()) {
-        stop(PSTR(TXT_WIFI_ERR_WIFIINIT));
+        ERR(WIFIINIT);
         return;
     }
     if (!wifiConnect(ssid, pass)) {
-        stop(PSTR(TXT_WIFI_ERR_WIFICONNECT));
+        ERR(WIFICONNECT);
         return;
     }
+    
+    NEXT(WIFICONNECT, 300);
+}
+
+void WorkerWiFiSync::next(op_t op, const char *msg_P, uint32_t tmr) {
+    m_msg_P = msg_P;
+    m_op = op;
+    settimer(tmr);
 }
 
 void WorkerWiFiSync::stop(const char *msg_P) {
@@ -45,6 +49,11 @@ void WorkerWiFiSync::cancel() {
 
 WorkerWiFiSync::state_t
 WorkerWiFiSync::process() {
+    if (istimeout()) {
+        ERR(TIMEOUT);
+        clrtimer();
+    }
+    
     switch (m_op) {
         case stOff:
             wifiCli()->disconnect();
@@ -55,31 +64,32 @@ WorkerWiFiSync::process() {
             }
             return STATE_END;
             
-        case stWiFi:
-        // этап 1 - ожидаем соединения по вифи
+        case stWIFICONNECT:
+        // ожидаем соединения по вифи
             switch (wifiStatus()) {
                 case WIFI_STA_CONNECTED:
                     CONSOLE("wifi ok, try to server connect");
                     // вифи подключилось, соединяемся с сервером
-                    NEXT(stSrvConnect, SRVCONNECT);
-                
-                    // авторизаемся на сервере
-                    //authStart();
-                    //return;
+                    RETURN_NEXT(SRVCONNECT, 100);
                 
                 case WIFI_STA_FAIL:
-                    ERR(WIFICONNECT);
+                    RETURN_ERR(WIFICONNECT);
             }
             
-            //if (timeout == 1)
-            //    ERR(WIFITIMEOUT);
             return STATE_WAIT;
         
-        case stSrvConnect:
+        case stSRVCONNECT:
+        // ожидаем соединения к серверу
             if (!wifiCli()->connect())
-                ERR(SERVERCONNECT);
+                RETURN_ERR(SERVERCONNECT);
             
-            NEXT(stSrvAuth, SRVAUTH);
+            RETURN_NEXT(SRVAUTH, 100);
+        
+        case stSRVAUTH:
+        // авторизируемся на сервере
+            //authStart();
+            //return;
+            return STATE_WAIT;
     }
     
     return STATE_WAIT;

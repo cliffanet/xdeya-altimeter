@@ -31,6 +31,14 @@ class WorkerProc {
         virtual void begin() {};
         virtual state_t process() = 0;
         virtual void end() {};
+        
+        void settimer(uint32_t val);
+        void clrtimer();
+        void dectimer();
+        bool istimeout() const { return m_timer == 1; }
+    
+    private:
+        uint32_t m_timer = 0;
 };
 
 void wrkAdd(WorkerProc::key_t key, WorkerProc *proc, bool autodel = true);

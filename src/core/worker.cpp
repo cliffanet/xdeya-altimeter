@@ -8,6 +8,23 @@
 
 #include <map>
 
+/////////
+
+void WorkerProc::settimer(uint32_t val) {
+    m_timer = val+1;
+}
+
+void WorkerProc::clrtimer() {
+    m_timer = 0;
+}
+
+void WorkerProc::dectimer() {
+    if (m_timer > 1)
+        m_timer --;
+}
+
+/////////
+
 typedef std::map<WorkerProc::key_t, WorkerProc::elem_t> worker_list_t;
 
 static worker_list_t wrkall;
@@ -63,9 +80,12 @@ void wrkProcess(uint32_t tmmax) {
     if (wrkall.size() == 0)
         return;
     
-    for (auto &it : wrkall)
+    for (auto &it : wrkall) {
         // сбрасываем флаг needwait
         it.second.needwait = false;
+        // timer
+        it.second.proc->dectimer();
+    }
     
     uint32_t beg = millis();
     bool run = true;

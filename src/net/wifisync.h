@@ -15,9 +15,9 @@ class WorkerWiFiSync : public WorkerProc
         typedef enum {
             stOff,
             stCloseMsg,
-            stWiFi,
-            stSrvConnect,
-            stSrvAuth
+            stWIFICONNECT,
+            stSRVCONNECT,
+            stSRVAUTH
         } op_t;
     
         WorkerWiFiSync(const char *ssid, const char *pass = NULL);
@@ -25,6 +25,7 @@ class WorkerWiFiSync : public WorkerProc
         op_t op() const { return m_op; }
         const char *msg_P() const { return m_msg_P; }
         
+        void next(op_t op, const char *msg_P, uint32_t tmr);
         void stop(const char *msg_P = NULL);
         void cancel();
         state_t process();
