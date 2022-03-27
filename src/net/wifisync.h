@@ -11,6 +11,7 @@
 
 class NetSocket;
 class BinProtoSend;
+class BinProtoRecv;
 
 class WorkerWiFiSync : public WorkerProc
 {
@@ -21,7 +22,8 @@ class WorkerWiFiSync : public WorkerProc
             stWIFICONNECT,
             stSRVCONNECT,
             stSRVAUTH,
-            stWAITAUTH
+            stWAITAUTH,
+            stSENDCONFIG
         } op_t;
     
         WorkerWiFiSync(const char *ssid, const char *pass = NULL);
@@ -39,10 +41,25 @@ class WorkerWiFiSync : public WorkerProc
         op_t m_op;
         const char *m_msg_P;
         NetSocket *m_sock;
-        BinProtoSend *bpo;
+        BinProtoSend *m_proo;
+        BinProtoRecv *m_proi;
         
-        void initbpo();
+        union {
+            uint32_t rejoin_num;
+            struct __attribute__((__packed__)) {
+                uint32_t ckscfg;
+                uint32_t cksjmp;
+                uint32_t ckspnt;
+                uint32_t ckslog;
+                uint32_t poslog;
+                //FileTrack::chs_t ckstrack;
+                uint64_t ckstrack;
+            } acc;
+        } d;
+        
+        void initpro();
         void next(op_t op, const char *msg_P, uint32_t tmr);
+        bool recvdata(uint8_t cmd);
 };
 
 void wifiSyncBegin(const char *ssid, const char *pass = NULL);

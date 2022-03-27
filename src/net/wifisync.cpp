@@ -19,9 +19,12 @@
 #define RETURN_ERR(s)           { ERR(s); return STATE_WAIT; }
 #define RETURN_FIN(s)           { FIN(s); return STATE_WAIT; }
 
+// отдельный retnext для recvdata(), который возвращает не state, а bool
+#define RET_NEXT(op,tmr)        { NEXT(op,tmr); return true; }
+
 WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
     m_sock(NULL),
-    bpo(NULL)
+    m_proo(NULL)
 {
     CONSOLE("[%08x] create", this);
     if (!wifiStart()) {
@@ -37,10 +40,12 @@ WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
 }
 WorkerWiFiSync::~WorkerWiFiSync() {
     CONSOLE("[%08x] destroy", this);
+    if (m_proo != NULL)
+        delete m_proo;
+    if (m_proi != NULL)
+        delete m_proi;
     if (m_sock != NULL)
         delete m_sock;
-    if (bpo != NULL)
-        delete bpo;
 }
 
 void WorkerWiFiSync::next(op_t op, const char *msg_P, uint32_t tmr) {
@@ -60,26 +65,37 @@ void WorkerWiFiSync::cancel() {
         FIN(USERCANCEL);
 }
 
-void WorkerWiFiSync::initbpo() {
-    if ((m_sock == NULL) || (bpo != NULL))
+void WorkerWiFiSync::initpro() {
+    if ((m_sock == NULL) || (m_proo != NULL))
         return;
     
-    bpo = new BinProtoSend(m_sock, '%');
+    m_proo = new BinProtoSend(m_sock, '%');
     // auth
-    bpo->add( 0x01, PSTR("N") );
+    m_proo->add( 0x01, PSTR("N") );
+    
+    m_proi = new BinProtoRecv(m_sock, '#');
+    // rejoin
+    m_proi->add( 0x10, PSTR("N") );
+    // accept
+    m_proi->add( 0x20, PSTR("XXXXNH") );
 }
 
 void WorkerWiFiSync::end() {
+    if (m_proo != NULL) {
+        CONSOLE("delete m_proo");
+        delete m_proo;
+        m_proo = NULL;
+    }
+    if (m_proi != NULL) {
+        CONSOLE("delete m_proi");
+        delete m_proi;
+        m_proi = NULL;
+    }
     if (m_sock != NULL) {
         m_sock->disconnect();
         CONSOLE("delete m_sock");
         delete m_sock;
         m_sock = NULL;
-    }
-    if (bpo != NULL) {
-        CONSOLE("delete bpo");
-        delete bpo;
-        bpo = NULL;
     }
     wifiStop();
 }
@@ -90,6 +106,26 @@ WorkerWiFiSync::process() {
         ERR(TIMEOUT);
         clrtimer();
     }
+    
+    if ((m_proi != NULL) && (m_op > stCloseMsg))
+        switch (m_proi->process()) {
+            case BinProtoRecv::STATE_OK:
+                settimer(100);
+                return STATE_RUN;
+            
+            case BinProtoRecv::STATE_CMD:
+                {
+                    uint8_t cmd;
+                    if (!m_proi->recv(cmd, d))
+                        RETURN_ERR(RCVDATA);
+                    if (!recvdata(cmd))
+                        RETURN_ERR(RCVCMDUNKNOWN);
+                }
+                return STATE_RUN;
+                
+            case BinProtoRecv::STATE_ERROR:
+                RETURN_ERR(RCVDATA);
+        }
     
     switch (m_op) {
         case stOff:
@@ -121,7 +157,7 @@ WorkerWiFiSync::process() {
             if (!m_sock->connect())
                 RETURN_ERR(SERVERCONNECT);
             
-            initbpo();
+            initpro();
             
             RETURN_NEXT(SRVAUTH, 100);
         
@@ -134,7 +170,7 @@ WorkerWiFiSync::process() {
 
                 CONSOLE("[authStart] authid: %lu", wjoin.authid());
             
-                if (!bpo->send(0x01, wjoin.authid()))
+                if (!m_proo->send(0x01, wjoin.authid()))
                     RETURN_ERR(SENDAUTH);
             }
             
@@ -142,6 +178,23 @@ WorkerWiFiSync::process() {
     }
     
     return STATE_WAIT;
+}
+
+bool WorkerWiFiSync::recvdata(uint8_t cmd) {
+    switch (m_op) {
+    
+        case stWAITAUTH:
+            switch (cmd) {
+                case 0x10:
+                    return true;
+                case 0x20:
+                    CONSOLE("auth: %08x %08x %08x %08x", d.acc.ckscfg, d.acc.cksjmp, d.acc.ckspnt, d.acc.ckslog);
+                    RET_NEXT(SENDCONFIG, 10);
+            }
+            return false;
+    }
+    
+    return false;
 }
 
 
