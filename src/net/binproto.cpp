@@ -93,95 +93,106 @@ static double _ntod(const uint8_t *buf) {
     return val;
 }
 
-static int _vnpack(uint8_t *buf, size_t sz, const char *pk, va_list va) {
+static int _pack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *src, size_t srcsz) {
     int len = 0;
-    
-    while (*pk && (sz > 0)) {
+
+#define CHKSZ(dsz, T) \
+        if ((dstsz < dsz) || (srcsz < sizeof(T))) { \
+            nxt = false; \
+            break; \
+        }
+
+#define NXTSZ(dsz, T) \
+        len += dsz; \
+        dst += dsz; \
+        dstsz -= dsz; \
+        src += sizeof(T); \
+        srcsz -= sizeof(T);
+
+#define SRC(T)  *(reinterpret_cast<const T*>(src))
+
+    bool nxt = true;
+    while (*pk && nxt) {
         switch (*pk) {
             case ' ':
-                *buf = 0;
-                buf ++;
-                sz --;
-                len += 8;
+                if (dstsz < 1) {
+                    nxt = false;
+                    break;
+                }
+                *dst = 0;
+                dst ++;
+                dstsz --;
+                len ++;
                 break;
             
             case 'c':
             case 'C':
-                *buf = static_cast<uint8_t>(va_arg(va, int));
-                buf ++;
-                sz --;
-                len ++;
+                CHKSZ(1, uint8_t)
+                *dst = *src;
+                NXTSZ(1, uint8_t)
                 break;
             
             case 'n':
             case 'i':
             case 'x':
-                if (sz < 2)
-                    return len;
-                _hton(buf, static_cast<uint16_t>(va_arg(va, int)));
-                buf += 2;
-                sz -= 2;
-                len += 2;
+                CHKSZ(2, uint16_t)
+                _hton(dst, SRC(uint16_t));
+                NXTSZ(2, uint16_t)
                 break;
             
             case 'N':
             case 'I':
             case 'X':
-                if (sz < 4)
-                    return len;
-                _hton(buf, va_arg(va, uint32_t));
-                buf += 4;
-                sz -= 4;
-                len += 4;
+                CHKSZ(4, uint32_t)
+                _hton(dst, SRC(uint32_t));
+                NXTSZ(4, uint32_t)
                 break;
 
             case 'H':
-                if (sz < 8)
-                    return len;
-                _hton(buf, va_arg(va, uint64_t));
-                buf += 8;
-                sz -= 8;
-                len += 8;
+                CHKSZ(8, uint64_t)
+                _hton(dst, SRC(uint64_t));
+                NXTSZ(8, uint64_t)
                 break;
             
             case 'f':
-                if (sz < 2)
-                    return len;
-                _fton(buf, va_arg(va, double));
-                buf += 2;
-                sz -= 2;
-                len += 2;
+                CHKSZ(2, float)
+                _fton(dst, SRC(float));
+                NXTSZ(2, float)
                 break;
             
             case 'D':
-                if (sz < 8)
-                    return len;
-                _dton(buf, va_arg(va, double));
-                buf += 8;
-                sz -= 8;
-                len += 8;
+                CHKSZ(8, double)
+                _dton(dst, SRC(double));
+                NXTSZ(8, double)
                 break;
+            
+            default:
+                return false;
         }
         
         pk++;
     }
+
+#undef CHKSZ
+#undef SRC
+#undef NXTSZ
     
     return len;
 }
 
-static bool _unpack(const uint8_t *src, size_t srcsz, const char *pk, uint8_t *dst, size_t dstsz) {
+static bool _unpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *src, size_t srcsz) {
 
-#define CHKSZ(ssz, T) \
-        if ((srcsz < ssz) || (dstsz < sizeof(T))) { \
+#define CHKSZ(T, ssz) \
+        if ((dstsz < sizeof(T)) || (srcsz < ssz)) { \
             nxt = false; \
             break; \
         }
 
-#define NXTSZ(ssz, T) \
-        src += ssz; \
-        srcsz -= ssz; \
+#define NXTSZ(T, ssz) \
         dst += sizeof(T); \
-        dstsz -= sizeof(T);
+        dstsz -= sizeof(T); \
+        src += ssz; \
+        srcsz -= ssz;
 
 #define DST(T)  *(reinterpret_cast<T*>(dst))
 
@@ -199,43 +210,43 @@ static bool _unpack(const uint8_t *src, size_t srcsz, const char *pk, uint8_t *d
             
             case 'c':
             case 'C':
-                CHKSZ(1, uint8_t)
+                CHKSZ(uint8_t, 1)
                 *dst = *src;
-                NXTSZ(1, uint8_t)
+                NXTSZ(uint8_t, 1)
                 break;
             
             case 'n':
             case 'i':
             case 'x':
-                CHKSZ(2, uint16_t)
+                CHKSZ(uint16_t, 2)
                 _ntoh(DST(uint16_t), src);
-                NXTSZ(2, uint16_t)
+                NXTSZ(uint16_t, 2)
                 break;
             
             case 'N':
             case 'I':
             case 'X':
-                CHKSZ(4, uint32_t)
+                CHKSZ(uint32_t, 4)
                 _ntoh(DST(uint32_t), src);
-                NXTSZ(4, uint32_t)
+                NXTSZ(uint32_t, 4)
                 break;
 
             case 'H':
-                CHKSZ(8, uint64_t)
+                CHKSZ(uint64_t, 8)
                 _ntoh(DST(uint64_t), src);
-                NXTSZ(8, uint64_t)
+                NXTSZ(uint64_t, 8)
                 break;
             
             case 'f':
-                CHKSZ(2, float)
+                CHKSZ(float, 2)
                 DST(float) = _ntof(src);
-                NXTSZ(2, float)
+                NXTSZ(float, 2)
                 break;
             
             case 'D':
-                CHKSZ(8, double)
+                CHKSZ(double, 8)
                 DST(double) = _ntod(src);
-                NXTSZ(8, double)
+                NXTSZ(double, 8)
                 break;
             
             default:
@@ -310,8 +321,8 @@ bool BinProto::hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz) {
     return true;
 }
 
-int BinProto::vpack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, va_list va) {
-    if (sz < hdrsz())
+int BinProto::pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const uint8_t *src, size_t srcsz) {
+    if (bufsz < hdrsz())
         return -1;
     
     auto pkP = pk_P(cmd);
@@ -321,7 +332,7 @@ int BinProto::vpack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, va_list va) {
     char pk[ strlen_P(pkP) + 1 ];
     strcpy_P(pk, pkP);
     
-    int len = _vnpack(buf+hdrsz(), sz-hdrsz(), pk, va);
+    int len = _pack(buf+hdrsz(), bufsz-hdrsz(), pk, src, srcsz);
     if (len < 0)
         return -1;
     
@@ -330,16 +341,7 @@ int BinProto::vpack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, va_list va) {
     return len + hdrsz();
 }
 
-int BinProto::pack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, ...) {
-    va_list va;
-    va_start(va, cmd);
-    int len = vpack(buf, sz, cmd, va);
-    va_end(va);
-    
-    return len;
-}
-
-bool BinProto::unpack(const uint8_t *buf, size_t bufsz, cmdkey_t &cmd, uint8_t *dst, size_t dstsz) {
+bool BinProto::unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const uint8_t *buf, size_t bufsz) {
     if (bufsz < hdrsz())
         return false;
     
@@ -354,7 +356,7 @@ bool BinProto::unpack(const uint8_t *buf, size_t bufsz, cmdkey_t &cmd, uint8_t *
     char pk[ strlen_P(pkP) + 1 ];
     strcpy_P(pk, pkP);
     
-    return _unpack(buf+hdrsz(), len < bufsz-hdrsz() ? len : bufsz-hdrsz(), pk, dst, dstsz);
+    return _unpack(dst, dstsz, pk, buf+hdrsz(), len < bufsz-hdrsz() ? len : bufsz-hdrsz());
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -379,27 +381,24 @@ void BinProtoSend::sock_clear() {
     m_nsock = NULL;
 }
 
-bool BinProtoSend::send(const cmdkey_t &cmd, ...) {
+bool BinProtoSend::send(const cmdkey_t &cmd, const uint8_t *data, size_t sz) {
     if ((m_nsock == NULL) || !m_nsock->connected())
         return false;
     
-    uint8_t buf[1024], *data = buf;
+    uint8_t buf[1024], *b = buf;
     
-    va_list va;
-    va_start(va, cmd);
-    int sz = vpack(buf, sizeof(buf), cmd, va);
-    va_end(va);
+    int len = pack(buf, sizeof(buf), cmd, data, sz);
     
-    if (sz < hdrsz())
+    if (len < hdrsz())
         return false;
     
     uint8_t t = 5;
     
-    while (sz > 0) {
+    while (len > 0) {
         t --;
-        auto sz1 = m_nsock->send(data, sz);
+        auto sz1 = m_nsock->send(b, len);
         
-        if (sz1 < sz) {
+        if (sz1 < len) {
             if (sz1 < 0)
                 return false;
             if (!m_nsock->connected())
@@ -415,8 +414,11 @@ bool BinProtoSend::send(const cmdkey_t &cmd, ...) {
                 return false;
         }
         
-        sz -= sz1;
-        data += sz1;
+        if (sz1 > len)
+            sz1 = len;
+        
+        len -= sz1;
+        b += sz1;
     }
     
     return true;
@@ -466,7 +468,7 @@ bool BinProtoRecv::recv(cmdkey_t &cmd, uint8_t *data, size_t sz) {
         if (sz1 == rsz) {
             hdrpack(src, m_waitcmd, m_waitsz);
             
-            ok = unpack(src, rsz + hdrsz(), cmd, data, sz);
+            ok = unpack(cmd, data, sz, src, rsz + hdrsz());
             
             m_waitsz -= sz1;
         }

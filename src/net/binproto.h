@@ -49,9 +49,8 @@ class BinProto {
         void hdrpack(uint8_t *buf, const cmdkey_t &cmd, uint16_t sz);
         bool hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz);
 
-        int vpack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, va_list va);
-        int pack(uint8_t *buf, size_t sz, const cmdkey_t &cmd, ...);
-        bool unpack(const uint8_t *buf, size_t bufsz, cmdkey_t &cmd, uint8_t *dst, size_t dstsz);
+        int pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const uint8_t *src, size_t srcsz);
+        bool unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const uint8_t *buf, size_t bufsz);
     
     private:
         char m_mgc;
@@ -63,7 +62,19 @@ class BinProtoSend : public BinProto {
         BinProtoSend(NetSocket * nsock = NULL, char mgc = '#', const elem_t *all = NULL, size_t count = 0);
         void sock_set(NetSocket * nsock);
         void sock_clear();
-        bool send(const cmdkey_t &cmd, ...);
+        bool send(const cmdkey_t &cmd, const uint8_t *data, size_t sz);
+        
+        // Данные будем упаковывать не из аргументов вызова send,
+        // как это было изначально реализовано в BinProtoSend,
+        // а из упакованной структуры данных, но где поля уже будем считать аргументами
+        // нужных типов (в т.ч. dooble, float и т.д.),
+        // По сути, точно так же делает va_list, но при этом va_list не умеет нормально
+        // работать с аргументами как с ссылками на переменные (& - актуально для recv),
+        // только если аргументы переданы как указатель на переменную (*)
+        template <typename T>
+        bool send(const cmdkey_t &cmd, const T &data) {
+            return send(cmd, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
+        }
     
     private:
         NetSocket *m_nsock;

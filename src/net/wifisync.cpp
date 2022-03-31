@@ -185,9 +185,10 @@ bool WorkerWiFiSync::recvdata(uint8_t cmd) {
     
         case stWAITAUTH:
             switch (cmd) {
-                case 0x10:
+                case 0x10: // rejoin
+                    //RET_NEXT(SENDCONFIG, 10);
                     return true;
-                case 0x20:
+                case 0x20: // accept
                     CONSOLE("auth: %08x %08x %08x %08x", d.acc.ckscfg, d.acc.cksjmp, d.acc.ckspnt, d.acc.ckslog);
                     RET_NEXT(SENDCONFIG, 10);
             }
