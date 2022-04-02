@@ -23,6 +23,24 @@ void WorkerProc::dectimer() {
         m_timer --;
 }
 
+void WorkerProc::setop(uint32_t op) {
+    m_op = op;
+}
+
+void WorkerProc::next() {
+    m_op ++;
+}
+
+void WorkerProc::next(uint32_t timer) {
+    next();
+    
+    if (timer > 0)
+        settimer(timer);
+    else
+    if (m_timer > 0)
+        clrtimer();
+}
+
 /////////
 
 typedef std::map<WorkerProc::key_t, WorkerProc::elem_t> worker_list_t;

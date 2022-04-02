@@ -7,36 +7,31 @@
 #include "../core/workerloc.h"
 #include "wifi.h"
 #include "binproto.h"
-#include "../view/text.h"
+#include "netsync.h"
 #include "../cfg/webjoin.h"
 
 
-#define NEXT(op,tmr)        next(st ## op, PSTR(TXT_WIFI_MSG_ ## op), tmr)
-#define ERR(s)              stop(PSTR(TXT_WIFI_ERR_ ## s))
-#define FIN(s)              stop(PSTR(TXT_WIFI_MSG_ ## s))
+#define ERR(st)             err(err ## st)
 
-#define RETURN_NEXT(op,tmr)     { NEXT(op,tmr); return STATE_RUN; }
-#define RETURN_ERR(s)           { ERR(s); return STATE_WAIT; }
-#define RETURN_FIN(s)           { FIN(s); return STATE_WAIT; }
-
-// отдельный retnext для recvdata(), который возвращает не state, а bool
-#define RET_NEXT(op,tmr)        { NEXT(op,tmr); return true; }
 
 WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
     m_sock(NULL),
-    m_proo(NULL)
+    m_proo(NULL),
+    m_st(stRun)
 {
     CONSOLE("[%08x] create", this);
+    
+    setop(opWiFiConnect);
+    settimer(300);
+    
     if (!wifiStart()) {
-        ERR(WIFIINIT);
+        ERR(WiFiInit);
         return;
     }
     if (!wifiConnect(ssid, pass)) {
-        ERR(WIFICONNECT);
+        ERR(WiFiConnect);
         return;
     }
-    
-    NEXT(WIFICONNECT, 300);
 }
 WorkerWiFiSync::~WorkerWiFiSync() {
     CONSOLE("[%08x] destroy", this);
@@ -48,21 +43,14 @@ WorkerWiFiSync::~WorkerWiFiSync() {
         delete m_sock;
 }
 
-void WorkerWiFiSync::next(op_t op, const char *msg_P, uint32_t tmr) {
-    m_msg_P = msg_P;
-    m_op = op;
-    settimer(tmr);
+void WorkerWiFiSync::err(st_t st) {
+    m_st = st;
+    stop();
 }
 
-void WorkerWiFiSync::stop(const char *msg_P) {
-    m_msg_P = msg_P;
-    m_op = stOff;
+void WorkerWiFiSync::stop() {
+    setop(isrun() ? opClose : opExit);
     clrtimer();
-}
-
-void WorkerWiFiSync::cancel() {
-    if (m_op > stCloseMsg)
-        FIN(USERCANCEL);
 }
 
 void WorkerWiFiSync::initpro() {
@@ -72,6 +60,25 @@ void WorkerWiFiSync::initpro() {
     m_proo = new BinProtoSend(m_sock, '%');
     // auth
     m_proo->add( 0x01, PSTR("N") );
+    
+    // pntcs
+    m_proo->add( 0x23, PSTR("X") );
+    // pnt
+    m_proo->add( 0x24, PSTR("CCDD") );
+    // logbookbeg
+    m_proo->add( 0x31, PSTR("") );
+    // logbook
+    m_proo->add( 0x32, PSTR("NNT") );
+    // logbookend
+    m_proo->add( 0x33, PSTR("XN") );
+    // trackbeg
+    m_proo->add( 0x34, PSTR("        NNT") );
+    // track
+    m_proo->add( 0x35, PSTR("NnaaiiNNNiiNNC nNNNNNN") );
+    // trackend
+    m_proo->add( 0x36, PSTR("H") );
+    // datafin
+    m_proo->add( 0x3f, PSTR("XXCCCaC   a32") );
     
     m_proi = new BinProtoRecv(m_sock, '#');
     // rejoin
@@ -102,12 +109,13 @@ void WorkerWiFiSync::end() {
 
 WorkerWiFiSync::state_t
 WorkerWiFiSync::process() {
-    if (istimeout()) {
-        ERR(TIMEOUT);
-        clrtimer();
-    }
+    if (istimeout())
+        ERR(Timeout);
+
+#define RETURN_ERR(e)       { ERR(e); return STATE_RUN; }
+#define RETURN_NEXT(tmr)    { next(tmr); return STATE_RUN; }
     
-    if ((m_proi != NULL) && (m_op > stCloseMsg))
+    if (isrun() && (m_proi != NULL))
         switch (m_proi->process()) {
             case BinProtoRecv::STATE_OK:
                 settimer(100);
@@ -117,83 +125,110 @@ WorkerWiFiSync::process() {
                 {
                     uint8_t cmd;
                     if (!m_proi->recv(cmd, d))
-                        RETURN_ERR(RCVDATA);
+                        RETURN_ERR(RecvData);
                     if (!recvdata(cmd))
-                        RETURN_ERR(RCVCMDUNKNOWN);
+                        RETURN_ERR(RcvCmdUnknown);
                 }
                 return STATE_RUN;
                 
             case BinProtoRecv::STATE_ERROR:
-                RETURN_ERR(RCVDATA);
+                RETURN_ERR(RecvData);
         }
     
-    switch (m_op) {
-        case stOff:
-            end();
-            if (m_msg_P != NULL) {
-                m_op = stCloseMsg;
-                return STATE_WAIT;
-            }
+    switch (op()) {
+        case opExit:
             return STATE_END;
-            
-        case stWIFICONNECT:
+        
+        case opClose:
+            end();
+            if (m_st == stRun)
+                m_st = stUserCancel;
+            next(0);
+            return STATE_WAIT;
+        
+        case opWiFiConnect:
         // ожидаем соединения по вифи
             switch (wifiStatus()) {
                 case WIFI_STA_CONNECTED:
                     CONSOLE("wifi ok, try to server connect");
                     // вифи подключилось, соединяемся с сервером
-                    RETURN_NEXT(SRVCONNECT, 100);
+                    RETURN_NEXT(100);
                 
                 case WIFI_STA_FAIL:
-                    RETURN_ERR(WIFICONNECT);
+                    RETURN_ERR(WiFiConnect);
             }
             
             return STATE_WAIT;
         
-        case stSRVCONNECT:
+        case opSrvConnect:
         // ожидаем соединения к серверу
             if (m_sock == NULL)
                 m_sock = wifiCliCreate();
             if (!m_sock->connect())
-                RETURN_ERR(SERVERCONNECT);
+                RETURN_ERR(SrvConnect);
             
             initpro();
             
-            RETURN_NEXT(SRVAUTH, 100);
+            RETURN_NEXT(100);
         
-        case stSRVAUTH:
+        case opSrvAuth:
         // авторизируемся на сервере
             {
                 ConfigWebJoin wjoin;
                 if (!wjoin.load())
-                    RETURN_ERR(JOINLOAD);
+                    RETURN_ERR(JoinLoad);
 
                 CONSOLE("[authStart] authid: %lu", wjoin.authid());
             
                 if (!m_proo->send(0x01, wjoin.authid()))
-                    RETURN_ERR(SENDAUTH);
+                    RETURN_ERR(SendData);
             }
             
-            RETURN_NEXT(WAITAUTH, 200);
+            RETURN_NEXT(200);
+        
+        case opSndConfig:
+        // отправка основного конфига
+            if ((d.acc.ckscfg == 0) || (d.acc.ckscfg != cfg.chksum()))
+                if (!sendCfgMain(m_sock))
+                    RETURN_ERR(SendData);
+            
+            RETURN_NEXT(10);
+        
+        case opSndJumpCount:
+        // отправка количества прыжков
+            if ((d.acc.cksjmp == 0) || (d.acc.cksjmp != jmp.chksum()))
+                if (!sendJmpCount(m_sock))
+                    RETURN_ERR(SendData);
+            
+            RETURN_NEXT(10);
     }
+
+#undef RETURN_ERR
+#undef RETURN_NEXT
+#undef SEND
     
     return STATE_WAIT;
 }
 
 bool WorkerWiFiSync::recvdata(uint8_t cmd) {
-    switch (m_op) {
     
-        case stWAITAUTH:
+#define RETURN_NEXT(tmr)        { next(tmr); return true; }
+
+    switch (op()) {
+    
+        case opWaitAuth:
             switch (cmd) {
                 case 0x10: // rejoin
                     //RET_NEXT(SENDCONFIG, 10);
                     return true;
                 case 0x20: // accept
-                    CONSOLE("auth: %08x %08x %08x %08x", d.acc.ckscfg, d.acc.cksjmp, d.acc.ckspnt, d.acc.ckslog);
-                    RET_NEXT(SENDCONFIG, 10);
+                    CONSOLE("recv ckstrack: %04x %04x %08x", d.acc.ckstrack.csa, d.acc.ckstrack.csb, d.acc.ckstrack.sz);
+                    RETURN_NEXT(10);
             }
             return false;
     }
+    
+#undef RETURN_NEXT
     
     return false;
 }
@@ -206,6 +241,7 @@ void wifiSyncBegin(const char *ssid, const char *pass) {
     if (wrkExists(WORKER_WIFI_SYNC))
         return;
     wrkAdd(WORKER_WIFI_SYNC, new WorkerWiFiSync(ssid, pass));
+    CONSOLE("begin");
 }
 
 WorkerWiFiSync * wifiSyncProc() {

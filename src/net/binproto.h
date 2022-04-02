@@ -45,7 +45,7 @@ class BinProto {
         void del(const cmdkey_t &cmd);
         item_t pk_P(const cmdkey_t &cmd) const;
         
-        size_t hdrsz() const { return 4; }
+        int hdrsz() const { return 4; }
         void hdrpack(uint8_t *buf, const cmdkey_t &cmd, uint16_t sz);
         bool hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz);
 

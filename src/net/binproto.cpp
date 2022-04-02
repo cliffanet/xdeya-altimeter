@@ -96,18 +96,20 @@ static double _ntod(const uint8_t *buf) {
 static int _pack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *src, size_t srcsz) {
     int len = 0;
 
-#define CHKSZ(dsz, T) \
-        if ((dstsz < dsz) || (srcsz < sizeof(T))) { \
+#define CHKSZ_(dsz, ssz) \
+        if ((dstsz < dsz) || (srcsz < ssz)) { \
             nxt = false; \
             break; \
         }
+#define CHKSZ(dsz, T) CHKSZ_(dsz, sizeof(T))
 
-#define NXTSZ(dsz, T) \
+#define NXTSZ_(dsz, ssz) \
         len += dsz; \
         dst += dsz; \
         dstsz -= dsz; \
-        src += sizeof(T); \
-        srcsz -= sizeof(T);
+        src += ssz; \
+        srcsz -= ssz;
+#define NXTSZ(dsz, T) NXTSZ_(dsz, sizeof(T))
 
 #define SRC(T)  *(reinterpret_cast<const T*>(src))
 
@@ -166,33 +168,56 @@ static int _pack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *src,
                 NXTSZ(8, double)
                 break;
             
+            case 'a':
+                if ((pk[1] >= '0') && (pk[1] <= '9')) {
+                    int l = 0;
+                    while ((pk[1] >= '0') && (pk[1] <= '9')) {
+                        l = l*10 + (pk[1] - '0');
+                        pk++;
+                    }
+                    CHKSZ_(l+1, l)
+                    memcpy(dst, src, l);
+                    dst[l] = '\0';
+                    NXTSZ_(l+1, l)
+                }
+                else {
+                    CHKSZ(1, char)
+                    *dst = *src;
+                    NXTSZ(1, char)
+                }
+                break;
+            
             default:
-                return false;
+                return -1;
         }
         
         pk++;
     }
 
+#undef CHKSZ_
 #undef CHKSZ
-#undef SRC
+#undef NXTSZ_
 #undef NXTSZ
+#undef SRC
     
     return len;
 }
 
 static bool _unpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *src, size_t srcsz) {
 
-#define CHKSZ(T, ssz) \
-        if ((dstsz < sizeof(T)) || (srcsz < ssz)) { \
+#define CHKSZ_(dsz, ssz) \
+        if ((dstsz < dsz) || (srcsz < ssz)) { \
             nxt = false; \
             break; \
         }
+#define CHKSZ(T, ssz) CHKSZ_(sizeof(T), ssz)
 
-#define NXTSZ(T, ssz) \
-        dst += sizeof(T); \
-        dstsz -= sizeof(T); \
+#define NXTSZ_(dsz, ssz) \
+        dst += dsz; \
+        dstsz -= dsz; \
         src += ssz; \
         srcsz -= ssz;
+#define NXTSZ(T, ssz) NXTSZ_(sizeof(T), ssz)
 
 #define DST(T)  *(reinterpret_cast<T*>(dst))
 
@@ -249,6 +274,24 @@ static bool _unpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *s
                 NXTSZ(double, 8)
                 break;
             
+            case 'a':
+                if ((pk[1] >= '0') && (pk[1] <= '9')) {
+                    int l = 0;
+                    while ((pk[1] >= '0') && (pk[1] <= '9')) {
+                        l = l*10 + (pk[1] - '0');
+                        pk++;
+                    }
+                    CHKSZ_(l, l+1)
+                    memcpy(dst, src, l);
+                    NXTSZ_(l, l+1)
+                }
+                else {
+                    CHKSZ(char, 1)
+                    *dst = *src;
+                    NXTSZ(char, 1)
+                }
+                break;
+            
             default:
                 return false;
         }
@@ -256,9 +299,11 @@ static bool _unpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *s
         pk++;
     }
 
+#undef CHKSZ_
 #undef CHKSZ
-#undef DST
+#undef NXTSZ_
 #undef NXTSZ
+#undef DST
     
     return true;
 }
@@ -335,6 +380,8 @@ int BinProto::pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const uint8_
     int len = _pack(buf+hdrsz(), bufsz-hdrsz(), pk, src, srcsz);
     if (len < 0)
         return -1;
+    
+    CONSOLE("len: %d", len);
     
     hdrpack(buf, cmd, static_cast<uint16_t>(len));
     

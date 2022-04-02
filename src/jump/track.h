@@ -25,8 +25,12 @@ class FileTrack : public FileBinNum {
             uint32_t    sz;
     
             bool operator== (const struct chs_s & cks) {
-                return (this == &cks) || ((this->csa == cks.csa) && (this->csb == cks.csb) && (this->sz == cks.sz));
+                return
+                    (this == &cks) ||
+                    ((this->csa == cks.csa) && (this->csb == cks.csb) && (this->sz == cks.sz)) ||
+                    eqrev(*this, cks) || eqrev(cks, *this);
             };
+            static bool eqrev(const struct chs_s & cks1, const struct chs_s & cks2);
             operator bool() { return (csa != 0) && (csb != 0) && (sz != 0); }
         } chs_t;
         
