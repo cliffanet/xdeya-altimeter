@@ -11,12 +11,13 @@
 #include "../cfg/webjoin.h"
 
 
-#define ERR(st)             err(err ## st)
+#define ERR(st)     err(err ## st)
+#define SOCK        BinProtoSend(m_sock, '%')
 
 
 WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
     m_sock(NULL),
-    m_proo(NULL),
+    m_pro(NULL),
     m_st(stRun)
 {
     CONSOLE("[%08x] create", this);
@@ -35,10 +36,8 @@ WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
 }
 WorkerWiFiSync::~WorkerWiFiSync() {
     CONSOLE("[%08x] destroy", this);
-    if (m_proo != NULL)
-        delete m_proo;
-    if (m_proi != NULL)
-        delete m_proi;
+    if (m_pro != NULL)
+        delete m_pro;
     if (m_sock != NULL)
         delete m_sock;
 }
@@ -54,49 +53,21 @@ void WorkerWiFiSync::stop() {
 }
 
 void WorkerWiFiSync::initpro() {
-    if ((m_sock == NULL) || (m_proo != NULL))
+    if ((m_sock == NULL) || (m_pro != NULL))
         return;
     
-    m_proo = new BinProtoSend(m_sock, '%');
-    // auth
-    m_proo->add( 0x01, PSTR("N") );
-    
-    // pntcs
-    m_proo->add( 0x23, PSTR("X") );
-    // pnt
-    m_proo->add( 0x24, PSTR("CCDD") );
-    // logbookbeg
-    m_proo->add( 0x31, PSTR("") );
-    // logbook
-    m_proo->add( 0x32, PSTR("NNT") );
-    // logbookend
-    m_proo->add( 0x33, PSTR("XN") );
-    // trackbeg
-    m_proo->add( 0x34, PSTR("        NNT") );
-    // track
-    m_proo->add( 0x35, PSTR("NnaaiiNNNiiNNC nNNNNNN") );
-    // trackend
-    m_proo->add( 0x36, PSTR("H") );
-    // datafin
-    m_proo->add( 0x3f, PSTR("XXCCCaC   a32") );
-    
-    m_proi = new BinProtoRecv(m_sock, '#');
+    m_pro = new BinProtoRecv(m_sock, '#');
     // rejoin
-    m_proi->add( 0x10, PSTR("N") );
+    m_pro->add( 0x10, PSTR("N") );
     // accept
-    m_proi->add( 0x20, PSTR("XXXXNH") );
+    m_pro->add( 0x20, PSTR("XXXXNH") );
 }
 
 void WorkerWiFiSync::end() {
-    if (m_proo != NULL) {
-        CONSOLE("delete m_proo");
-        delete m_proo;
-        m_proo = NULL;
-    }
-    if (m_proi != NULL) {
-        CONSOLE("delete m_proi");
-        delete m_proi;
-        m_proi = NULL;
+    if (m_pro != NULL) {
+        CONSOLE("delete m_pro");
+        delete m_pro;
+        m_pro = NULL;
     }
     if (m_sock != NULL) {
         m_sock->disconnect();
@@ -115,8 +86,9 @@ WorkerWiFiSync::process() {
 #define RETURN_ERR(e)       { ERR(e); return STATE_RUN; }
 #define RETURN_NEXT(tmr)    { next(tmr); return STATE_RUN; }
     
-    if (isrun() && (m_proi != NULL))
-        switch (m_proi->process()) {
+    // приём входных данных
+    if (isrun() && (m_pro != NULL))
+        switch (m_pro->process()) {
             case BinProtoRecv::STATE_OK:
                 settimer(100);
                 return STATE_RUN;
@@ -124,8 +96,9 @@ WorkerWiFiSync::process() {
             case BinProtoRecv::STATE_CMD:
                 {
                     uint8_t cmd;
-                    if (!m_proi->recv(cmd, d))
+                    if (!m_pro->recv(cmd, d))
                         RETURN_ERR(RecvData);
+                    // обработка входных данных
                     if (!recvdata(cmd))
                         RETURN_ERR(RcvCmdUnknown);
                 }
@@ -135,6 +108,7 @@ WorkerWiFiSync::process() {
                 RETURN_ERR(RecvData);
         }
     
+    // выполнение плановых процедур
     switch (op()) {
         case opExit:
             return STATE_END;
@@ -180,7 +154,7 @@ WorkerWiFiSync::process() {
 
                 CONSOLE("[authStart] authid: %lu", wjoin.authid());
             
-                if (!m_proo->send(0x01, wjoin.authid()))
+                if (!SOCK.send(0x01, PSTR("N"), wjoin.authid()))
                     RETURN_ERR(SendData);
             }
             

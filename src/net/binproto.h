@@ -32,37 +32,25 @@ class BinProto {
     public:
         typedef uint8_t cmdkey_t;
         
-        typedef const char *item_t;
-        
-        typedef struct {
-            cmdkey_t cmd;
-            const char *pk_P;
-        } elem_t;
-        
-        BinProto(char mgc = '#', const elem_t *all = NULL, size_t count = 0);
-        void add(const cmdkey_t &cmd, const char *pk_P);
-        void add(const elem_t *all, size_t count);
-        void del(const cmdkey_t &cmd);
-        item_t pk_P(const cmdkey_t &cmd) const;
+        BinProto(char mgc = '#');
         
         int hdrsz() const { return 4; }
         void hdrpack(uint8_t *buf, const cmdkey_t &cmd, uint16_t sz);
         bool hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz);
 
-        int pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const uint8_t *src, size_t srcsz);
-        bool unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const uint8_t *buf, size_t bufsz);
+        int pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const char *pk_P, const uint8_t *src, size_t srcsz);
+        bool unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const char *pk_P, const uint8_t *buf, size_t bufsz);
     
     private:
         char m_mgc;
-        std::map<cmdkey_t, item_t> m_all;
 };
 
 class BinProtoSend : public BinProto {
     public:
-        BinProtoSend(NetSocket * nsock = NULL, char mgc = '#', const elem_t *all = NULL, size_t count = 0);
+        BinProtoSend(NetSocket * nsock = NULL, char mgc = '#');
         void sock_set(NetSocket * nsock);
         void sock_clear();
-        bool send(const cmdkey_t &cmd, const uint8_t *data, size_t sz);
+        bool send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, size_t sz);
         
         // Данные будем упаковывать не из аргументов вызова send,
         // как это было изначально реализовано в BinProtoSend,
@@ -72,17 +60,24 @@ class BinProtoSend : public BinProto {
         // работать с аргументами как с ссылками на переменные (& - актуально для recv),
         // только если аргументы переданы как указатель на переменную (*)
         template <typename T>
-        bool send(const cmdkey_t &cmd, const T &data) {
-            return send(cmd, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
+        bool send(const cmdkey_t &cmd, const char *pk_P, const T &data) {
+            return send(cmd, pk_P, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
         }
     
-    private:
+    protected:
         NetSocket *m_nsock;
 };
 
 
-class BinProtoRecv : public BinProto {
+class BinProtoRecv : public BinProtoSend {
     public:
+        typedef const char *item_t;
+        
+        typedef struct {
+            cmdkey_t cmd;
+            const char *pk_P;
+        } elem_t;
+        
         typedef enum {
             STATE_ERROR = 0,
             STATE_NORECV,
@@ -98,8 +93,11 @@ class BinProtoRecv : public BinProto {
         } err_t;
     
         BinProtoRecv(NetSocket * nsock = NULL, char mgc = '#', const elem_t *all = NULL, size_t count = 0);
-        void sock_set(NetSocket * nsock);
-        void sock_clear();
+        
+        void add(const cmdkey_t &cmd, const char *pk_P);
+        void add(const elem_t *all, size_t count);
+        void del(const cmdkey_t &cmd);
+        item_t pk_P(const cmdkey_t &cmd) const;
         
         err_t error() const { return m_err; }
         const cmdkey_t &cmd() const { return m_waitcmd; }
@@ -125,7 +123,7 @@ class BinProtoRecv : public BinProto {
         // структуру данных, это можно проверить через cmd()
     
     private:
-        NetSocket *m_nsock;
+        std::map<cmdkey_t, item_t> m_all;
         
         err_t m_err;
         uint8_t m_waitcmd;

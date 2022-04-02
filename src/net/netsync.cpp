@@ -11,29 +11,26 @@
 #include "../cfg/jump.h"
 
 
+#define SOCK    BinProtoSend(nsock, '%')
 
 /* ------------------------------------------------------------------------------------------- *
  *  Основной конфиг
  * ------------------------------------------------------------------------------------------- */
 bool sendCfgMain(NetSocket *nsock) {
     const auto &cfg_d = cfg.d();
-    
-    BinProtoSend s(nsock, '%');
-    s.add( 0x21, PSTR("XCnCCCaaaa") );
-    
     struct __attribute__((__packed__)) {
         uint32_t chksum;
         uint8_t contrast;
         int16_t timezone;
     
-        uint8_t gndmanual;
-        uint8_t gndauto;
+        bool gndmanual;
+        bool gndauto;
     
-        uint8_t dsplautoff;
-        char    dsplcnp;
-        char    dsplland;
-        char    dsplgnd;
-        char    dsplpwron;
+        bool    dsplautoff;
+        int8_t  dsplcnp;
+        int8_t  dsplland;
+        int8_t  dsplgnd;
+        int8_t  dsplpwron;
     } d = {
         cfg.chksum(),
         cfg_d.contrast,
@@ -47,16 +44,13 @@ bool sendCfgMain(NetSocket *nsock) {
         cfg_d.dsplpwron,
     };
     
-    return s.send( 0x21, d );
+    return SOCK.send( 0x21, PSTR("XCnbbbaaaa"), d );
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Количество прыгов
  * ------------------------------------------------------------------------------------------- */
 bool sendJmpCount(NetSocket *nsock) {
-    BinProtoSend s(nsock, '%');
-    s.add( 0x22, PSTR("XN") );
-    
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t chksum;
         uint32_t count;
@@ -65,5 +59,5 @@ bool sendJmpCount(NetSocket *nsock) {
         .count      = jmp.d().count,
     };
     
-    return s.send( 0x22, d );
+    return SOCK.send( 0x22, PSTR("XN"), d );
 }

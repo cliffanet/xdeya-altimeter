@@ -127,6 +127,12 @@ static int _pack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *src,
                 len ++;
                 break;
             
+            case 'b':
+                CHKSZ(1, bool)
+                *dst = SRC(bool) ? 1 : 0;
+                NXTSZ(1, bool)
+                break;
+            
             case 'c':
             case 'C':
                 CHKSZ(1, uint8_t)
@@ -233,6 +239,12 @@ static bool _unpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *s
                 srcsz --;
                 break;
             
+            case 'b':
+                CHKSZ(bool, 1)
+                DST(bool) = *src > 0;
+                NXTSZ(bool, 1)
+                break;
+            
             case 'c':
             case 'C':
                 CHKSZ(uint8_t, 1)
@@ -311,44 +323,9 @@ static bool _unpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *s
 /* ------------------------------------------------------------------------------------------- *
  *  BinProto
  * ------------------------------------------------------------------------------------------- */
-BinProto::BinProto(char mgc, const elem_t *all, size_t count) :
+BinProto::BinProto(char mgc) :
     m_mgc(mgc)
 {
-    add(all, count);
-}
-
-void BinProto::add(const cmdkey_t &cmd, const char *pk_P) {
-    auto &el = m_all[cmd];
-    el = pk_P;
-}
-
-void BinProto::add(const elem_t *all, size_t count) {
-    if (all == NULL)
-        return;
-    
-    if (count > 0)
-        while (count > 0) {
-            add(all->cmd, all->pk_P);
-            all++;
-            count--;
-        }
-    else
-        while (all->cmd > 0) {
-            add(all->cmd, all->pk_P);
-            all++;
-        }
-}
-
-void BinProto::del(const cmdkey_t &cmd) {
-    m_all.erase(cmd);
-}
-
-BinProto::item_t BinProto::pk_P(const cmdkey_t &cmd) const {
-    auto it = m_all.find(cmd);
-    if (it == m_all.end())
-        return NULL;
-    
-    return it->second;
 }
 
 void BinProto::hdrpack(uint8_t *buf, const cmdkey_t &cmd, uint16_t sz) {
@@ -366,16 +343,12 @@ bool BinProto::hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz) {
     return true;
 }
 
-int BinProto::pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const uint8_t *src, size_t srcsz) {
-    if (bufsz < hdrsz())
+int BinProto::pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const char *pk_P, const uint8_t *src, size_t srcsz) {
+    if ((bufsz < hdrsz()) || (pk_P == NULL))
         return -1;
     
-    auto pkP = pk_P(cmd);
-    if (pkP == NULL)
-        return -1;
-    
-    char pk[ strlen_P(pkP) + 1 ];
-    strcpy_P(pk, pkP);
+    char pk[ strlen_P(pk_P) + 1 ];
+    strcpy_P(pk, pk_P);
     
     int len = _pack(buf+hdrsz(), bufsz-hdrsz(), pk, src, srcsz);
     if (len < 0)
@@ -388,20 +361,16 @@ int BinProto::pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const uint8_
     return len + hdrsz();
 }
 
-bool BinProto::unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const uint8_t *buf, size_t bufsz) {
-    if (bufsz < hdrsz())
+bool BinProto::unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const char *pk_P, const uint8_t *buf, size_t bufsz) {
+    if ((bufsz < hdrsz()) || (pk_P == NULL))
         return false;
     
     uint16_t len;
     if (!hdrunpack(buf, cmd, len))
         return false;
     
-    auto pkP = pk_P(cmd);
-    if (pkP == NULL)
-        return false;
-    
-    char pk[ strlen_P(pkP) + 1 ];
-    strcpy_P(pk, pkP);
+    char pk[ strlen_P(pk_P) + 1 ];
+    strcpy_P(pk, pk_P);
     
     return _unpack(dst, dstsz, pk, buf+hdrsz(), len < bufsz-hdrsz() ? len : bufsz-hdrsz());
 }
@@ -409,8 +378,8 @@ bool BinProto::unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const uint8_t *
 /* ------------------------------------------------------------------------------------------- *
  *  BinProtoSend
  * ------------------------------------------------------------------------------------------- */
-BinProtoSend::BinProtoSend(NetSocket * nsock, char mgc, const elem_t *all, size_t count) :
-    BinProto(mgc, all, count)
+BinProtoSend::BinProtoSend(NetSocket * nsock, char mgc) :
+    BinProto(mgc)
 {
     sock_set(nsock);
 }
@@ -428,13 +397,13 @@ void BinProtoSend::sock_clear() {
     m_nsock = NULL;
 }
 
-bool BinProtoSend::send(const cmdkey_t &cmd, const uint8_t *data, size_t sz) {
+bool BinProtoSend::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, size_t sz) {
     if ((m_nsock == NULL) || !m_nsock->connected())
         return false;
     
     uint8_t buf[1024], *b = buf;
     
-    int len = pack(buf, sizeof(buf), cmd, data, sz);
+    int len = pack(buf, sizeof(buf), cmd, pk_P, data, sz);
     
     if (len < hdrsz())
         return false;
@@ -475,29 +444,46 @@ bool BinProtoSend::send(const cmdkey_t &cmd, const uint8_t *data, size_t sz) {
  *  BinProtoRecv
  * ------------------------------------------------------------------------------------------- */
 BinProtoRecv::BinProtoRecv(NetSocket * nsock, char mgc, const elem_t *all, size_t count) :
-    BinProto(mgc, all, count),
+    BinProtoSend(nsock, mgc),
     m_err(ERR_NONE),
     m_waitcmd(0),
     m_waitsz(0),
     m_datasz(0)
 {
-    sock_set(nsock);
+    add(all, count);
 }
 
-void BinProtoRecv::sock_set(NetSocket * nsock) {
-    if (nsock == NULL) {
-        sock_clear();
+void BinProtoRecv::add(const cmdkey_t &cmd, const char *pk_P) {
+    m_all[cmd] = pk_P;
+}
+
+void BinProtoRecv::add(const elem_t *all, size_t count) {
+    if (all == NULL)
         return;
-    }
     
-    m_nsock = nsock;
+    if (count > 0)
+        while (count > 0) {
+            add(all->cmd, all->pk_P);
+            all++;
+            count--;
+        }
+    else
+        while (all->cmd > 0) {
+            add(all->cmd, all->pk_P);
+            all++;
+        }
 }
 
-void BinProtoRecv::sock_clear() {
-    m_nsock = NULL;
-    m_waitcmd = 0;
-    m_waitsz = 0;
-    m_datasz = 0;
+void BinProtoRecv::del(const cmdkey_t &cmd) {
+    m_all.erase(cmd);
+}
+
+BinProtoRecv::item_t BinProtoRecv::pk_P(const cmdkey_t &cmd) const {
+    auto it = m_all.find(cmd);
+    if (it == m_all.end())
+        return NULL;
+    
+    return it->second;
 }
 
 bool BinProtoRecv::recv(cmdkey_t &cmd, uint8_t *data, size_t sz) {
@@ -505,6 +491,10 @@ bool BinProtoRecv::recv(cmdkey_t &cmd, uint8_t *data, size_t sz) {
     if ((m_nsock == NULL) ||
         (m_waitcmd == 0) &&
         (m_nsock->available() < m_datasz))
+        return false;
+    
+    auto pkP = pk_P(m_waitcmd);
+    if (pkP == NULL)
         return false;
     
     size_t rsz = sz < m_datasz ? sz : m_datasz;
@@ -515,7 +505,7 @@ bool BinProtoRecv::recv(cmdkey_t &cmd, uint8_t *data, size_t sz) {
         if (sz1 == rsz) {
             hdrpack(src, m_waitcmd, m_waitsz);
             
-            ok = unpack(cmd, data, sz, src, rsz + hdrsz());
+            ok = unpack(cmd, data, sz, pkP, src, rsz + hdrsz());
             
             m_waitsz -= sz1;
         }

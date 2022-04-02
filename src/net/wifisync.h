@@ -56,8 +56,7 @@ class WorkerWiFiSync : public WorkerProc
     private:
         st_t m_st;
         NetSocket *m_sock;
-        BinProtoSend *m_proo;
-        BinProtoRecv *m_proi;
+        BinProtoRecv *m_pro;
         
         union {
             uint32_t rejoin_num;
