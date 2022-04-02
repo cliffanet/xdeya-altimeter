@@ -802,20 +802,18 @@ class ViewNetSync2 : public ViewBase {
             u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
             
             y += 10;
-            /*
             
-            if (state == NS_PROFILE_JOIN) {
+            if (w->op() == WorkerWiFiSync::opProfileJoin) {
                 strcpy_P(s, PTXT(WIFI_WAITJOIN));
                 u8g2.drawTxt(0, y, s);
-                snprintf_P(s, sizeof(s), PTXT(WIFI_WAIT_SEC), timeout / 10);
+                snprintf_P(s, sizeof(s), PTXT(WIFI_WAIT_SEC), w->timer() / 10);
                 u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
                 y += 25;
                 u8g2.setFont(u8g2_font_fub20_tr);
-                snprintf_P(s, sizeof(s), PSTR("%04X"), joinnum);
+                snprintf_P(s, sizeof(s), PSTR("%04X"), w->joinnum());
                 u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
                 return;
             }
-            */
 
             if ((wifiStatus() == WIFI_STA_WAITIP) || (wifiStatus() == WIFI_STA_CONNECTED)) {
                 snprintf_P(s, sizeof(s), PTXT(WIFI_RSSI), rssi);
@@ -841,10 +839,12 @@ class ViewNetSync2 : public ViewBase {
                         case WorkerWiFiSync::errWiFiConnect:    TITLE(ERR_WIFICONNECT);
                         case WorkerWiFiSync::errTimeout:        TITLE(ERR_TIMEOUT);
                         case WorkerWiFiSync::errSrvConnect:     TITLE(ERR_SERVERCONNECT);
+                        case WorkerWiFiSync::errSrvDisconnect:  TITLE(ERR_SRVDISCONNECT);
                         case WorkerWiFiSync::errRecvData:       TITLE(ERR_RCVDATA);
                         case WorkerWiFiSync::errRcvCmdUnknown:  TITLE(ERR_RCVCMDUNKNOWN);
                         case WorkerWiFiSync::errSendData:       TITLE(ERR_SENDDATA);
                         case WorkerWiFiSync::errJoinLoad:       TITLE(ERR_JOINLOAD);
+                        case WorkerWiFiSync::errJoinSave:       TITLE(ERR_SAVEJOIN);
                     }
                     break;
                 

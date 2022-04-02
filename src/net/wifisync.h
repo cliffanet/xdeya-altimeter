@@ -21,6 +21,7 @@ class WorkerWiFiSync : public WorkerProc
             opExit,
             opClose,
             opOff,
+            opProfileJoin,
             opWiFiConnect,
             opSrvConnect,
             opSrvAuth,
@@ -37,17 +38,20 @@ class WorkerWiFiSync : public WorkerProc
             errWiFiConnect,
             errTimeout,
             errSrvConnect,
+            errSrvDisconnect,
             errRecvData,
             errRcvCmdUnknown,
             errSendData,
-            errJoinLoad
+            errJoinLoad,
+            errJoinSave
         } st_t;
     
         WorkerWiFiSync(const char *ssid, const char *pass = NULL);
         ~WorkerWiFiSync();
         
         st_t st() const { return m_st; }
-        bool isrun() const { return op() >= opWiFiConnect; }
+        bool isrun() const { return op() > opOff; }
+        uint32_t joinnum() const { return d.rejoin_num; }
         
         void stop();
         void end();
@@ -61,6 +65,10 @@ class WorkerWiFiSync : public WorkerProc
         union {
             uint32_t rejoin_num;
             struct __attribute__((__packed__)) {
+                uint32_t authid;
+                uint32_t secnum;
+            } join;
+            struct __attribute__((__packed__)) {
                 uint32_t ckscfg;
                 uint32_t cksjmp;
                 uint32_t ckspnt;
@@ -68,6 +76,7 @@ class WorkerWiFiSync : public WorkerProc
                 uint32_t poslog;
                 FileTrack::chs_t ckstrack;
             } acc;
+            
         } d;
         
         void initpro();

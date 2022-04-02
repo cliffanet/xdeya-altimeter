@@ -63,6 +63,10 @@ class BinProtoSend : public BinProto {
         bool send(const cmdkey_t &cmd, const char *pk_P, const T &data) {
             return send(cmd, pk_P, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
         }
+        
+        bool send(const cmdkey_t &cmd) {
+            return send(cmd, NULL, NULL, 0);
+        }
     
     protected:
         NetSocket *m_nsock;

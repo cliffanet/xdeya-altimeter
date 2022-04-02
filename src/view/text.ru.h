@@ -196,6 +196,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_WIFI_ERR_SENDTRACK      "Ошибка отправки треков"
 #define TXT_WIFI_ERR_SENDFIN        "Ошибка завершения отправки"
 #define TXT_WIFI_ERR_SERVERCONNECT  "Ошибка подключения к серверу"
+#define TXT_WIFI_ERR_SRVDISCONNECT  "Связь прервалась"
 #define TXT_WIFI_ERR_RCVDATA        "Ошибка при получении данных"
 #define TXT_WIFI_ERR_RCVCMDUNKNOWN  "Получена неизвестная команда"
 #define TXT_WIFI_ERR_SAVEJOIN       "Ошибка сохранеиня Web-привязки"

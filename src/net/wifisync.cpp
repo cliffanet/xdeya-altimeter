@@ -11,8 +11,9 @@
 #include "../cfg/webjoin.h"
 
 
-#define ERR(st)     err(err ## st)
-#define SOCK        BinProtoSend(m_sock, '%')
+#define ERR(st)             err(err ## st)
+#define SOCK                BinProtoSend(m_sock, '%')
+#define SEND(cmd, ...)      if (!SOCK.send(cmd, ##__VA_ARGS__)) RETURN_ERR(SendData);
 
 
 WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
@@ -61,6 +62,9 @@ void WorkerWiFiSync::initpro() {
     m_pro->add( 0x10, PSTR("N") );
     // accept
     m_pro->add( 0x20, PSTR("XXXXNH") );
+    
+    //join accept
+    m_pro->add( 0x13, PSTR("NN") );
 }
 
 void WorkerWiFiSync::end() {
@@ -108,6 +112,10 @@ WorkerWiFiSync::process() {
                 RETURN_ERR(RecvData);
         }
     
+    // проверка подключения к серверу
+    if ((m_sock != NULL) && (!m_sock->connected()))
+        RETURN_ERR(SrvDisconnect);
+    
     // выполнение плановых процедур
     switch (op()) {
         case opExit:
@@ -118,6 +126,13 @@ WorkerWiFiSync::process() {
             if (m_st == stRun)
                 m_st = stUserCancel;
             next(0);
+            return STATE_WAIT;
+        
+        case opProfileJoin:
+        // устройство не прикреплено ни к какому профайлу, ожидается привязка
+            if ((timer() & 0xF) == 0)
+                SEND(0x12, PSTR("N"), timer()*100);
+            
             return STATE_WAIT;
         
         case opWiFiConnect:
@@ -154,8 +169,7 @@ WorkerWiFiSync::process() {
 
                 CONSOLE("[authStart] authid: %lu", wjoin.authid());
             
-                if (!SOCK.send(0x01, PSTR("N"), wjoin.authid()))
-                    RETURN_ERR(SendData);
+                SEND(0x01, PSTR("N"), wjoin.authid());
             }
             
             RETURN_NEXT(200);
@@ -179,13 +193,14 @@ WorkerWiFiSync::process() {
 
 #undef RETURN_ERR
 #undef RETURN_NEXT
-#undef SEND
     
     return STATE_WAIT;
 }
 
 bool WorkerWiFiSync::recvdata(uint8_t cmd) {
-    
+
+#define RETURN_ERR(e)           { ERR(e); return true; }
+#define RETURN_OP(o,tmr)        { setop(op ## o); settimer(tmr); return true; }
 #define RETURN_NEXT(tmr)        { next(tmr); return true; }
 
     switch (op()) {
@@ -193,15 +208,30 @@ bool WorkerWiFiSync::recvdata(uint8_t cmd) {
         case opWaitAuth:
             switch (cmd) {
                 case 0x10: // rejoin
-                    //RET_NEXT(SENDCONFIG, 10);
-                    return true;
+                    RETURN_OP(ProfileJoin, 1200);
+                    
                 case 0x20: // accept
                     CONSOLE("recv ckstrack: %04x %04x %08x", d.acc.ckstrack.csa, d.acc.ckstrack.csb, d.acc.ckstrack.sz);
                     RETURN_NEXT(10);
             }
             return false;
+        
+        case opProfileJoin:
+            if (cmd == 0x13) {
+                CONSOLE("[waitJoin] cmd: %02x (%lu, %lu)", cmd, d.join.authid, d.join.secnum);
+                ConfigWebJoin wjoin(d.join.authid, d.join.secnum);
+                if (!wjoin.save())
+                    RETURN_ERR(JoinSave);
+                
+                SEND(0x14);
+                
+                RETURN_OP(SrvAuth, 100);
+            }
+            return false;
     }
     
+#undef RETURN_ERR
+#undef RETURN_OP
 #undef RETURN_NEXT
     
     return false;

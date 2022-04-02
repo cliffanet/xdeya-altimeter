@@ -39,6 +39,7 @@ class WorkerProc {
         void clrtimer();
         void dectimer();
         bool istimeout() const { return m_timer == 1; }
+        uint32_t timer() const { return m_timer > 0 ? m_timer-1 : 0; }
         
         uint32_t op() const { return m_op; }
         void setop(uint32_t op);

@@ -344,15 +344,24 @@ bool BinProto::hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz) {
 }
 
 int BinProto::pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const char *pk_P, const uint8_t *src, size_t srcsz) {
-    if ((bufsz < hdrsz()) || (pk_P == NULL))
+    if (bufsz < hdrsz())
         return -1;
     
-    char pk[ strlen_P(pk_P) + 1 ];
-    strcpy_P(pk, pk_P);
-    
-    int len = _pack(buf+hdrsz(), bufsz-hdrsz(), pk, src, srcsz);
-    if (len < 0)
-        return -1;
+    int len;
+        
+    if (srcsz > 0) {
+        if (pk_P == NULL)
+            return -1;
+        
+        char pk[ strlen_P(pk_P) + 1 ];
+        strcpy_P(pk, pk_P);
+        
+        len = _pack(buf+hdrsz(), bufsz-hdrsz(), pk, src, srcsz);
+        if (len < 0)
+            return -1;
+    }
+    else
+        len = 0;
     
     CONSOLE("len: %d", len);
     

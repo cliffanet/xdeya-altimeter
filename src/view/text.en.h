@@ -190,6 +190,7 @@
 #define TXT_WIFI_ERR_SENDTRACK      "send Tracks fail"
 #define TXT_WIFI_ERR_SENDFIN        "Finishing send fail"
 #define TXT_WIFI_ERR_SERVERCONNECT  "server can't connect"
+#define TXT_WIFI_ERR_SRVDISCONNECT  "server disconnected"
 #define TXT_WIFI_ERR_RCVDATA        "recv data fail"
 #define TXT_WIFI_ERR_RCVCMDUNKNOWN  "recv unknown cmd"
 #define TXT_WIFI_ERR_SAVEJOIN       "save fail"
