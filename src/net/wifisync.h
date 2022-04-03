@@ -27,7 +27,10 @@ class WorkerWiFiSync : public WorkerProc
             opSrvAuth,
             opWaitAuth,
             opSndConfig,
-            opSndJumpCount
+            opSndJumpCount,
+            opSndPoint,
+            opSndLogBook,
+            opSndDataFin
         };
         
         typedef enum {

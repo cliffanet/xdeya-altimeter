@@ -12,5 +12,8 @@ class NetSocket;
 
 bool sendCfgMain(NetSocket *nsock);
 bool sendJmpCount(NetSocket *nsock);
+bool sendPoint(NetSocket *nsock);
+bool sendLogBook(NetSocket *nsock, uint32_t _cks, uint32_t _pos);
+bool sendDataFin(NetSocket *nsock);
 
 #endif // _net_sync_H

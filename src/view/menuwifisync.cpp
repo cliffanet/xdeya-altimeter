@@ -854,6 +854,9 @@ class ViewNetSync2 : public ViewBase {
                 case WorkerWiFiSync::opWaitAuth:        TITLE(MSG_SRVAUTH);
                 case WorkerWiFiSync::opSndConfig:       TITLE(MSG_SENDCONFIG);
                 case WorkerWiFiSync::opSndJumpCount:    TITLE(MSG_SENDJUMPCOUNT);
+                case WorkerWiFiSync::opSndPoint:        TITLE(MSG_SENDPOINT);
+                case WorkerWiFiSync::opSndLogBook:      TITLE(MSG_SENDLOGBOOK);
+                case WorkerWiFiSync::opSndDataFin:      TITLE(MSG_SENDFIN);
             }
 #undef TITLE
             

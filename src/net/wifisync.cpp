@@ -9,6 +9,7 @@
 #include "binproto.h"
 #include "netsync.h"
 #include "../cfg/webjoin.h"
+#include "../cfg/point.h"
 
 
 #define ERR(st)             err(err ## st)
@@ -189,6 +190,28 @@ WorkerWiFiSync::process() {
                     RETURN_ERR(SendData);
             
             RETURN_NEXT(10);
+        
+        case opSndPoint:
+        // отправка Navi-точек
+            if ((d.acc.ckspnt == 0) || (d.acc.ckspnt != pnt.chksum()))
+                if (!sendPoint(m_sock))
+                    RETURN_ERR(SendData);
+            
+            RETURN_NEXT(10);
+        
+        case opSndLogBook:
+        // отправка LogBook
+            if (!sendLogBook(m_sock, d.acc.ckslog, d.acc.poslog))
+                RETURN_ERR(SendData);
+            
+            RETURN_NEXT(10);
+        
+        case opSndDataFin:
+        // завершение отправки данных, теперь будем получать обновления с сервера
+            if (!sendDataFin(m_sock))
+                RETURN_ERR(SendData);
+            
+            RETURN_NEXT(100);
     }
 
 #undef RETURN_ERR

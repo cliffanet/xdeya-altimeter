@@ -174,6 +174,13 @@ static int _pack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *src,
                 NXTSZ(8, double)
                 break;
             
+            case 'T':
+                CHKSZ_(8, 8)
+                _hton(dst, SRC(uint16_t));
+                memcpy(dst+2, src+2, 6);
+                NXTSZ_(8, 8)
+                break;
+            
             case 'a':
                 if ((pk[1] >= '0') && (pk[1] <= '9')) {
                     int l = 0;
@@ -284,6 +291,13 @@ static bool _unpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *s
                 CHKSZ(double, 8)
                 DST(double) = _ntod(src);
                 NXTSZ(double, 8)
+                break;
+            
+            case 'T':
+                CHKSZ_(8, 8)
+                _ntoh(DST(uint16_t), src);
+                memcpy(dst+2, src+2, 6);
+                NXTSZ_(8, 8)
                 break;
             
             case 'a':
