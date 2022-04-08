@@ -78,6 +78,7 @@ clasCorrUsed 1 = CLAS corrections have been used for a signal in the subset spec
 */
 
 static std::vector<sat_item_t> satall;
+static size_t recv_plen = 0;
 
 static void gpsRecvSat(UbloxGpsProto &gps);
 
@@ -111,10 +112,15 @@ class ViewInfoSat : public ViewInfo {
         }
         
         void updStr(uint16_t i) {
-            if (i >= satall.size())
+            if (i == 0) {
+                PRNL("plen: %d; count: %d", recv_plen, satall.size());
+                return;
+            }
+            
+            if (i > satall.size())
                 return;
             
-            const auto &s = satall[i];
+            const auto &s = satall[i-1];
             const char *id =
                 (s.svId >= 1) && (s.svId <= 32) ?
                     PSTR("GPS ") :
@@ -160,12 +166,14 @@ static void gpsRecvSat(UbloxGpsProto &gps) {
     	uint8_t  _[2];      // Reserved
     } hdr;
     
+    recv_plen = gps.plen();
+    
     if (!gps.bufcopy(hdr))
         return;
     
     satall.resize(hdr.numSvs);
     
-    vInfSat.setSize(hdr.numSvs);
+    vInfSat.setSize(hdr.numSvs + 1);
     
     uint8_t n = 0;
     for (auto &s: satall) {

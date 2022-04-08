@@ -123,7 +123,7 @@ class UbloxGpsProto
         ubloxgps_bytewait_t rcv_bytewait;
         uint8_t rcv_class, rcv_ident, rcv_cka, rcv_ckb;
         uint16_t rcv_plen, bufi;
-        uint8_t buf[256];
+        uint8_t buf[512];
         uint16_t sndcnt;
         ubloxgps_hnditem_t hndall[UBX_HND_SIZE];
         
