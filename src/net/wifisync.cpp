@@ -20,7 +20,8 @@
 WorkerWiFiSync::WorkerWiFiSync(const char *ssid, const char *pass) :
     m_sock(NULL),
     m_pro(NULL),
-    m_st(stRun)
+    m_st(stRun),
+    m_wrk(0)
 {
     CONSOLE("[%08x] create", this);
     
@@ -204,6 +205,20 @@ WorkerWiFiSync::process() {
             if (!sendLogBook(m_sock, d.acc.ckslog, d.acc.poslog))
                 RETURN_ERR(SendData);
             
+            RETURN_NEXT(10);
+        
+        case opSndTrack:
+        // отправка треков - в отдельном worker
+            /*
+            if (m_wrk == 0) {
+                m_wrk = trkSend(m_sock);
+                if (m_wrk == 0)
+                    RETURN_ERR(Worker);
+            }
+            else
+            if (wrkExists(m_wrk))
+                return STATE_WAIT;
+            */
             RETURN_NEXT(10);
         
         case opSndDataFin:

@@ -845,6 +845,7 @@ class ViewNetSync2 : public ViewBase {
                         case WorkerWiFiSync::errSendData:       TITLE(ERR_SENDDATA);
                         case WorkerWiFiSync::errJoinLoad:       TITLE(ERR_JOINLOAD);
                         case WorkerWiFiSync::errJoinSave:       TITLE(ERR_SAVEJOIN);
+                        case WorkerWiFiSync::errWorker:         TITLE(ERR_WORKER);
                     }
                     break;
                 
@@ -985,8 +986,9 @@ class ViewMenuWifiSync : public ViewMenu {
                 return;
             
             if (n->isopen) {
-                wifiSyncBegin(n->ssid);
-                viewSet(vNetSync2);
+                //wifiSyncBegin(n->ssid);
+                viewSet(vNetSync);
+                vNetSync.begin(n->ssid, NULL);
             }
             else {
                 char pass[64];
@@ -995,8 +997,9 @@ class ViewMenuWifiSync : public ViewMenu {
                     return;
                 }
 
-                wifiSyncBegin(n->ssid, pass);
-                viewSet(vNetSync2);
+                //wifiSyncBegin(n->ssid, pass);
+                viewSet(vNetSync);
+                vNetSync.begin(n->ssid, pass);
             }
         }
         

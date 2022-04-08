@@ -281,3 +281,37 @@ void trkStop(uint8_t by) {
 bool trkRunning(uint8_t by) {
     return wrkExists(WORKER_TRK_SAVE);
 }
+
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Отправка треков на сервер
+ * ------------------------------------------------------------------------------------------- */
+/*
+class WorkerTrkSend : public WorkerProc
+{
+    private:
+        FileTrack tr;
+        NetSocket *m_nsock;
+    
+    public:
+        WorkerTrkSend(NetSocket *nsock) : m_nsock(nsock) {
+        }
+        
+    state_t process() {
+        // проверка подключения к серверу
+        if ((m_sock != NULL) && (!m_sock->connected()))
+            RETURN_ERR(SrvDisconnect);
+        
+        return STATE_END;
+    }
+};
+*/
+
+uint8_t trkSenderCreate(NetSocket *nsock) {
+    if (nsock == NULL)
+        return 0;
+    
+    //return wrkAddRand(new WorkerTrkSend(nsock));
+    return 0;
+}

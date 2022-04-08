@@ -30,6 +30,7 @@ class WorkerWiFiSync : public WorkerProc
             opSndJumpCount,
             opSndPoint,
             opSndLogBook,
+            opSndTrack,
             opSndDataFin
         };
         
@@ -46,7 +47,8 @@ class WorkerWiFiSync : public WorkerProc
             errRcvCmdUnknown,
             errSendData,
             errJoinLoad,
-            errJoinSave
+            errJoinSave,
+            errWorker
         } st_t;
     
         WorkerWiFiSync(const char *ssid, const char *pass = NULL);
@@ -64,6 +66,7 @@ class WorkerWiFiSync : public WorkerProc
         st_t m_st;
         NetSocket *m_sock;
         BinProtoRecv *m_pro;
+        WorkerProc::key_t m_wrk;
         
         union {
             uint32_t rejoin_num;

@@ -201,6 +201,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_WIFI_ERR_RCVCMDUNKNOWN  "Получена неизвестная команда"
 #define TXT_WIFI_ERR_SAVEJOIN       "Ошибка сохранеиня Web-привязки"
 #define TXT_WIFI_ERR_SENDJOIN       "Ошибка отправки Web-привязки"
+#define TXT_WIFI_ERR_WORKER         "Ошибка создания процесса"
 #define TXT_WIFI_ERR_PASSCLEAR      "Ошибка сброса WiFi-паролей"
 #define TXT_WIFI_ERR_PASSCREATE     "Ошибка иниц. WiFi-паролей"
 #define TXT_WIFI_ERR_PASSADD        "Ошибка добавления WiFi-паролей"

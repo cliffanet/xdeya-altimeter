@@ -98,4 +98,8 @@ bool trkStart(uint8_t by = TRK_RUNBY_HAND, uint16_t old = 0);
 void trkStop(uint8_t by = TRK_RUNBY_ANY);
 bool trkRunning(uint8_t by = TRK_RUNBY_ANY);
 
+class NetSocket;
+uint8_t trkSenderCreate(NetSocket *nsock);
+void trkSenderStop(uint8_t wrkey);
+
 #endif // _file_track_H

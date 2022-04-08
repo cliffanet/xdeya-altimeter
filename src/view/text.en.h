@@ -195,6 +195,7 @@
 #define TXT_WIFI_ERR_RCVCMDUNKNOWN  "recv unknown cmd"
 #define TXT_WIFI_ERR_SAVEJOIN       "save fail"
 #define TXT_WIFI_ERR_SENDJOIN       "join send fail"
+#define TXT_WIFI_ERR_WORKER         "can't create worker"
 #define TXT_WIFI_ERR_PASSCLEAR      "WiFi clear Fail"
 #define TXT_WIFI_ERR_PASSCREATE     "WiFi create Fail"
 #define TXT_WIFI_ERR_PASSADD        "WiFi add Fail"
