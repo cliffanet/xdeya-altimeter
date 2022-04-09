@@ -257,6 +257,9 @@ void jmpInit() {
     if (pwrMode() == PWR_SLEEP)
         ac.gndset(_pressgnd);
 }
+void jmpStop() {
+    bmp.setSampling(Adafruit_BMP280::MODE_SLEEP);
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Определяем текущее состояние прыга и переключаем по необходимости

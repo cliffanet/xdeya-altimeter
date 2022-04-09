@@ -82,7 +82,7 @@ bool pwrInit() {
                 uint32_t tm = btnPressed(bm);
                 CONSOLE("btn [%d] pressed %d ms", bm, tm);
                 if (bm == btnMask(BTN_SEL)) {
-                    if (tm > 4000) {
+                    if (tm > 1200) {
                         CONSOLE("pwrInit on");
                         return true;
                     }
@@ -220,6 +220,7 @@ void pwrSleep() {
 void pwrOff() {
     mode = PWR_OFF;
     
+    jmpStop();
     displayOff();
     gpsPwrDown();
     compStop();

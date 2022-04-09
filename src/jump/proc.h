@@ -103,6 +103,7 @@ uint32_t jmpPreInterval(const jmp_cur_t &from);
 bool jmpTakeoffCheck();
 
 void jmpInit();
+void jmpStop();
 void jmpProcess();
 void jmpReset();
 
