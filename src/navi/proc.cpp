@@ -3,6 +3,8 @@
 #include "../log.h"
 #include "../clock.h"
 #include "../core/workerloc.h"
+#include "RTClib.h" // DateTime class
+#include "../cfg/main.h" // timezone
 
 // будем использовать стандартный экземпляр класса HardwareSerial, 
 // т.к. он и так в системе уже есть и память под него выделена
@@ -17,6 +19,54 @@ static gps_data_t data = { 0 };
 
 static bool direct = false;
 static gps_state_t state = GPS_STATE_OFF;
+
+static struct {
+    uint8_t posllh  : 4;
+    uint8_t velned  : 4;
+    uint8_t timeutc : 4;
+    uint8_t sol     : 4;
+    uint8_t pvt     : 4;
+} ageRecv = {
+    posllh  : 15,
+    velned  : 15,
+    timeutc : 15,
+    sol     : 15,
+    pvt     : 15,
+};
+
+/* ------------------------------------------------------------------------------------------- *
+ *  часы с navi-модема
+ * ------------------------------------------------------------------------------------------- */
+static RTC_DATA_ATTR struct {
+    tm_t tm = { 0 };
+    bool valid = false;
+} clock;
+static inline void clockUpdate() {
+    DateTime dtgps(data.tm.year, data.tm.mon, data.tm.day, data.tm.h, data.tm.m, data.tm.s);
+    DateTime dt(dtgps.unixtime() + cfg.d().timezone * 60);
+    clock.tm.year   = dt.year();
+    clock.tm.mon    = dt.month();
+    clock.tm.day    = dt.day();
+    clock.tm.h      = dt.hour();
+    clock.tm.m      = dt.minute();
+    clock.tm.s      = dt.second();
+    clock.tm.tick   = data.tm.tick;
+}
+static inline void clockCheck() {
+    if (!clock.valid && (data.numSV > 3) && (ageRecv.timeutc < 5)) {
+        clockUpdate();
+        clock.valid = true;
+    }
+}
+
+#ifndef CLOCK_EXTERNAL
+// замена функциям текущего времени из cpp
+// в случае отключения внешних часов, используем время напрямую из navi-модема
+
+bool tmValid() { return clock.valid && data.rcvok; }
+tm_t &tmNow() { return clock.tm; }
+
+#endif // #ifndef CLOCK_EXTERNAL
 
 /* ------------------------------------------------------------------------------------------- *
  *  GPS-инициализация
@@ -254,19 +304,6 @@ class WorkerGpsInit : public WorkerProc
 /* ------------------------------------------------------------------------------------------- *
  *  GPS-получение данных
  * ------------------------------------------------------------------------------------------- */
-static struct {
-    uint8_t posllh  : 4;
-    uint8_t velned  : 4;
-    uint8_t timeutc : 4;
-    uint8_t sol     : 4;
-    uint8_t pvt     : 4;
-} ageRecv = {
-    posllh  : 15,
-    velned  : 15,
-    timeutc : 15,
-    sol     : 15,
-    pvt     : 15,
-};
 
 static void gpsRecvPosllh(UbloxGpsProto &gps) {
     struct {
@@ -339,6 +376,8 @@ static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
     data.tm.m   = nav.min;
     data.tm.s   = nav.sec;
     data.tm.tick= nav.nano / 1000000 / TIME_TICK_INTERVAL;
+    if (clock.valid)
+        clockUpdate();
     ageRecv.timeutc = 0;
 }
 static void gpsRecvSol(UbloxGpsProto &gps) {
@@ -367,6 +406,7 @@ static void gpsRecvSol(UbloxGpsProto &gps) {
     
     data.gpsFix = nav.gpsFix;
     data.numSV  = nav.numSV;
+    clockCheck();
     ageRecv.sol = 0;
 }
 static void gpsRecvPvt(UbloxGpsProto &gps) {
@@ -411,6 +451,7 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
     
 	data.gpsFix = nav.gpsFix;
 	data.numSV  = nav.numSV;
+    clockCheck();
     ageRecv.pvt = 0;
 }
 

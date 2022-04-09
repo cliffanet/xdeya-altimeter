@@ -721,14 +721,18 @@ static const menu_el_t menutime[] {
                 if (cfg.d().timezone >= 12*60)      // Ограничение выбора часового пояса
                     return;
                 cfg.set().timezone += 30;             // часовые пояса смещаем по 30 минут
+#ifdef CLOCK_EXTERNAL
                 clockForceAdjust();            // сразу применяем настройки
+#endif
             }
             else
             if (val == 1) {
                 if (cfg.d().timezone <= -12*60)
                     return;
                 cfg.set().timezone -= 30;
+#ifdef CLOCK_EXTERNAL
                 clockForceAdjust();
+#endif
             }
         },
     },

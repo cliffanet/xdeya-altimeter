@@ -41,8 +41,10 @@ void setup() {
     pinMode(HWPOWER_PIN_BATCHRG, INPUT_PULLUP);
 #endif
 
+#ifdef CLOCK_EXTERNAL
     // часы
     clockInit();
+#endif // #ifdef CLOCK_EXTERNAL
     
     // инициализируем высотомер
     jmpInit();
@@ -68,7 +70,11 @@ void setup() {
 void loop() {
     pwrRun([]() {
         pwrBattChk();
+        
+#ifdef CLOCK_EXTERNAL
         clockProcess();
+#endif
+        
         tmcntUpdate();
         gpsProcess();
         compProcess();
@@ -76,7 +82,11 @@ void loop() {
         viewProcess();
     });
     pwrRun([]() {
+        
+#ifdef CLOCK_EXTERNAL
         clockProcess();
+#endif
+        
         jmpProcess();
     });
 }

@@ -138,28 +138,35 @@ void tmcntUpdate() {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  работа с часами
+ *  операции со временем в формате tm_t
  * ------------------------------------------------------------------------------------------- */
 
-static RTC_DATA_ATTR tm_t tm = { 0 };
-static RTC_DATA_ATTR bool tmvalid = false;
+int32_t tmInterval(const tm_t &tmbeg, const tm_t &tmend) {
+    DateTime
+        dtbeg(tmbeg.year, tmbeg.mon, tmbeg.day, tmbeg.h, tmbeg.m, tmbeg.s),
+        dtend(tmend.year, tmend.mon, tmend.day, tmend.h, tmend.m, tmend.s);
+    
+    int32_t tint = (dtend.unixtime() - dtbeg.unixtime()) * 1000;
+    int8_t tick1 = tmend.tick - tmbeg.tick;
+    int16_t tick = tick1;
+    return tint + (tick * TIME_TICK_INTERVAL);
+}
 
-#if HWVER >= 3
-static RTC_PCF8563 rtc;
-#else
-static RTC_Millis rtc;
-#endif
+int32_t tmIntervalToNow(const tm_t &tmbeg) {
+    return
+        tmValid() ?
+            tmInterval(tmbeg, tmNow()) :
+            0;
+}
 
-/* ------------------------------------------------------------------------------------------- *
- *  
- * ------------------------------------------------------------------------------------------- */
-
-tm_t &tmNow() { return tm; }
-bool tmValid() { return tmvalid; }
 
 tm_t tmNow(uint32_t earlerms) {
+    if (!tmValid())
+        return { 0 };
     if (earlerms == 0)
-        return tm;
+        return tmNow();
+    
+    const auto &tm = tmNow();
     
     DateTime dt1(tm.year, tm.mon, tm.day, tm.h, tm.m, tm.s);
     uint32_t ut = dt1.unixtime() - (earlerms / 1000);
@@ -186,20 +193,23 @@ tm_t tmNow(uint32_t earlerms) {
     };
 }
 
-int32_t tmInterval(const tm_t &tmbeg, const tm_t &tmend) {
-    DateTime
-        dtbeg(tmbeg.year, tmbeg.mon, tmbeg.day, tmbeg.h, tmbeg.m, tmbeg.s),
-        dtend(tmend.year, tmend.mon, tmend.day, tmend.h, tmend.m, tmend.s);
-    
-    int32_t tint = (dtend.unixtime() - dtbeg.unixtime()) * 1000;
-    int8_t tick1 = tmend.tick - tmbeg.tick;
-    int16_t tick = tick1;
-    return tint + (tick * TIME_TICK_INTERVAL);
-}
+#ifdef CLOCK_EXTERNAL
 
-int32_t tmIntervalToNow(const tm_t &tmbeg) {
-    return tmInterval(tmbeg, tm);
-}
+/* ------------------------------------------------------------------------------------------- *
+ *  работа с часами
+ * ------------------------------------------------------------------------------------------- */
+
+static RTC_DATA_ATTR tm_t tm = { 0 };
+static RTC_DATA_ATTR bool tmvalid = false;
+
+#if HWVER >= 3
+static RTC_PCF8563 rtc;
+#else
+static RTC_Millis rtc;
+#endif
+
+tm_t &tmNow() { return tm; }
+bool tmValid() { return tmvalid; }
 
 // обновление времени
 // при аппаратных часах - по прерыванию
@@ -292,3 +302,5 @@ void clockProcess() {
         tm.tick ++;
     }
 }
+
+#endif // #ifdef CLOCK_EXTERNAL

@@ -97,7 +97,10 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 static bool _wifiStart() {
     esp_err_t err;
     wifiall.clear();
+    
+#ifdef CLOCK_EXTERNAL
     clockIntDisable();
+#endif
 
 #define ERR(txt, ...)   { CONSOLE(txt, ##__VA_ARGS__); return false; }
 #define ESPRUN(func)    { CONSOLE(TOSTRING(func)); if ((err = func) != ESP_OK) ERR(TOSTRING(func) ": %d", err); }
@@ -241,8 +244,10 @@ bool wifiStop() {
     }
     
     CONSOLE("wifi stopped");
-    
+
+#ifdef CLOCK_EXTERNAL
     clockIntEnable();
+#endif
     
 #undef ERR
 #undef ESPRUN
