@@ -134,6 +134,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_SYSTEM_GPSSERIAL   "GPS serial"
 #define TXT_MENU_SYSTEM_GPSSATINFO  "GPS спутники"
 #define TXT_MENU_SYSTEM_HWTEST      "Тестирование аппарат."
+#define TXT_MENU_SYSTEM_MAGCALIB    "Калибровка магнетом."
 
 #define TXT_MENU_ROOT_GPSPOINT      "GPS точки"
 #define TXT_MENU_ROOT_JUMPCOUNT     "Кол-во прыжков"
@@ -214,6 +215,11 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_WIFI_ERR_FWFIN          "Ошибка завершения прошивки"
 
 #define TXT_WIFI_SYNCFINISHED       "Синхронизация успешно завершена"
+
+#define TXT_MCAL_SIDE180_1          "На противоположную"
+#define TXT_MCAL_SIDE180_2          "сторону"
+#define TXT_MCAL_MINFRAME_1         "Минимизируйте"
+#define TXT_MCAL_MINFRAME_2         "прямоугольник!"
 
 #define TXT_LOGBOOK_JUMPNUM         "Прыжок # %d"
 #define TXT_LOGBOOK_ALTEXIT         "Отделение"

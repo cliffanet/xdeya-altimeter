@@ -128,6 +128,7 @@
 #define TXT_MENU_SYSTEM_GPSSERIAL   "GPS serial"
 #define TXT_MENU_SYSTEM_GPSSATINFO  "GPS sat-info"
 #define TXT_MENU_SYSTEM_HWTEST      "Hardware test"
+#define TXT_MENU_SYSTEM_MAGCALIB    "Mag calibrate"
 
 #define TXT_MENU_ROOT_GPSPOINT      "GPS points"
 #define TXT_MENU_ROOT_JUMPCOUNT     "Jump count"
@@ -208,6 +209,11 @@
 #define TXT_WIFI_ERR_FWFIN          "FW-finish fail"
 
 #define TXT_WIFI_SYNCFINISHED       "Sync finished"
+
+#define TXT_MCAL_SIDE180_1          "Flip to"
+#define TXT_MCAL_SIDE180_2          "opposite side"
+#define TXT_MCAL_MINFRAME_1         "Minimize"
+#define TXT_MCAL_MINFRAME_2         "frame!"
 
 #define TXT_LOGBOOK_JUMPNUM         "Jump # %d"
 #define TXT_LOGBOOK_ALTEXIT         "Alt"

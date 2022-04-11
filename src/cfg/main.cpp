@@ -7,6 +7,7 @@
 #include "../navi/proc.h"
 #include "../core/filebin.h"
 #include "../view/base.h"
+#include "../navi/compass.h"
 
 #include <SPIFFS.h> // cfg reset default = format
 
@@ -18,6 +19,8 @@ template class Config<cfg_point_t>; // Почему-то не линкуется
 template class Config<cfg_jump_t>;
 
 template class Config<cfg_webjoin_t>;
+
+template class Config<cfg_magcal_t>;
 
 /* ------------------------------------------------------------------------------------------- *
  *  Описание методов шаблона класса Config
@@ -92,6 +95,7 @@ bool Config<T>::load() {
     CONSOLE("config [%d] read ok", cfgid);
     
     _modifed = false;
+    _empty = false;
     return true;
 }
 
@@ -138,6 +142,7 @@ void Config<T>::reset() {
     T d1;
     data = d1;
     _modifed = true;
+    _empty = true;
 }
 
 template <typename T>

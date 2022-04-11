@@ -3,12 +3,15 @@
 #include "../log.h"
 #include "../clock.h"
 #include "../filtlib/filter_avgdeg.h"
+#include "../cfg/main.h"
 
 #include <Wire.h>
 
 static compass_t _cmp = { 0 };
 
 static FilterAvgDeg <double>filt(7);
+
+static Config<cfg_magcal_t> cal(PSTR(CFG_MAGCAL_NAME), CFG_MAGCAL_ID, CFG_MAGCAL_VER);
 
 
 /* --------------------------------------------------
@@ -141,6 +144,9 @@ void compInit() {
     
     if (_cmp.ok == 3)
         CONSOLE("compas & accel/gyro init ok");
+    
+    cal.reset();
+    cal.load();
 }
 
 void compStop() {
@@ -161,16 +167,50 @@ void compStop() {
     _cmp = { 0 };
 }
 
+bool compCalibrate(const vec16_t &min, const vec16_t &max) {
+    cal.set().min = min;
+    cal.set().max = max;
+    return cal.save();
+}
+
 void compProcess() {
-    if (_cmp.ok & 1)
+    vec16_t mag;
+    
+    if (_cmp.ok & 1) {
         _cmp.mag = magRead();
+        
+        if (cal.isempty())
+            mag = _cmp.mag;
+        else {
+            vec16_t cen = {
+                static_cast<int16_t>( (cal.d().max.x - cal.d().min.x) / 2 + cal.d().min.x ),
+                static_cast<int16_t>( (cal.d().max.y - cal.d().min.y) / 2 + cal.d().min.y ),
+                static_cast<int16_t>( (cal.d().max.z - cal.d().min.z) / 2 + cal.d().min.z ),
+            };
+            
+            vec32_t c = {
+                _cmp.mag.x - cen.x,
+                _cmp.mag.y - cen.y,
+                _cmp.mag.z - cen.z,
+            };
+            
+            mag = {
+                static_cast<int16_t>( c.x * 2000 / (cal.d().max.x - cal.d().min.x) ),
+                static_cast<int16_t>( c.y * 2000 / (cal.d().max.y - cal.d().min.y) ),
+                static_cast<int16_t>( c.z * 2000 / (cal.d().max.z - cal.d().min.z) )
+            };
+            CONSOLE("mag: %d, %d, %d", mag.x, mag.y, mag.z);
+        }
+    }
+    else
+        mag = { 0, 0, 0 };
     
     if (_cmp.ok & 2)
         _cmp.acc = accRead();
     
     // heading
     if ((_cmp.ok & 3) == 3) {
-        vec32_t E = vec_cross(_cmp.mag, _cmp.acc);
+        vec32_t E = vec_cross(mag, _cmp.acc);
         _cmp.e = E;
         //vec32_t N = vec_cross(_cmp.acc, E);
         

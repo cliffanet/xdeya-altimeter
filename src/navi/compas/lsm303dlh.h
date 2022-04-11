@@ -180,6 +180,10 @@ static vec16_t magRead() {
     
     vec16_t m;
     
+    // x-range = -615 .. 320
+    // y-range = -400 .. 520
+    // z-range = -350 .. 520
+    
     m.x = (static_cast<int16_t>(Wire.read()) << 8) | Wire.read();
     //m.x = m.x * -1;
     m.y = (static_cast<int16_t>(Wire.read()) << 8) | Wire.read();

@@ -74,8 +74,9 @@ class Config {
         uint32_t chksum() const;
         
         const T &d() const { return data; }
-        T &set() { _modifed = true; return data; }
+        T &set() { _modifed = true; _empty = false; return data; }
         bool modifed() { return _modifed; }
+        bool isempty() const { return _empty; }
     
     protected:
         const char *fname_P;
@@ -83,6 +84,7 @@ class Config {
         uint8_t ver;
         T data;
         bool _modifed = false;
+        bool _empty = true;
 };
 
 bool cfgLoad(bool apply = true);
