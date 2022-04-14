@@ -147,6 +147,9 @@ void compInit() {
     
     cal.reset();
     cal.load();
+    CONSOLE("calibrate: x: %d..%d; y: %d..%d; z: %d..%d",
+            cal.d().min.x, cal.d().max.x, cal.d().min.y, 
+            cal.d().max.y, cal.d().min.z, cal.d().max.z);
 }
 
 void compStop() {
@@ -170,6 +173,7 @@ void compStop() {
 bool compCalibrate(const vec16_t &min, const vec16_t &max) {
     cal.set().min = min;
     cal.set().max = max;
+    CONSOLE("x: %d..%d; y: %d..%d; z: %d..%d", min.x, max.x, min.y, max.y, min.z, max.z);
     return cal.save();
 }
 
@@ -199,7 +203,6 @@ void compProcess() {
                 static_cast<int16_t>( c.y * 2000 / (cal.d().max.y - cal.d().min.y) ),
                 static_cast<int16_t>( c.z * 2000 / (cal.d().max.z - cal.d().min.z) )
             };
-            CONSOLE("mag: %d, %d, %d", mag.x, mag.y, mag.z);
         }
     }
     else
