@@ -185,9 +185,13 @@ static vec16_t magRead() {
     // z-range = -350 .. 520
     
     m.x = (static_cast<int16_t>(Wire.read()) << 8) | Wire.read();
-    //m.x = m.x * -1;
+#if HWVER >= 5
+    m.x = m.x * -1;
+#endif
     m.y = (static_cast<int16_t>(Wire.read()) << 8) | Wire.read();
+#if HWVER < 5
     m.y = m.y * -1;
+#endif
     m.z = (static_cast<int16_t>(Wire.read()) << 8) | Wire.read();
     m.z = m.z * -1;
     
