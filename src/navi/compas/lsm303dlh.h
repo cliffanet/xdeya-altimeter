@@ -101,9 +101,13 @@ static vec16_t accRead() {
     vec16_t a;
     
     a.x = Wire.read() | (static_cast<int16_t>(Wire.read()) << 8);
-    //a.x = a.x * -1;
+#if HWVER >= 5
+    a.x = a.x * -1;
+#endif
     a.y = Wire.read() | (static_cast<int16_t>(Wire.read()) << 8);
+#if HWVER < 5
     a.y = a.y * -1;
+#endif
     a.z = Wire.read() | (static_cast<int16_t>(Wire.read()) << 8);
     a.z = a.z * -1;
     
