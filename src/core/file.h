@@ -9,9 +9,15 @@
 #include "cks.h"
 #include "FS.h"
 
+#ifdef USE_SDCARD
+#define PIN_SDCARD  14
+#endif
+
 /* ------------------------------------------------------------------------------------------- *
  *  Стандартная обвязка с файлами
  * ------------------------------------------------------------------------------------------- */
+bool fileInit(bool internal = true, bool external = true);
+
 #define FILE_NUM_SUFFIX     ".%02d"
 
 void fileName(char *fname, size_t sz, const char *fname_P, uint8_t num = 0);

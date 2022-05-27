@@ -1,56 +1,97 @@
 
+#include "../../def.h"
 #include "file.h"
 #include "../log.h"
 
-#include "FS.h"
+#include <FS.h>
 #include <SPIFFS.h>
+
+#ifdef USE_SDCARD
+#include <SD.h>
+#endif
 
 /* ------------------------------------------------------------------------------------------- *
  *  Стандартная обвязка с файлами
  * ------------------------------------------------------------------------------------------- */
+bool fileInit(bool internal, bool external) {
+    bool ok = true;
+    
+    if (internal && !SPIFFS.begin(true)) {
+        CONSOLE("SPIFFS Mount Failed");
+        ok = false;
+    }
+
+#ifdef USE_SDCARD
+    if (external && !SD.begin(PIN_SDCARD)) {
+        CONSOLE("SD Mount Failed");
+        ok = false;
+    }
+    
+    CONSOLE("card init: %d, type: %d, size: %llu", ok, SD.cardType(), SD.cardSize());
+#endif
+    
+    return ok;
+}
+
 static bool file_exists(const char *fname, bool external = false) {
+#ifdef USE_SDCARD
     if (external)
-        return file_exists(fname, false);
+        return SD.exists(fname);
     else
+#endif
         return SPIFFS.exists(fname);
 }
 
 static bool file_remove(const char *fname, bool external = false) {
+#ifdef USE_SDCARD
     if (external)
-        return file_remove(fname, false);
+        return SD.remove(fname);
     else
+#endif
         return SPIFFS.remove(fname);
 }
 
 static bool file_rename(const char *fname1, const char *fname2, bool external = false) {
+#ifdef USE_SDCARD
     if (external)
-        return file_rename(fname1, fname2, false);
+        return SD.rename(fname1, fname2);
     else
+#endif
         return SPIFFS.rename(fname1, fname2);
 }
 
 static File file_open(const char *fname, FileMy::mode_t mode, bool external) {
-    if (external)
-        return file_open(fname, mode, false);
     CONSOLE("fname: %s", fname);
-    
-    switch (external) {
-        case false:
-            switch (mode) {
-                case FileMy::MODE_READ:
-                    return SPIFFS.open(fname, FILE_READ);
-                    
-                case FileMy::MODE_WRITE:
-                    return SPIFFS.open(fname, FILE_WRITE);
-                    
-                case FileMy::MODE_APPEND:
-                    return SPIFFS.open(fname, FILE_APPEND);
-            }
-            break;
-    }
+
+#ifdef USE_SDCARD
+    if (external)
+        switch (mode) {
+            case FileMy::MODE_READ:
+                return SD.open(fname, FILE_READ);
+                
+            case FileMy::MODE_WRITE:
+                return SD.open(fname, FILE_WRITE);
+                
+            case FileMy::MODE_APPEND:
+                return SD.open(fname, FILE_APPEND);
+        }
+    else
+#endif
+        switch (mode) {
+            case FileMy::MODE_READ:
+                return SPIFFS.open(fname, FILE_READ);
+                
+            case FileMy::MODE_WRITE:
+                return SPIFFS.open(fname, FILE_WRITE);
+                
+            case FileMy::MODE_APPEND:
+                return SPIFFS.open(fname, FILE_APPEND);
+        };
     
     return File();
 }
+
+/* ------------------------------------------------------------------------------------------- */
 
 void fileName(char *fname, size_t sz, const char *fname_P, uint8_t num) {
     if (sz < 2)

@@ -14,8 +14,6 @@
 #include "src/cfg/point.h"
 #include "src/cfg/jump.h"
 
-#include <SPIFFS.h>
-
 //------------------------------------------------------------------------------
 void setup() {
 
@@ -52,9 +50,8 @@ void setup() {
     // инициируем gps
     gpsRestore();
 
-    // загружаем сохранённый конфиг
-    if(!SPIFFS.begin(true))
-        CONSOLE("SPIFFS Mount Failed");
+    //
+    fileInit();
     
     // Загружаем конфиги, но apply делаем только при холодном старте (не из sleep)    
     cfgLoad(pwrMode() != PWR_SLEEP);

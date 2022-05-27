@@ -63,6 +63,10 @@
 #define USE4BUTTON          1
 #endif
 
+#if HWVER >= 5
+#define USE_SDCARD          1
+#endif
+
 #define PI 3.1415926535897932384626433832795
 
 #define WIFIPASS_FILE   "wifi.txt"
