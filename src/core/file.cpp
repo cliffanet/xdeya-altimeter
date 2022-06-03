@@ -13,58 +13,87 @@
 /* ------------------------------------------------------------------------------------------- *
  *  Стандартная обвязка с файлами
  * ------------------------------------------------------------------------------------------- */
-bool fileInit(bool internal, bool external) {
-    bool ok = true;
-    
-    if (internal && !SPIFFS.begin(true)) {
-        CONSOLE("SPIFFS Mount Failed");
-        ok = false;
-    }
+static uint8_t initok = 0;
 
 #ifdef USE_SDCARD
-    if (external && !SD.begin(PIN_SDCARD)) {
+bool fileExtInit() {
+    if (!SD.begin(PIN_SDCARD)) {
         CONSOLE("SD Mount Failed");
-        ok = false;
+        initok &= ~1;
+        return false;
     }
     
-    CONSOLE("card init: %d, type: %d, size: %llu", ok, SD.cardType(), SD.cardSize());
-#endif
+    CONSOLE("card init: type: %d, size: %llu", SD.cardType(), SD.cardSize());
     
-    return ok;
+    initok |= 1;
+    
+    return true;
+}
+
+void fileExtStop() {
+    SD.end();
+    initok &= ~1;
+}
+#endif
+
+bool fileIntInit() {
+    if (!SPIFFS.begin(true)) {
+        CONSOLE("SPIFFS Mount Failed");
+        initok &= ~2;
+        return false;
+    }
+    
+    initok |= 2;
+    
+    return true;
+}
+
+void fileIntStop() {
+    SPIFFS.end();
+    initok &= ~2;
 }
 
 static bool file_exists(const char *fname, bool external = false) {
 #ifdef USE_SDCARD
-    if (external)
+    if (external && ((initok & 1) > 0))
         return SD.exists(fname);
     else
 #endif
+    if ((initok & 2) > 0)
         return SPIFFS.exists(fname);
+    
+    return false;
 }
 
 static bool file_remove(const char *fname, bool external = false) {
 #ifdef USE_SDCARD
-    if (external)
+    if (external && ((initok & 1) > 0))
         return SD.remove(fname);
     else
 #endif
+    if ((initok & 2) > 0)
         return SPIFFS.remove(fname);
+    
+    return false;
 }
 
 static bool file_rename(const char *fname1, const char *fname2, bool external = false) {
 #ifdef USE_SDCARD
-    if (external)
+    if (external && ((initok & 1) > 0))
         return SD.rename(fname1, fname2);
     else
 #endif
+    if ((initok & 2) > 0)
         return SPIFFS.rename(fname1, fname2);
+    
+    return false;
 }
 
 static File file_open(const char *fname, FileMy::mode_t mode, bool external) {
-    CONSOLE("fname: %s", fname);
+    CONSOLE("fname: %c(%d) / %s", external ? 'e' : 'i', initok, fname);
 
 #ifdef USE_SDCARD
-    if (external)
+    if (external && ((initok & 1) > 0))
         switch (mode) {
             case FileMy::MODE_READ:
                 return SD.open(fname, FILE_READ);
@@ -77,6 +106,7 @@ static File file_open(const char *fname, FileMy::mode_t mode, bool external) {
         }
     else
 #endif
+    if ((initok & 2) > 0)
         switch (mode) {
             case FileMy::MODE_READ:
                 return SPIFFS.open(fname, FILE_READ);
@@ -139,9 +169,12 @@ size_t fileCount(const char *fname_P, bool external) {
  *  Свободное место
  * ------------------------------------------------------------------------------------------- */
 size_t fileSizeAvail(bool external) {
-    if (external)
-        return fileSizeAvail(false);
+#ifdef USE_SDCARD
+    if (external && ((initok & 1) > 0))
+        return SD.usedBytes();
     else
+#endif
+    if ((initok & 2) > 0)
         return SPIFFS.usedBytes();
 }
 

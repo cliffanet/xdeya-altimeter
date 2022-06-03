@@ -162,6 +162,7 @@ class WorkerTrkSave : public WorkerProc
         uint8_t m_cnt;
         uint32_t tmoffset;
         jmp_cur_t prelogcur;
+        bool useext;
         FileTrack tr;
         
     public:
@@ -183,7 +184,8 @@ class WorkerTrkSave : public WorkerProc
         void begin() {
             if (cfg.d().gpsontrkrec)
                 gpsOn(GPS_PWRBY_TRKREC);
-            CONSOLE("track started by: 0x%02x", m_by);
+            useext = fileExtInit();
+            CONSOLE("track started by: 0x%02x, useext: %d", m_by, useext);
         }
         
         void end() {
@@ -191,6 +193,8 @@ class WorkerTrkSave : public WorkerProc
     
             if (cfg.d().gpsontrkrec)
                 gpsOff(GPS_PWRBY_TRKREC);
+            if (useext)
+                fileExtStop();
             CONSOLE("track stopped");
         }
         
@@ -229,6 +233,9 @@ class WorkerTrkSave : public WorkerProc
             }
             
             //CONSOLE("save[%d]: %d", *prelogcur, tmoffset);
+            
+            if (useext)
+                return STATE_RUN;
             
             if ((((m_cnt++) & 0b111) == 0) && !trkCheckAvail(false))
                 return STATE_END;

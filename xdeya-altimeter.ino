@@ -53,7 +53,7 @@ void setup() {
     gpsRestore();
 
     //
-    fileInit();
+    fileIntInit();
     
     // Загружаем конфиги, но apply делаем только при холодном старте (не из sleep)    
     cfgLoad(pwrMode() != PWR_SLEEP);

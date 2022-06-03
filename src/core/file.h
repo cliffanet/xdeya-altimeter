@@ -16,7 +16,15 @@
 /* ------------------------------------------------------------------------------------------- *
  *  Стандартная обвязка с файлами
  * ------------------------------------------------------------------------------------------- */
-bool fileInit(bool internal = true, bool external = true);
+#ifdef USE_SDCARD
+bool fileExtInit();
+void fileExtStop();
+#else
+#define fileExtInit()
+#define fileExtStop()
+#endif
+bool fileIntInit();
+void fileIntStop();
 
 #define FILE_NUM_SUFFIX     ".%02d"
 

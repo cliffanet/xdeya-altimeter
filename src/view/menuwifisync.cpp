@@ -159,6 +159,7 @@ class ViewNetSync : public ViewBase {
         // чтобы прочитать сообщение
         void fin(const char *_title) {
             f.close();
+            fileExtStop();
             srvStop();
             wifiStop();
             next(_title, NS_EXIT, 70);
@@ -167,6 +168,7 @@ class ViewNetSync : public ViewBase {
         // завершение всего процесса синхронизации с мнгновенным переходом в главный экран
         void close() {
             f.close();
+            fileExtStop();
             srvStop();
             wifiStop();
             netsyncProgMax(0);
@@ -241,6 +243,7 @@ class ViewNetSync : public ViewBase {
             }
     
             MSG(SENDTRACK);
+            fileExtInit();
             if (!sendTrack(acc.ckstrack)) {
                 ERR(SENDTRACK);
                 return;
