@@ -711,35 +711,31 @@ static const menu_el_t menutime[] {
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
-            if (cfg.d().timezone == 0) {            // cfg.timezone хранит количество минут в + или - от UTC
-                strcpy_P(txt, PSTR("UTC"));     // при 0 - это время UTC
+            if (cfg.d().timezone == 0) {                // cfg.timezone хранит количество минут в + или - от UTC
+                strcpy_P(txt, PSTR("UTC"));             // при 0 - это время UTC
                 return;
             }
-            *txt = cfg.d().timezone > 0 ? '+' : '-';// Отображение знака смещения
+            *txt = cfg.d().timezone > 0 ? '+' : '-';    // Отображение знака смещения
             txt++;
         
-            uint16_t m = abs(cfg.d().timezone);     // в часах и минутах отображаем пояс
+            uint16_t m = abs(cfg.d().timezone);         // в часах и минутах отображаем пояс
             txt += sprintf_P(txt, PSTR("%d"), m / 60);
             m = m % 60;
             sprintf_P(txt, PSTR(":%02d"), m);
         },
         .edit = [] (int val) {
             if (val == -1) {
-                if (cfg.d().timezone >= 12*60)      // Ограничение выбора часового пояса
+                if (cfg.d().timezone >= 12*60)          // Ограничение выбора часового пояса
                     return;
-                cfg.set().timezone += 30;             // часовые пояса смещаем по 30 минут
-#ifdef CLOCK_EXTERNAL
-                clockForceAdjust();            // сразу применяем настройки
-#endif
+                cfg.set().timezone += 30;               // часовые пояса смещаем по 30 минут
+                clockForceAdjust();                     // сразу применяем настройки
             }
             else
             if (val == 1) {
                 if (cfg.d().timezone <= -12*60)
                     return;
                 cfg.set().timezone -= 30;
-#ifdef CLOCK_EXTERNAL
                 clockForceAdjust();
-#endif
             }
         },
     },

@@ -14,6 +14,8 @@
 #include "src/cfg/point.h"
 #include "src/cfg/jump.h"
 
+#include <Wire.h>
+
 //------------------------------------------------------------------------------
 void setup() {
 
@@ -30,6 +32,8 @@ void setup() {
         tmcntReset(TMCNT_UPTIME, true);
         tmcntReset(TMCNT_NOFLY, true);
     }
+    
+    Wire.begin();
 
     // инициируем view
     viewInit();
@@ -39,10 +43,8 @@ void setup() {
     pinMode(HWPOWER_PIN_BATCHRG, INPUT_PULLUP);
 #endif
 
-#ifdef CLOCK_EXTERNAL
     // часы
     clockInit();
-#endif // #ifdef CLOCK_EXTERNAL
     
     // инициализируем высотомер
     jmpInit();
@@ -67,11 +69,7 @@ void setup() {
 void loop() {
     pwrRun([]() {
         pwrBattChk();
-        
-#ifdef CLOCK_EXTERNAL
         clockProcess();
-#endif
-        
         tmcntUpdate();
         gpsProcess();
         compProcess();

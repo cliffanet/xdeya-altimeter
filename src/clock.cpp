@@ -193,7 +193,6 @@ tm_t tmNow(uint32_t earlerms) {
     };
 }
 
-#ifdef CLOCK_EXTERNAL
 
 /* ------------------------------------------------------------------------------------------- *
  *  работа с часами
@@ -211,28 +210,40 @@ static RTC_Millis rtc;
 tm_t &tmNow() { return tm; }
 bool tmValid() { return tmvalid; }
 
-// обновление времени
-// при аппаратных часах - по прерыванию
-// при millis-часах - в clockProcess()
-#if HWVER >= 3
-static volatile bool istick = false;
-static void IRAM_ATTR  clockTick() { istick = true; tm.tick = 0; }
-#endif
+static bool initok = false;
 static void clockUpd() {
-    auto dt = rtc.now();
-    tm.year = dt.year();
-    tm.mon  = dt.month();
-    tm.day  = dt.day();
-    tm.h    = dt.hour();
-    tm.m    = dt.minute();
-    tm.s    = dt.second();
-    tm.tick = 0;
+    if (initok) {
+        auto dt = rtc.now();
+        tm.year = dt.year();
+        tm.mon  = dt.month();
+        tm.day  = dt.day();
+        tm.h    = dt.hour();
+        tm.m    = dt.minute();
+        tm.s    = dt.second();
+        tm.tick = 0;
     
-    tmvalid = dt.isValid()
+        tmvalid = dt.isValid()
 #if HWVER >= 3
-                && !rtc.lostPower()
+                    && !rtc.lostPower()
 #endif
-    ;
+                ;
+    }
+    else {
+        auto &gps = gpsInf();
+        tmvalid = GPS_VALID_TIME(gps);
+        
+        if (tmvalid) {
+            DateTime dt(gps.tm.year, gps.tm.mon, gps.tm.day, gps.tm.h, gps.tm.m, gps.tm.s);
+            dt = DateTime(dt.unixtime() + cfg.d().timezone * 60);
+            tm.year = dt.year();
+            tm.mon  = dt.month();
+            tm.day  = dt.day();
+            tm.h    = dt.hour();
+            tm.m    = dt.minute();
+            tm.s    = dt.second();
+            tm.tick = 0;
+        }
+    }
 }
 
 void clockInit() {
@@ -244,30 +255,19 @@ void clockInit() {
     
     CONSOLE("clock init ok, lostPower: %d, isrunning: %d", rtc.lostPower(), rtc.isrunning());
     rtc.start();
-    clockIntEnable();
 #else
     tmvalid = false;
 #endif
-}
-
-#if HWVER >= 3
-void clockIntEnable() {
-    rtc.writeSqwPinMode(PCF8563_SquareWave1Hz);
     
-    pinMode(CLOCK_PIN_INT, INPUT_PULLUP);  // set up interrupt pin, turn on pullup resistors
-    // attach interrupt
-    attachInterrupt(digitalPinToInterrupt(CLOCK_PIN_INT), clockTick, RISING);
+    initok = true;
 }
-void clockIntDisable() {
-    detachInterrupt(digitalPinToInterrupt(CLOCK_PIN_INT));
-    pinMode(CLOCK_PIN_INT, OPEN_DRAIN);
-    rtc.writeSqwPinMode(PCF8563_SquareWaveOFF);
-}
-#endif
 
 static uint16_t adj = 0;
-void clockForceAdjust() {
-    adj = TIME_ADJUST_INTERVAL;
+void clockForceAdjust(uint16_t interval) {
+    adj =
+        interval < TIME_ADJUST_INTERVAL ?
+            TIME_ADJUST_INTERVAL - interval :
+            0;
 }
 
 void clockProcess() {
@@ -276,31 +276,26 @@ void clockProcess() {
         if (GPS_VALID_TIME(gps)) {
             // set the Time to the latest GPS reading
             DateTime dtgps(gps.tm.year, gps.tm.mon, gps.tm.day, gps.tm.h, gps.tm.m, gps.tm.s);
-            rtc.adjust(DateTime(dtgps.unixtime() + cfg.d().timezone * 60));
-            CONSOLE("time ajust - gps: %d.%02d.%d %2d:%02d:%02d, tm: %d.%02d.%d %2d:%02d:%02d / %d", 
-                gps.tm.year, gps.tm.mon, gps.tm.day, gps.tm.h, gps.tm.m, gps.tm.s,
-                tm.year, tm.mon, tm.day, tm.h, tm.m, tm.s, tmvalid);
+            
+            int64_t ut = dtgps.unixtime() + cfg.d().timezone * 60;
+            int64_t diff = ut - rtc.now().unixtime();
+            
+            if ((diff < -2) || (diff > 2)) {
+                rtc.adjust(DateTime(ut));
+                CONSOLE("time ajust - gps: %d.%02d.%d %2d:%02d:%02d, tm: %d.%02d.%d %2d:%02d:%02d / %d", 
+                    gps.tm.year, gps.tm.mon, gps.tm.day, gps.tm.h, gps.tm.m, gps.tm.s,
+                    tm.year, tm.mon, tm.day, tm.h, tm.m, tm.s, tmvalid);
+            }
+            
             adj = 0;
-#if HWVER >= 3
-            istick = true;
-#endif
+        }
+        else {
+            clockForceAdjust(50);
         }
     }
-    else
+    else {
         adj++;
-
-#if HWVER >= 3
-    if (istick) {
-#endif
-        clockUpd();
-#if HWVER >= 3
-        istick = false;
     }
-    else
-#endif
-    {
-        tm.tick ++;
-    }
+    
+    clockUpd();
 }
-
-#endif // #ifdef CLOCK_EXTERNAL

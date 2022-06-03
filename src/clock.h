@@ -57,34 +57,16 @@ int32_t tmIntervalToNow(const tm_t &tm);
  *  внешние часы
  * ------------------------------------------------------------------------------------------- */
 
-// при CLOCK_EXTERNAL эти функции беруться из clock.cpp
-// иначе - из navi/proc.cpp (берут время напрямую из navi-модема)
 bool tmValid();
 tm_t &tmNow();
 tm_t tmNow(uint32_t earlerms);
 
-#ifdef CLOCK_EXTERNAL
-
-#if HWVER >= 3
-#define CLOCK_PIN_INT       14
-#endif
-
 // Интервал синхронизации времени
-#define TIME_ADJUST_INTERVAL    12000
-//bool timeOk();
+#define TIME_ADJUST_INTERVAL    1200
 
 void clockInit();
-#if HWVER >= 3
-void clockIntEnable();
-void clockIntDisable();
-#else
-#define clockIntEnable()
-#define clockIntDisable()
-#endif
-void clockForceAdjust();
+void clockForceAdjust(uint16_t interval = 0);
 
 void clockProcess();
-
-#endif // #ifdef CLOCK_EXTERNAL
 
 #endif // _clock_H

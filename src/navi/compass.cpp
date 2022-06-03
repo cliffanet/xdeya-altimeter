@@ -118,11 +118,6 @@ static uint8_t wread8(uint8_t addr, uint8_t reg, uint64_t us = 100000) {
 const compass_t &compass() { return _cmp; }
 
 void compInit() {
-#ifndef CLOCK_EXTERNAL
-    if (!Wire.begin())
-      return;
-#endif
-    
     _cmp.ok = 0;
 /*
     hmc5883 + mpu6050
