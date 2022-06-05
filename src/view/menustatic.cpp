@@ -15,6 +15,11 @@
 #include "../core/filetxt.h"
 #include "../../def.h" // time/pwr
 
+#if HWVER >= 5
+#include "../core/file.h"
+#include <SD.h>
+#endif
+
 
 typedef void (*menu_hnd_t)();
 typedef void (*menu_edit_t)(int val);
@@ -957,6 +962,52 @@ static const menu_el_t menuhwtest[] {
             menuFlashP(PTXT(MENU_TEST_GPSINITED), 10);
         },
     },
+#if HWVER >= 5
+    {
+        .name = PTXT(MENU_TEST_SDCART),
+        .submenu = NULL,
+        .enter = NULL,
+        .showval = [] (char *txt) {
+            CONSOLE("sdcard test beg");
+            fileExtInit();
+            
+            char t[15];
+            auto type = SD.cardType();
+            switch (type) {
+                case CARD_NONE:     strcpy_P(t, PSTR("none"));  break;
+                case CARD_MMC:      strcpy_P(t, PSTR("MMC"));   break;
+                case CARD_SD:       strcpy_P(t, PSTR("SD"));    break;
+                case CARD_SDHC:     strcpy_P(t, PSTR("SDHC"));  break;
+                case CARD_UNKNOWN:  strcpy_P(t, PSTR("UNK"));   break;
+                default:            sprintf_P(t, PSTR("[%d]"), type);
+            }
+            
+            if (type != CARD_NONE) {
+                double sz = static_cast<double>(SD.cardSize());
+                char s = 'b';
+                if (sz > 1024) {
+                    sz = sz / 1024;
+                    s = 'k';
+                    if (sz > 1024) {
+                        sz = sz / 1024;
+                        s = 'M';
+                    }
+                    if (sz > 1024) {
+                        sz = sz / 1024;
+                        s = 'G';
+                    }
+                }
+
+                sprintf_P(txt, PSTR("%s / %0.1f %c"), t, sz, s);
+            }
+            else {
+                strcpy_P(txt, "none");
+            }
+            fileExtStop();
+            CONSOLE("sdcard test end");
+        },
+    },
+#endif
 };
 static ViewMenuStatic vMenuHwTest(menuhwtest, sizeof(menuhwtest)/sizeof(menu_el_t), true);
 

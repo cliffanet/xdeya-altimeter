@@ -184,7 +184,11 @@ class WorkerTrkSave : public WorkerProc
         void begin() {
             if (cfg.d().gpsontrkrec)
                 gpsOn(GPS_PWRBY_TRKREC);
+#ifdef USE_SDCARD
             useext = fileExtInit();
+#else
+            useext = false;
+#endif
             CONSOLE("track started by: 0x%02x, useext: %d", m_by, useext);
         }
         

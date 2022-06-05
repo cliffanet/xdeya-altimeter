@@ -117,6 +117,7 @@
 #define TXT_MENU_TEST_GPSRESTARTED  "GPS restarted"
 #define TXT_MENU_TEST_GPSINIT       "GPS init"
 #define TXT_MENU_TEST_GPSINITED     "GPS inited"
+#define TXT_MENU_TEST_SDCART        "SD-card"
 
 #define TXT_MENU_SYSTEM_RESTART     "Restart system"
 #define TXT_MENU_SYSTEM_FACTORYRES  "Factory reset"

@@ -142,7 +142,10 @@ void compInit() {
     
     cal.reset();
     cal.load();
-    CONSOLE("calibrate: x: %d..%d; y: %d..%d; z: %d..%d",
+    if (cal.isempty())
+        CONSOLE("calibrate: empty");
+    else
+        CONSOLE("calibrate: x: %d..%d; y: %d..%d; z: %d..%d",
             cal.d().min.x, cal.d().max.x, cal.d().min.y, 
             cal.d().max.y, cal.d().min.z, cal.d().max.z);
 }
