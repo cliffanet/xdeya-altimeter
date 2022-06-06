@@ -170,6 +170,9 @@ class ViewMenuStatic : public ViewMenu {
  * ------------------------------------------------------------------------------------------- */
 ViewMenu *menuLogBook();
 ViewMenu *menuWifiSync();
+#if HWVER >= 5
+ViewMenu *menuFwSdCard();
+#endif
 void setViewMagCalib();
 
 /* ------------------------------------------------------------------------------------------- *
@@ -860,6 +863,12 @@ static const menu_el_t menufirmware[] {
             }
         },
     },
+#if HWVER >= 5
+    {
+        .name       = PTXT(MENU_FW_SDCARD),
+        .submenu    = menuFwSdCard(),
+    },
+#endif // HWVER >= 5
 };
 static ViewMenuStatic vMenuFirmWare(menufirmware, sizeof(menufirmware)/sizeof(menu_el_t));
 

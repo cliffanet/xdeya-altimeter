@@ -107,6 +107,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_FW_HWREV           "Аппарат. вер."
 #define TXT_MENU_FW_UPDATETO        "Обновить до:"
 #define TXT_MENU_FW_NOUPD           "-нет-"
+#define TXT_MENU_FW_SDCARD          "Обновить c SD карты"
 
 #define TXT_MENU_TEST_CLOCK         "Часы"
 #define TXT_MENU_TEST_BATTERY       "Батарея"
@@ -216,6 +217,16 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_WIFI_ERR_FWFIN          "Ошибка завершения прошивки"
 
 #define TXT_WIFI_SYNCFINISHED       "Синхронизация успешно завершена"
+
+#define TXT_FWSD_TITLE              "Обновление ПО с SD карты"
+#define TXT_FWSD_ERR_FILEOPEN       "Не могу открыть файл"
+#define TXT_FWSD_ERR_FILEREAD       "Ошибка чтения файла"
+#define TXT_FWSD_ERR_MD5            "Ошибка MD5"
+#define TXT_FWSD_ERR_FWSIZEBIG      "Слишком большой размер прошивки"
+#define TXT_FWSD_ERR_FWINIT         "Ошибка инициализации прошивки"
+#define TXT_FWSD_ERR_FWWRITE        "Ошибка установки прошивки"
+#define TXT_FWSD_ERR_FWFIN          "Ошибка завершения прошивки"
+#define TXT_FWSD_ERR_CANCEL         "Отменено"
 
 #define TXT_MCAL_SIDE180_1          "На противоположную"
 #define TXT_MCAL_SIDE180_2          "сторону"

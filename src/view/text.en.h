@@ -101,6 +101,7 @@
 #define TXT_MENU_FW_HWREV           "Hardware rev."
 #define TXT_MENU_FW_UPDATETO        "Update to:"
 #define TXT_MENU_FW_NOUPD           "-no-"
+#define TXT_MENU_FW_SDCARD          "Update from SD-Card"
 
 #define TXT_MENU_TEST_CLOCK         "Clock"
 #define TXT_MENU_TEST_BATTERY       "Battery"
@@ -210,6 +211,16 @@
 #define TXT_WIFI_ERR_FWFIN          "FW-finish fail"
 
 #define TXT_WIFI_SYNCFINISHED       "Sync finished"
+
+#define TXT_FWSD_TITLE              "FirmWare from SD-card"
+#define TXT_FWSD_ERR_FILEOPEN       "File open fail"
+#define TXT_FWSD_ERR_FILEREAD       "File read fail"
+#define TXT_FWSD_ERR_MD5            "MD5 fail"
+#define TXT_FWSD_ERR_FWSIZEBIG      "FW-size too big"
+#define TXT_FWSD_ERR_FWINIT         "FW-init fail"
+#define TXT_FWSD_ERR_FWWRITE        "FW-write fail"
+#define TXT_FWSD_ERR_FWFIN          "FW-finish fail"
+#define TXT_FWSD_ERR_CANCEL         "FW Cancel"
 
 #define TXT_MCAL_SIDE180_1          "Flip to"
 #define TXT_MCAL_SIDE180_2          "opposite side"

@@ -128,6 +128,8 @@ static power_mode_t pwrModeCalc() {
         return PWR_ACTIVE;
     if (menuIsWifi())
         return PWR_ACTIVE;
+    if (menuIsFwSd())
+        return PWR_ACTIVE;
     if (!wrkEmpty())
         return PWR_ACTIVE;
     

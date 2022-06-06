@@ -83,5 +83,6 @@ void menuFlashClear();
 void setViewMenu();
 
 bool menuIsWifi();
+bool menuIsFwSd();
 
 #endif // _view_menu_H
