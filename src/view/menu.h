@@ -83,6 +83,8 @@ void menuFlashClear();
 void setViewMenu();
 
 bool menuIsWifi();
+#if HWVER >= 5
 bool menuIsFwSd();
+#endif
 
 #endif // _view_menu_H
