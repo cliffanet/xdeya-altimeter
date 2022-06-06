@@ -3,8 +3,48 @@
 */
 
 #include "ubloxproto.h"
+#include <stdlib.h> // malloc
 //#include "../log.h"
 
+UbloxGpsProto::UbloxGpsProto(uint16_t _bufsize) {
+    rcvclear();
+    cnfclear();
+    hndclear();
+    bufinit(_bufsize);
+    _uart = NULL;
+}
+
+UbloxGpsProto::UbloxGpsProto(Stream &__uart, uint16_t _bufsize) {
+    rcvclear();
+    cnfclear();
+    hndclear();
+    bufinit(_bufsize);
+    _uart = &__uart;
+}
+
+UbloxGpsProto::~UbloxGpsProto() {
+    if (buf)
+        free(buf);
+}
+
+bool UbloxGpsProto::bufinit(uint16_t _bufsize) {
+    bufsz = _bufsize;
+    if (_bufsize > 0) {
+        buf =
+            reinterpret_cast<void *>(buf) == nullptr ?
+                reinterpret_cast<uint8_t *>(malloc(_bufsize)) :
+                reinterpret_cast<uint8_t *>(realloc(buf, _bufsize));
+        
+        return buf != NULL;
+    }
+    else
+    if (buf) {
+        free(buf);
+        buf = NULL;
+    }
+    
+    return true;
+}
 
 bool UbloxGpsProto::recv(uint8_t c) {
     switch (rcv_bytewait) {
@@ -46,7 +86,7 @@ bool UbloxGpsProto::recv(uint8_t c) {
             
         case UBXWB_PAYLOAD:
             if (rcv_plen > 0) {
-                if (bufi < sizeof(buf))
+                if (bufi < bufsz)
                     buf[bufi] = c;
                 bufi++;
                 rcvcks(c);
@@ -148,7 +188,7 @@ bool UbloxGpsProto::bufcopy(uint8_t *data, uint16_t dsz, uint16_t offs) {
         return false;
     
     uint8_t *d = data, *b = buf;
-    uint16_t bsz = sizeof(buf);
+    uint16_t bsz = bufsz;
     if (bsz > rcv_plen)
         bsz = rcv_plen;
     

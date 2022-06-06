@@ -74,8 +74,10 @@ typedef struct {
 class UbloxGpsProto
 {
     public:
-        UbloxGpsProto() { rcvclear(); cnfclear(); hndclear(); _uart = NULL; }
-        UbloxGpsProto(Stream &__uart) { rcvclear(); cnfclear(); hndclear(); _uart = &__uart; }
+        UbloxGpsProto(uint16_t _bufsize = 256);
+        UbloxGpsProto(Stream &__uart, uint16_t _bufsize = 256);
+        ~UbloxGpsProto();
+        bool bufinit(uint16_t _bufsize = 256);
         void uart(Stream *__uart) { _uart = __uart; }
         Stream *uart() const { return _uart; }
         
@@ -122,8 +124,8 @@ class UbloxGpsProto
         Stream *_uart;
         ubloxgps_bytewait_t rcv_bytewait;
         uint8_t rcv_class, rcv_ident, rcv_cka, rcv_ckb;
-        uint16_t rcv_plen, bufi;
-        uint8_t buf[512];
+        uint16_t rcv_plen, bufi, bufsz;
+        uint8_t *buf = NULL;
         uint16_t sndcnt;
         ubloxgps_hnditem_t hndall[UBX_HND_SIZE];
         

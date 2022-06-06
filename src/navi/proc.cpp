@@ -12,7 +12,7 @@
 #define ss Serial2
 
 #include "ubloxproto.h"
-static UbloxGpsProto gps(ss);
+static UbloxGpsProto gps(ss, 1024);
 
 static gps_data_t data = { 0 };
 
