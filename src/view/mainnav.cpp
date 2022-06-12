@@ -10,24 +10,20 @@
 /* ------------------------------------------------------------------------------------------- *
  *  Навигация
  * ------------------------------------------------------------------------------------------- */
-// PNT - Конвертирование координат X/Y при вращении вокруг точки CX/CY на угол ANG (рад)
-#define PNT(x,y,ang,cx,cy)          static_cast<int>(round(cos(ang) * ((x) - (cx)) - sin(ang) * ((y) - (cy))) + (cx)),\
-                                    static_cast<int>(round(sin(ang) * ((x) - (cx)) + cos(ang) * ((y) - (cy))) + (cy))
-
 static inline pnt_t pntinit(int cx, int cy, int rx, int ry, double ang) {
-    // "ang + PI/2"     - это смещение математического угла до географического
+    // "PI/2-ang"   - это смещение математического угла до географического
+    //                  + преобразование, т.к. математический угол движется против часовой стрелки,
+    //                  а географический - по часовой
     // "cy - ..."   - это разница между матиматической осью o-y (снизу вверх) и дисплейной (сверху вниз)
     return {
-        static_cast<int>(cx + round(cos(ang+PI/2) * rx)),
-        static_cast<int>(cy - round(sin(ang+PI/2) * ry))
+        static_cast<int>(cx + round(cos(PI/2-ang) * rx)),
+        static_cast<int>(cy - round(sin(PI/2-ang) * ry))
     };
 }
 
-#define PNTINIT(dr)         pntinit(cx,cy, h-20+(dr),ry+(dr), head)
-#define PNTINIT2(dr,koef)   pntinit(cx,cy, (h-20+(dr)) * (koef), (ry+(dr)) * (koef), head)
+#define PNT(dr,koef,ang)    pntinit(cx,cy, (h-20+(dr)) * (koef), (ry+(dr)) * (koef), ang)
+#define ANG2PNT(dr,koef)    PNT(dr,koef,ang)
 
-
-#define PNT2XY(pnt,dx,dy)   ((pnt).x+(dx)), ((pnt).y+(dy))
 #define P2XY                p.x, p.y
 
 #define ARG_COMP_DEF   U8G2 &u8g2, int cx, int cy, int w, int h, int ry
@@ -161,9 +157,9 @@ static void drawText(ARG_COMP_DEF) {
 
 static void drawPntC(U8G2 &u8g2, const pnt_t &p) {
     u8g2.setDrawColor(0);
-    u8g2.drawDisc(p.x,p.y, 8);
+    u8g2.drawDisc(P2XY, 8);
     u8g2.setDrawColor(1);
-    u8g2.drawDisc(p.x,p.y, 6);
+    u8g2.drawDisc(P2XY, 6);
     u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.setDrawColor(0);
     u8g2.drawGlyph(p.x-2,p.y+4, '0' + pnt.num());
@@ -189,39 +185,23 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
         return;
     }
     
-    head +=
+    double ang =
         gpsCourse(
             GPS_LATLON(gps.lat),
             GPS_LATLON(gps.lon),
             pnt.cur().lat, 
             pnt.cur().lng
-        ) * DEG_TO_RAD;
+        ) * DEG_TO_RAD - head;
     
     double koef = dist > 400 ? 1 : static_cast<double>(dist) / 400;
-    auto p = PNTINIT2(0, koef);
+    auto p = ANG2PNT(0, koef);
     if (p.y > h-7) p.y = h-7;
     drawPntC(u8g2, p);
 }
 
-/*
-static void drawMoveArr(ARG_COMP_DEF, int n = 0, double head = 0) {
-    u8g2.drawTriangle(
-#if HWVER < 4
-        PNT(cx-5,cy-(n*6), head, cx,cy),
-        PNT(cx,cy-(n*6)-6, head, cx,cy),
-        PNT(cx+5,cy-(n*6), head, cx,cy)
-#else // if HWVER < 4
-        PNT(cx-10,cy-(n*12), head, cx,cy),
-        PNT(cx,cy-(n*12)-12, head, cx,cy),
-        PNT(cx+10,cy-(n*12), head, cx,cy)
-#endif
-    );
-}
-*/
-
 static void drawMove(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
-    head += DEG_TO_RAD*GPS_DEG(gps.heading);
+    double ang = GPS_RAD(gps.heading) - head;
     
     double speed = GPS_CM(gps.gSpeed);
     
@@ -247,50 +227,50 @@ static void drawMove(ARG_COMP_DEF, double head = 0) {
     
     if (speed < 5) {
         u8g2.drawDisc(cx,cy, 3);
-        p = PNTINIT2(0, 0.15);
+        p = ANG2PNT(0, 0.15);
         u8g2.drawLine(P2XY, cx,cy);
     }
     else
     if (speed < 15) {
         u8g2.drawDisc(cx,cy, 4);
-        p = PNTINIT2(0, 0.1);
+        p = ANG2PNT(0, 0.1);
         u8g2.drawDisc(P2XY, 3);
-        p = PNTINIT2(0, 0.20);
+        p = ANG2PNT(0, 0.20);
         u8g2.drawLine(P2XY, cx,cy);
     }
     else
     if (speed < 25) {
         u8g2.drawDisc(cx,cy, 6);
-        p = PNTINIT2(0, 0.14);
+        p = ANG2PNT(0, 0.14);
         u8g2.drawDisc(P2XY, 4);
-        p = PNTINIT2(0, 0.23);
+        p = ANG2PNT(0, 0.23);
         u8g2.drawDisc(P2XY, 3);
-        p = PNTINIT2(0, 0.33);
+        p = ANG2PNT(0, 0.33);
         u8g2.drawLine(P2XY, cx,cy);
     }
     else
     if (speed < 35) {
         u8g2.drawDisc(cx,cy, 9);
-        p = PNTINIT2(0, 0.19);
+        p = ANG2PNT(0, 0.19);
         u8g2.drawDisc(P2XY, 6);
-        p = PNTINIT2(0, 0.32);
+        p = ANG2PNT(0, 0.32);
         u8g2.drawDisc(P2XY, 4);
-        p = PNTINIT2(0, 0.41);
+        p = ANG2PNT(0, 0.41);
         u8g2.drawDisc(P2XY, 3);
-        p = PNTINIT2(0, 0.54);
+        p = ANG2PNT(0, 0.54);
         u8g2.drawLine(P2XY, cx,cy);
     }
     else {
         u8g2.drawDisc(cx,cy, 13);
-        p = PNTINIT2(0, 0.25);
+        p = ANG2PNT(0, 0.25);
         u8g2.drawDisc(P2XY, 9);
-        p = PNTINIT2(0, 0.43);
+        p = ANG2PNT(0, 0.43);
         u8g2.drawDisc(P2XY, 6);
-        p = PNTINIT2(0, 0.56);
+        p = ANG2PNT(0, 0.56);
         u8g2.drawDisc(P2XY, 4);
-        p = PNTINIT2(0, 0.66);
+        p = ANG2PNT(0, 0.66);
         u8g2.drawDisc(P2XY, 3);
-        p = PNTINIT2(0, 0.76);
+        p = ANG2PNT(0, 0.76);
         u8g2.drawLine(P2XY, cx,cy);
     }
 }
@@ -312,7 +292,7 @@ static void drawNavi(ARG_COMP_DEF, double head = 0) {
 }
 
 static void drawCompass(ARG_COMP_DEF, double head = 0) {
-    pnt_t p = PNTINIT(6);
+    pnt_t p = PNT(6,1,head);
     
     if (p.y > h-7) p.y = h-7;
     u8g2.setDrawColor(0);
@@ -346,7 +326,24 @@ class ViewMainNav : public ViewMain {
             drawText(ARG_COMP_CALL); // Весь текст пишем в самом начале, чтобы графика рисовалась поверх
             
             drawCompass(ARG_COMP_CALL, compass().head);
+            
+            t+= 0.05;
+            if (t > 3*PI) t = -PI;
+            double ang = t * 180 / PI;
+            char s[30];
+            snprintf_P(s, sizeof(s), PSTR("%0.1f (%0.0f)"), t, ang);
+            
+            u8g2.setDrawColor(1);
+            u8g2.setFont(u8g2_font_helvB08_tr);
+            u8g2.drawStr(5, h-50, s);
+            
+            pnt_t p = pntinit(cx,cy, h-20+(-30),ry+(-30), t);
+            if (p.y > h-7) p.y = h-7;
+            u8g2.drawGlyph(p.x-3, p.y+4, 'X');
         }
+    
+    private:
+        double t = 0;
 };
 static ViewMainNav vNav;
 void setViewMainNav() { viewSet(vNav); }

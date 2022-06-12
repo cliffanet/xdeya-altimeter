@@ -228,8 +228,11 @@ void compProcess() {
         filt.tick(_cmp.head, interval / 1000);
         
         _cmp.head = filt.value();
-        if (_cmp.head < 0)
-            _cmp.head += 2*PI;
+        if (_cmp.head > 0)
+            _cmp.head -= 2*PI;
+        // А это ещё одно преобразование, связанное с тем, что
+        // математический градус движется против часовой стрелки.
+        _cmp.head = 2*PI - _cmp.head;
         
         _cmp.speed = filt.speed();
     }

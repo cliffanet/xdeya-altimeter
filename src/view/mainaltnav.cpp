@@ -11,9 +11,28 @@
 /* ------------------------------------------------------------------------------------------- *
  *  Навигация + Высотомер
  * ------------------------------------------------------------------------------------------- */
-// PNT - Конвертирование координат X/Y при вращении вокруг точки CX/CY на угол ANG (рад)
-#define PNT(x,y,ang,cx,cy)          static_cast<int>(round(cos(ang) * ((x) - (cx)) - sin(ang) * ((y) - (cy))) + (cx)),\
-                                    static_cast<int>(round(sin(ang) * ((x) - (cx)) + cos(ang) * ((y) - (cy))) + (cy))
+static inline pnt_t pntinit(int cx, int cy, int rx, int ry, double ang) {
+    // "PI/2-ang"   - это смещение математического угла до географического
+    //                  + преобразование, т.к. математический угол движется против часовой стрелки,
+    //                  а географический - по часовой
+    // "cy - ..."   - это разница между матиматической осью o-y (снизу вверх) и дисплейной (сверху вниз)
+    return {
+        static_cast<int>(cx + round(cos(PI/2-ang) * rx)),
+        static_cast<int>(cy - round(sin(PI/2-ang) * ry))
+    };
+}
+
+static inline pnt_t pntinit(int cx, int cy, const pnt_t &p, double ang) {
+    // Вращение точки вокруг центра _по_ часовой стрелке
+    return {
+        static_cast<int>(cx + round(cos(ang) * (p.x - cx) - sin(ang) * (p.y - cy))),
+        static_cast<int>(cy + round(sin(ang) * (p.x - cx) + cos(ang) * (p.y - cy)))
+    };
+}
+
+#define PNT(r,ang)          pntinit(cx,cy, r, r, ang)
+#define XY(p)               p.x, p.y
+#define P2XY                p.x, p.y
 
 #define ARG_COMP_DEF   U8G2 &u8g2, int cx, int cy, int w, int h
 #define ARG_COMP_CALL  u8g2, cx, cy, w, h
@@ -260,14 +279,14 @@ static void drawGrid(ARG_COMP_DEF) {
     }
 }
 
-static void drawPntC(U8G2 &u8g2, int x, int y) {
+static void drawPntC(U8G2 &u8g2, const pnt_t &p) {
     u8g2.setDrawColor(0);
-    u8g2.drawDisc(x,y, 8);
+    u8g2.drawDisc(P2XY, 8);
     u8g2.setDrawColor(1);
-    u8g2.drawDisc(x,y, 6);
+    u8g2.drawDisc(P2XY, 6);
     u8g2.setFont(u8g2_font_helvB08_tr);
     u8g2.setDrawColor(0);
-    u8g2.drawGlyph(x-2,y+4, '0' + pnt.num());
+    u8g2.drawGlyph(p.x-2,p.y+4, '0' + pnt.num());
     u8g2.setDrawColor(1);
 }
 
@@ -284,57 +303,59 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
     
     if (dist < 8) {
         // in point
-        drawPntC(u8g2, cx,cy);
+        drawPntC(u8g2, { cx,cy });
         u8g2.drawCircle(cx,cy, 10);
         u8g2.drawCircle(cx,cy, 15);
         return;
     }
     
-    double courseto =
+    double ang =
         gpsCourse(
             GPS_LATLON(gps.lat),
             GPS_LATLON(gps.lon),
             pnt.cur().lat, 
             pnt.cur().lng
-        ) * DEG_TO_RAD;
-    courseto += head;
+        ) * DEG_TO_RAD - head;
     
     int prad = dist > 200 ? cy-5 : dist * (cy-5) / 200;
-    drawPntC(u8g2, PNT(cx,cy-prad, courseto, cx,cy));
+    drawPntC(u8g2, PNT(prad, ang));
 }
 
-static void drawMoveArr(ARG_COMP_DEF, int n = 0, double head = 0) {
-    u8g2.drawTriangle(
+
+static void drawMoveArr(ARG_COMP_DEF, int n = 0, double ang = 0) {
+    pnt_t
 #if HWVER < 4
-        PNT(cx-3,cy-(n*4), head, cx,cy),
-        PNT(cx,cy-(n*4)-4, head, cx,cy),
-        PNT(cx+3,cy-(n*4), head, cx,cy)
+        p1 = pntinit(cx,cy, { cx-3,cy-(n*4) }, ang),
+        p2 = pntinit(cx,cy, { cx,cy-(n*4)-4 }, ang),
+        p3 = pntinit(cx,cy, { cx+3,cy-(n*4) }, ang);
 #else // if HWVER < 4
-        PNT(cx-6,cy-(n*7), head, cx,cy),
-        PNT(cx,cy-(n*7)-7, head, cx,cy),
-        PNT(cx+6,cy-(n*7), head, cx,cy)
+        p1 = pntinit(cx,cy, { cx-6,cy-(n*7) }, ang),
+        p2 = pntinit(cx,cy, { cx,cy-(n*7)-7 }, ang),
+        p3 = pntinit(cx,cy, { cx+6,cy-(n*7) }, ang);
 #endif
-    );
+    
+    u8g2.drawTriangle(XY(p1), XY(p2), XY(p3));
 }
+
 
 static void drawMove(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
-    head += DEG_TO_RAD*GPS_DEG(gps.heading);
+    double ang = GPS_RAD(gps.heading) - head;
     
     double speed = GPS_CM(gps.gSpeed);
     
     if (speed < 0.5)
         return;
-    drawMoveArr(ARG_COMP_CALL, 0, head);
+    drawMoveArr(ARG_COMP_CALL, 0, ang);
     if (speed < 5)
         return;
-    drawMoveArr(ARG_COMP_CALL, 1, head);
+    drawMoveArr(ARG_COMP_CALL, 1, ang);
     if (speed < 15)
         return;
-    drawMoveArr(ARG_COMP_CALL, 2, head);
+    drawMoveArr(ARG_COMP_CALL, 2, ang);
     if (speed < 25)
         return;
-    drawMoveArr(ARG_COMP_CALL, 3, head);
+    drawMoveArr(ARG_COMP_CALL, 3, ang);
 }
 
 static void drawNavi(ARG_COMP_DEF, double head = 0) {
@@ -354,13 +375,10 @@ static void drawNavi(ARG_COMP_DEF, double head = 0) {
 }
 
 static void drawCompass(ARG_COMP_DEF, double head = 0) {
-    int rad = cy-10;
-    pnt_t p;
+    pnt_t p = PNT(cy-5, head);
     
-    p = { PNT(cx,cy-rad-5, head, cx,cy) };
-    if (p.y > h-7) p.y = h-7;
     u8g2.setDrawColor(0);
-    u8g2.drawDisc(p.x, p.y, 7);
+    u8g2.drawDisc(P2XY, 7);
 
     u8g2.setDrawColor(1);
     u8g2.setFont(u8g2_font_helvB08_tr);
@@ -400,7 +418,7 @@ class ViewMainAltNav : public ViewMain {
             drawText(ARG_COMP_CALL); // Весь текст пишем в самом начале, чтобы графика рисовалась поверх
             drawGpsState(u8g2);
             
-            drawCompass(ARG_COMP_CALL, 2*PI - compass().head);
+            drawCompass(ARG_COMP_CALL, compass().head);
         }
 };
 static ViewMainAltNav vAltNav;

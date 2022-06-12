@@ -24,6 +24,7 @@
 
 #define GPS_LATLON(x)   ((double)(x) / GPS_KOEF_LATLON)
 #define GPS_DEG(x)      ((double)(x) / GPS_KOEF_DEG)
+#define GPS_RAD(x)      ((double)(x) / GPS_KOEF_DEG * DEG_TO_RAD)
 #define GPS_MM(x)       ((double)(x) / GPS_KOEF_MM)
 #define GPS_CM(x)       ((double)(x) / GPS_KOEF_CM)
 
