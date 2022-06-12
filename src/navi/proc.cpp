@@ -72,7 +72,7 @@ class WorkerGpsInit : public WorkerProc
     		.reserved0    = 0,      // Reserved
     		.txReady      = 0,      // no TX ready
     		.mode         = 0x08d0, // 8N1
-    		.baudRate     = 34800,  // Baudrate in bits/second
+    		.baudRate     = 57600,  // Baudrate in bits/second
     		.inProtoMask  = 0x0001, // UBX protocol
     		.outProtoMask = 0x0001, // UBX protocol
     		.flags        = 0,      // Flags bit mask

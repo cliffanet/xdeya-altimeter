@@ -28,10 +28,13 @@ UbloxGpsProto::~UbloxGpsProto() {
 }
 
 bool UbloxGpsProto::bufinit(uint16_t _bufsize) {
+    if (bufsz == _bufsize)
+        return true;
+    
     bufsz = _bufsize;
     if (_bufsize > 0) {
         buf =
-            reinterpret_cast<void *>(buf) == nullptr ?
+            buf == NULL ?
                 reinterpret_cast<uint8_t *>(malloc(_bufsize)) :
                 reinterpret_cast<uint8_t *>(realloc(buf, _bufsize));
         
@@ -230,7 +233,12 @@ bool UbloxGpsProto::send(uint8_t cl, uint8_t id, const uint8_t *data, uint16_t d
         uint8_t plen1;
         uint8_t plen2;
     } hdr = {
-        UBX_SYNC1, UBX_SYNC2, cl, id, dlen & 0xff, (dlen & 0xff00) >> 8
+        UBX_SYNC1,
+        UBX_SYNC2,
+        cl,
+        id,
+        static_cast<uint8_t>(dlen & 0xff),
+        static_cast<uint8_t>((dlen & 0xff00) >> 8)
     };
     struct __attribute__((__packed__)) {
         uint8_t a;
