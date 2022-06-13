@@ -223,6 +223,8 @@
 #define TXT_FWSD_ERR_FWFIN          "FW-finish fail"
 #define TXT_FWSD_ERR_CANCEL         "FW Cancel"
 
+#define TXT_MCAL_SAVE               "For SAVE -> Long click"
+#define TXT_MCAL_SAVED              "Saved!"
 #define TXT_MCAL_SIDE180_1          "Flip to"
 #define TXT_MCAL_SIDE180_2          "opposite side"
 #define TXT_MCAL_MINFRAME_1         "Minimize"
