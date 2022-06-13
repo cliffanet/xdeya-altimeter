@@ -12,7 +12,7 @@
 
 class ViewInfoDebug : public ViewInfo {
     public:
-        ViewInfoDebug() : ViewInfo(52) {}
+        ViewInfoDebug() : ViewInfo(55) {}
         
         void btnSmpl(btn_code_t btn) {
             if (btn != BTN_SEL) {
@@ -296,31 +296,46 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 46:
+                    PRNL("Mag err X");
+                    PRNR("%d", compass().merr.x);
+                    break;
+                
+                case 47:
+                    PRNL("Mag err Y");
+                    PRNR("%d", compass().merr.y);
+                    break;
+                
+                case 48:
+                    PRNL("Mag err Z");
+                    PRNR("%d", compass().merr.z);
+                    break;
+                
+                case 49:
                     PRNL("Accel X");
                     PRNR("%d", compass().acc.x);
                     break;
                 
-                case 47:
+                case 50:
                     PRNL("Accel Y");
                     PRNR("%d", compass().acc.y);
                     break;
                 
-                case 48:
+                case 51:
                     PRNL("Accel Z");
                     PRNR("%d", compass().acc.z);
                     break;
                 
-                case 49:
+                case 52:
                     PRNL("E X");
                     PRNR("%ld", compass().e.x);
                     break;
                 
-                case 50:
+                case 53:
                     PRNL("E Y");
                     PRNR("%ld", compass().e.y);
                     break;
                 
-                case 51:
+                case 54:
                     PRNL("E Z");
                     PRNR("%ld", compass().e.z);
                     break;

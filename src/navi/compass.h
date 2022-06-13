@@ -21,6 +21,7 @@ typedef vec_t<float> vecf_t;
 
 typedef struct {
     vec16_t mag;
+    vec_t<uint16_t>  merr;
     vec16_t acc;
 	double  head;
 	double  speed;

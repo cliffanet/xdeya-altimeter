@@ -21,6 +21,7 @@ class ViewMagCalib : public ViewBase {
             m_cur = compass().mag;
             m_min = m_cur;
             m_max = m_cur;
+            m_err = compass().merr;
             saved = false;
         }
         
@@ -87,12 +88,24 @@ class ViewMagCalib : public ViewBase {
             char s[80];
             strcpy_P(s, PSTR("x ="));
             u8g2.drawStr(xc - 25, y, s);
+            if (m_err.x != compass().merr.x) {
+                m_err.x = compass().merr.x;
+                u8g2.drawBox(xc - 27, y-9, 55, 10);
+            }
             y += 10;
             strcpy_P(s, PSTR("y ="));
             u8g2.drawStr(xc - 25, y, s);
+            if (m_err.y != compass().merr.y) {
+                m_err.y = compass().merr.y;
+                u8g2.drawBox(xc - 27, y-9, 55, 10);
+            }
             y += 10;
             strcpy_P(s, PSTR("z ="));
             u8g2.drawStr(xc - 25, y, s);
+            if (m_err.z != compass().merr.z) {
+                m_err.z = compass().merr.z;
+                u8g2.drawBox(xc - 27, y-9, 55, 10);
+            }
             
             drawVec(u8g2, xc-45, m_min);
             drawVec(u8g2, xc+25, m_cur);
@@ -105,6 +118,7 @@ class ViewMagCalib : public ViewBase {
         
     private:
         vec16_t m_min, m_cur, m_max;
+        vec_t<uint16_t> m_err;
         bool saved;
 };
 ViewMagCalib vMagCalib;

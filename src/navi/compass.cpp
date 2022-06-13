@@ -179,7 +179,20 @@ void compProcess() {
     vec16_t mag;
     
     if (_cmp.ok & 1) {
+        mag = _cmp.mag;
         _cmp.mag = magRead();
+        if ((_cmp.mag.x <= -4096) || (_cmp.mag.x >= 4096)) {
+            _cmp.mag.x = mag.x;
+            _cmp.merr.x ++;
+        }
+        if ((_cmp.mag.y <= -4096) || (_cmp.mag.y >= 4096)) {
+            _cmp.mag.y = mag.y;
+            _cmp.merr.y ++;
+        }
+        if ((_cmp.mag.z <= -4096) || (_cmp.mag.z >= 4096)) {
+            _cmp.mag.z = mag.z;
+            _cmp.merr.z ++;
+        }
         
         if (cal.isempty())
             mag = _cmp.mag;
