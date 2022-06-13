@@ -24,6 +24,19 @@ static inline pnt_t pntinit(int cx, int cy, int rx, int ry, double ang) {
 
 static inline pnt_t pntinit(int cx, int cy, const pnt_t &p, double ang) {
     // Вращение точки вокруг центра _по_ часовой стрелке
+    //
+    // В математике OY направлена вверх, а градусы двигаются против часовой стрелки,
+    // т.е. от оси OX через положительное направление OY.
+    // У нас вращение географическое (по часовой стрелке), но и ось OY направлена вниз,
+    // т.е. нужное нам вращение будет так же через положительное направление OY,
+    // поэтому нам подходит оригинальная математическая формула вращения точки:
+    //      x2 = x1*cos - y1*sin
+    //      y2 = x1*sin + y1*cos
+    
+    // Надо:
+    // - из точки вычесть координаты центра вращения,
+    // - провращать точку,
+    // - обратно прибавить координаты точки вращения.
     return {
         static_cast<int>(cx + round(cos(ang) * (p.x - cx) - sin(ang) * (p.y - cy))),
         static_cast<int>(cy + round(sin(ang) * (p.x - cx) + cos(ang) * (p.y - cy)))
@@ -315,7 +328,7 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
             GPS_LATLON(gps.lon),
             pnt.cur().lat, 
             pnt.cur().lng
-        ) * DEG_TO_RAD - head;
+        ) * DEG_TO_RAD + head;
     
     int prad = dist > 200 ? cy-5 : dist * (cy-5) / 200;
     drawPntC(u8g2, PNT(prad, ang));
@@ -340,7 +353,7 @@ static void drawMoveArr(ARG_COMP_DEF, int n = 0, double ang = 0) {
 
 static void drawMove(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
-    double ang = GPS_RAD(gps.heading) - head;
+    double ang = GPS_RAD(gps.heading) + head;
     
     double speed = GPS_CM(gps.gSpeed);
     

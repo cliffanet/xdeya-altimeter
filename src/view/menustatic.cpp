@@ -778,13 +778,28 @@ static const menu_el_t menuoptions[] {
         .name       = PTXT(MENU_OPTION_COMPEN),
         .submenu    = NULL,
         .enter      = NULL,
-        .showval    = [] (char *txt) { valYes(txt, cfg.d().compen); },
+        .showval    = [] (char *txt) { valYes(txt, (cfg.d().flagen & FLAGEN_COMPAS) > 0); },
         .edit       = [] (int val) {
-            cfg.set().compen = !cfg.d().compen;
-            if (cfg.d().compen)
+            if ((cfg.d().flagen & FLAGEN_COMPAS) == 0) {
+                cfg.set().flagen |= FLAGEN_COMPAS;
                 compInit();
-            else
+            }
+            else {
+                cfg.set().flagen &= ~FLAGEN_COMPAS;
                 compStop();
+            }
+        },
+    },
+    {   // Курс цифрами
+        .name       = PTXT(MENU_OPTION_TXTCOURSE),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valYes(txt, (cfg.d().flagen & FLAGEN_TXTCOURSE) > 0); },
+        .edit       = [] (int val) {
+            if ((cfg.d().flagen & FLAGEN_TXTCOURSE) == 0)
+                cfg.set().flagen |= FLAGEN_TXTCOURSE;
+            else
+                cfg.set().flagen &= ~FLAGEN_TXTCOURSE;
         },
     },
     {

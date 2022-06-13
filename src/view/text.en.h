@@ -92,6 +92,7 @@
 #define TXT_MENU_OPTION_AUTOPOWER   "Auto Power-Off"
 #define TXT_MENU_OPTION_AUTOGPS     "Auto GPS-On"
 #define TXT_MENU_OPTION_COMPEN      "Enable Compass"
+#define TXT_MENU_OPTION_TXTCOURSE   "Course text"
 #define TXT_MENU_OPTION_BTNDO       "Button operation"
 #define TXT_MENU_OPTION_TRACK       "Track"
 #define TXT_MENU_OPTION_TIME        "Time"
@@ -241,6 +242,8 @@
 #define TXT_MAIN_GPSSTATE_INITFAIL  "gps init fail"
 #define TXT_MAIN_GPSSTATE_NODATA    "no gps data"
 #define TXT_MAIN_GPSSTATE_SATCOUNT  "s: %d"
+#define TXT_MAIN_GPSSTATE_CRS       "crs:"
+#define TXT_MAIN_GPSSTATE_PNT       "pnt:"
 
 #define TXT_MAIN_VSPEED_MS          "%0.1f m/s"
 #define TXT_MAIN_3DSPEED_MS         "%0.1f m/s"

@@ -155,6 +155,67 @@ static void drawText(ARG_COMP_DEF) {
         u8g2.drawGlyph(0, h-u8g2.getAscent(), 'R');
 }
 
+static void drawTxtCourse(ARG_COMP_DEF) {
+    auto &gps = gpsInf();
+    char s[50];
+    #if HWVER < 4
+        const int hb = 24;
+    #else // if HWVER < 4
+        const int hb = 36;
+    #endif
+    
+    if (GPS_VALID_LOCATION(gps) && GPS_VALID_HEAD(gps)) {
+        int y = compass().ok ? cy-(hb/5*4) : cy-(hb/2);
+        
+        u8g2.setDrawColor(0);
+        u8g2.drawBox(cx/3, y, cx*2/3-7, hb);
+        u8g2.setDrawColor(1);
+        
+        strcpy_P(s, PTXT(MAIN_GPSSTATE_CRS));
+        u8g2.setFont(menuFont);
+        y += u8g2.getAscent()+2;
+        u8g2.drawTxt(cx-u8g2.getTxtWidth(s)-10, y, s);
+        
+        sprintf_P(s, PSTR("%0.0f"), GPS_DEG(gps.heading));
+        #if HWVER < 4
+            u8g2.setFont(u8g2_font_helvB08_tr);
+        #else // if HWVER < 4
+            u8g2.setFont(u8g2_font_fub20_tf);
+        #endif
+        y += u8g2.getAscent()+2;
+        u8g2.drawStr(cx-u8g2.getTxtWidth(s)-10, y, s);
+    }
+    
+    if (GPS_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used) {
+        int y = compass().ok ? cy-(hb/5*4) : cy-(hb/2);
+        
+        u8g2.setDrawColor(0);
+        u8g2.drawBox(cx+7, y, cx*2/3-7, hb);
+        u8g2.setDrawColor(1);
+        
+        strcpy_P(s, PTXT(MAIN_GPSSTATE_PNT));
+        u8g2.setFont(menuFont);
+        y += u8g2.getAscent()+2;
+        u8g2.drawTxt(cx+10, y, s);
+        
+        double ang =
+            gpsCourse(
+                GPS_LATLON(gps.lat),
+                GPS_LATLON(gps.lon),
+                pnt.cur().lat, 
+                pnt.cur().lng
+            );
+        sprintf_P(s, PSTR("%0.0f"), ang);
+        #if HWVER < 4
+            u8g2.setFont(u8g2_font_helvB08_tr);
+        #else // if HWVER < 4
+            u8g2.setFont(u8g2_font_fub20_tf);
+        #endif
+        y += u8g2.getAscent()+2;
+        u8g2.drawStr(cx+10, y, s);
+    }
+}
+
 static void drawPntC(U8G2 &u8g2, const pnt_t &p) {
     u8g2.setDrawColor(0);
     u8g2.drawDisc(P2XY, 8);
@@ -191,7 +252,7 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
             GPS_LATLON(gps.lon),
             pnt.cur().lat, 
             pnt.cur().lng
-        ) * DEG_TO_RAD - head;
+        ) * DEG_TO_RAD + head;
     
     double koef = dist > 400 ? 1 : static_cast<double>(dist) / 400;
     auto p = ANG2PNT(0, koef);
@@ -201,7 +262,7 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
 
 static void drawMove(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
-    double ang = GPS_RAD(gps.heading) - head;
+    double ang = GPS_RAD(gps.heading) + head;
     
     double speed = GPS_CM(gps.gSpeed);
     
@@ -327,23 +388,9 @@ class ViewMainNav : public ViewMain {
             
             drawCompass(ARG_COMP_CALL, compass().head);
             
-            t+= 0.05;
-            if (t > 3*PI) t = -PI;
-            double ang = t * 180 / PI;
-            char s[30];
-            snprintf_P(s, sizeof(s), PSTR("%0.1f (%0.0f)"), t, ang);
-            
-            u8g2.setDrawColor(1);
-            u8g2.setFont(u8g2_font_helvB08_tr);
-            u8g2.drawStr(5, h-50, s);
-            
-            pnt_t p = pntinit(cx,cy, h-20+(-30),ry+(-30), t);
-            if (p.y > h-7) p.y = h-7;
-            u8g2.drawGlyph(p.x-3, p.y+4, 'X');
+            if ((cfg.d().flagen & FLAGEN_TXTCOURSE) > 0)
+                drawTxtCourse(ARG_COMP_CALL);
         }
-    
-    private:
-        double t = 0;
 };
 static ViewMainNav vNav;
 void setViewMainNav() { viewSet(vNav); }

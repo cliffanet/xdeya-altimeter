@@ -27,6 +27,9 @@ typedef enum {
     BTNDO_MAX
 } btndo_t;
 
+#define FLAGEN_COMPAS       0x01
+#define FLAGEN_TXTCOURSE    0x02
+
 // Основной конфиг
 typedef struct __attribute__((__packed__)) {
     bool flipp180 = false;                      // перевернуть экран на 180
@@ -51,8 +54,10 @@ typedef struct __attribute__((__packed__)) {
     bool    gpsonpwron  = true;                 // автоматическое включение gps при включении питания
     bool    gpsontrkrec = false;                // автоматическое включение gps при старте записи трека
     uint16_t gpsonalt   = 0;                    // автоматическое включение gps на заданной высоте
-    bool    gpsoffland  = false;                // всегда автоматически отключать gps после приземления
-    bool    compen      = true;                 // использовать компас
+    bool    gpsoffland  = true;                 // всегда автоматически отключать gps после приземления
+    uint8_t flagen      =                       // Флаги вкл/выкл разных опций навигации
+                        FLAGEN_COMPAS |
+                        FLAGEN_TXTCOURSE;
     
     uint16_t trkonalt = 0;                      // автоматически запускать запись трека на заданной высоте
     

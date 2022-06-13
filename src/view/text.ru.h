@@ -98,6 +98,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_OPTION_AUTOPOWER   "Автовыключение"
 #define TXT_MENU_OPTION_AUTOGPS     "Управление режимом GPS"
 #define TXT_MENU_OPTION_COMPEN      "Использовать Компас"
+#define TXT_MENU_OPTION_TXTCOURSE   "Курс числом"
 #define TXT_MENU_OPTION_BTNDO       "Функции кнопок"
 #define TXT_MENU_OPTION_TRACK       "Трэк"
 #define TXT_MENU_OPTION_TIME        "Часы"
@@ -247,6 +248,8 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MAIN_GPSSTATE_INITFAIL  "gps ош.иниц."
 #define TXT_MAIN_GPSSTATE_NODATA    "нет gps данных"
 #define TXT_MAIN_GPSSTATE_SATCOUNT  "сп: %d"
+#define TXT_MAIN_GPSSTATE_CRS       "крс:"
+#define TXT_MAIN_GPSSTATE_PNT       "тчк:"
 
 #define TXT_MAIN_VSPEED_MS          "%0.1f м/с"
 #define TXT_MAIN_3DSPEED_MS         "%0.1f м/с"
