@@ -32,6 +32,7 @@ bool fileExtInit() {
 
 void fileExtStop() {
     SD.end();
+    CONSOLE("card stop");
     initok &= ~1;
 }
 #endif
@@ -299,6 +300,8 @@ bool FileMy::open_P(const char *fname_P, mode_t mode, bool external) {
 bool FileMy::close() {
     if (!fh)
         return false;
+    
+    CONSOLE("file close: pos=%lu, sz=%lu", fh.position(), fh.size());
     
     fh.close();
     
