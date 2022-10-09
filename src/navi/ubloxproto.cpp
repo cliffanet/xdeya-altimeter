@@ -1,5 +1,5 @@
 /*
-    u-blox GPS proto
+    u-blox proto
 */
 
 #include "ubloxproto.h"

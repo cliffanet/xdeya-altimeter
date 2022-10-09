@@ -1,5 +1,5 @@
 /*
-    u-blox GPS proto
+    u-blox proto
 */
 
 #ifndef __gps_ubloxproto_H

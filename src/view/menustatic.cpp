@@ -201,7 +201,7 @@ static void valDsplAuto(char *txt, int8_t val) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  Меню управления GPS-точками
+ *  Меню управления NAVI-точками
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menugpsupoint[] {
     {   // Выбор текущей точки
@@ -240,7 +240,7 @@ static const menu_el_t menugpsupoint[] {
             auto &gps = gpsInf();
             if (!NAV_VALID_LOCATION(gps)) {
                 // Или к моменту срабатывания длинного нажатия может не быть валидных координат (потеряны спутники)
-                menuFlashP(PTXT(MENU_POINT_NOGPS));
+                menuFlashP(PTXT(MENU_POINT_NONAV));
                 return;
             }
             
@@ -528,10 +528,10 @@ static const menu_el_t menupoweroff[] {
 static ViewMenuStatic vMenuPowerOff(menupoweroff, sizeof(menupoweroff)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
- *  Меню автоматического включения GPS-приёмника
+ *  Меню автоматического включения NAV-приёмника
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menugpson[] {
-    {   // Включение / выключение питания GPS вручную
+    {   // Включение / выключение питания NAVI вручную
         .name = PTXT(MENU_NAVON_CURRENT),
         .submenu = NULL,
         .enter = gpsPwrTgl,                 // Переключаем в один клик без режима редактирования
@@ -621,8 +621,8 @@ static void valBtnDo(char *txt, uint8_t op) {
             strcpy_P(txt, PTXT(MENU_BTNDO_BACKLIGHT));
             break;
             
-        case BTNDO_GPSPWR:
-            strcpy_P(txt, PTXT(MENU_BTNDO_GPSTGL));
+        case BTNDO_NAVPWR:
+            strcpy_P(txt, PTXT(MENU_BTNDO_NAVTGL));
             break;
             
         case BTNDO_TRKREC:
@@ -799,7 +799,7 @@ static const menu_el_t menuoptions[] {
         .submenu    = &vMenuPowerOff,
     },
     {
-        .name       = PTXT(MENU_OPTION_AUTOGPS),
+        .name       = PTXT(MENU_OPTION_AUTONAV),
         .submenu    = &vMenuGpsOn,
     },
     {   // использовать компас
@@ -982,7 +982,7 @@ static const menu_el_t menuhwtest[] {
         },
     },
     {
-        .name = PTXT(MENU_TEST_GPSDATA),
+        .name = PTXT(MENU_TEST_NAVDATA),
         .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
@@ -991,27 +991,27 @@ static const menu_el_t menuhwtest[] {
             
             valOk(ok, gpsInf().rcvok);
             if (dage < 15)
-                sprintf_P(txt, PTXT(MENU_TEST_DATADELAY), dage*GPS_TICK_INTERVAL, ok);
+                sprintf_P(txt, PTXT(MENU_TEST_DATADELAY), dage*NAV_TICK_INTERVAL, ok);
             else
-                strcpy_P(txt, PTXT(MENU_TEST_NOGPSDATA));
+                strcpy_P(txt, PTXT(MENU_TEST_NONAVDATA));
         },
     },
 #if HWVER > 1
     {
-        .name = PTXT(MENU_TEST_GPSRESTART),
+        .name = PTXT(MENU_TEST_NAVRESTART),
         .submenu = NULL,
         .enter = [] () {
             gpsRestart();
-            menuFlashP(PTXT(MENU_TEST_GPSRESTARTED), 10);
+            menuFlashP(PTXT(MENU_TEST_NAVRESTARTED), 10);
         },
     },
 #endif
     {
-        .name = PTXT(MENU_TEST_GPSINIT),
+        .name = PTXT(MENU_TEST_NAVINIT),
         .submenu = NULL,
         .enter = [] () {
             gpsInit();
-            menuFlashP(PTXT(MENU_TEST_GPSINITED), 10);
+            menuFlashP(PTXT(MENU_TEST_NAVINITED), 10);
         },
     },
 #if HWVER >= 5
@@ -1157,7 +1157,7 @@ static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menumain[] {
     {
-        .name       = PTXT(MENU_ROOT_GPSPOINT),
+        .name       = PTXT(MENU_ROOT_NAVPOINT),
         .submenu    = &vMenuGpsPoint,
     },
     {

@@ -123,23 +123,23 @@ static void drawText(ARG_COMP_DEF) {
     u8g2.setFont(menuFont);
     switch (gpsState()) {
         case NAV_STATE_OFF:
-            strcpy_P(s, PTXT(MAIN_GPSSTATE_OFF));
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_OFF));
             break;
         
         case NAV_STATE_INIT:
-            strcpy_P(s, PTXT(MAIN_GPSSTATE_INIT));
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_INIT));
             break;
         
         case NAV_STATE_FAIL:
-            strcpy_P(s, PTXT(MAIN_GPSSTATE_INITFAIL));
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_INITFAIL));
             break;
         
         case NAV_STATE_NODATA:
-            strcpy_P(s, PTXT(MAIN_GPSSTATE_NODATA));
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_NODATA));
             break;
         
         case NAV_STATE_OK:
-            sprintf_P(s, PTXT(MAIN_GPSSTATE_SATCOUNT), gps.numSV);
+            sprintf_P(s, PTXT(MAIN_NAVSTATE_SATCOUNT), gps.numSV);
             break;
     }
     y1 += 2+u8g2.getAscent();
@@ -171,7 +171,7 @@ static void drawTxtCourse(ARG_COMP_DEF) {
         u8g2.drawBox(cx/3, y, cx*2/3-7, hb);
         u8g2.setDrawColor(1);
         
-        strcpy_P(s, PTXT(MAIN_GPSSTATE_CRS));
+        strcpy_P(s, PTXT(MAIN_NAVSTATE_CRS));
         u8g2.setFont(menuFont);
         y += u8g2.getAscent()+2;
         u8g2.drawTxt(cx-u8g2.getTxtWidth(s)-10, y, s);
@@ -193,7 +193,7 @@ static void drawTxtCourse(ARG_COMP_DEF) {
         u8g2.drawBox(cx+7, y, cx*2/3-7, hb);
         u8g2.setDrawColor(1);
         
-        strcpy_P(s, PTXT(MAIN_GPSSTATE_PNT));
+        strcpy_P(s, PTXT(MAIN_NAVSTATE_PNT));
         u8g2.setFont(menuFont);
         y += u8g2.getAscent()+2;
         u8g2.drawTxt(cx+10, y, s);

@@ -1,5 +1,5 @@
 /*
-    Cfg GPS point
+    Cfg Navi point
 */
 
 #ifndef _cfg_point_H
@@ -23,7 +23,7 @@ typedef struct __attribute__((__packed__)) {
         double lng = 0;
     } cfg_point_el_t;
 
-//  Сохранение GPS-координат
+//  Сохранение Navi-координат
 typedef struct __attribute__((__packed__)) {
     uint8_t num = 0;                         // текущая выбранная точка
     cfg_point_el_t all[PNT_COUNT];           // координаты трёх точек (sizeof(double) == 8)

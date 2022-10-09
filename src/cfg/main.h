@@ -21,7 +21,7 @@
 typedef enum {
     BTNDO_NONE = 0,
     BTNDO_LIGHT,
-    BTNDO_GPSPWR,
+    BTNDO_NAVPWR,
     BTNDO_TRKREC,
     BTNDO_PWROFF,
     BTNDO_MAX
@@ -62,7 +62,7 @@ typedef struct __attribute__((__packed__)) {
     uint16_t trkonalt = 0;                      // автоматически запускать запись трека на заданной высоте
     
     uint8_t btndo_up    = BTNDO_LIGHT;          // действие по кнопке "вверх"
-    uint8_t btndo_down  = BTNDO_GPSPWR;         // действие по кнопке "вниз"
+    uint8_t btndo_down  = BTNDO_NAVPWR;         // действие по кнопке "вниз"
     
     int16_t altcorrect = 0;                     // Превышение площадки приземления
     

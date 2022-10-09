@@ -15,7 +15,6 @@
 #define CFG_WEBJOIN_VER     1
 #define CFG_WEBJOIN_NAME    "wjn"
 
-//  Сохранение GPS-координат
 typedef struct __attribute__((__packed__)) {
     uint32_t    authid = 0;
     uint32_t    secnum = 0;

@@ -14,9 +14,7 @@
 #define MODE_MAIN_NONE      -1
 // Использовать крайний запомненный (не менять экран, но включить main-режим)
 #define MODE_MAIN_LAST      0
-// Экран отображения только показаний GPS
-//#define MODE_MAIN_GPS       1
-// Экран отображения высоты и GPS
+// Экран отображения высоты и NAVI
 #define MODE_MAIN_ALTNAV    1
 // Экран отображения высоты (большими цифрами)
 #define MODE_MAIN_ALT       2

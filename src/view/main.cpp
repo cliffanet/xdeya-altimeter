@@ -17,7 +17,7 @@ static void btnDo(uint8_t op) {
             displayLightTgl();
             break;
             
-        case BTNDO_GPSPWR:
+        case BTNDO_NAVPWR:
             CONSOLE("[%d] gpsPwrTgl", op);
             gpsPwrTgl();
             break;
@@ -131,13 +131,6 @@ void setViewMain(int8_t m, bool save) {
         mode = m;
     
     switch (m) {
-        /*
-        case MODE_MAIN_GPS:
-            CONSOLE("click to gps");
-            setViewMainGps();
-            break;
-        */
-            
         case MODE_MAIN_ALTNAV:
             CONSOLE("click to gps-alt");
             setViewMainAltNav();

@@ -1,5 +1,5 @@
 /*
-    Cfg GPS point
+    Cfg Navi point
 */
 
 #include "point.h"

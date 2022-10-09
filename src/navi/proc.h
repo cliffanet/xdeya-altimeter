@@ -1,5 +1,5 @@
 /*
-    GPS - processing
+    NAV - processing
 */
 
 #ifndef _gps_H
@@ -8,7 +8,7 @@
 #include "../../def.h"
 #include "../clock.h"
 
-#define GPS_PIN_POWER     27
+#define NAV_PIN_POWER     27
 
 #define _NAV_MPH_PER_KNOT 1.15077945
 #define _NAV_MPS_PER_KNOT 0.51444444
@@ -35,7 +35,7 @@
 #define NAV_VALID_HEAD(gps)         (NAV_VALID_LOCATION(gps) && (gps.cAcc < 5000000))
 #define NAV_VALID_TIME(gps)         (NAV_VALID(gps) && (gps.tm.year > 2000))
 
-#define GPS_TICK_INTERVAL       200
+#define NAV_TICK_INTERVAL       200
 
 typedef struct {
 	int32_t  lon;      // Longitude                    (deg * 10^7)
@@ -44,7 +44,7 @@ typedef struct {
 	uint32_t hAcc;     // Horizontal accuracy estimate (mm)
 	uint32_t vAcc;     // Vertical accuracy estimate   (mm)
 
-	uint8_t  gpsFix;   // GPS fix type
+	uint8_t  gpsFix;   // NAV fix type
 	uint8_t  numSV;    // Number of SVs in solution
 
 	int32_t  velN;     // North velocity               (cm/s)

@@ -160,7 +160,7 @@ void setViewInfoSat() {
 
 static void gpsRecvSat(UbloxGpsProto &gps) {
     struct {
-    	uint32_t iTOW;      // GPS time of week             (ms)
+    	uint32_t iTOW;      // NAVI time of week             (ms)
     	uint8_t  version;   // Message version (0x01 for this version)
     	uint8_t  numSvs;    // Number of satellites
     	uint8_t  _[2];      // Reserved

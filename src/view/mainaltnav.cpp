@@ -60,23 +60,23 @@ static void drawGpsState(U8G2 &u8g2) {
     
     switch (gpsState()) {
         case NAV_STATE_OFF:
-            strcpy_P(s, PTXT(MAIN_GPSSTATE_OFF));
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_OFF));
             break;
         
         case NAV_STATE_INIT:
-            strcpy_P(s, PTXT(MAIN_GPSSTATE_INIT));
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_INIT));
             break;
         
         case NAV_STATE_FAIL:
-            strcpy_P(s, PTXT(MAIN_GPSSTATE_INITFAIL));
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_INITFAIL));
             break;
         
         case NAV_STATE_NODATA:
-            strcpy_P(s, PTXT(MAIN_GPSSTATE_NODATA));
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_NODATA));
             break;
         
         case NAV_STATE_OK:
-            sprintf_P(s, PTXT(MAIN_GPSSTATE_SATCOUNT), gps.numSV);
+            sprintf_P(s, PTXT(MAIN_NAVSTATE_SATCOUNT), gps.numSV);
             break;
     }
     u8g2.drawTxt(0, u8g2.getDisplayHeight()-1, s);
@@ -401,7 +401,7 @@ static void drawCompass(ARG_COMP_DEF, double head = 0) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  GPS + высотомер
+ *  NAVI + высотомер
  * ------------------------------------------------------------------------------------------- */
 
 class ViewMainAltNav : public ViewMain {

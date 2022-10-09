@@ -35,7 +35,7 @@ static struct {
 
 
 /* ------------------------------------------------------------------------------------------- *
- *  GPS-инициализация
+ *  NAV-инициализация
  *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
  * ------------------------------------------------------------------------------------------- */
 class WorkerGpsInit : public WorkerProc
@@ -104,7 +104,7 @@ class WorkerGpsInit : public WorkerProc
         	uint16_t navRate;   // Nagivation rate, in number 
         	                       //   of measurement cycles
         	uint16_t timeRef;   // Alignment to reference time:
-        	                       //   0 = UTC time; 1 = GPS time
+        	                       //   0 = UTC time; 1 = NAV time
         } cfg_mrate = {
     		.measRate   = 200,      // Measurement rate (ms)
     		.navRate    = 1,        // Navigation rate (cycles)
@@ -139,11 +139,11 @@ class WorkerGpsInit : public WorkerProc
         	uint8_t  res;        // Reserved
         } cfg_rst =	{
     		.navBbrMask = 0x0000,   // Hot start
-    		.resetMode  = 0x09      // Controlled GPS start
+    		.resetMode  = 0x09      // Controlled NAV start
     	};
         
         state_t errsnd() {
-            CONSOLE("GPS config-send (op: %d) fail", m_op);
+            CONSOLE("NAV config-send (op: %d) fail", m_op);
             state = NAV_STATE_FAIL;
             return STATE_END;
         }
@@ -175,7 +175,7 @@ class WorkerGpsInit : public WorkerProc
                 return STATE_END;
             }
             
-            //CONSOLE("GPS-op: %d", m_op);
+            //CONSOLE("NAV-op: %d", m_op);
             // Отправка очередной команды
             switch (m_op) {
                 case InitBeg:
@@ -263,24 +263,24 @@ class WorkerGpsInit : public WorkerProc
                         return errsnd();
                     gps.cnfclear();
     
-                    CONSOLE("GPS-UART config ok");
+                    CONSOLE("NAV-UART config ok");
                     state = NAV_STATE_OK;
                     return STATE_END;
             }
             
-            CONSOLE("GPS init unknown error");
+            CONSOLE("NAV init unknown error");
             state = NAV_STATE_FAIL;
             return STATE_END;
         }
 };
 
 /* ------------------------------------------------------------------------------------------- *
- *  GPS-получение данных
+ *  NAV-получение данных
  * ------------------------------------------------------------------------------------------- */
 
 static void gpsRecvPosllh(UbloxGpsProto &gps) {
     struct {
-    	uint32_t iTOW;     // GPS time of week             (ms)
+    	uint32_t iTOW;     // NAV time of week             (ms)
     	int32_t  lon;      // Longitude                    (deg)
     	int32_t  lat;      // Latitude                     (deg)
     	int32_t  height;   // Height above ellipsoid       (mm)
@@ -301,7 +301,7 @@ static void gpsRecvPosllh(UbloxGpsProto &gps) {
 }
 static void gpsRecvVelned(UbloxGpsProto &gps) {
     struct {
-    	uint32_t iTOW;     // GPS time of week             (ms)
+    	uint32_t iTOW;     // NAV time of week             (ms)
     	int32_t  velN;     // North velocity               (cm/s)
     	int32_t  velE;     // East velocity                (cm/s)
     	int32_t  velD;     // Down velocity                (cm/s)
@@ -327,7 +327,7 @@ static void gpsRecvVelned(UbloxGpsProto &gps) {
 }
 static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
     struct {
-    	uint32_t iTOW;     // GPS time of week             (ms)
+    	uint32_t iTOW;     // NAV time of week             (ms)
     	uint32_t tAcc;     // Time accuracy estimate       (ns)
     	int32_t  nano;     // Nanoseconds of second        (ns)
     	uint16_t year;     // Year                         (1999..2099)
@@ -353,10 +353,10 @@ static void gpsRecvTimeUtc(UbloxGpsProto &gps) {
 }
 static void gpsRecvSol(UbloxGpsProto &gps) {
     struct {
-    	uint32_t iTOW;     // GPS time of week             (ms)
+    	uint32_t iTOW;     // NAV time of week             (ms)
     	int32_t  fTOW;     // Fractional nanoseconds       (ns)
-    	int16_t  week;     // GPS week
-    	uint8_t  gpsFix;   // GPS fix type
+    	int16_t  week;     // NAV week
+    	uint8_t  gpsFix;   // NAV fix type
     	uint8_t  flags;    // Fix status flags
     	int32_t  ecefX;    // ECEF X coordinate            (cm)
     	int32_t  ecefY;    // ECEF Y coordinate            (cm)
@@ -381,7 +381,7 @@ static void gpsRecvSol(UbloxGpsProto &gps) {
 }
 static void gpsRecvPvt(UbloxGpsProto &gps) {
     struct {
-    	uint32_t iTOW;         // GPS time of week              (ms)
+    	uint32_t iTOW;         // NAV time of week              (ms)
     	uint16_t year;         // Year                          (1999..2099)
     	uint8_t  month;        // Month                         (1..12)
     	uint8_t  day;          // Day of month                  (1..31)
@@ -391,7 +391,7 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
     	uint8_t  valid;        // Validity flags
     	uint32_t tAcc;         // Time accuracy estimate        (ns)
     	int32_t  nano;         // Nanoseconds of second         (ns)
-    	uint8_t  gpsFix;       // GPS fix type
+    	uint8_t  gpsFix;       // NAV fix type
     	uint8_t  flags;        // Fix status flags
     	uint8_t  flags2;       // Additional flags
     	uint8_t  numSV;        // Number of SVs in solution
@@ -425,7 +425,7 @@ static void gpsRecvPvt(UbloxGpsProto &gps) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
- *  Данные о GPS для внешнего использования
+ *  Данные о NAV для внешнего использования
  * ------------------------------------------------------------------------------------------- */
 
 UbloxGpsProto * gpsProto() { return &gps; }
@@ -450,7 +450,7 @@ gps_state_t gpsState() { return state; }
 
 
 /* ------------------------------------------------------------------------------------------- *
- *  GPS-инициализация
+ *  NAV-инициализация
  * ------------------------------------------------------------------------------------------- */
 static void gpsFree() {
     gps.uart(NULL);
@@ -535,9 +535,9 @@ void gpsInit() {
     if (wrkExists(WORKER_NAV_INIT))
         return;
     
-    // инициируем uart-порт GPS-приёмника
+    // инициируем uart-порт NAV-приёмника
     ss.begin(9600);
-    ss.setRxBufferSize(512); // По умолчанию = 256 и этого не хватает, чтобы принять сразу все присылаемые от GPS данные за один цикл
+    ss.setRxBufferSize(512); // По умолчанию = 256 и этого не хватает, чтобы принять сразу все присылаемые от Navi данные за один цикл
     
     gps.hndclear();
     gps.hndadd(UBX_NAV,  UBX_NAV_POSLLH,     gpsRecvPosllh);
@@ -737,7 +737,7 @@ double gpsCourse(double lat1, double long1, double lat2, double long2) {
 
 
 /* ------------------------------------------------------------------------------------------- *
- *  Питание на GPS-модуле
+ *  Питание на NAV-модуле
  * ------------------------------------------------------------------------------------------- */
 static RTC_DATA_ATTR uint8_t gpspwr = NAV_PWRBY_PWRON;
 bool gpsPwr(uint8_t by) {
@@ -753,10 +753,10 @@ void gpsOn(uint8_t by) {
     // При перезагрузке state сбрасывается в NAV_STATE_OFF, а gpspwr в NAV_PWRBY_PWRON.
     // И, казалось бы, надо включить, но пин остаётся LOW.
     // И если мы будем проверять только пин, то будем ложно считать, что gps у нас включен и проинициализирован
-    if ((digitalRead(GPS_PIN_POWER) == LOW) && (state == NAV_STATE_OK))
+    if ((digitalRead(NAV_PIN_POWER) == LOW) && (state == NAV_STATE_OK))
         return;
-    digitalWrite(GPS_PIN_POWER, LOW);
-    pinMode(GPS_PIN_POWER, OUTPUT);
+    digitalWrite(NAV_PIN_POWER, LOW);
+    pinMode(NAV_PIN_POWER, OUTPUT);
 #endif
     
     state = NAV_STATE_OK;
@@ -766,10 +766,10 @@ void gpsOn(uint8_t by) {
 
 void gpsPwrDown() {
 #if HWVER > 1
-    if ((digitalRead(GPS_PIN_POWER) == HIGH) && (state == NAV_STATE_OFF))
+    if ((digitalRead(NAV_PIN_POWER) == HIGH) && (state == NAV_STATE_OFF))
         return;
-    digitalWrite(GPS_PIN_POWER, HIGH);
-    pinMode(GPS_PIN_POWER, OUTPUT);
+    digitalWrite(NAV_PIN_POWER, HIGH);
+    pinMode(NAV_PIN_POWER, OUTPUT);
 #endif
     
     state = NAV_STATE_OFF;
@@ -786,12 +786,12 @@ void gpsOff(uint8_t by) {
 }
 
 void gpsRestart() {
-    digitalWrite(GPS_PIN_POWER, HIGH);
-    pinMode(GPS_PIN_POWER, OUTPUT);
+    digitalWrite(NAV_PIN_POWER, HIGH);
+    pinMode(NAV_PIN_POWER, OUTPUT);
     
     delay(1000);
 
-    digitalWrite(GPS_PIN_POWER, LOW);
+    digitalWrite(NAV_PIN_POWER, LOW);
     gpspwr |= NAV_PWRBY_HAND;
     state = NAV_STATE_OK;
 }
@@ -804,12 +804,12 @@ void gpsPwrTgl() {
 }
 void gpsRestore() {
 #if HWVER > 1
-    if ((digitalRead(GPS_PIN_POWER) == LOW) && (state == NAV_STATE_OFF)) {
+    if ((digitalRead(NAV_PIN_POWER) == LOW) && (state == NAV_STATE_OFF)) {
         // при перезагрузке state вбрасывается в NAV_STATE_OFF, но пин при этом
         // не гасится.
         // И у нас нет достоверной информации, проинициализирован gps или нет.
         // В этом случае отключаем питание принудительно
-        digitalWrite(GPS_PIN_POWER, HIGH);
+        digitalWrite(NAV_PIN_POWER, HIGH);
         delay(100);
     }
 #endif
