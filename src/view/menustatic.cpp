@@ -1115,15 +1115,30 @@ static const menu_el_t menusystem[] {
         .submenu    = menuFile(),
     },
     {
-        .name = PTXT(MENU_SYSTEM_GPSSERIAL),
+        .name = PTXT(MENU_SYSTEM_NAVSERIAL),
         .submenu = NULL,
         .enter = gpsDirectTgl,
         .showval = [] (char *txt) { valOn(txt, gpsDirect()); },
     },
     {
-        .name = PTXT(MENU_SYSTEM_GPSSATINFO),
+        .name = PTXT(MENU_SYSTEM_NAVSATINFO),
         .submenu = NULL,
         .enter = setViewInfoSat,
+    },
+    {   // Холодный перезапуск навигации
+        .name       = PTXT(MENU_SYSTEM_NAVCOLDRST),
+        .submenu    = NULL,
+        .enter      = menuFlashHold,
+        .showval    = NULL,
+        .edit       = NULL,
+        .hold       =  [] () {
+            if (!gpsColdRestart()) {
+                menuFlashP(PTXT(MENU_SYSTEM_NAVRSTFAIL));
+                return;
+            }
+            
+            menuFlashP(PTXT(MENU_SYSTEM_NAVRSTOK));
+        },
     },
     {
         .name       = PTXT(MENU_SYSTEM_HWTEST),

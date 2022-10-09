@@ -139,8 +139,11 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_SYSTEM_CFGRESETED  "Настройки сброшены"
 #define TXT_MENU_SYSTEM_FWUPDATE    "Обновление прошивки"
 #define TXT_MENU_SYSTEM_FILES       "Файлы"
-#define TXT_MENU_SYSTEM_GPSSERIAL   "GPS serial"
-#define TXT_MENU_SYSTEM_GPSSATINFO  "GPS спутники"
+#define TXT_MENU_SYSTEM_NAVSERIAL   "Нав: serial"
+#define TXT_MENU_SYSTEM_NAVSATINFO  "Нав: спутники"
+#define TXT_MENU_SYSTEM_NAVCOLDRST  "Нав: Холодный перезапуск"
+#define TXT_MENU_SYSTEM_NAVRSTFAIL  "Ошибка перезапуска"
+#define TXT_MENU_SYSTEM_NAVRSTOK    "Перезапущено"
 #define TXT_MENU_SYSTEM_HWTEST      "Тестирование аппарат."
 #define TXT_MENU_SYSTEM_MAGCALIB    "Калибровка магнетом."
 

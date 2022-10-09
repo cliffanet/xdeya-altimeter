@@ -582,6 +582,33 @@ void gpsProcess() {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Жёсткая перезагрузка с очисткой списка спутников
+ * ------------------------------------------------------------------------------------------- */
+bool gpsColdRestart() {
+    if (wrkExists(WORKER_GPS_INIT))
+        return false;
+    
+    const struct {
+    	uint16_t navBbrMask; // BBR sections to clear
+    	uint8_t  resetMode;  // Reset type
+    	uint8_t  res;        // Reserved
+    } cfg_rst =	{
+		.navBbrMask = 0xFFFF,   // Cold start
+		.resetMode  = 0x00      // Hardware reset (watchdog) immediately
+	};
+    
+    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst))
+        return false;
+    gps.cnfclear();
+    
+    delay(1000);
+    
+    gpsInit();
+    
+    return true; 
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  Обновление режима GPS/GLONASS
  * ------------------------------------------------------------------------------------------- */
 bool gpsUpdateMode() {
@@ -614,7 +641,7 @@ bool gpsUpdateMode() {
                                 // be configured in every enabled system.
     } sys_t;
     
-    struct {
+    const struct {
         hdr_t hdr;
         sys_t glon, gps;
     } data = {

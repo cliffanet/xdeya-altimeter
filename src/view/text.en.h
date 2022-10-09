@@ -133,8 +133,11 @@
 #define TXT_MENU_SYSTEM_CFGRESETED  "Config reseted"
 #define TXT_MENU_SYSTEM_FWUPDATE    "FirmWare update"
 #define TXT_MENU_SYSTEM_FILES       "Files"
-#define TXT_MENU_SYSTEM_GPSSERIAL   "GPS serial"
-#define TXT_MENU_SYSTEM_GPSSATINFO  "GPS sat-info"
+#define TXT_MENU_SYSTEM_NAVSERIAL   "Nav serial"
+#define TXT_MENU_SYSTEM_NAVSATINFO  "Nav sat-info"
+#define TXT_MENU_SYSTEM_NAVCOLDRST  "Nav Cold restart"
+#define TXT_MENU_SYSTEM_NAVRSTFAIL  "Restart fail"
+#define TXT_MENU_SYSTEM_NAVRSTOK    "Restart OK"
 #define TXT_MENU_SYSTEM_HWTEST      "Hardware test"
 #define TXT_MENU_SYSTEM_MAGCALIB    "Mag calibrate"
 
