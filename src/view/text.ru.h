@@ -73,6 +73,11 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_GPSON_TAKEOFF      "Вкл. на высоте"
 #define TXT_MENU_GPSON_OFFLAND      "Выключать при приземлении"
 
+#define TXT_MENU_NAV_MODE           "Режим"
+#define TXT_MENU_NAV_MODE_GLONASS   "GLONASS"
+#define TXT_MENU_NAV_MODE_GPS       "GPS"
+#define TXT_MENU_NAV_MODE_GLONGPS   "GLON+GPS"
+
 #define TXT_MENU_BTNDO_UP           "Кнопка Вверх"
 #define TXT_MENU_BTNDO_DOWN         "Кнопка Вниз"
 #define TXT_MENU_BTNDO_NO           "не исп."

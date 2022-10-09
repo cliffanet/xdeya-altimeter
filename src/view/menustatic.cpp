@@ -577,6 +577,34 @@ static const menu_el_t menugpson[] {
         .showval    = [] (char *txt) { valYes(txt, cfg.d().navoffland); },
         .edit       = [] (int val) { cfg.set().navoffland = !cfg.d().navoffland; },
     },
+    {   // Режим GPS/GLONASS
+        .name       = PTXT(MENU_NAV_MODE),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            switch (cfg.d().navmode) {
+                case 0:
+                case 3: strcpy_P(txt, PTXT(MENU_NAV_MODE_GLONGPS)); break;
+                case 1: strcpy_P(txt, PTXT(MENU_NAV_MODE_GLONASS)); break;
+                case 2: strcpy_P(txt, PTXT(MENU_NAV_MODE_GPS)); break;
+                default: *txt = 0;
+            }
+        },
+        .edit       = [] (int val) {
+            if (val > 0) {
+                cfg.set().navmode =
+                        cfg.d().navmode >= 3 ?
+                            1 : cfg.d().navmode+1;
+            }
+            else
+            if (val < 0) {
+                cfg.set().navmode =
+                        cfg.d().navmode <= 1 ?
+                            3 : cfg.d().navmode-1;
+            }
+            gpsUpdateMode();
+        },
+    },
 };
 static ViewMenuStatic vMenuGpsOn(menugpson, sizeof(menugpson)/sizeof(menu_el_t));
 

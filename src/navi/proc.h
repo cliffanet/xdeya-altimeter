@@ -80,6 +80,8 @@ gps_state_t gpsState();
 void gpsInit();
 void gpsProcess();
 
+bool gpsUpdateMode();
+
 void gpsDirectTgl();
 bool gpsDirect();
 

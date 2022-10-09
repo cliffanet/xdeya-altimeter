@@ -89,7 +89,7 @@ class ViewInfoSat : public ViewInfo {
         void start() {
             const auto &gps = gpsProto();
             gps->hndadd(UBX_NAV, UBX_NAV_SAT, gpsRecvSat);
-            ubx_cfg_rate_t r = { UBX_NAV, UBX_NAV_SAT, 5 };
+            ubx_cfg_rate_t r = { UBX_NAV, UBX_NAV_SAT, 10 };
             gps->send(UBX_CFG, UBX_CFG_MSG, r);
         }
         

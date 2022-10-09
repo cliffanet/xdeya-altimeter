@@ -67,6 +67,11 @@
 #define TXT_MENU_GPSON_TAKEOFF      "Auto-On by Takeoff Alt"
 #define TXT_MENU_GPSON_OFFLAND      "Force-Off by Landing"
 
+#define TXT_MENU_NAV_MODE           "Mode"
+#define TXT_MENU_NAV_MODE_GLONASS   "GLONASS"
+#define TXT_MENU_NAV_MODE_GPS       "GPS"
+#define TXT_MENU_NAV_MODE_GLONGPS   "GLON+GPS"
+
 #define TXT_MENU_BTNDO_UP           "Btn Up"
 #define TXT_MENU_BTNDO_DOWN         "Btn Down"
 #define TXT_MENU_BTNDO_NO           "no"

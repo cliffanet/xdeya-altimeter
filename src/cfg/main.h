@@ -65,6 +65,11 @@ typedef struct __attribute__((__packed__)) {
     uint8_t btndo_down  = BTNDO_GPSPWR;         // действие по кнопке "вниз"
     
     int16_t altcorrect = 0;                     // Превышение площадки приземления
+    
+    uint8_t navmode = 3;                        // режим навигации - gps/glonass
+    
+    uint8_t _1 = 0;                             // выравнивающие байты
+    uint32_t _2 = 0;
 } cfg_main_t;
 
 template <class T>

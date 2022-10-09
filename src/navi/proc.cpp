@@ -33,6 +33,7 @@ static struct {
     pvt     : 15,
 };
 
+
 /* ------------------------------------------------------------------------------------------- *
  *  GPS-инициализация
  *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
@@ -48,6 +49,7 @@ class WorkerGpsInit : public WorkerProc
             CfgRate,
             CfgMRate,
             CfgNav,
+            CfgMode,
             CfgRst
         };
         
@@ -239,6 +241,12 @@ class WorkerGpsInit : public WorkerProc
                 
                 case CfgNav:
                     if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5))
+                        return errsnd();
+                    m_op ++;
+                    return STATE_RUN;
+                
+                case CfgMode:
+                    if (!gpsUpdateMode())
                         return errsnd();
                     m_op ++;
                     m_cnfcnt = 0;
@@ -571,6 +579,76 @@ void gpsProcess() {
     
     if (state >= GPS_STATE_NODATA)
         state = data.rcvok ? GPS_STATE_OK : GPS_STATE_NODATA;
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Обновление режима GPS/GLONASS
+ * ------------------------------------------------------------------------------------------- */
+bool gpsUpdateMode() {
+    CONSOLE("update gnss");
+
+    typedef struct {
+    	uint8_t  msgVer;        // Message version (0x00 for this version)
+    	uint8_t  numTrkChHw;    // Number of tracking channels available in hardware (read only)
+    	uint8_t  numTrkChUse;   // (Read only in protocol versions greater
+                                // than 23) Number of tracking channels to
+                                // use. Must be > 0, <= numTrkChHw. If
+                                // 0xFF, then number of tracking channels to
+                                // use will be set to numTrkChHw.
+    	uint8_t  numConfigBlocks; // Number of configuration blocks following
+    } hdr_t;
+    
+    typedef struct {
+    	uint8_t  gnssId;        // System identifier
+    	uint8_t  resTrkCh;      // (Read only in protocol versions greater
+                                // than 23) Number of reserved (minimum)
+                                // tracking channels for this system.
+    	uint8_t  maxTrkCh;      // (Read only in protocol versions greater
+                                // than 23) Maximum number of tracking
+                                // channels used for this system. Must be >
+                                // 0, >= resTrkChn, <= numTrkChUse and <=
+                                // maximum number of tracking channels
+                                // supported for this system.
+    	uint8_t  _;             // Reserved
+        uint32_t flags;         // Bitfield of flags. At least one signal must
+                                // be configured in every enabled system.
+    } sys_t;
+    
+    struct {
+        hdr_t hdr;
+        sys_t glon, gps;
+    } data = {
+        .hdr    = {
+            .msgVer     = 0x00,
+            .numTrkChHw = 32,
+            .numTrkChUse= 32,
+            .numConfigBlocks=2,
+        },
+        .glon    = {
+            .gnssId     = 0x06,
+            .resTrkCh   = 8,
+            .maxTrkCh   = cfg.d().navmode & 0x2 ? 16 : 32,
+            ._          = 0,
+            .flags      = (0x01<<16) | ((cfg.d().navmode & 0x1) > 0 ? 0x1 : 0x0),
+        },
+        .gps    = {
+            .gnssId     = 0x00,
+            .resTrkCh   = 8,
+            .maxTrkCh   = cfg.d().navmode & 0x1 ? 16 : 32,
+            ._          = 0,
+            .flags      = (0x01<<16) | ((cfg.d().navmode & 0x2) > 0 ? 0x1 : 0x0),
+        }
+    };
+    
+    if (!gps.send(UBX_CFG, UBX_CFG_GNSS, data))
+        return false;
+
+#ifdef FWVER_DEBUG
+    CONSOLE("get gnss");
+    return gps.get(UBX_CFG, UBX_CFG_GNSS, &gpsRecvGnss);
+#else
+    return true;
+#endif // FWVER_DEBUG
 }
 
 /* ------------------------------------------------------------------------------------------- *
