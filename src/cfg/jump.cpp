@@ -35,14 +35,17 @@ uint32_t ConfigJump::key() {
     // Эта функция вызывается только снаружи
     // И пока не начался прыг (свободное падение), мы каждый раз перегенерируем его
     if ((data.last.key == 0) || (data.state < LOGJMP_BEG))
-        data.last.key = esp_random();
+        keygen();
     
     return data.last.key;
 }
-void ConfigJump::keyreset() {
+bool ConfigJump::keygen() {
     // сброс ключа снаружи - только если он не используется тут
-    if (data.state == LOGJMP_NONE)
-        data.last.key = 0;
+    if ((data.last.key != 0) && (data.state != LOGJMP_NONE))
+        return false;
+    
+    data.last.key = esp_random();
+    return true;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -83,8 +86,10 @@ bool ConfigJump::beg(uint16_t old) {
         data.last.toff.tmoffset = tmInterval(data.last.tm, tm);
     data.last.tm = tm;
     
+    if (data.last.key == 0)
+        // перегенерируем key только если он нулевой (не используется никем)
+        keygen();
     data.state = LOGJMP_BEG;
-    key(); // перегенерируем key только если он нулевой (не используется никем)
     
     data.last.beg = jmpPreLog(cur);
     data.last.beg.tmoffset = 0;

@@ -194,7 +194,6 @@ class WorkerTrkSave : public WorkerProc
         
         void end() {
             tr.close();
-            jmp.keyreset();
     
             if (cfg.d().gpsontrkrec)
                 gpsOff(GPS_PWRBY_TRKREC);

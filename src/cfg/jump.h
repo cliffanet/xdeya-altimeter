@@ -32,7 +32,7 @@ class ConfigJump : public Config<cfg_jump_t> {
     public:
         ConfigJump();
         uint32_t key();
-        void keyreset();
+        bool keygen();
         bool toff(uint16_t old = 0);
         bool beg(uint16_t old = 0);
         bool cnp(uint16_t old = 0);
