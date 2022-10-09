@@ -17,7 +17,7 @@ static UbloxGpsProto gps(ss, 1024);
 static gps_data_t data = { 0 };
 
 static bool direct = false;
-static gps_state_t state = GPS_STATE_OFF;
+static gps_state_t state = NAV_STATE_OFF;
 
 static struct {
     uint8_t posllh  : 4;
@@ -144,7 +144,7 @@ class WorkerGpsInit : public WorkerProc
         
         state_t errsnd() {
             CONSOLE("GPS config-send (op: %d) fail", m_op);
-            state = GPS_STATE_FAIL;
+            state = NAV_STATE_FAIL;
             return STATE_END;
         }
         
@@ -153,7 +153,7 @@ class WorkerGpsInit : public WorkerProc
             m_cnfcnt ++;
             if (m_cnfcnt > 50) {
                 CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d) timeout", m_op, gps.cnfneed());
-                state = GPS_STATE_FAIL;
+                state = NAV_STATE_FAIL;
                 return STATE_END;
             }
             //CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d, cnfcnt: %d)", m_op, gps.cnfneed(), m_cnfcnt);
@@ -165,13 +165,13 @@ class WorkerGpsInit : public WorkerProc
             m_op = InitBeg;
             m_cnfcnt = 0;
             m_rateit = cfg_rate;
-            state = GPS_STATE_INIT;
+            state = NAV_STATE_INIT;
         }
         
         state_t process() {
             if (!gps.tick()) {
                 CONSOLE("Wait cmd-confirm fail");
-                state = GPS_STATE_FAIL;
+                state = NAV_STATE_FAIL;
                 return STATE_END;
             }
             
@@ -264,12 +264,12 @@ class WorkerGpsInit : public WorkerProc
                     gps.cnfclear();
     
                     CONSOLE("GPS-UART config ok");
-                    state = GPS_STATE_OK;
+                    state = NAV_STATE_OK;
                     return STATE_END;
             }
             
             CONSOLE("GPS init unknown error");
-            state = GPS_STATE_FAIL;
+            state = NAV_STATE_FAIL;
             return STATE_END;
         }
 };
@@ -532,7 +532,7 @@ static void gpsRecvGnss(UbloxGpsProto &gps) {
 #endif // FWVER_DEBUG
 
 void gpsInit() {
-    if (wrkExists(WORKER_GPS_INIT))
+    if (wrkExists(WORKER_NAV_INIT))
         return;
     
     // инициируем uart-порт GPS-приёмника
@@ -546,7 +546,7 @@ void gpsInit() {
     gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
     gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
     
-    wrkAdd(WORKER_GPS_INIT, new WorkerGpsInit());
+    wrkAdd(WORKER_NAV_INIT, new WorkerGpsInit());
 }
 
 static void gpsDirectToSerial(uint8_t c) {
@@ -577,15 +577,15 @@ void gpsProcess() {
         (ageRecv.sol        < 7) &&
         (ageRecv.pvt        < 7);
     
-    if (state >= GPS_STATE_NODATA)
-        state = data.rcvok ? GPS_STATE_OK : GPS_STATE_NODATA;
+    if (state >= NAV_STATE_NODATA)
+        state = data.rcvok ? NAV_STATE_OK : NAV_STATE_NODATA;
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Жёсткая перезагрузка с очисткой списка спутников
  * ------------------------------------------------------------------------------------------- */
 bool gpsColdRestart() {
-    if (wrkExists(WORKER_GPS_INIT))
+    if (wrkExists(WORKER_NAV_INIT))
         return false;
     
     const struct {
@@ -739,7 +739,7 @@ double gpsCourse(double lat1, double long1, double lat2, double long2) {
 /* ------------------------------------------------------------------------------------------- *
  *  Питание на GPS-модуле
  * ------------------------------------------------------------------------------------------- */
-static RTC_DATA_ATTR uint8_t gpspwr = GPS_PWRBY_PWRON;
+static RTC_DATA_ATTR uint8_t gpspwr = NAV_PWRBY_PWRON;
 bool gpsPwr(uint8_t by) {
     return (gpspwr & by) > 0;
 }
@@ -750,29 +750,29 @@ void gpsOn(uint8_t by) {
         return;
     
 #if HWVER > 1
-    // При перезагрузке state сбрасывается в GPS_STATE_OFF, а gpspwr в GPS_PWRBY_PWRON.
+    // При перезагрузке state сбрасывается в NAV_STATE_OFF, а gpspwr в NAV_PWRBY_PWRON.
     // И, казалось бы, надо включить, но пин остаётся LOW.
     // И если мы будем проверять только пин, то будем ложно считать, что gps у нас включен и проинициализирован
-    if ((digitalRead(GPS_PIN_POWER) == LOW) && (state == GPS_STATE_OK))
+    if ((digitalRead(GPS_PIN_POWER) == LOW) && (state == NAV_STATE_OK))
         return;
     digitalWrite(GPS_PIN_POWER, LOW);
     pinMode(GPS_PIN_POWER, OUTPUT);
 #endif
     
-    state = GPS_STATE_OK;
+    state = NAV_STATE_OK;
     
     gpsInit();
 }
 
 void gpsPwrDown() {
 #if HWVER > 1
-    if ((digitalRead(GPS_PIN_POWER) == HIGH) && (state == GPS_STATE_OFF))
+    if ((digitalRead(GPS_PIN_POWER) == HIGH) && (state == NAV_STATE_OFF))
         return;
     digitalWrite(GPS_PIN_POWER, HIGH);
     pinMode(GPS_PIN_POWER, OUTPUT);
 #endif
     
-    state = GPS_STATE_OFF;
+    state = NAV_STATE_OFF;
 }
 void gpsOff(uint8_t by) {
     gpspwr &= ~by;
@@ -792,20 +792,20 @@ void gpsRestart() {
     delay(1000);
 
     digitalWrite(GPS_PIN_POWER, LOW);
-    gpspwr |= GPS_PWRBY_HAND;
-    state = GPS_STATE_OK;
+    gpspwr |= NAV_PWRBY_HAND;
+    state = NAV_STATE_OK;
 }
 
 void gpsPwrTgl() {
     if (gpspwr)
         gpsOff();
     else
-        gpsOn(GPS_PWRBY_HAND);
+        gpsOn(NAV_PWRBY_HAND);
 }
 void gpsRestore() {
 #if HWVER > 1
-    if ((digitalRead(GPS_PIN_POWER) == LOW) && (state == GPS_STATE_OFF)) {
-        // при перезагрузке state вбрасывается в GPS_STATE_OFF, но пин при этом
+    if ((digitalRead(GPS_PIN_POWER) == LOW) && (state == NAV_STATE_OFF)) {
+        // при перезагрузке state вбрасывается в NAV_STATE_OFF, но пин при этом
         // не гасится.
         // И у нас нет достоверной информации, проинициализирован gps или нет.
         // В этом случае отключаем питание принудительно

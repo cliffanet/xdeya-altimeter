@@ -238,14 +238,14 @@ static const menu_el_t menugpsupoint[] {
             }
             
             auto &gps = gpsInf();
-            if (!GPS_VALID_LOCATION(gps)) {
+            if (!NAV_VALID_LOCATION(gps)) {
                 // Или к моменту срабатывания длинного нажатия может не быть валидных координат (потеряны спутники)
                 menuFlashP(PTXT(MENU_POINT_NOGPS));
                 return;
             }
             
             // Сохраняем
-            pnt.locSet(GPS_LATLON(gps.lat), GPS_LATLON(gps.lon));
+            pnt.locSet(NAV_LATLON(gps.lat), NAV_LATLON(gps.lon));
             if (!pnt.save()) {
                 menuFlashP(PTXT(MENU_POINT_EEPROMFAIL));
                 return;
@@ -532,27 +532,27 @@ static ViewMenuStatic vMenuPowerOff(menupoweroff, sizeof(menupoweroff)/sizeof(me
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menugpson[] {
     {   // Включение / выключение питания GPS вручную
-        .name = PTXT(MENU_GPSON_CURRENT),
+        .name = PTXT(MENU_NAVON_CURRENT),
         .submenu = NULL,
         .enter = gpsPwrTgl,                 // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) { valOn(txt, gpsPwr()); },
     },
     {   // авто-включение сразу при включении питания
-        .name       = PTXT(MENU_GPSON_POWERON),
+        .name       = PTXT(MENU_NAVON_POWERON),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valYes(txt, cfg.d().navonpwron); },
         .edit       = [] (int val) { cfg.set().navonpwron = !cfg.d().navonpwron; },
     },
     {   // автоматически включать при старте записи трека
-        .name       = PTXT(MENU_GPSON_TRKREC),
+        .name       = PTXT(MENU_NAVON_TRKREC),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valYes(txt, cfg.d().navontrkrec); },
         .edit       = [] (int val) { cfg.set().navontrkrec = !cfg.d().navontrkrec; },
     },
     {   // авто-включение в подъёме на заданной высоте
-        .name       = PTXT(MENU_GPSON_TAKEOFF),
+        .name       = PTXT(MENU_NAVON_TAKEOFF),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
@@ -571,7 +571,7 @@ static const menu_el_t menugpson[] {
         },
     },
     {   // авто-отключать жпс всегда после приземления
-        .name       = PTXT(MENU_GPSON_OFFLAND),
+        .name       = PTXT(MENU_NAVON_OFFLAND),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valYes(txt, cfg.d().navoffland); },

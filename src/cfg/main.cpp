@@ -180,7 +180,7 @@ bool cfgLoad(bool apply) {
         displayFlipp180(cfg.d().flipp180);
         btnFlipp180(cfg.d().flipp180);
         if (cfg.d().navonpwron)
-            gpsOn(GPS_PWRBY_PWRON);
+            gpsOn(NAV_PWRBY_PWRON);
     }
     
     return ok;

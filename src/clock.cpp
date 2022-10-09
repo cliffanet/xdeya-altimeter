@@ -230,7 +230,7 @@ static void clockUpd() {
     }
     else {
         auto &gps = gpsInf();
-        tmvalid = GPS_VALID_TIME(gps);
+        tmvalid = NAV_VALID_TIME(gps);
         
         if (tmvalid) {
             DateTime dt(gps.tm.year, gps.tm.mon, gps.tm.day, gps.tm.h, gps.tm.m, gps.tm.s);
@@ -273,7 +273,7 @@ void clockForceAdjust(uint16_t interval) {
 void clockProcess() {
     if ((adj >= TIME_ADJUST_INTERVAL) || !tmvalid) {
         auto &gps = gpsInf();
-        if (GPS_VALID_TIME(gps)) {
+        if (NAV_VALID_TIME(gps)) {
             // set the Time to the latest GPS reading
             DateTime dtgps(gps.tm.year, gps.tm.mon, gps.tm.day, gps.tm.h, gps.tm.m, gps.tm.s);
             

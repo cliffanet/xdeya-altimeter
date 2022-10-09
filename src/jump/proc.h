@@ -64,12 +64,12 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
     uint32_t    msave;
 } log_item_t;
 
-#define LI_FLAG_GPS_VALID   0x0001
-#define LI_FLAG_GPS_VLOC    0x0002
-#define LI_FLAG_GPS_VVERT   0x0004
-#define LI_FLAG_GPS_VSPEED  0x0008
-#define LI_FLAG_GPS_VHEAD   0x0010
-#define LI_FLAG_GPS_VTIME   0x0020
+#define LI_FLAG_NAV_VALID   0x0001
+#define LI_FLAG_NAV_VLOC    0x0002
+#define LI_FLAG_NAV_VVERT   0x0004
+#define LI_FLAG_NAV_VSPEED  0x0008
+#define LI_FLAG_NAV_VHEAD   0x0010
+#define LI_FLAG_NAV_VTIME   0x0020
 #define LI_FLAG_JMPBEG      0x0200
 #define LI_FLAG_JMPCNP      0x0400
 #define LI_FLAG_JMPEND      0x0800

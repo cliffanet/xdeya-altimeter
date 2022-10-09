@@ -48,8 +48,8 @@ static void jmpPreLogAdd(uint16_t interval) {
         lon         : gps.lon,
         lat         : gps.lat,
         hspeed      : gps.gSpeed,
-        heading     : GPS_DEG(gps.heading),
-        gpsalt      : GPS_MM(gps.hMSL),
+        heading     : NAV_DEG(gps.heading),
+        gpsalt      : NAV_MM(gps.hMSL),
         vspeed      : gps.speed,
         gpsdage     : gpsDataAge(), // тут вместо millis уже используется только 1 байт для хранения, можно пересмотреть формат
         sat         : gps.numSV,
@@ -67,18 +67,18 @@ static void jmpPreLogAdd(uint16_t interval) {
         millis      : utm() / 1000,
     };
     
-    if (GPS_VALID(gps))
-        li.flags |= LI_FLAG_GPS_VALID;
-    if (GPS_VALID_LOCATION(gps))
-        li.flags |= LI_FLAG_GPS_VLOC;
-    if (GPS_VALID_VERTICAL(gps))
-        li.flags |= LI_FLAG_GPS_VVERT;
-    if (GPS_VALID_SPEED(gps))
-        li.flags |= LI_FLAG_GPS_VSPEED;
-    if (GPS_VALID_HEAD(gps))
-        li.flags |= LI_FLAG_GPS_VHEAD;
-    if (GPS_VALID_TIME(gps))
-        li.flags |= LI_FLAG_GPS_VTIME;
+    if (NAV_VALID(gps))
+        li.flags |= LI_FLAG_NAV_VALID;
+    if (NAV_VALID_LOCATION(gps))
+        li.flags |= LI_FLAG_NAV_VLOC;
+    if (NAV_VALID_VERTICAL(gps))
+        li.flags |= LI_FLAG_NAV_VVERT;
+    if (NAV_VALID_SPEED(gps))
+        li.flags |= LI_FLAG_NAV_VSPEED;
+    if (NAV_VALID_HEAD(gps))
+        li.flags |= LI_FLAG_NAV_VHEAD;
+    if (NAV_VALID_TIME(gps))
+        li.flags |= LI_FLAG_NAV_VTIME;
     
     if (btnPushed(BTN_UP))
         li.flags |= LI_FLAG_BTN_UP;
@@ -232,7 +232,7 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
             trkStop(TRK_RUNBY_JMPBEG | TRK_RUNBY_ALT);
 
             // на земле выключаем gps после включения на заданной высоте
-            gpsOff(GPS_PWRBY_ALT);
+            gpsOff(NAV_PWRBY_ALT);
 
             // Принудительное отключение gps после приземления
             if (cfg.d().navoffland && gpsPwr())
@@ -293,8 +293,8 @@ void jmpProcess() {
         // автовключение gps на заданной высоте
         if ((cfg.d().navonalt > 0) &&
             (ac.alt() >= cfg.d().navonalt) &&
-            !gpsPwr(GPS_PWRBY_ALT))
-            gpsOn(GPS_PWRBY_ALT);
+            !gpsPwr(NAV_PWRBY_ALT))
+            gpsOn(NAV_PWRBY_ALT);
     
         // автовключение записи трека на заданной высоте
         if ((cfg.d().trkonalt > 0) &&

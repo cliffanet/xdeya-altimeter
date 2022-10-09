@@ -67,11 +67,11 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_POWEROFF_NOFLY     "Без взлётов"
 #define TXT_MENU_POWEROFF_AFTON     "После включения"
 
-#define TXT_MENU_GPSON_CURRENT      "Текущее состояние"
-#define TXT_MENU_GPSON_POWERON      "Вкл. при включении"
-#define TXT_MENU_GPSON_TRKREC       "Вкл. при записи трека"
-#define TXT_MENU_GPSON_TAKEOFF      "Вкл. на высоте"
-#define TXT_MENU_GPSON_OFFLAND      "Выключать при приземлении"
+#define TXT_MENU_NAVON_CURRENT      "Текущее состояние"
+#define TXT_MENU_NAVON_POWERON      "Вкл. при включении"
+#define TXT_MENU_NAVON_TRKREC       "Вкл. при записи трека"
+#define TXT_MENU_NAVON_TAKEOFF      "Вкл. на высоте"
+#define TXT_MENU_NAVON_OFFLAND      "Выключать при приземлении"
 
 #define TXT_MENU_NAV_MODE           "Режим"
 #define TXT_MENU_NAV_MODE_GLONASS   "GLONASS"

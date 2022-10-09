@@ -59,23 +59,23 @@ static void drawGpsState(U8G2 &u8g2) {
     u8g2.setFont(menuFont);
     
     switch (gpsState()) {
-        case GPS_STATE_OFF:
+        case NAV_STATE_OFF:
             strcpy_P(s, PTXT(MAIN_GPSSTATE_OFF));
             break;
         
-        case GPS_STATE_INIT:
+        case NAV_STATE_INIT:
             strcpy_P(s, PTXT(MAIN_GPSSTATE_INIT));
             break;
         
-        case GPS_STATE_FAIL:
+        case NAV_STATE_FAIL:
             strcpy_P(s, PTXT(MAIN_GPSSTATE_INITFAIL));
             break;
         
-        case GPS_STATE_NODATA:
+        case NAV_STATE_NODATA:
             strcpy_P(s, PTXT(MAIN_GPSSTATE_NODATA));
             break;
         
-        case GPS_STATE_OK:
+        case NAV_STATE_OK:
             sprintf_P(s, PTXT(MAIN_GPSSTATE_SATCOUNT), gps.numSV);
             break;
     }
@@ -135,11 +135,11 @@ static void drawText(ARG_COMP_DEF) {
 
     // навигация
     auto &gps = gpsInf();
-    if (GPS_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used) {
+    if (NAV_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used) {
         double dist = 
             gpsDistance(
-                GPS_LATLON(gps.lat),
-                GPS_LATLON(gps.lon),
+                NAV_LATLON(gps.lat),
+                NAV_LATLON(gps.lon),
                 pnt.cur().lat, 
                 pnt.cur().lng
             );
@@ -156,9 +156,9 @@ static void drawText(ARG_COMP_DEF) {
         u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 54, s);
     }
 
-    if (GPS_VALID_SPEED(gps)) {
+    if (NAV_VALID_SPEED(gps)) {
         u8g2.setFont(menuFont);
-        sprintf_P(s, PTXT(MAIN_3DSPEED_MS), GPS_CM(gps.gSpeed));
+        sprintf_P(s, PTXT(MAIN_3DSPEED_MS), NAV_CM(gps.gSpeed));
         u8g2.drawTxt(u8g2.getDisplayWidth()-64, 64, s);
     }
 }
@@ -215,11 +215,11 @@ static void drawText(ARG_COMP_DEF) {
 
     // навигация
     auto &gps = gpsInf();
-    if (GPS_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used) {
+    if (NAV_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used) {
         double dist = 
             gpsDistance(
-                GPS_LATLON(gps.lat),
-                GPS_LATLON(gps.lon),
+                NAV_LATLON(gps.lat),
+                NAV_LATLON(gps.lon),
                 pnt.cur().lat, 
                 pnt.cur().lng
             );
@@ -236,9 +236,9 @@ static void drawText(ARG_COMP_DEF) {
         u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 81, s);
     }
 
-    if (GPS_VALID_SPEED(gps)) {
+    if (NAV_VALID_SPEED(gps)) {
         u8g2.setFont(u8g2_font_ImpactBits_tr);
-        sprintf_P(s, PSTR("%0.1f m/s"), GPS_CM(gps.gSpeed));
+        sprintf_P(s, PSTR("%0.1f m/s"), NAV_CM(gps.gSpeed));
         u8g2.drawStr(u8g2.getDisplayWidth()-64, 95, s);
     }
 }
@@ -308,8 +308,8 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
     
     double dist =
         gpsDistance(
-            GPS_LATLON(gps.lat),
-            GPS_LATLON(gps.lon),
+            NAV_LATLON(gps.lat),
+            NAV_LATLON(gps.lon),
             pnt.cur().lat, 
             pnt.cur().lng
         );
@@ -324,8 +324,8 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
     
     double ang =
         gpsCourse(
-            GPS_LATLON(gps.lat),
-            GPS_LATLON(gps.lon),
+            NAV_LATLON(gps.lat),
+            NAV_LATLON(gps.lon),
             pnt.cur().lat, 
             pnt.cur().lng
         ) * DEG_TO_RAD + head;
@@ -353,9 +353,9 @@ static void drawMoveArr(ARG_COMP_DEF, int n = 0, double ang = 0) {
 
 static void drawMove(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
-    double ang = GPS_RAD(gps.heading) + head;
+    double ang = NAV_RAD(gps.heading) + head;
     
-    double speed = GPS_CM(gps.gSpeed);
+    double speed = NAV_CM(gps.gSpeed);
     
     if (speed < 0.5)
         return;
@@ -374,16 +374,16 @@ static void drawMove(ARG_COMP_DEF, double head = 0) {
 static void drawNavi(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
 
-    if (!GPS_VALID(gps)) {
+    if (!NAV_VALID(gps)) {
         u8g2.setFont(u8g2_font_open_iconic_www_4x_t);
         u8g2.drawGlyph(cx-16,cy+16, 'J');
         return;
     }
     
-    if (GPS_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used)
+    if (NAV_VALID_LOCATION(gps) && pnt.numValid() && pnt.cur().used)
         drawPoint(ARG_COMP_CALL, head);
     
-    if (GPS_VALID_LOCATION(gps) && GPS_VALID_HEAD(gps) && GPS_VALID_SPEED(gps))
+    if (NAV_VALID_LOCATION(gps) && NAV_VALID_HEAD(gps) && NAV_VALID_SPEED(gps))
         drawMove(ARG_COMP_CALL, head);
 }
 

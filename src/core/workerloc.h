@@ -10,7 +10,7 @@
 enum {
     WORKER_NONE = 0,
     
-    WORKER_GPS_INIT,
+    WORKER_NAV_INIT,
     WORKER_TRK_SAVE,
     WORKER_WIFI_SYNC,
     

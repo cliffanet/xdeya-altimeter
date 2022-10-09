@@ -61,11 +61,11 @@
 #define TXT_MENU_POWEROFF_NOFLY     "No Fly hours"
 #define TXT_MENU_POWEROFF_AFTON     "Aft. Pwr-On"
 
-#define TXT_MENU_GPSON_CURRENT      "Current State"
-#define TXT_MENU_GPSON_POWERON      "Auto-On by Pwr-On"
-#define TXT_MENU_GPSON_TRKREC       "Auto-On by Track Rec"
-#define TXT_MENU_GPSON_TAKEOFF      "Auto-On by Takeoff Alt"
-#define TXT_MENU_GPSON_OFFLAND      "Force-Off by Landing"
+#define TXT_MENU_NAVON_CURRENT      "Current State"
+#define TXT_MENU_NAVON_POWERON      "Auto-On by Pwr-On"
+#define TXT_MENU_NAVON_TRKREC       "Auto-On by Track Rec"
+#define TXT_MENU_NAVON_TAKEOFF      "Auto-On by Takeoff Alt"
+#define TXT_MENU_NAVON_OFFLAND      "Force-Off by Landing"
 
 #define TXT_MENU_NAV_MODE           "Mode"
 #define TXT_MENU_NAV_MODE_GLONASS   "GLONASS"
