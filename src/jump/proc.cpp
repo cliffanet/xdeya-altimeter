@@ -235,7 +235,7 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
             gpsOff(GPS_PWRBY_ALT);
 
             // Принудительное отключение gps после приземления
-            if (cfg.d().gpsoffland && gpsPwr())
+            if (cfg.d().navoffland && gpsPwr())
                 gpsOff();
             
             break;
@@ -291,8 +291,8 @@ void jmpProcess() {
     
     if (ac.jmpmode() == ACJMP_TAKEOFF) {
         // автовключение gps на заданной высоте
-        if ((cfg.d().gpsonalt > 0) &&
-            (ac.alt() >= cfg.d().gpsonalt) &&
+        if ((cfg.d().navonalt > 0) &&
+            (ac.alt() >= cfg.d().navonalt) &&
             !gpsPwr(GPS_PWRBY_ALT))
             gpsOn(GPS_PWRBY_ALT);
     

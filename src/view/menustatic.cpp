@@ -541,41 +541,41 @@ static const menu_el_t menugpson[] {
         .name       = PTXT(MENU_GPSON_POWERON),
         .submenu    = NULL,
         .enter      = NULL,
-        .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsonpwron); },
-        .edit       = [] (int val) { cfg.set().gpsonpwron = !cfg.d().gpsonpwron; },
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().navonpwron); },
+        .edit       = [] (int val) { cfg.set().navonpwron = !cfg.d().navonpwron; },
     },
     {   // автоматически включать при старте записи трека
         .name       = PTXT(MENU_GPSON_TRKREC),
         .submenu    = NULL,
         .enter      = NULL,
-        .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsontrkrec); },
-        .edit       = [] (int val) { cfg.set().gpsontrkrec = !cfg.d().gpsontrkrec; },
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().navontrkrec); },
+        .edit       = [] (int val) { cfg.set().navontrkrec = !cfg.d().navontrkrec; },
     },
     {   // авто-включение в подъёме на заданной высоте
         .name       = PTXT(MENU_GPSON_TAKEOFF),
         .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
-            if (cfg.d().gpsonalt > 0)
-                valInt(txt, cfg.d().gpsonalt);
+            if (cfg.d().navonalt > 0)
+                valInt(txt, cfg.d().navonalt);
             else
                 strcpy_P(txt, PTXT(MENU_DISABLE));
         },
         .edit       = [] (int val) {
-            int32_t c = cfg.d().gpsonalt;
+            int32_t c = cfg.d().navonalt;
             c += val*10;
             if (c < 0) c = 0;
             if (c > 6000) c = 6000;
-            if (c == cfg.d().gpsonalt) return;
-            cfg.set().gpsonalt = c;
+            if (c == cfg.d().navonalt) return;
+            cfg.set().navonalt = c;
         },
     },
     {   // авто-отключать жпс всегда после приземления
         .name       = PTXT(MENU_GPSON_OFFLAND),
         .submenu    = NULL,
         .enter      = NULL,
-        .showval    = [] (char *txt) { valYes(txt, cfg.d().gpsoffland); },
-        .edit       = [] (int val) { cfg.set().gpsoffland = !cfg.d().gpsoffland; },
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().navoffland); },
+        .edit       = [] (int val) { cfg.set().navoffland = !cfg.d().navoffland; },
     },
 };
 static ViewMenuStatic vMenuGpsOn(menugpson, sizeof(menugpson)/sizeof(menu_el_t));

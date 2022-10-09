@@ -51,10 +51,10 @@ typedef struct __attribute__((__packed__)) {
     uint8_t hrpwrnofly  = 0;                    // количество часов отсутствия взлётов перед автовыключением
     uint8_t hrpwrafton  = 0;                    // количество часов после включения перед автовыключением
     
-    bool    gpsonpwron  = true;                 // автоматическое включение gps при включении питания
-    bool    gpsontrkrec = false;                // автоматическое включение gps при старте записи трека
-    uint16_t gpsonalt   = 0;                    // автоматическое включение gps на заданной высоте
-    bool    gpsoffland  = true;                 // всегда автоматически отключать gps после приземления
+    bool    navonpwron  = true;                 // автоматическое включение gps при включении питания
+    bool    navontrkrec = false;                // автоматическое включение gps при старте записи трека
+    uint16_t navonalt   = 0;                    // автоматическое включение gps на заданной высоте
+    bool    navoffland  = true;                 // всегда автоматически отключать gps после приземления
     uint8_t flagen      =                       // Флаги вкл/выкл разных опций навигации
                         FLAGEN_COMPAS |
                         FLAGEN_TXTCOURSE;

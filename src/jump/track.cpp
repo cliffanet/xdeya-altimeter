@@ -182,7 +182,7 @@ class WorkerTrkSave : public WorkerProc
         void bydel(uint8_t by) { m_by &= ~by; }
         
         void begin() {
-            if (cfg.d().gpsontrkrec)
+            if (cfg.d().navontrkrec)
                 gpsOn(GPS_PWRBY_TRKREC);
 #ifdef USE_SDCARD
             useext = fileExtInit();
@@ -195,7 +195,7 @@ class WorkerTrkSave : public WorkerProc
         void end() {
             tr.close();
     
-            if (cfg.d().gpsontrkrec)
+            if (cfg.d().navontrkrec)
                 gpsOff(GPS_PWRBY_TRKREC);
             if (useext)
                 fileExtStop();
