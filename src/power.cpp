@@ -49,6 +49,47 @@ static void pwrDeepSleep(uint64_t timer) {
     CONSOLE("This will never be printed");
 }
 
+#if HWVER >= 3
+static bool pwrBattSleepChg(uint32_t &tm) {
+    pinMode(HWPOWER_PIN_BATIN, INPUT);
+    pinMode(HWPOWER_PIN_BATCHRG, INPUT_PULLUP);
+    
+    auto draw = [](U8G2 &u8g2) {
+        u8g2.setFont(u8g2_font_battery24_tr);
+        uint8_t blev = pwrBattLevel();
+        if (blev > 0) blev--;
+        u8g2.drawGlyph((u8g2.getDisplayWidth()-20)/2, u8g2.getDisplayHeight()/2 + 24/2, 0x30+blev);
+        
+        if (pwrBattCharge()) {
+            u8g2.setFont(u8g2_font_open_iconic_embedded_1x_t);
+            u8g2.drawGlyph((u8g2.getDisplayWidth()-20)/2+22, u8g2.getDisplayHeight()/2 + 24/2, 'C');
+        }
+    };
+    displayDraw(draw, true, true);
+    
+    while (1) {
+        delay(100);
+        viewProcess();
+        displayDraw(draw);
+        
+        uint8_t bm = 0;
+        tm = btnPressed(bm);
+        if (bm != btnMask(BTN_SEL))
+            return false;
+        if (tm > 4000)
+            return true;
+        //CONSOLE("wait: %d (bm: %d)", tm, bm);
+    }
+    
+    CONSOLE("pwr off");
+    displayOff();
+    gpsPwrDown();
+    pwrDeepSleep();
+    
+    return false;
+}
+#endif
+
 /* ------------------------------------------------------------------------------------------- *
  *  
  * ------------------------------------------------------------------------------------------- */
@@ -82,6 +123,11 @@ bool pwrInit() {
                 uint32_t tm = btnPressed(bm);
                 CONSOLE("btn [%d] pressed %d ms", bm, tm);
                 if (bm == btnMask(BTN_SEL)) {
+                    // вывод "батарея заряжается" при необходимости
+                    if (!pwrBattSleepChg(tm))
+                        pwrDeepSleep(1000000);
+                    
+                    // Если держим достаточно долго, запускаемся
                     if (tm > 1200) {
                         CONSOLE("pwrInit on");
                         return true;
@@ -300,6 +346,18 @@ double pwrBattValue() {
         raw 3300 = 4.08v
         raw 3400 = 4.20v
     */
+}
+
+uint8_t pwrBattLevel() {
+    uint16_t bv = pwrBattRaw();
+    
+    return
+        bv > 3150 ? 5 :
+        bv > 3050 ? 4 :
+        bv > 2950 ? 3 :
+        bv > 2850 ? 2 :
+        bv > 2750 ? 1 :
+        0;
 }
 #endif
 

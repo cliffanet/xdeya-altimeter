@@ -56,18 +56,11 @@ void ViewMain::btnLong(btn_code_t btn) {
 void ViewMain::drawState(U8G2 &u8g2) {
     u8g2.setDrawColor(1);
 #if HWVER >= 3
-    uint16_t bv = pwrBattRaw();
-    if ((bv > 2750) || isblink()) {
+    uint8_t blev = pwrBattLevel();
+    if ((blev > 0) || isblink()) {
         u8g2.setFont(u8g2_font_battery19_tn);
-        char b = 
-                bv > 3150 ? '5' :
-                bv > 3050 ? '4' :
-                bv > 2950 ? '3' :
-                bv > 2850 ? '2' :
-                bv > 2750 ? '1' :
-                '0';
         u8g2.setFontDirection(1);
-        u8g2.drawGlyph(0, 0, b);
+        u8g2.drawGlyph(0, 0, '0' + blev);
         u8g2.setFontDirection(0);
     }
     if (pwrBattCharge()) {

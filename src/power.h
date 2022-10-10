@@ -39,6 +39,7 @@ void pwrOff();
 bool pwrBattChk(bool init = false, double val = BATT_VALUE_MIN);
 uint16_t pwrBattRaw();
 double pwrBattValue();
+uint8_t pwrBattLevel();
 #else
 #define pwrBattChk(...)
 #endif
