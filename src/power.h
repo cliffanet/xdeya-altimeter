@@ -46,5 +46,6 @@ uint8_t pwrBattLevel();
 #if HWVER >= 3
 bool pwrBattCharge();
 #endif
+void pwrAutoOff();
 
 #endif // _power_H

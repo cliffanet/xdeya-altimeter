@@ -71,6 +71,7 @@ void loop() {
         pwrBattChk();
         clockProcess();
         tmcntUpdate();
+        pwrAutoOff();
         gpsProcess();
         compProcess();
         jmpProcess();

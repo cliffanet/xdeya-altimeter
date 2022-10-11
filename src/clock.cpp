@@ -3,7 +3,6 @@
 #include "log.h"
 #include "navi/proc.h"
 #include "cfg/main.h"
-#include "power.h"
 
 #include "RTClib.h"
 
@@ -115,6 +114,15 @@ uint32_t tmcntInterval(tm_counter_t id) {
 
     return tmcnt[id].tm / 1000000;
 }
+uint32_t tmcntIntervEn(tm_counter_t id) {
+    if ((id < 0) || (id >= TMCNT_FAIL))
+        return 0;
+    
+    if (!tmcnt[id].en)
+        return 0;
+
+    return tmcnt[id].tm / 1000000;
+}
 void tmcntUpdate() {
     uint64_t utm2 = utm();
     uint64_t tmdiff = utm2 - utm1;
@@ -123,18 +131,6 @@ void tmcntUpdate() {
     for (auto &t : tmcnt)
         if (t.en)
             t.tm += tmdiff;
-    
-    if ((cfg.d().hrpwrafton > 0) && 
-        (tmcnt[TMCNT_UPTIME].tm > (cfg.d().hrpwrafton * 3600 * 1000000))) {
-        CONSOLE("pwrOff by %d hour after pwrOn", cfg.d().hrpwrafton);
-        pwrOff();
-    }
-    
-    if ((cfg.d().hrpwrnofly > 0) && 
-        (tmcnt[TMCNT_NOFLY].tm > (cfg.d().hrpwrnofly * 3600 * 1000000))) {
-        CONSOLE("pwrOff by %d hour no fly", cfg.d().hrpwrnofly);
-        pwrOff();
-    }
 }
 
 /* ------------------------------------------------------------------------------------------- *

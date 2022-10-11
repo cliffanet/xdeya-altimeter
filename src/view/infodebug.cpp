@@ -253,7 +253,7 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 39: {
-                        uint32_t tm = tmcntInterval(TMCNT_UPTIME);
+                        uint32_t tm = tmcntIntervEn(TMCNT_UPTIME);
                         uint32_t m = tm / 60;
                         uint32_t h = m / 60;
                         PRNL("Uptime");
@@ -262,7 +262,7 @@ class ViewInfoDebug : public ViewInfo {
                     break;
                 
                 case 40: {
-                        uint32_t tm = tmcntInterval(TMCNT_NOFLY);
+                        uint32_t tm = tmcntIntervEn(TMCNT_NOFLY);
                         uint32_t m = tm / 60;
                         uint32_t h = m / 60;
                         PRNL("No-Fly time");

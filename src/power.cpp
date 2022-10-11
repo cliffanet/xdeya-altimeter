@@ -9,6 +9,7 @@
 #include "jump/proc.h"
 #include "jump/track.h"
 #include "core/worker.h"
+#include "cfg/main.h"
 
 
 static RTC_DATA_ATTR power_mode_t mode = PWR_ACTIVE;
@@ -248,6 +249,11 @@ void pwrRun(void (*run)()) {
                 if (u1 < 90000)
                     wrkProcess((100000-u1) / 1000);
             }
+            {
+                uint64_t u1 = utm_diff(u);
+                if (u1 < 90000)
+                    wrkProcess2((100000-u1) / 1000);
+            }
             u = utm_diff(u);
             if (u < 99000)
                 delay((100000-u) / 1000);
@@ -366,3 +372,19 @@ bool pwrBattCharge() {
     return digitalRead(HWPOWER_PIN_BATCHRG) == LOW;
 }
 #endif
+
+void pwrAutoOff() {
+    if ((cfg.d().hrpwrafton > 0) && 
+        (tmcntIntervEn(TMCNT_UPTIME) > (cfg.d().hrpwrafton * 3600))) {
+        CONSOLE("pwrOff by %d hour after pwrOn", cfg.d().hrpwrafton);
+        tmcntReset(TMCNT_UPTIME, false);
+        pwrOff();
+    }
+    
+    if ((cfg.d().hrpwrnofly > 0) && 
+        (tmcntIntervEn(TMCNT_NOFLY) > (cfg.d().hrpwrnofly * 3600))) {
+        CONSOLE("pwrOff by %d hour no fly", cfg.d().hrpwrnofly);
+        tmcntReset(TMCNT_NOFLY, false);
+        pwrOff();
+    }
+}

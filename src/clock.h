@@ -33,6 +33,7 @@ typedef enum {
 void tmcntReset(tm_counter_t id, bool enable);
 bool tmcntEnabled(tm_counter_t id);
 uint32_t tmcntInterval(tm_counter_t id);
+uint32_t tmcntIntervEn(tm_counter_t id);
 void tmcntUpdate();
 
 /* ------------------------------------------------------------------------------------------- *
