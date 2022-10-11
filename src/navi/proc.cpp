@@ -38,25 +38,45 @@ static struct {
  *  NAV-инициализация
  *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
  * ------------------------------------------------------------------------------------------- */
-class WorkerGpsInit : public WorkerProc
-{
-    private:
-        enum {
-            InitBeg,
-            BoudBeg,
-            BoudChk,
-            BoudCnf,
-            CfgRate,
-            CfgMRate,
-            CfgNav,
-            CfgMode,
-            CfgRst
-        };
+WORKER_DEFINE(NaviInit) {
+    bool every() {
+        if (gps.tick())
+            return true;
         
-        uint8_t m_op;
+        CONSOLE("Wait cmd-confirm fail");
+        state = NAV_STATE_FAIL;
+        return false;
+    }
+        
+    state_t errsnd() {
+        CONSOLE("NAV config-send (line: %d) fail", m_line);
+        state = NAV_STATE_FAIL;
+        return STATE_END;
+    }
 
-        bool m_cnfwait;
-        uint8_t m_cnfcnt;
+    uint8_t m_cnfcnt = 0;
+    state_t cnfwait() {
+        // всё ещё ждём
+        m_cnfcnt ++;
+        if (m_cnfcnt > 50) {
+            CONSOLE("Wait cmd-confirm (line: %d, cnfneed: %d) timeout", m_line, gps.cnfneed());
+            state = NAV_STATE_FAIL;
+            return STATE_END;
+        }
+        //CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d, cnfcnt: %d)", m_op, gps.cnfneed(), m_cnfcnt);
+        return STATE_WAIT;
+    }
+    
+    WORKER_PROCESS
+        CONSOLE("Navi init begin");
+        state = NAV_STATE_INIT;
+        // Пустое ожидание сразу после запуска процесса инициализации.
+        // Необходимо, чтобы дождаться инициализации чипа навигации сразу после подачи питания
+    WORKER_BREAK_WAIT
+        
+        CONSOLE("Set UART(gps) default speed 9600");
+        ss.updateBaudRate(9600);
+    WORKER_BREAK_WAIT
         
         const struct {
         	uint8_t  portID;       // Port identifier number
@@ -80,8 +100,52 @@ class WorkerGpsInit : public WorkerProc
     		.flags        = 0,      // Flags bit mask
     		.reserved5    = 0       // Reserved, set to 0
     	};
+        if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
+            return errsnd();
+    WORKER_BREAK_WAIT
         
-        const ubx_cfg_rate_t cfg_rate[11] = {
+        gps.cnfclear();
+        gps.rcvclear();
+        ss.flush();
+        while (ss.available()) ss.read();
+
+        CONSOLE("Set UART(gps) speed 57600");
+        ss.updateBaudRate(57600);
+    WORKER_BREAK_WAIT
+        
+        const struct {
+        	uint8_t  portID;       // Port identifier number
+        	uint8_t  reserved0;    // Reserved
+        	uint16_t txReady;      // TX ready pin configuration
+        	uint32_t mode;         // UART mode
+        	uint32_t baudRate;     // Baud rate (bits/sec)
+        	uint16_t inProtoMask;  // Input protocols
+        	uint16_t outProtoMask; // Output protocols
+        	uint16_t flags;        // Flags
+        	uint16_t reserved5;    // Always set to zero
+        } cfg_prt =
+    	{
+    		.portID       = 1,      // UART 1
+    		.reserved0    = 0,      // Reserved
+    		.txReady      = 0,      // no TX ready
+    		.mode         = 0x08d0, // 8N1
+    		.baudRate     = 57600,  // Baudrate in bits/second
+    		.inProtoMask  = 0x0001, // UBX protocol
+    		.outProtoMask = 0x0001, // UBX protocol
+    		.flags        = 0,      // Flags bit mask
+    		.reserved5    = 0       // Reserved, set to 0
+    	};
+        if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
+            return errsnd();
+    WORKER_BREAK_RUN
+        
+        if (gps.cnfneed() > 0)
+            return cnfwait();
+        m_cnfcnt = 0;
+        CONSOLE("Confirmed speed");
+    WORKER_BREAK_RUN
+        
+        const ubx_cfg_rate_t cfg_rate[] = {
     		{ UBX_NMEA, UBX_NMEA_GPGGA,     0 },
     		{ UBX_NMEA, UBX_NMEA_GPGLL,     0 },
     		{ UBX_NMEA, UBX_NMEA_GPGSA,     0 },
@@ -97,8 +161,11 @@ class WorkerGpsInit : public WorkerProc
             { UBX_NAV,  UBX_NAV_PVT,        1 }
         };
         
-        const ubx_cfg_rate_t *m_rateit;
-
+        for (auto &rate: cfg_rate)
+            if (!gps.send(UBX_CFG, UBX_CFG_MSG, rate))
+                return errsnd();
+    WORKER_BREAK_RUN
+        
         const struct {
         	uint16_t measRate;  // Measurement rate             (ms)
         	uint16_t navRate;   // Nagivation rate, in number 
@@ -110,7 +177,10 @@ class WorkerGpsInit : public WorkerProc
     		.navRate    = 1,        // Navigation rate (cycles)
     		.timeRef    = 0         // UTC time
     	};
-	
+        if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate))
+            return errsnd();
+    WORKER_BREAK_RUN
+        
         const struct {
         	uint16_t mask;              // Only masked parameters will be applied
         	uint8_t  dynModel;          // Dynamic platform model
@@ -132,7 +202,17 @@ class WorkerGpsInit : public WorkerProc
     		.mask       = 0x0001,       // Apply dynamic model settings
     		.dynModel   = 7             // Airborne with < 1 g acceleration
     	};
-    
+        if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5))
+            return errsnd();
+    WORKER_BREAK_RUN
+        
+        if (!gpsUpdateMode())
+            return errsnd();
+    WORKER_BREAK_RUN
+        
+        if (gps.cnfneed() > 0)
+            return cnfwait();
+        
         const struct {
         	uint16_t navBbrMask; // BBR sections to clear
         	uint8_t  resetMode;  // Reset type
@@ -141,137 +221,18 @@ class WorkerGpsInit : public WorkerProc
     		.navBbrMask = 0x0000,   // Hot start
     		.resetMode  = 0x09      // Controlled NAV start
     	};
+        // В документации пишут, что на старых версиях прошивки подтверждение этой
+        // команды приходит нестабильно, а в новых - специально убрали подтверждение
+        // этой команды, т.к. всё равно, до перезагрузки устройства это подтверждение
+        // не успевает отправиться
+        if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst))
+            return errsnd();
+        gps.cnfclear();
         
-        state_t errsnd() {
-            CONSOLE("NAV config-send (op: %d) fail", m_op);
-            state = NAV_STATE_FAIL;
-            return STATE_END;
-        }
-        
-        state_t cnfwait() {
-            // всё ещё ждём
-            m_cnfcnt ++;
-            if (m_cnfcnt > 50) {
-                CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d) timeout", m_op, gps.cnfneed());
-                state = NAV_STATE_FAIL;
-                return STATE_END;
-            }
-            //CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d, cnfcnt: %d)", m_op, gps.cnfneed(), m_cnfcnt);
-            return STATE_WAIT;
-        }
+        state = NAV_STATE_OK;
+        CONSOLE("NAV-UART config ok");
     
-    public:
-        void begin() {
-            m_op = InitBeg;
-            m_cnfcnt = 0;
-            m_rateit = cfg_rate;
-            state = NAV_STATE_INIT;
-        }
-        
-        state_t process() {
-            if (!gps.tick()) {
-                CONSOLE("Wait cmd-confirm fail");
-                state = NAV_STATE_FAIL;
-                return STATE_END;
-            }
-            
-            //CONSOLE("NAV-op: %d", m_op);
-            // Отправка очередной команды
-            switch (m_op) {
-                case InitBeg:
-                    // Пустое ожидание сразу после запуска процесса инициализации.
-                    // Необходимо, чтобы дождаться инициализации чипа навигации сразу после подачи питания
-                    m_cnfcnt++;
-                    if (m_cnfcnt < 3)
-                        return STATE_WAIT;
-                    
-                    m_op ++;
-                    return STATE_RUN;
-                
-                case BoudBeg:
-                    CONSOLE("Set UART(gps) default speed 9600");
-                    ss.updateBaudRate(9600);
-                    
-                    delay(20);
-        
-                    if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
-                        return errsnd();
-                    
-                    m_op ++;
-                    return STATE_WAIT;
-
-                case BoudChk:
-                    gps.cnfclear();
-                    gps.rcvclear();
-                    ss.flush();
-                    while (ss.available()) ss.read();
-            
-                    CONSOLE("Set UART(gps) speed %d", cfg_prt.baudRate);
-                    ss.updateBaudRate(cfg_prt.baudRate);
-                    
-                    delay(20);
-                    
-                    if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
-                        return errsnd();
-
-                    m_op ++;
-                    m_cnfcnt = 0;
-                    return STATE_WAIT;
-                
-                case BoudCnf:
-                    if (gps.cnfneed() > 0)
-                        return cnfwait();
-                    CONSOLE("Confirmed speed %d", cfg_prt.baudRate);
-                    m_op ++;
-                    return STATE_RUN;
-                
-                case CfgRate:
-                    if (!gps.send(UBX_CFG, UBX_CFG_MSG, *m_rateit))
-                        return errsnd();
-                    m_rateit++;
-                    if (m_rateit >= cfg_rate + sizeof(cfg_rate)/sizeof(ubx_cfg_rate_t))
-                        m_op ++;
-                    return STATE_RUN;
-                
-                case CfgMRate:
-                    if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate))
-                        return errsnd();
-                    m_op ++;
-                    return STATE_RUN;
-                
-                case CfgNav:
-                    if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5))
-                        return errsnd();
-                    m_op ++;
-                    return STATE_RUN;
-                
-                case CfgMode:
-                    if (!gpsUpdateMode())
-                        return errsnd();
-                    m_op ++;
-                    m_cnfcnt = 0;
-                    return STATE_RUN;
-                
-                case CfgRst:
-                    if (gps.cnfneed() > 0)
-                        return cnfwait();
-                    // В документации пишут, что на старых версиях прошивки подтверждение этой
-                    // команды приходит нестабильно, а в новых - специально убрали подтверждение
-                    // этой команды, т.к. всё равно, до перезагрузки устройства это подтверждение
-                    // не успевает отправиться
-                    if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst))
-                        return errsnd();
-                    gps.cnfclear();
-    
-                    CONSOLE("NAV-UART config ok");
-                    state = NAV_STATE_OK;
-                    return STATE_END;
-            }
-            
-            CONSOLE("NAV init unknown error");
-            state = NAV_STATE_FAIL;
-            return STATE_END;
-        }
+    WORKER_END
 };
 
 /* ------------------------------------------------------------------------------------------- *
@@ -545,8 +506,8 @@ void gpsInit() {
     gps.hndadd(UBX_NAV,  UBX_NAV_TIMEUTC,    gpsRecvTimeUtc);
     gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
     gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
-    
-    wrkAdd(WORKER_NAV_INIT, new WorkerGpsInit());
+                    
+    workerAdd(NAV_INIT, NaviInit);
 }
 
 static void gpsDirectToSerial(uint8_t c) {
@@ -654,16 +615,16 @@ bool gpsUpdateMode() {
         .glon    = {
             .gnssId     = 0x06,
             .resTrkCh   = 8,
-            .maxTrkCh   = cfg.d().navmode & 0x2 ? 16 : 32,
+            .maxTrkCh   = static_cast<uint8_t>(cfg.d().navmode & 0x2U ? 16 : 32),
             ._          = 0,
-            .flags      = (0x01<<16) | ((cfg.d().navmode & 0x1) > 0 ? 0x1 : 0x0),
+            .flags      = (0x01<<16) | ((cfg.d().navmode & 0x1) > 0 ? 0x1U : 0x0U),
         },
         .gps    = {
             .gnssId     = 0x00,
             .resTrkCh   = 8,
-            .maxTrkCh   = cfg.d().navmode & 0x1 ? 16 : 32,
+            .maxTrkCh   = static_cast<uint8_t>(cfg.d().navmode & 0x1U ? 16U : 32U),
             ._          = 0,
-            .flags      = (0x01<<16) | ((cfg.d().navmode & 0x2) > 0 ? 0x1 : 0x0),
+            .flags      = (0x01<<16) | ((cfg.d().navmode & 0x2) > 0 ? 0x1U : 0x0U),
         }
     };
     
