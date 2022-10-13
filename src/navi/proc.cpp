@@ -38,7 +38,7 @@ static struct {
  *  NAV-инициализация
  *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
  * ------------------------------------------------------------------------------------------- */
-WORKER_DEFINE(NaviInit) {
+WORKER_DEFINE(NAV_INIT) {
     bool every() {
         if (gps.tick())
             return true;
@@ -51,7 +51,7 @@ WORKER_DEFINE(NaviInit) {
     state_t errsnd() {
         CONSOLE("NAV config-send (line: %d) fail", m_line);
         state = NAV_STATE_FAIL;
-        return STATE_END;
+        WORKER_RETURN_END;
     }
 
     uint8_t m_cnfcnt = 0;
@@ -61,10 +61,10 @@ WORKER_DEFINE(NaviInit) {
         if (m_cnfcnt > 50) {
             CONSOLE("Wait cmd-confirm (line: %d, cnfneed: %d) timeout", m_line, gps.cnfneed());
             state = NAV_STATE_FAIL;
-            return STATE_END;
+            WORKER_RETURN_END;
         }
         //CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d, cnfcnt: %d)", m_op, gps.cnfneed(), m_cnfcnt);
-        return STATE_WAIT;
+        WORKER_RETURN_WAIT;
     }
     
     WORKER_PROCESS
@@ -507,7 +507,7 @@ void gpsInit() {
     gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
     gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
                     
-    workerAdd(NAV_INIT, NaviInit);
+    workerRun(NAV_INIT);
 }
 
 static void gpsDirectToSerial(uint8_t c) {
