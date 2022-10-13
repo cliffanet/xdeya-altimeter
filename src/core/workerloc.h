@@ -10,7 +10,7 @@
 enum {
     WRKKEY_NONE = 0,
     
-    WRKKEY_NAV_INIT,
+    WRKKEY_NAVI_INIT,
     WRKKEY_TRK_SAVE,
     WRKKEY_WIFI_SYNC,
     

@@ -38,7 +38,7 @@ static struct {
  *  NAV-инициализация
  *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
  * ------------------------------------------------------------------------------------------- */
-WRK_DEFINE(NAV_INIT) {
+WRK_DEFINE(NAVI_INIT) {
     bool every() {
         if (gps.tick())
             return true;
@@ -493,7 +493,7 @@ static void gpsRecvGnss(UbloxGpsProto &gps) {
 #endif // FWVER_DEBUG
 
 void gpsInit() {
-    if (wrkExists(NAV_INIT))
+    if (wrkExists(NAVI_INIT))
         return;
     
     // инициируем uart-порт NAV-приёмника
@@ -507,7 +507,7 @@ void gpsInit() {
     gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
     gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
                     
-    wrkRun(NAV_INIT);
+    wrkRun(NAVI_INIT);
 }
 
 static void gpsDirectToSerial(uint8_t c) {
@@ -546,7 +546,7 @@ void gpsProcess() {
  *  Жёсткая перезагрузка с очисткой списка спутников
  * ------------------------------------------------------------------------------------------- */
 bool gpsColdRestart() {
-    if (wrkExists(NAV_INIT))
+    if (wrkExists(NAVI_INIT))
         return false;
     
     const struct {

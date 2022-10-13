@@ -5,6 +5,8 @@
 #include "wifisync.h"
 #include "../log.h"
 #include "../core/workerloc.h"
+#include "../core/worker.h"
+#include "../jump/track.h"
 #include "wifi.h"
 #include "binproto.h"
 #include "netsync.h"
@@ -323,20 +325,108 @@ bool WorkerWiFiSync::recvdata(uint8_t cmd) {
     
     return false;
 }
-*/
-
-/* ------------------------------------------------------------------------------------------- *
- *  Инициализация
- * ------------------------------------------------------------------------------------------- */
-/*
-void wifiSyncBegin(const char *ssid, const char *pass) {
-    if (wrkExists(WORKER_WIFI_SYNC))
-        return;
-    wrkAdd(WORKER_WIFI_SYNC, new WorkerWiFiSync(ssid, pass));
-    CONSOLE("begin");
-}
 
 WorkerWiFiSync * wifiSyncProc() {
     return reinterpret_cast<WorkerWiFiSync *>(wrkGet(WORKER_WIFI_SYNC));
 }
 */
+
+
+#define ERR(st)             err(err ## st)
+#define RETURN_ERR(st)      return ERR(st)
+
+using namespace wSync;
+
+WRK_DEFINE(WIFI_SYNC) {
+    public:
+        st_t        m_st;
+        uint16_t    m_timeout;
+        const char  *m_ssid, *m_pass;
+        
+        WRK_CLASS(WIFI_SYNC)(const char *ssid, const char *pass) :
+            m_ssid(ssid),
+            m_pass(pass)
+        { }
+    
+        state_t err(st_t st) {
+            m_st = st;
+            WRK_RETURN_END;
+        }
+        
+        void cancel() {
+            m_st = stUserCancel;
+        }
+    
+    // Это выполняем всегда перед входом в process
+    bool every() {
+        if (m_st == stUserCancel)
+            return false;
+        
+        return true;
+    }
+    
+    WRK_PROCESS
+        m_st = stWiFiInit;
+        if (!wifiStart())
+            RETURN_ERR(WiFiInit);
+    
+    WRK_BREAK_RUN
+        m_st = stWiFiConnect;
+        if (!wifiConnect(m_ssid, m_pass))
+            RETURN_ERR(WiFiConnect);
+        m_timeout = 50;
+    WRK_BREAK_RUN
+        m_st = stWiFiWait;
+    
+        m_timeout--;
+        if (m_timeout > 0)
+            WRK_RETURN_WAIT;
+        
+        m_st = stFinOk;
+    WRK_END
+        
+    void end() {
+        /*
+        if (m_pro != NULL) {
+            CONSOLE("delete m_pro");
+            delete m_pro;
+            m_pro = NULL;
+        }
+        if (m_sock != NULL) {
+            m_sock->disconnect();
+            CONSOLE("delete m_sock");
+            delete m_sock;
+            m_sock = NULL;
+        }
+        */
+        wifiStop();
+    }
+};
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Инициализация
+ * ------------------------------------------------------------------------------------------- */
+
+void wifiSyncBegin(const char *ssid, const char *pass) {
+    if (wrkExists(WIFI_SYNC))
+        return;
+    wrkRun(WIFI_SYNC, ssid, pass);
+    CONSOLE("begin");
+}
+
+wSync::st_t wifiSyncState() {
+    auto proc = wrkGet(WIFI_SYNC);
+    if (proc == NULL)
+        return wSync::stNotRun;
+    
+    return proc->m_st;
+}
+
+bool wifiSyncStop() {
+    auto proc = wrkGet(WIFI_SYNC);
+    if (proc == NULL)
+        return false;
+    
+    proc->cancel();
+    return true;
+}

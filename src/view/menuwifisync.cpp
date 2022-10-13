@@ -21,11 +21,13 @@
 /* ------------------------------------------------------------------------------------------- *
  *  Поиск пароля по имени wifi-сети
  * ------------------------------------------------------------------------------------------- */
+/*
 static bool wifiPassRemove() {
     if (!fileExists(PSTR(WIFIPASS_FILE)))
         return true;
     return fileRemove(PSTR(WIFIPASS_FILE));
 }
+*/
 static bool wifiPassFind(const char *ssid, char *pass = NULL) {
     size_t len = strlen(ssid);
     char ssid1[len+1];
@@ -64,15 +66,18 @@ static bool wifiPassFind(const char *ssid, char *pass = NULL) {
     return false;
 }
 
+/*
 static bool verAvailRemove() {
     if (!fileExists(PSTR(VERAVAIL_FILE)))
         return true;
     return fileRemove(PSTR(VERAVAIL_FILE));
 }
+*/
 
 /* ------------------------------------------------------------------------------------------- *
  *  ViewNetSync - процесс синхронизации с сервером
  * ------------------------------------------------------------------------------------------- */
+/*
 typedef enum {
     NS_NONE,
     NS_WIFI_CONNECT,
@@ -727,24 +732,23 @@ class ViewNetSync : public ViewBase {
         FileMy f;
 };
 ViewNetSync vNetSync;
+*/
 
 
-/*
+
 class ViewNetSync2 : public ViewBase {
     public:
         void btnSmpl(btn_code_t btn) {
             // короткое нажатие на любую кнопку ускоряет выход,
             // если процес завершился и ожидается таймаут финального сообщения
-            auto *w = wifiSyncProc();
-            if ((w != NULL) && !w->isrun()) {
-                // Переход в ViewMain будет и так автоматически в методе draw(),
-                // как только закончится процесс wifiSync, но это будет с задержкой.
-                // Чтобы переключение произошло сразу, сделаем его тут
-                //setViewMain();
-                w->stop();
-            }
+            wifiSyncStop();
+            // Переход в ViewMain будет и так автоматически в методе draw(),
+            // как только закончится процесс wifiSync, но это будет с задержкой.
+            // Чтобы переключение произошло сразу, сделаем его тут
+            //setViewMain();
         }
         
+        /*
         bool useLong(btn_code_t btn) {
             if (btn != BTN_SEL)
                 return false;
@@ -760,6 +764,7 @@ class ViewNetSync2 : public ViewBase {
             if (w != NULL)
                 w->stop();
         }
+        */
         
         void drawTitle(U8G2 &u8g2, int y, const char *txt_P) {
             char title[60];
@@ -770,11 +775,13 @@ class ViewNetSync2 : public ViewBase {
         
         // отрисовка на экране
         void draw(U8G2 &u8g2) {
-            auto *w = wifiSyncProc();
+            auto st = wifiSyncState();
+            /*
             if (w == NULL) {
                 setViewMain();
                 return;
             }
+            */
             
             u8g2.setFont(menuFont);
     
@@ -789,6 +796,7 @@ class ViewNetSync2 : public ViewBase {
             u8g2.setDrawColor(1);
             int8_t y = 10-1+14;
             
+            /*
             strcpy_P(s, PTXT(WIFI_NET));
             u8g2.drawTxt(0, y, s);
             
@@ -828,31 +836,31 @@ class ViewNetSync2 : public ViewBase {
                     u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
                 }
             }
+            */
             
             y += 10;
 #define TITLE(txt)      drawTitle(u8g2, y, PSTR(TXT_WIFI_ ## txt)); break;
-            switch (w->op()) {
-                case WorkerWiFiSync::opExit:
-                case WorkerWiFiSync::opOff:
-                case WorkerWiFiSync::opClose:
-                    switch (w->st()) {
-                        case WorkerWiFiSync::stFinOk:           TITLE(SYNCFINISHED);
-                        case WorkerWiFiSync::stUserCancel:      TITLE(MSG_USERCANCEL);
-                        case WorkerWiFiSync::errWiFiInit:       TITLE(ERR_WIFIINIT);
-                        case WorkerWiFiSync::errWiFiConnect:    TITLE(ERR_WIFICONNECT);
-                        case WorkerWiFiSync::errTimeout:        TITLE(ERR_TIMEOUT);
-                        case WorkerWiFiSync::errSrvConnect:     TITLE(ERR_SERVERCONNECT);
-                        case WorkerWiFiSync::errSrvDisconnect:  TITLE(ERR_SRVDISCONNECT);
-                        case WorkerWiFiSync::errRecvData:       TITLE(ERR_RCVDATA);
-                        case WorkerWiFiSync::errRcvCmdUnknown:  TITLE(ERR_RCVCMDUNKNOWN);
-                        case WorkerWiFiSync::errSendData:       TITLE(ERR_SENDDATA);
-                        case WorkerWiFiSync::errJoinLoad:       TITLE(ERR_JOINLOAD);
-                        case WorkerWiFiSync::errJoinSave:       TITLE(ERR_SAVEJOIN);
-                        case WorkerWiFiSync::errWorker:         TITLE(ERR_WORKER);
-                    }
-                    break;
+            switch (st) {
+                case wSync::stNotRun:           TITLE(MSG_NOTRUN);
+                case wSync::stWiFiInit:         TITLE(MSG_WIFIINIT);
+                case wSync::stWiFiConnect:      TITLE(MSG_WIFICONNECT);
+                case wSync::stWiFiWait:         TITLE(MSG_SRVAUTH);
+                case wSync::stFinOk:            TITLE(SYNCFINISHED);
+                case wSync::stUserCancel:       TITLE(MSG_USERCANCEL);
+                case wSync::errWiFiInit:        TITLE(ERR_WIFIINIT);
+                case wSync::errWiFiConnect:     TITLE(ERR_WIFICONNECT);
+                case wSync::errTimeout:         TITLE(ERR_TIMEOUT);
+                case wSync::errSrvConnect:      TITLE(ERR_SERVERCONNECT);
+                case wSync::errSrvDisconnect:   TITLE(ERR_SRVDISCONNECT);
+                case wSync::errRecvData:        TITLE(ERR_RCVDATA);
+                case wSync::errRcvCmdUnknown:   TITLE(ERR_RCVCMDUNKNOWN);
+                case wSync::errSendData:        TITLE(ERR_SENDDATA);
+                case wSync::errJoinLoad:        TITLE(ERR_JOINLOAD);
+                case wSync::errJoinSave:        TITLE(ERR_SAVEJOIN);
+                case wSync::errWorker:          TITLE(ERR_WORKER);
                 
-                case WorkerWiFiSync::opWiFiConnect:     TITLE(MSG_WIFICONNECT);
+                /*
+                case WorkerWiFiSync::opWiFiConnect:     
                 case WorkerWiFiSync::opSrvConnect:      TITLE(MSG_SRVCONNECT);
                 case WorkerWiFiSync::opSrvAuth:
                 case WorkerWiFiSync::opWaitAuth:        TITLE(MSG_SRVAUTH);
@@ -861,6 +869,7 @@ class ViewNetSync2 : public ViewBase {
                 case WorkerWiFiSync::opSndPoint:        TITLE(MSG_SENDPOINT);
                 case WorkerWiFiSync::opSndLogBook:      TITLE(MSG_SENDLOGBOOK);
                 case WorkerWiFiSync::opSndDataFin:      TITLE(MSG_SENDFIN);
+                */
             }
 #undef TITLE
             
@@ -889,11 +898,9 @@ class ViewNetSync2 : public ViewBase {
                 u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
             }
             */
-/*
         }
 };
-ViewNetSync2 vNetSync2;
-*/
+ViewNetSync2 vNetSync;
 
 
 /* ------------------------------------------------------------------------------------------- *
@@ -990,9 +997,9 @@ class ViewMenuWifiSync : public ViewMenu {
                 return;
             
             if (n->isopen) {
-                //wifiSyncBegin(n->ssid);
+                wifiSyncBegin(n->ssid);
                 viewSet(vNetSync);
-                vNetSync.begin(n->ssid, NULL);
+                //vNetSync.begin(n->ssid, NULL);
             }
             else {
                 char pass[64];
@@ -1001,9 +1008,9 @@ class ViewMenuWifiSync : public ViewMenu {
                     return;
                 }
 
-                //wifiSyncBegin(n->ssid, pass);
+                wifiSyncBegin(n->ssid, pass);
                 viewSet(vNetSync);
-                vNetSync.begin(n->ssid, pass);
+                //vNetSync.begin(n->ssid, pass);
             }
         }
         

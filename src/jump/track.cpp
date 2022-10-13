@@ -256,14 +256,12 @@ bool trkStart(uint8_t by, uint16_t old) {
     if (by == 0)
         return false;
     
-    //auto proc = trkProc();
     auto proc = wrkGet(TRK_SAVE);
     if (proc != NULL) {
         proc->byadd(by);
         return true;
     }
     
-    //wrkAdd(WRK_TRK_SAVE, new WorkerTrkSave(by, old));
     wrkRun(TRK_SAVE, by, old);
     
     return true;
@@ -276,7 +274,6 @@ void trkStop(uint8_t by) {
     if (by == 0)
         return;
     
-    //auto proc = trkProc();
     auto proc = wrkGet(TRK_SAVE);
     if (proc != NULL)
         proc->bydel(by);
@@ -286,7 +283,6 @@ void trkStop(uint8_t by) {
  *  Текущее состояние
  * ------------------------------------------------------------------------------------------- */
 bool trkRunning(uint8_t by) {
-    //return wrkExists(WRK_TRK_SAVE);
     return wrkExists(TRK_SAVE);
 }
 

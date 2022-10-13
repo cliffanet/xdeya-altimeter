@@ -7,8 +7,6 @@
 
 #include "../../def.h"
 #include <cstddef>
-#include "../core/worker.h"
-#include "../jump/track.h"
 
 /*
 class NetSocket;
@@ -91,8 +89,33 @@ class WorkerWiFiSync : public WorkerProc
         bool recvdata(uint8_t cmd);
 };
 
-void wifiSyncBegin(const char *ssid, const char *pass = NULL);
 WorkerWiFiSync * wifiSyncProc();
 */
+
+namespace wSync { 
+    typedef enum {
+        stNotRun,
+        stWiFiInit,
+        stWiFiConnect,
+        stWiFiWait,
+        stFinOk,
+        stUserCancel,
+        errWiFiInit,
+        errWiFiConnect,
+        errTimeout,
+        errSrvConnect,
+        errSrvDisconnect,
+        errRecvData,
+        errRcvCmdUnknown,
+        errSendData,
+        errJoinLoad,
+        errJoinSave,
+        errWorker
+    } st_t;
+}
+
+void wifiSyncBegin(const char *ssid, const char *pass = NULL);
+wSync::st_t wifiSyncState();
+bool wifiSyncStop();
 
 #endif // _net_wifisync_H
