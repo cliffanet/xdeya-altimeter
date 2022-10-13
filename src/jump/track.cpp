@@ -156,7 +156,7 @@ static bool trkCheckAvail(bool removeFirst) {
  *  Процесс трекинга
  * ------------------------------------------------------------------------------------------- */
 
-WORKER_DEFINE(TRK_SAVE) {
+WRK_DEFINE(TRK_SAVE) {
     private:
         uint8_t m_by;
         uint8_t m_cnt;
@@ -166,7 +166,7 @@ WORKER_DEFINE(TRK_SAVE) {
         FileTrack tr;
         
     public:
-        WORKER_CLASS(TRK_SAVE)(uint8_t by, uint16_t old = 0) : m_by(by), m_cnt(0) {
+        WRK_CLASS(TRK_SAVE)(uint8_t by, uint16_t old = 0) : m_by(by), m_cnt(0) {
             prelogcur = jmpPreCursor()-old;
             tmoffset = 0;
             if (old > 0)
@@ -181,7 +181,7 @@ WORKER_DEFINE(TRK_SAVE) {
         void byadd(uint8_t by) { m_by |= by; }
         void bydel(uint8_t by) { m_by &= ~by; }
     
-    WORKER_PROCESS
+    WRK_PROCESS
         if (cfg.d().navontrkrec)
             gpsOn(NAV_PWRBY_TRKREC);
 #ifdef USE_SDCARD
@@ -191,10 +191,10 @@ WORKER_DEFINE(TRK_SAVE) {
 #endif
         CONSOLE("track started by: 0x%02x, useext: %d", m_by, useext);
         
-        WORKER_BREAK_RUN
+        WRK_BREAK_RUN
             
         if (m_by == 0)
-            WORKER_RETURN_END;
+            WRK_RETURN_END;
         
         if (!tr) {
             // пишем заголовок - время старта и номер прыга
@@ -211,7 +211,7 @@ WORKER_DEFINE(TRK_SAVE) {
         
         //CONSOLE("diff: %d", jmpPreCursor()-prelogcur);
         if (prelogcur == jmpPreCursor())
-            WORKER_RETURN_WAIT;
+            WRK_RETURN_WAIT;
         
         prelogcur++;
         auto ti = jmpPreLog(prelogcur);
@@ -223,19 +223,19 @@ WORKER_DEFINE(TRK_SAVE) {
 
         if (!tr.add(ti)) {
             CONSOLE("track save fail");
-            WORKER_RETURN_END;
+            WRK_RETURN_END;
         }
         
         //CONSOLE("save[%d]: %d", *prelogcur, tmoffset);
         
         if (useext)
-            WORKER_RETURN_RUN;
+            WRK_RETURN_RUN;
         
         if ((((m_cnt++) & 0b111) == 0) && !trkCheckAvail(false))
-            WORKER_RETURN_END;
+            WRK_RETURN_END;
         
-        WORKER_RETURN_RUN;
-    WORKER_END
+        WRK_RETURN_RUN;
+    WRK_END
         
     void end() {
         tr.close();
@@ -257,14 +257,14 @@ bool trkStart(uint8_t by, uint16_t old) {
         return false;
     
     //auto proc = trkProc();
-    auto proc = workerGet(TRK_SAVE);
+    auto proc = wrkGet(TRK_SAVE);
     if (proc != NULL) {
         proc->byadd(by);
         return true;
     }
     
-    //wrkAdd(WORKER_TRK_SAVE, new WorkerTrkSave(by, old));
-    workerRun(TRK_SAVE, by, old);
+    //wrkAdd(WRK_TRK_SAVE, new WorkerTrkSave(by, old));
+    wrkRun(TRK_SAVE, by, old);
     
     return true;
 }
@@ -277,7 +277,7 @@ void trkStop(uint8_t by) {
         return;
     
     //auto proc = trkProc();
-    auto proc = workerGet(TRK_SAVE);
+    auto proc = wrkGet(TRK_SAVE);
     if (proc != NULL)
         proc->bydel(by);
 }
@@ -286,8 +286,8 @@ void trkStop(uint8_t by) {
  *  Текущее состояние
  * ------------------------------------------------------------------------------------------- */
 bool trkRunning(uint8_t by) {
-    //return wrkExists(WORKER_TRK_SAVE);
-    return workerExists(TRK_SAVE);
+    //return wrkExists(WRK_TRK_SAVE);
+    return wrkExists(TRK_SAVE);
 }
 
 

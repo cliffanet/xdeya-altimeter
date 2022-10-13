@@ -247,7 +247,7 @@ void pwrRun(void (*run)()) {
             {
                 uint64_t u1 = utm_diff(u);
                 if (u1 < 90000)
-                    wrkProcess2((100000-u1) / 1000);
+                    wrkProcess((100000-u1) / 1000);
             }
             u = utm_diff(u);
             if (u < 99000)

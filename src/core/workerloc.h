@@ -8,14 +8,14 @@
 #include "worker.h"
 
 enum {
-    WORKER_NONE = 0,
+    WRKKEY_NONE = 0,
     
-    WORKER_NAV_INIT,
-    WORKER_TRK_SAVE,
-    WORKER_WIFI_SYNC,
+    WRKKEY_NAV_INIT,
+    WRKKEY_TRK_SAVE,
+    WRKKEY_WIFI_SYNC,
     
-    WORKER_RAND_MIN,
-    WORKER_RAND_MAX = WORKER_RAND_MIN + 20
+    WRKKEY_RAND_MIN,
+    WRKKEY_RAND_MAX = WRKKEY_RAND_MIN + 20
 };
 
 #endif // _core_worker_local_H

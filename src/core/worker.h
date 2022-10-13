@@ -12,25 +12,25 @@
  *  Базовый класс для каждого воркера
  * ------------------------------------------------------------------------------------------- */
 
-#define WORKER_CLASS(key)           CWorker_ ## key
+#define WRK_CLASS(key)           WrkProc_ ## key
 
-#define WORKER_DEFINE(key)          class WORKER_CLASS(key) : public CWorker
+#define WRK_DEFINE(key)          class WRK_CLASS(key) : public WrkProc
 
-#define WORKER_PROCESS  \
+#define WRK_PROCESS  \
     public: \
         state_t process() { \
             switch (m_line) { \
                 case 0: {
 
-#define WORKER_RETURN_RUN           return STATE_RUN;
-#define WORKER_RETURN_WAIT          return STATE_WAIT;
-#define WORKER_RETURN_END           return STATE_END;
+#define WRK_RETURN_RUN           return STATE_RUN
+#define WRK_RETURN_WAIT          return STATE_WAIT
+#define WRK_RETURN_END           return STATE_END
 
-#define WORKER_BREAK_RUN            m_line = __LINE__; WORKER_RETURN_RUN;  } case __LINE__: {
-#define WORKER_BREAK_WAIT           m_line = __LINE__; WORKER_RETURN_WAIT; } case __LINE__: {
+#define WRK_BREAK_RUN            m_line = __LINE__; WRK_RETURN_RUN;  } case __LINE__: {
+#define WRK_BREAK_WAIT           m_line = __LINE__; WRK_RETURN_WAIT; } case __LINE__: {
 
-#define WORKER_END \
-                WORKER_RETURN_END; \
+#define WRK_END \
+                WRK_RETURN_END; \
             } \
         } \
         \
@@ -39,12 +39,12 @@
     }
 
 
-class CWorker {
+class WrkProc {
     public:
         typedef uint8_t key_t;
         
         typedef struct {
-            CWorker *proc;
+            WrkProc *proc;
             bool autodestroy;
             bool needwait;
             bool needend;
@@ -66,22 +66,22 @@ class CWorker {
 
 bool wrkEmpty();
 
-void _wrkAdd(CWorker::key_t key, CWorker *proc, bool autodestroy = true);
-#define workerRun(key, ...)     _wrkAdd(WORKER_ ## key, new WORKER_CLASS(key)(__VA_ARGS__))
+void _wrkAdd(WrkProc::key_t key, WrkProc *proc, bool autodestroy = true);
+#define wrkRun(key, ...)     _wrkAdd(WRKKEY_ ## key, new WRK_CLASS(key)(__VA_ARGS__))
 
-CWorker::key_t _wrkAddRand(CWorker::key_t key_min, CWorker::key_t key_max, CWorker *proc, bool autodestroy = true);
-#define workerRand(key, ...)    wrkAddRand(WORKER_RAND_MIN, WORKER_RAND_MAX, new WORKER_CLASS(key)(__VA_ARGS__));
+WrkProc::key_t _wrkAddRand(WrkProc::key_t key_min, WrkProc::key_t key_max, WrkProc *proc, bool autodestroy = true);
+#define wrkRand(key, ...)    wrkAddRand(WRKKEY_RAND_MIN, WRKKEY_RAND_MAX, new WRK_CLASS(key)(__VA_ARGS__));
 
-void _wrkDel(CWorker::key_t key);
-#define workerStop(key)         _wrkDel(WORKER_ ## key)
+void _wrkDel(WrkProc::key_t key);
+#define wrkStop(key)         _wrkDel(WRKKEY_ ## key)
 
-bool _wrkExists(CWorker::key_t key);
-#define workerExists(key)       _wrkExists(WORKER_ ## key)
+bool _wrkExists(WrkProc::key_t key);
+#define wrkExists(key)       _wrkExists(WRKKEY_ ## key)
 
-CWorker *_wrkGet(CWorker::key_t key);
-#define workerGet(key)          reinterpret_cast<WORKER_CLASS(key) *>(  _wrkGet(WORKER_ ## key) )
+WrkProc *_wrkGet(WrkProc::key_t key);
+#define wrkGet(key)          reinterpret_cast<WRK_CLASS(key) *>(  _wrkGet(WRKKEY_ ## key) )
 
 // исполнение всех существующих воркеров в течение времени tmmax (мс)
-void wrkProcess2(uint32_t tmmax = 50);
+void wrkProcess(uint32_t tmmax = 50);
 
 #endif // _core_worker_H

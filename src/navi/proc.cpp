@@ -38,7 +38,7 @@ static struct {
  *  NAV-инициализация
  *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
  * ------------------------------------------------------------------------------------------- */
-WORKER_DEFINE(NAV_INIT) {
+WRK_DEFINE(NAV_INIT) {
     bool every() {
         if (gps.tick())
             return true;
@@ -51,7 +51,7 @@ WORKER_DEFINE(NAV_INIT) {
     state_t errsnd() {
         CONSOLE("NAV config-send (line: %d) fail", m_line);
         state = NAV_STATE_FAIL;
-        WORKER_RETURN_END;
+        WRK_RETURN_END;
     }
 
     uint8_t m_cnfcnt = 0;
@@ -61,22 +61,22 @@ WORKER_DEFINE(NAV_INIT) {
         if (m_cnfcnt > 50) {
             CONSOLE("Wait cmd-confirm (line: %d, cnfneed: %d) timeout", m_line, gps.cnfneed());
             state = NAV_STATE_FAIL;
-            WORKER_RETURN_END;
+            WRK_RETURN_END;
         }
         //CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d, cnfcnt: %d)", m_op, gps.cnfneed(), m_cnfcnt);
-        WORKER_RETURN_WAIT;
+        WRK_RETURN_WAIT;
     }
     
-    WORKER_PROCESS
+    WRK_PROCESS
         CONSOLE("Navi init begin");
         state = NAV_STATE_INIT;
         // Пустое ожидание сразу после запуска процесса инициализации.
         // Необходимо, чтобы дождаться инициализации чипа навигации сразу после подачи питания
-    WORKER_BREAK_WAIT
+    WRK_BREAK_WAIT
         
         CONSOLE("Set UART(gps) default speed 9600");
         ss.updateBaudRate(9600);
-    WORKER_BREAK_WAIT
+    WRK_BREAK_WAIT
         
         const struct {
         	uint8_t  portID;       // Port identifier number
@@ -102,7 +102,7 @@ WORKER_DEFINE(NAV_INIT) {
     	};
         if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
             return errsnd();
-    WORKER_BREAK_WAIT
+    WRK_BREAK_WAIT
         
         gps.cnfclear();
         gps.rcvclear();
@@ -111,7 +111,7 @@ WORKER_DEFINE(NAV_INIT) {
 
         CONSOLE("Set UART(gps) speed 57600");
         ss.updateBaudRate(57600);
-    WORKER_BREAK_WAIT
+    WRK_BREAK_WAIT
         
         const struct {
         	uint8_t  portID;       // Port identifier number
@@ -137,13 +137,13 @@ WORKER_DEFINE(NAV_INIT) {
     	};
         if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
             return errsnd();
-    WORKER_BREAK_RUN
+    WRK_BREAK_RUN
         
         if (gps.cnfneed() > 0)
             return cnfwait();
         m_cnfcnt = 0;
         CONSOLE("Confirmed speed");
-    WORKER_BREAK_RUN
+    WRK_BREAK_RUN
         
         const ubx_cfg_rate_t cfg_rate[] = {
     		{ UBX_NMEA, UBX_NMEA_GPGGA,     0 },
@@ -164,7 +164,7 @@ WORKER_DEFINE(NAV_INIT) {
         for (auto &rate: cfg_rate)
             if (!gps.send(UBX_CFG, UBX_CFG_MSG, rate))
                 return errsnd();
-    WORKER_BREAK_RUN
+    WRK_BREAK_RUN
         
         const struct {
         	uint16_t measRate;  // Measurement rate             (ms)
@@ -179,7 +179,7 @@ WORKER_DEFINE(NAV_INIT) {
     	};
         if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate))
             return errsnd();
-    WORKER_BREAK_RUN
+    WRK_BREAK_RUN
         
         const struct {
         	uint16_t mask;              // Only masked parameters will be applied
@@ -204,11 +204,11 @@ WORKER_DEFINE(NAV_INIT) {
     	};
         if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5))
             return errsnd();
-    WORKER_BREAK_RUN
+    WRK_BREAK_RUN
         
         if (!gpsUpdateMode())
             return errsnd();
-    WORKER_BREAK_RUN
+    WRK_BREAK_RUN
         
         if (gps.cnfneed() > 0)
             return cnfwait();
@@ -232,7 +232,7 @@ WORKER_DEFINE(NAV_INIT) {
         state = NAV_STATE_OK;
         CONSOLE("NAV-UART config ok");
     
-    WORKER_END
+    WRK_END
 };
 
 /* ------------------------------------------------------------------------------------------- *
@@ -493,7 +493,7 @@ static void gpsRecvGnss(UbloxGpsProto &gps) {
 #endif // FWVER_DEBUG
 
 void gpsInit() {
-    if (workerExists(NAV_INIT))
+    if (wrkExists(NAV_INIT))
         return;
     
     // инициируем uart-порт NAV-приёмника
@@ -507,7 +507,7 @@ void gpsInit() {
     gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
     gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
                     
-    workerRun(NAV_INIT);
+    wrkRun(NAV_INIT);
 }
 
 static void gpsDirectToSerial(uint8_t c) {
@@ -546,7 +546,7 @@ void gpsProcess() {
  *  Жёсткая перезагрузка с очисткой списка спутников
  * ------------------------------------------------------------------------------------------- */
 bool gpsColdRestart() {
-    if (workerExists(NAV_INIT))
+    if (wrkExists(NAV_INIT))
         return false;
     
     const struct {
