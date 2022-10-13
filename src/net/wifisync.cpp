@@ -11,6 +11,57 @@
 #include "../cfg/webjoin.h"
 #include "../cfg/point.h"
 
+/*
+
+
+
+/////////
+
+        
+        void settimer(uint32_t val);
+        void clrtimer();
+        void dectimer();
+        bool istimeout() const { return m_timer == 1; }
+        uint32_t timer() const { return m_timer > 0 ? m_timer-1 : 0; }
+        
+        uint32_t op() const { return m_op; }
+        void setop(uint32_t op);
+        void next();
+        void next(uint32_t timer);
+
+void WorkerProc::settimer(uint32_t val) {
+    m_timer = val+1;
+}
+
+void WorkerProc::clrtimer() {
+    m_timer = 0;
+}
+
+void WorkerProc::dectimer() {
+    if (m_timer > 1)
+        m_timer --;
+}
+
+void WorkerProc::setop(uint32_t op) {
+    m_op = op;
+}
+
+void WorkerProc::next() {
+    m_op ++;
+}
+
+void WorkerProc::next(uint32_t timer) {
+    next();
+    
+    if (timer > 0)
+        settimer(timer);
+    else
+    if (m_timer > 0)
+        clrtimer();
+}
+
+/////////
+
 
 #define ERR(st)             err(err ## st)
 #define SOCK                BinProtoSend(m_sock, '%')
@@ -209,16 +260,14 @@ WorkerWiFiSync::process() {
         
         case opSndTrack:
         // отправка треков - в отдельном worker
-            /*
-            if (m_wrk == 0) {
-                m_wrk = trkSend(m_sock);
-                if (m_wrk == 0)
-                    RETURN_ERR(Worker);
-            }
-            else
-            if (wrkExists(m_wrk))
-                return STATE_WAIT;
-            */
+            //if (m_wrk == 0) {
+            //    m_wrk = trkSend(m_sock);
+            //    if (m_wrk == 0)
+            //        RETURN_ERR(Worker);
+            //}
+            //else
+            //if (wrkExists(m_wrk))
+            //    return STATE_WAIT;
             RETURN_NEXT(10);
         
         case opSndDataFin:
@@ -274,11 +323,12 @@ bool WorkerWiFiSync::recvdata(uint8_t cmd) {
     
     return false;
 }
-
+*/
 
 /* ------------------------------------------------------------------------------------------- *
  *  Инициализация
  * ------------------------------------------------------------------------------------------- */
+/*
 void wifiSyncBegin(const char *ssid, const char *pass) {
     if (wrkExists(WORKER_WIFI_SYNC))
         return;
@@ -289,3 +339,4 @@ void wifiSyncBegin(const char *ssid, const char *pass) {
 WorkerWiFiSync * wifiSyncProc() {
     return reinterpret_cast<WorkerWiFiSync *>(wrkGet(WORKER_WIFI_SYNC));
 }
+*/

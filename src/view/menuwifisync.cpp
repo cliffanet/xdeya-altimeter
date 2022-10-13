@@ -729,7 +729,7 @@ class ViewNetSync : public ViewBase {
 ViewNetSync vNetSync;
 
 
-
+/*
 class ViewNetSync2 : public ViewBase {
     public:
         void btnSmpl(btn_code_t btn) {
@@ -889,10 +889,11 @@ class ViewNetSync2 : public ViewBase {
                 u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
             }
             */
+/*
         }
 };
 ViewNetSync2 vNetSync2;
-
+*/
 
 
 /* ------------------------------------------------------------------------------------------- *

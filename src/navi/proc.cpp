@@ -493,7 +493,7 @@ static void gpsRecvGnss(UbloxGpsProto &gps) {
 #endif // FWVER_DEBUG
 
 void gpsInit() {
-    if (wrkExists(WORKER_NAV_INIT))
+    if (workerExists(NAV_INIT))
         return;
     
     // инициируем uart-порт NAV-приёмника
@@ -546,7 +546,7 @@ void gpsProcess() {
  *  Жёсткая перезагрузка с очисткой списка спутников
  * ------------------------------------------------------------------------------------------- */
 bool gpsColdRestart() {
-    if (wrkExists(WORKER_NAV_INIT))
+    if (workerExists(NAV_INIT))
         return false;
     
     const struct {

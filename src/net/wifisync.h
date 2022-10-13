@@ -10,6 +10,7 @@
 #include "../core/worker.h"
 #include "../jump/track.h"
 
+/*
 class NetSocket;
 class BinProtoSend;
 class BinProtoRecv;
@@ -92,5 +93,6 @@ class WorkerWiFiSync : public WorkerProc
 
 void wifiSyncBegin(const char *ssid, const char *pass = NULL);
 WorkerWiFiSync * wifiSyncProc();
+*/
 
 #endif // _net_wifisync_H

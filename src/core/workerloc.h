@@ -18,8 +18,4 @@ enum {
     WORKER_RAND_MAX = WORKER_RAND_MIN + 20
 };
 
-inline WorkerProc::key_t wrkAdd(WorkerProc *proc, bool autodel = true) {
-    return wrkAddRand(WORKER_RAND_MIN, WORKER_RAND_MAX, proc, autodel);
-}
-
 #endif // _core_worker_local_H
