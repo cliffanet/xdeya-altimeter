@@ -31,8 +31,16 @@ class NetSocket {
 class BinProto {
     public:
         typedef uint8_t cmdkey_t;
+        typedef enum {
+            RCV_ERROR,
+            RCV_DISCONNECTED,
+            RCV_WAITCMD,
+            RCV_DATA,
+            RCV_NULL,
+            RCV_COMPLETE
+        } rcvst_t;
         
-        BinProto(char mgc = '#');
+        BinProto(NetSocket * nsock = NULL, char mgcsnd = '#', char mgcrcv = '#');
         
         int hdrsz() const { return 4; }
         void hdrpack(uint8_t *buf, const cmdkey_t &cmd, uint16_t sz);
@@ -40,11 +48,58 @@ class BinProto {
 
         int pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const char *pk_P, const uint8_t *src, size_t srcsz);
         bool unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const char *pk_P, const uint8_t *buf, size_t bufsz);
+
+        void sock_set(NetSocket * nsock);
+        void sock_clear();
+        
+        bool send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, size_t sz);
+        // Данные будем упаковывать не из аргументов вызова send,
+        // как это было изначально реализовано в BinProtoSend,
+        // а из упакованной структуры данных, но где поля уже будем считать аргументами
+        // нужных типов (в т.ч. dooble, float и т.д.),
+        // По сути, точно так же делает va_list, но при этом va_list не умеет нормально
+        // работать с аргументами как с ссылками на переменные (& - актуально для recv),
+        // только если аргументы переданы как указатель на переменную (*)
+        template <typename T>
+        bool send(const cmdkey_t &cmd, const char *pk_P, const T &data) {
+            return send(cmd, pk_P, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
+        }
+        bool send(const cmdkey_t &cmd) {
+            return send(cmd, NULL, NULL, 0);
+        }
+        
+        rcvst_t rcvstate()  const { return m_rcvstate; }
+        // то же, что и rcvstate, но ограничивается определением, в рабочей ли фазе находимся или зафиксирована проблема
+        bool    rcvvalid()  const { return m_rcvstate > RCV_DISCONNECTED; }
+        // текущая принятая команда
+        cmdkey_t rcvcmd()   const { return m_rcvcmd; }
+        // сбрасывает процесс приёма команды (например, при дисконнекте от сервера)
+        void    rcvclear();
+        // процессинг приёма данных
+        rcvst_t rcvprocess();
+
+        bool rcvdata(const char *pk_P, uint8_t *data, size_t sz);
+        // Данные будем распаковывать не в аргументы вызова recv,
+        // как это было изначально реализовано в BinProtoSend,
+        // а в упакованную структуру данных, но где поля уже будем считать аргументами
+        // нужных типов (в т.ч. dooble, float и т.д.),
+        // По сути, точно так же делает va_list, но при этом va_list не умеет нормально
+        // работать с аргументами как с ссылками на переменные (&),
+        // только если аргументы переданы как указатель на переменную (*)
+        template <typename T>
+        bool rcvdata(const char *pk_P, T &data) {
+            return rcvdata(pk_P, reinterpret_cast<uint8_t *>(&data), sizeof(T));
+        }
     
     private:
-        char m_mgc;
+        char m_mgcsnd, m_mgcrcv;
+        rcvst_t m_rcvstate;
+        cmdkey_t m_rcvcmd;
+        uint16_t m_rcvsz;
+        NetSocket *m_nsock;
 };
 
+/*
 class BinProtoSend : public BinProto {
     public:
         BinProtoSend(NetSocket * nsock = NULL, char mgc = '#');
@@ -134,5 +189,6 @@ class BinProtoRecv : public BinProtoSend {
         uint16_t m_waitsz;
         uint16_t m_datasz;
 };
+*/
 
 #endif // _net_binproto_H

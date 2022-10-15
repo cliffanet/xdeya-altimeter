@@ -169,7 +169,6 @@
 #define TXT_WIFI_SEARCHNET          "... searching ..."
 #define TXT_WIFI_NEEDPASSWORD       "Password required!"
 
-#define TXT_WIFI_MSG_NOTRUN         "..."
 #define TXT_WIFI_MSG_WIFIINIT       "WiFi initialize..."
 #define TXT_WIFI_MSG_WIFICONNECT    "WiFi connecting..."
 #define TXT_WIFI_MSG_SRVCONNECT     "Server connecting..."

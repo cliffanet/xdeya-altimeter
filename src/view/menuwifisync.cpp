@@ -741,30 +741,24 @@ class ViewNetSync2 : public ViewBase {
         void btnSmpl(btn_code_t btn) {
             // короткое нажатие на любую кнопку ускоряет выход,
             // если процес завершился и ожидается таймаут финального сообщения
-            wifiSyncStop();
-            // Переход в ViewMain будет и так автоматически в методе draw(),
-            // как только закончится процесс wifiSync, но это будет с задержкой.
-            // Чтобы переключение произошло сразу, сделаем его тут
-            //setViewMain();
+            if (!wifiSyncIsRun()) {
+                wifiSyncDelete();
+                setViewMain();
+            }
         }
         
-        /*
         bool useLong(btn_code_t btn) {
             if (btn != BTN_SEL)
                 return false;
             
-            auto *w = wifiSyncProc();
-            return (w != NULL) && w->isrun();
+            return wifiSyncIsRun();
         }
         void btnLong(btn_code_t btn) {
             // длинное нажатие из любой стадии завершает процесс синхнонизации принудительно
             if (btn != BTN_SEL)
                 return;
-            auto *w = wifiSyncProc();
-            if (w != NULL)
-                w->stop();
+            wifiSyncStop();
         }
-        */
         
         void drawTitle(U8G2 &u8g2, int y, const char *txt_P) {
             char title[60];
@@ -775,13 +769,13 @@ class ViewNetSync2 : public ViewBase {
         
         // отрисовка на экране
         void draw(U8G2 &u8g2) {
-            auto st = wifiSyncState();
-            /*
-            if (w == NULL) {
+            wSync::info_t inf;
+            auto st = wifiSyncState(inf);
+            
+            if (st == wSync::stNotRun) {
                 setViewMain();
                 return;
             }
-            */
             
             u8g2.setFont(menuFont);
     
@@ -796,7 +790,6 @@ class ViewNetSync2 : public ViewBase {
             u8g2.setDrawColor(1);
             int8_t y = 10-1+14;
             
-            /*
             strcpy_P(s, PTXT(WIFI_NET));
             u8g2.drawTxt(0, y, s);
             
@@ -814,14 +807,14 @@ class ViewNetSync2 : public ViewBase {
             
             y += 10;
             
-            if (w->op() == WorkerWiFiSync::opProfileJoin) {
+            if (st == wSync::stProfileJoin) {
                 strcpy_P(s, PTXT(WIFI_WAITJOIN));
                 u8g2.drawTxt(0, y, s);
-                snprintf_P(s, sizeof(s), PTXT(WIFI_WAIT_SEC), w->timer() / 10);
+                snprintf_P(s, sizeof(s), PTXT(WIFI_WAIT_SEC), inf.timeout / 10);
                 u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(s), y, s);
                 y += 25;
                 u8g2.setFont(u8g2_font_fub20_tr);
-                snprintf_P(s, sizeof(s), PSTR("%04X"), w->joinnum());
+                snprintf_P(s, sizeof(s), PSTR("%04X"), inf.joinnum);
                 u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
                 return;
             }
@@ -836,16 +829,17 @@ class ViewNetSync2 : public ViewBase {
                     u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
                 }
             }
-            */
             
             y += 10;
 #define TITLE(txt)      drawTitle(u8g2, y, PSTR(TXT_WIFI_ ## txt)); break;
             switch (st) {
-                case wSync::stNotRun:           TITLE(MSG_NOTRUN);
                 case wSync::stWiFiInit:         TITLE(MSG_WIFIINIT);
                 case wSync::stWiFiConnect:      TITLE(MSG_WIFICONNECT);
-                case wSync::stWiFiWait:         TITLE(MSG_SRVAUTH);
+                case wSync::stSrvConnect:       TITLE(MSG_SRVCONNECT);
+                case wSync::stSrvAuth:          TITLE(MSG_SRVAUTH);
+                case wSync::stSendConfig:       TITLE(MSG_SENDCONFIG);
                 case wSync::stFinOk:            TITLE(SYNCFINISHED);
+                case wSync::stUserCanceling:
                 case wSync::stUserCancel:       TITLE(MSG_USERCANCEL);
                 case wSync::errWiFiInit:        TITLE(ERR_WIFIINIT);
                 case wSync::errWiFiConnect:     TITLE(ERR_WIFICONNECT);
@@ -860,11 +854,6 @@ class ViewNetSync2 : public ViewBase {
                 case wSync::errWorker:          TITLE(ERR_WORKER);
                 
                 /*
-                case WorkerWiFiSync::opWiFiConnect:     
-                case WorkerWiFiSync::opSrvConnect:      TITLE(MSG_SRVCONNECT);
-                case WorkerWiFiSync::opSrvAuth:
-                case WorkerWiFiSync::opWaitAuth:        TITLE(MSG_SRVAUTH);
-                case WorkerWiFiSync::opSndConfig:       TITLE(MSG_SENDCONFIG);
                 case WorkerWiFiSync::opSndJumpCount:    TITLE(MSG_SENDJUMPCOUNT);
                 case WorkerWiFiSync::opSndPoint:        TITLE(MSG_SENDPOINT);
                 case WorkerWiFiSync::opSndLogBook:      TITLE(MSG_SENDLOGBOOK);

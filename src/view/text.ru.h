@@ -175,7 +175,6 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_WIFI_SEARCHNET          "... поиск сетей ..."
 #define TXT_WIFI_NEEDPASSWORD       "Требуется пароль!"
 
-#define TXT_WIFI_MSG_NOTRUN         "..."
 #define TXT_WIFI_MSG_WIFIINIT       "WiFi инициализация..."
 #define TXT_WIFI_MSG_WIFICONNECT    "WiFi подключение..."
 #define TXT_WIFI_MSG_SRVCONNECT     "Соединение с сервером..."

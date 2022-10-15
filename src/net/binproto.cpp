@@ -337,19 +337,25 @@ static bool _unpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *s
 /* ------------------------------------------------------------------------------------------- *
  *  BinProto
  * ------------------------------------------------------------------------------------------- */
-BinProto::BinProto(char mgc) :
-    m_mgc(mgc)
+BinProto::BinProto(NetSocket * nsock, char mgcsnd, char mgcrcv) :
+    m_mgcsnd(mgcsnd),
+    m_mgcrcv(mgcrcv),
+    m_rcvstate(RCV_WAITCMD),
+    m_rcvcmd(0),
+    m_rcvsz(0)
 {
+    sock_set(nsock);
 }
 
+// header
 void BinProto::hdrpack(uint8_t *buf, const cmdkey_t &cmd, uint16_t sz) {
-    buf[0] = m_mgc;
+    buf[0] = m_mgcsnd;
     buf[1] = cmd;
     _hton(buf+2, sz);
 }
 
 bool BinProto::hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz) {
-    if ((buf[0] != m_mgc) || (buf[1] == 0))
+    if ((buf[0] != m_mgcrcv) || (buf[1] == 0))
         return false;
     cmd = buf[1];
     _ntoh(sz, buf+2);
@@ -357,6 +363,7 @@ bool BinProto::hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz) {
     return true;
 }
 
+// data
 int BinProto::pack(uint8_t *buf, size_t bufsz, const cmdkey_t &cmd, const char *pk_P, const uint8_t *src, size_t srcsz) {
     if (bufsz < hdrsz())
         return -1;
@@ -398,9 +405,196 @@ bool BinProto::unpack(cmdkey_t &cmd, uint8_t *dst, size_t dstsz, const char *pk_
     return _unpack(dst, dstsz, pk, buf+hdrsz(), len < bufsz-hdrsz() ? len : bufsz-hdrsz());
 }
 
+// socket
+void BinProto::sock_set(NetSocket * nsock) {
+    if (nsock == NULL) {
+        sock_clear();
+        return;
+    }
+    
+    m_nsock = nsock;
+}
+
+void BinProto::sock_clear() {
+    m_nsock = NULL;
+}
+
+// send
+bool BinProto::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, size_t sz) {
+    if ((m_nsock == NULL) || !m_nsock->connected())
+        return false;
+    
+    uint8_t buf[1024], *b = buf;
+    
+    int len = pack(buf, sizeof(buf), cmd, pk_P, data, sz);
+    
+    if (len < hdrsz())
+        return false;
+    
+    uint8_t t = 5;
+    
+    while (len > 0) {
+        t --;
+        auto sz1 = m_nsock->send(b, len);
+        
+        if (sz1 < len) {
+            if (sz1 < 0)
+                return false;
+            if (!m_nsock->connected())
+                return false;
+            if (t < 1)
+                return false;
+            
+            struct timeval tv;
+            tv.tv_sec = 0;
+            tv.tv_usec = 50;
+            
+            if (select(1, NULL, NULL, NULL, &tv) < 0)
+                return false;
+        }
+        
+        if (sz1 > len)
+            sz1 = len;
+        
+        len -= sz1;
+        b += sz1;
+    }
+    
+    return true;
+}
+
+// recv
+void BinProto::rcvclear() {
+    m_rcvstate = RCV_WAITCMD;
+    m_rcvcmd = 0;
+    m_rcvsz = 0;
+}
+
+BinProto::rcvst_t BinProto::rcvprocess() {
+    if (m_rcvstate <= RCV_DISCONNECTED) {
+        if ((m_nsock == NULL) || !m_nsock->connected()) {
+            if (m_rcvstate < RCV_DISCONNECTED)
+                m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        
+        rcvclear();
+    }
+    
+    if (m_rcvstate == RCV_WAITCMD) {
+        if (m_nsock == NULL) {
+            m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        if (m_nsock->available() < hdrsz()) {
+            if (!m_nsock->connected())
+                m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        
+        // Получение заголовка
+        uint8_t hdr[hdrsz()];
+        size_t sz = m_nsock->recv(hdr, hdrsz());
+        if (sz != hdrsz()) {
+            m_rcvstate = RCV_ERROR;
+            return m_rcvstate;
+        }
+        if (!hdrunpack(hdr, m_rcvcmd, m_rcvsz)) {
+            m_rcvstate = RCV_ERROR;
+            return m_rcvstate;
+        }
+        
+        m_rcvstate = RCV_DATA;
+    }
+    
+    if (m_rcvstate == RCV_DATA) {
+        if (m_nsock == NULL) {
+            m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        if (m_nsock->available() < m_rcvsz) {
+            CONSOLE("wait data");
+            if (!m_nsock->connected())
+                m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        
+        // Мы получили нужный объём данных
+        m_rcvstate = RCV_COMPLETE;
+    }
+    else
+    if (m_rcvstate == RCV_NULL) {
+        if (m_nsock == NULL) {
+            m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        if (m_nsock->available() <= 0) {
+            if (!m_nsock->connected())
+                m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        
+        // Стравливание остатков данных команды, 
+        // которых мы не ожидали.
+        size_t sz = m_nsock->recv(m_rcvsz);
+        if ((sz < 0) || (sz > m_rcvsz)) {
+            m_rcvstate = RCV_ERROR;
+            return m_rcvstate;
+        }
+        
+        m_rcvsz -= sz;
+        if (m_rcvsz > 0)
+            return m_rcvstate;
+        
+        // Стравили всё, что нужно, теперь ждём следующую команду
+        rcvclear();
+    }
+    
+    return m_rcvstate;
+}
+
+bool BinProto::rcvdata(const char *pk_P, uint8_t *data, size_t sz) {
+    // Принимаем данные по ожидаемой команде
+    if (m_nsock == NULL)
+        return false;
+    if ((m_rcvstate != RCV_DATA) && (m_rcvstate != RCV_COMPLETE))
+        return false;
+    
+    size_t rsz = sz < m_rcvsz ? sz : m_rcvsz;
+    bool ok = false;
+    if (rsz > 0) {
+        uint8_t src[rsz];
+        size_t sz1 = m_nsock->recv(src, rsz);
+        if (sz1 == rsz) {
+            char pk[ strlen_P(pk_P) + 1 ];
+            strcpy_P(pk, pk_P);
+    
+            ok = _unpack(data, sz, pk, src, sz1);
+            
+            m_rcvsz -= sz1;
+        }
+        else {
+            if (sz1 > m_rcvsz)
+                m_rcvsz = 0;
+            else
+            if (sz1 > 0)
+                m_rcvsz -= sz1;
+        }
+    }
+    
+    if (m_rcvsz > 0)
+        m_rcvstate = RCV_NULL;
+    else
+        rcvclear();
+    
+    return ok;
+}
+
+
 /* ------------------------------------------------------------------------------------------- *
  *  BinProtoSend
  * ------------------------------------------------------------------------------------------- */
+/*
 BinProtoSend::BinProtoSend(NetSocket * nsock, char mgc) :
     BinProto(mgc)
 {
@@ -462,10 +656,12 @@ bool BinProtoSend::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *da
     
     return true;
 }
+*/
 
 /* ------------------------------------------------------------------------------------------- *
  *  BinProtoRecv
  * ------------------------------------------------------------------------------------------- */
+/*
 BinProtoRecv::BinProtoRecv(NetSocket * nsock, char mgc, const elem_t *all, size_t count) :
     BinProtoSend(nsock, mgc),
     m_err(ERR_NONE),
@@ -607,3 +803,4 @@ BinProtoRecv::state_t BinProtoRecv::process() {
     
     return STATE_NORECV;
 }
+*/

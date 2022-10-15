@@ -6,7 +6,8 @@
 #define _net_wifisync_H
 
 #include "../../def.h"
-#include <cstddef>
+#include <stdint.h>
+#include <stddef.h>
 
 /*
 class NetSocket;
@@ -97,7 +98,11 @@ namespace wSync {
         stNotRun,
         stWiFiInit,
         stWiFiConnect,
-        stWiFiWait,
+        stSrvConnect,
+        stSrvAuth,
+        stProfileJoin,
+        stSendConfig,
+        stUserCanceling,
         stFinOk,
         stUserCancel,
         errWiFiInit,
@@ -112,10 +117,17 @@ namespace wSync {
         errJoinSave,
         errWorker
     } st_t;
+    
+    typedef struct {
+        uint32_t joinnum;
+        uint16_t timeout;
+    } info_t;
 }
 
 void wifiSyncBegin(const char *ssid, const char *pass = NULL);
-wSync::st_t wifiSyncState();
+wSync::st_t wifiSyncState(wSync::info_t &inf);
+bool wifiSyncIsRun();
 bool wifiSyncStop();
+bool wifiSyncDelete();
 
 #endif // _net_wifisync_H

@@ -13,15 +13,13 @@
 #include "../core/filetxt.h"
 #include "../jump/logbook.h"
 
-
-#define SOCK                BinProtoSend(nsock, '%')
-#define SEND(cmd, pk, ...)  SOCK.send(cmd, PSTR(pk), ##__VA_ARGS__)
-#define SND(cmd)            SOCK.send(cmd)
-
 /* ------------------------------------------------------------------------------------------- *
  *  Основной конфиг
  * ------------------------------------------------------------------------------------------- */
-bool sendCfgMain(NetSocket *nsock) {
+bool sendCfgMain(BinProto *pro) {
+    if (pro == NULL)
+        return false;
+    
     const auto &cfg_d = cfg.d();
     struct __attribute__((__packed__)) {
         uint32_t chksum;
@@ -49,13 +47,16 @@ bool sendCfgMain(NetSocket *nsock) {
         cfg_d.dsplpwron,
     };
     
-    return SEND( 0x21, "XCnbbbaaaa", d );
+    return pro->send( 0x21, "XCnbbbaaaa", d );
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Количество прыгов
  * ------------------------------------------------------------------------------------------- */
-bool sendJmpCount(NetSocket *nsock) {
+bool sendJmpCount(BinProto *pro) {
+    if (pro == NULL)
+        return false;
+    
     struct __attribute__((__packed__)) { // Для передачи по сети
         uint32_t chksum;
         uint32_t count;
@@ -64,13 +65,16 @@ bool sendJmpCount(NetSocket *nsock) {
         .count      = jmp.d().count,
     };
     
-    return SEND( 0x22, "XN", d );
+    return pro->send( 0x22, "XN", d );
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Отправка Navi-точек
  * ------------------------------------------------------------------------------------------- */
-bool sendPoint(NetSocket *nsock) {
+bool sendPoint(BinProto *pro) {
+    if (pro == NULL)
+        return false;
+    
     const auto pnt_d = pnt.d();
     
     for (uint8_t i=0; i<PNT_COUNT; i++) {
@@ -83,11 +87,11 @@ bool sendPoint(NetSocket *nsock) {
             double      lng;
         } d = { static_cast<uint8_t>(i+1), p.used, p.lat, p.lng };
         
-        if (!SEND(0x24, "CCDD", d))
+        if (!pro->send(0x24, "CCDD", d))
             return false;
     }
     
-    return SEND(0x23, "X", pnt.chksum());
+    return pro->send(0x23, "X", pnt.chksum());
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -96,7 +100,10 @@ bool sendPoint(NetSocket *nsock) {
  *  в т.ч. разбить lb.findfile(...);
  *  Пока временно рассчитываем, что тут за раз не будет много прыжков
  * ------------------------------------------------------------------------------------------- */
-bool sendLogBook(NetSocket *nsock, uint32_t _cks, uint32_t _pos) {
+bool sendLogBook(BinProto *pro, uint32_t _cks, uint32_t _pos) {
+    if (pro == NULL)
+        return false;
+    
     int max;
     FileLogBook lb;
     
@@ -127,7 +134,7 @@ bool sendLogBook(NetSocket *nsock, uint32_t _cks, uint32_t _pos) {
     if (max <= 0) // либо ошибка, либо вообще файлов нет - в любом случае выходим
         return max == 0;
     
-    if (!SND(0x31))
+    if (!pro->send(0x31))
         return false;
     
     int32_t pos = 0;
@@ -142,7 +149,7 @@ bool sendLogBook(NetSocket *nsock, uint32_t _cks, uint32_t _pos) {
             if (!lb.get(jmp))
                 break;
     
-            if (!SEND(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp))
+            if (!pro->send(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp))
                 return false;
         }
         pos = lb.pos();
@@ -158,13 +165,16 @@ bool sendLogBook(NetSocket *nsock, uint32_t _cks, uint32_t _pos) {
         int32_t     pos;
     } d = { cks, pos > 0 ? pos : 0 };
     
-    return SEND(0x33, "XN", d) && (pos > 0);
+    return pro->send(0x33, "XN", d) && (pos > 0);
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Завершение отправки данных на сервер
  * ------------------------------------------------------------------------------------------- */
-bool sendDataFin(NetSocket *nsock) {
+bool sendDataFin(BinProto *pro) {
+    if (pro == NULL)
+        return false;
+    
     FileTxt f(PSTR(WIFIPASS_FILE));
     uint32_t ckswifi = f.chksum();
     f.close();
@@ -201,5 +211,5 @@ bool sendDataFin(NetSocket *nsock) {
         CONSOLE("update ver: %s", d.fwupdver);
     }
     
-    return SEND( 0x3f, "XXCCCaC   a32", d ); // datafin
+    return pro->send( 0x3f, "XXCCCaC   a32", d ); // datafin
 }

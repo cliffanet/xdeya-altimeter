@@ -8,12 +8,12 @@
 #include "../../def.h"
 #include "../core/worker.h"
 
-class NetSocket;
+class BinProto;
 
-bool sendCfgMain(NetSocket *nsock);
-bool sendJmpCount(NetSocket *nsock);
-bool sendPoint(NetSocket *nsock);
-bool sendLogBook(NetSocket *nsock, uint32_t _cks, uint32_t _pos);
-bool sendDataFin(NetSocket *nsock);
+bool sendCfgMain(BinProto *pro);
+bool sendJmpCount(BinProto *pro);
+bool sendPoint(BinProto *pro);
+bool sendLogBook(BinProto *pro, uint32_t _cks, uint32_t _pos);
+bool sendDataFin(BinProto *pro);
 
 #endif // _net_sync_H

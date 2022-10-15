@@ -45,11 +45,14 @@ static void _wrkDel(worker_list_t::iterator it) {
     wrkall.erase(it);
 }
 
-void _wrkDel(WrkProc::key_t key) {
+bool _wrkDel(WrkProc::key_t key) {
     //_wrkDel(wrkall.find(key));
     auto it = wrkall.find(key);
-    if (it != wrkall.end())
-        it->second.needend = true;
+    if (it == wrkall.end())
+        return false;
+    
+    it->second.needend = true;
+    return true;
 }
 
 bool _wrkExists(WrkProc::key_t key) {
@@ -82,32 +85,39 @@ void wrkProcess(uint32_t tmmax) {
             if ( it->second.needend )
                 _wrkDel(it);
             else
-            if ( it->second.needwait ) {
-                
-            }
-            else
-            if ( ! it->second.proc->every() ) {
-                // при ошибке выполнения every() - делаем обычное завершение
-                it->second.needend = true;
-                run = true;
-            }
-            else
-                switch (it->second.proc->process()) {
+            if ( ! it->second.needwait )
+                switch (it->second.proc->every()) {
                     case WrkProc::STATE_WAIT:
                         // При возвращении STATE_WAIT мы больше не должны
                         // выполнять этот процесс в текущем вызове wrkProcess()
                         it->second.needwait = true;
                         break;
-                
+                        
                     case WrkProc::STATE_RUN:
-                        run = true;
-                        break;
+                        switch (it->second.proc->process()) {
+                            case WrkProc::STATE_WAIT:
+                                // При возвращении STATE_WAIT мы больше не должны
+                                // выполнять этот процесс в текущем вызове wrkProcess()
+                                it->second.needwait = true;
+                                break;
                 
+                            case WrkProc::STATE_RUN:
+                                run = true;
+                                break;
+                
+                            case WrkProc::STATE_END:
+                                it->second.needend = true;
+                                run = true;
+                                break;
+                        }
+                        break;
+                        
                     case WrkProc::STATE_END:
                         it->second.needend = true;
                         run = true;
                         break;
-                }
+                };
+                
             
             if ((millis()-beg) >= tmmax)
                 return;

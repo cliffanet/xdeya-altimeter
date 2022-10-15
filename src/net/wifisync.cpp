@@ -332,8 +332,18 @@ WorkerWiFiSync * wifiSyncProc() {
 */
 
 
-#define ERR(st)             err(err ## st)
-#define RETURN_ERR(st)      return ERR(st)
+#define ERR(s)                  err(err ## s)
+#define RETURN_ERR(s)           return ERR(s)
+#define STATE(s)                m_st = st ## s; CONSOLE("state: %d", m_st);
+#define TIMEOUT(s,n)            STATE(s); m_timeout = n
+#define WRK_BREAK_STATE(s)      STATE(s);       WRK_BREAK_RUN
+#define WRK_BREAK_TIMEOUT(s,n)  TIMEOUT(s,n);   WRK_BREAK_RUN
+#define WRK_BREAK_RECV          WRK_BREAK \
+                                if ((m_pro == NULL) || !m_pro->rcvvalid()) RETURN_ERR(RecvData); \
+                                if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
+
+#define SEND(cmd, ...)          if (!m_sock || !m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) RETURN_ERR(SendData);
+#define RECV(pk, data)          if (!m_sock || !m_pro || !m_pro->rcvdata(PSTR(pk), data)) RETURN_ERR(SendData);
 
 using namespace wSync;
 
@@ -342,51 +352,194 @@ WRK_DEFINE(WIFI_SYNC) {
         st_t        m_st;
         uint16_t    m_timeout;
         const char  *m_ssid, *m_pass;
+        NetSocket   *m_sock;
+        BinProto    *m_pro;
+
+        uint32_t    m_joinnum;
+        struct __attribute__((__packed__)) {
+            uint32_t ckscfg;
+            uint32_t cksjmp;
+            uint32_t ckspnt;
+            uint32_t ckslog;
+            uint32_t poslog;
+            FileTrack::chs_t ckstrack;
+        } m_accept;
         
         WRK_CLASS(WIFI_SYNC)(const char *ssid, const char *pass) :
-            m_ssid(ssid),
-            m_pass(pass)
-        { }
+            m_st(stWiFiInit),
+            m_timeout(0),
+            m_sock(NULL),
+            m_pro(NULL),
+            m_joinnum(0),
+            m_accept({ 0 })
+        {
+            // Приходится копировать, т.к. к моменту,
+            // когда мы этими строками воспользуемся, их источник будет удалён.
+            // Пробовал в конструкторе делать wifi connect,
+            // но эти процессы не быстрые, лучше их оставить воркеру.
+            m_ssid = strdup(ssid);
+            m_pass = pass != NULL ? strdup(pass) : NULL;
+        }
     
         state_t err(st_t st) {
             m_st = st;
-            WRK_RETURN_END;
+            CONSOLE("err: %d", st);
+            WRK_RETURN_WAIT;
+        }
+        state_t chktimeout() {
+            if (m_timeout == 0)
+                WRK_RETURN_WAIT;
+            
+            m_timeout--;
+            if (m_timeout > 0)
+                WRK_RETURN_WAIT;
+            
+            return err(errTimeout);
         }
         
         void cancel() {
-            m_st = stUserCancel;
+            if (isrun())
+                m_st = stUserCanceling;
+        }
+        
+        bool isrun() {
+            return m_st < stFinOk;
         }
     
     // Это выполняем всегда перед входом в process
-    bool every() {
-        if (m_st == stUserCancel)
-            return false;
+    state_t every() {
+        if (!isrun())
+            WRK_RETURN_WAIT;
+        if (m_st == stUserCanceling) {
+            end();
+            m_st = stUserCancel;
+        }
+        if ((m_sock != NULL) && m_sock->connected() && (m_pro != NULL)) {
+            m_pro->rcvprocess();
+            if (!m_pro->rcvvalid())
+                RETURN_ERR(RecvData);
+        }
         
-        return true;
+        WRK_RETURN_RUN;
     }
     
     WRK_PROCESS
-        m_st = stWiFiInit;
         if (!wifiStart())
             RETURN_ERR(WiFiInit);
     
-    WRK_BREAK_RUN
-        m_st = stWiFiConnect;
+    WRK_BREAK_TIMEOUT(WiFiConnect, 400)
+        CONSOLE("wifi to: %s; pass: %s", m_ssid, m_pass == NULL ? "-no-" : m_pass);
         if (!wifiConnect(m_ssid, m_pass))
             RETURN_ERR(WiFiConnect);
-        m_timeout = 50;
-    WRK_BREAK_RUN
-        m_st = stWiFiWait;
     
-        m_timeout--;
-        if (m_timeout > 0)
-            WRK_RETURN_WAIT;
+    WRK_BREAK_RUN
+        // ожидаем соединения по вифи
+        switch (wifiStatus()) {
+            case WIFI_STA_CONNECTED:
+                CONSOLE("wifi ok, try to server connect");
+                // вифи подключилось, соединяемся с сервером
+                break;
+            
+            case WIFI_STA_FAIL:
+                RETURN_ERR(WiFiConnect);
+            
+            default:
+                return chktimeout();
+        }
         
-        m_st = stFinOk;
+    WRK_BREAK_TIMEOUT(SrvConnect, 0)
+        // ожидаем соединения к серверу
+        if (m_sock == NULL)
+            m_sock = wifiCliCreate();
+        if (!m_sock->connect())
+            RETURN_ERR(SrvConnect);
+        if (m_pro == NULL)
+            m_pro = new BinProto(m_sock, '%', '#');
+    
+    WRK_BREAK_TIMEOUT(SrvAuth, 200)
+        // авторизируемся на сервере
+        ConfigWebJoin wjoin;
+        if (!wjoin.load())
+            RETURN_ERR(JoinLoad);
+        CONSOLE("[authStart] authid: %lu", wjoin.authid());
+        SEND(0x01, PSTR("N"), wjoin.authid());
+    
+    WRK_BREAK
+        // из-за непоследовательности операций при авторизации
+        // тут вместо макроса WRK_BREAK_RECV
+        // делаем приём ответа от сервера вручную
+        if ((m_pro == NULL) || !m_pro->rcvvalid()) RETURN_ERR(RecvData);
+        
+        if (m_st == stSrvAuth) {
+            if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
+            // Ожидаем ответ на наш запрос авторизации
+            CONSOLE("[waitHello] cmd: %02x", m_pro->rcvcmd());
+            switch (m_pro->rcvcmd()) {
+                case 0x10: // rejoin
+                    // требуется привязка к аккаунту
+                    RECV("N", m_joinnum);
+                    // После приёма этой команды ожидается приём следующей,
+                    // это будет означать, что пользователь ввёл цифры на приборе
+                    // на сервере, а сервер отправил новые данные привязки
+                    TIMEOUT(ProfileJoin,1200);
+                    WRK_RETURN_RUN;
+
+                case 0x20: // accept
+                    // стартуем передачу данных на сервер
+                    RECV("XXXXNH", m_accept);
+                    CONSOLE("recv ckstrack: %04x %04x %08x", m_accept.ckstrack.csa, m_accept.ckstrack.csb, m_accept.ckstrack.sz);
+                    break;
+                    
+                default:
+                    RETURN_ERR(RcvCmdUnknown);
+            }
+        }
+        else
+        if (m_st == stProfileJoin) {
+            // устройство не прикреплено ни к какому профайлу, ожидается привязка
+            if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) {
+                // Собственно, тут и есть причина того, что нам приходится вручную
+                // разбирать приём команды с сервера.
+                // Отправляем idle- чтобы на сервере не сработал таймаут передачи
+                if ((m_timeout & 0xF) == 0) {
+                    CONSOLE("send idle");
+                    SEND(0x12);
+                }
+                return chktimeout();
+            }
+            
+            // в этой команде должны прийти данные с привязкой к вебу
+            if (m_pro->rcvcmd() != 0x13)
+                RETURN_ERR(RcvCmdUnknown);
+            struct __attribute__((__packed__)) {
+                uint32_t id;
+                uint32_t secnum;
+            } auth;
+            RECV("NN", auth);
+            CONSOLE("[waitJoin] confirm: %lu, %lu", auth.id, auth.secnum);
+            
+            ConfigWebJoin wjoin(auth.id, auth.secnum);
+            if (!wjoin.save())
+                RETURN_ERR(JoinSave);
+
+            m_joinnum = 0;
+            SEND(0x14);
+            TIMEOUT(SrvAuth, 200);
+            // Заного отправляем authid
+            SEND(0x01, PSTR("N"), auth.id);
+
+            WRK_RETURN_RUN;
+        }
+    
+    WRK_BREAK_TIMEOUT(SendConfig, 0)
+        
+    WRK_BREAK_RUN
+        end();
+        
+    WRK_BREAK_STATE(FinOk)
     WRK_END
         
     void end() {
-        /*
         if (m_pro != NULL) {
             CONSOLE("delete m_pro");
             delete m_pro;
@@ -398,8 +551,17 @@ WRK_DEFINE(WIFI_SYNC) {
             delete m_sock;
             m_sock = NULL;
         }
-        */
+        
         wifiStop();
+        
+        if (m_ssid != NULL) {
+            delete m_ssid;
+            m_ssid = NULL;
+        }
+        if (m_pass != NULL) {
+            delete m_pass;
+            m_pass = NULL;
+        }
     }
 };
 
@@ -414,19 +576,32 @@ void wifiSyncBegin(const char *ssid, const char *pass) {
     CONSOLE("begin");
 }
 
-wSync::st_t wifiSyncState() {
+wSync::st_t wifiSyncState(wSync::info_t &inf) {
     auto proc = wrkGet(WIFI_SYNC);
     if (proc == NULL)
         return wSync::stNotRun;
     
+    inf.joinnum = proc->m_joinnum;
+    inf.timeout = proc->m_timeout;
+    
     return proc->m_st;
+}
+
+bool wifiSyncIsRun() {
+    auto proc = wrkGet(WIFI_SYNC);
+    return (proc != NULL) && proc->isrun();
 }
 
 bool wifiSyncStop() {
     auto proc = wrkGet(WIFI_SYNC);
-    if (proc == NULL)
+    if ((proc == NULL) || !proc->isrun())
         return false;
     
     proc->cancel();
     return true;
+}
+
+
+bool wifiSyncDelete() {
+    return wrkStop(WIFI_SYNC);
 }

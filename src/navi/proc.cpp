@@ -39,13 +39,13 @@ static struct {
  *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
  * ------------------------------------------------------------------------------------------- */
 WRK_DEFINE(NAVI_INIT) {
-    bool every() {
+    state_t every() {
         if (gps.tick())
-            return true;
+            WRK_RETURN_RUN;
         
         CONSOLE("Wait cmd-confirm fail");
         state = NAV_STATE_FAIL;
-        return false;
+        WRK_RETURN_END;
     }
         
     state_t errsnd() {
