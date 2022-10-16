@@ -17,4 +17,7 @@ WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, int32_t pos, bool noremo
 bool isokLogBook(const WrkProc *_wrk = NULL);
 bool sendDataFin(BinProto *pro);
 
+WrkProc::key_t recvWiFiPass(BinProto *pro, bool noremove = false);
+bool isokWiFiPass(const WrkProc *_wrk);
+
 #endif // _net_sync_H

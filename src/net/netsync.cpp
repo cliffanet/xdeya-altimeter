@@ -13,8 +13,13 @@
 #include "../core/filetxt.h"
 #include "../jump/logbook.h"
 
-#define RETURN_ERR              WRK_RETURN_END
-#define SEND(cmd, ...)          if (!m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) RETURN_ERR
+#define WRK_RETURN_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); WRK_RETURN_END; } while (0)
+#define SEND(cmd, ...)          if (!m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) WRK_RETURN_ERR("send fail")
+#define RECV(pk, data)          if (!m_pro || !m_pro->rcvdata(PSTR(pk), data)) WRK_RETURN_ERR("recv data fail")
+#define RECVNEXT()              if (!m_pro || !m_pro->rcvnext()) WRK_RETURN_ERR("recv data fail")
+#define WRK_BREAK_RECV          WRK_BREAK \
+                                if (!m_pro || !m_pro->rcvvalid()) WRK_RETURN_ERR("recv not valid"); \
+                                if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
 
 /* ------------------------------------------------------------------------------------------- *
  *  Основной конфиг
@@ -132,7 +137,7 @@ WRK_DEFINE(SEND_LOGBOOK) {
     WRK_PROCESS
         CONSOLE("sendLogBook: chksum: %08x, pos: %d", m_cks, m_pos);
         if (m_pro == NULL)
-            RETURN_ERR;
+            WRK_RETURN_ERR("pro is NULL");
     
     WRK_BREAK_RUN
         // Ищем файл логбука, с которого начнём
@@ -148,15 +153,15 @@ WRK_DEFINE(SEND_LOGBOOK) {
         if (m_fn > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
             CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %d", m_fn, m_pos);
             if (!m_lb.open(m_fn))
-                RETURN_ERR;
+                WRK_RETURN_ERR("Can't open logbook num=%d", m_fn);
             if (!m_lb.seekto(m_pos))
-                RETURN_ERR;
+                WRK_RETURN_ERR("Can't logbook num=%d seek to pos=%d", m_fn, m_pos);
         }
         else
             m_fn = m_lb.count();
         
         if (m_fn < 0)       // ошибка поиска
-            RETURN_ERR;
+            WRK_RETURN_ERR("Fail find file by cks=%08x", m_cks);
         
     WRK_BREAK_RUN
         SEND(0x31);
@@ -166,12 +171,12 @@ WRK_DEFINE(SEND_LOGBOOK) {
     WRK_BREAK_RUN
         if (m_fn > 0) {
             if (!m_lb && !m_lb.open(m_fn))
-                RETURN_ERR;
+                WRK_RETURN_ERR("Can't open logbook num=%d", m_fn);
             CONSOLE("logbook num=%d, pos=%d, avail=%d", m_fn, m_lb.pos(), m_lb.avail());
             if (m_lb.avail() > 0) {
                 FileLogBook::item_t jmp;
                 if (!m_lb.get(jmp))
-                    RETURN_ERR;
+                    WRK_RETURN_ERR("Can't get item jump");
                 
                 SEND(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp);
             }
@@ -275,3 +280,134 @@ bool sendDataFin(BinProto *pro) {
     
     return pro->send( 0x3f, "XXCCCaC   a32", d ); // datafin
 }
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Приём wifi-паролей
+ * ------------------------------------------------------------------------------------------- */
+WRK_DEFINE(RECV_WIFIPASS) {
+    private:
+        int         m_fn;
+        bool        m_isok;
+        uint16_t    m_timeout;
+        
+        BinProto *m_pro;
+        FileTxt fh;
+        
+        const char *m_fname;
+    
+    public:
+        bool isok() const { return m_isok; }
+
+        state_t chktimeout() {
+            if (m_timeout == 0)
+                WRK_RETURN_WAIT;
+            
+            m_timeout--;
+            if (m_timeout > 0)
+                WRK_RETURN_WAIT;
+            
+            WRK_RETURN_ERR("Wait timeout");
+        }
+    
+    WRK_CLASS(RECV_WIFIPASS)(BinProto *pro, bool noremove = false) :
+        m_isok(false),
+        m_timeout(0),
+        m_pro(pro),
+        m_fname(PSTR(WIFIPASS_FILE))
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+
+    state_t every() {
+        m_pro->rcvprocess();
+        if (!m_pro->rcvvalid())
+            WRK_RETURN_ERR("recv data fail");
+        
+        WRK_RETURN_RUN;
+    }
+    
+    WRK_PROCESS
+        if ( fileExists(m_fname) &&
+            !fileRemove(m_fname))
+            WRK_RETURN_ERR("Can't remove prev wifi-file");
+    
+    WRK_BREAK_RUN
+        if (!fh.open_P(m_fname, FileMy::MODE_APPEND))
+            WRK_RETURN_ERR("Can't open wifi-file for write");
+        
+        m_timeout = 200;
+    WRK_BREAK_RECV
+        if (m_pro->rcvcmd() != 0x41)
+            WRK_RETURN_ERR("Recv wrong cmd=0x%02x", m_pro->rcvcmd());
+        RECVNEXT();  // Эта команда без данных,
+                            // нам надо перейти к приёму следующей команды
+    
+        m_timeout = 200;
+    WRK_BREAK_RECV
+        switch (m_pro->rcvcmd()) {
+            case 0x42: { // wifi net
+                struct __attribute__((__packed__)) {
+                    char ssid[BINPROTO_STRSZ];
+                    char pass[BINPROTO_STRSZ];
+                } d;
+                RECV("ss", d);
+                
+                CONSOLE("add wifi: {%s}, {%s}", d.ssid, d.pass);
+                if (
+                        !fh.print_param(PSTR("ssid"), d.ssid) ||
+                        !fh.print_param(PSTR("pass"), d.pass)
+                    )
+                    WRK_RETURN_ERR("Fail write ssid/pass");
+                m_timeout = 200;
+                WRK_RETURN_RUN;
+            }
+
+            case 0x43: { // wifi end
+                RECVNEXT();  // Эта команда без данных
+                
+                fh.close(); // надо переоткрыть файл, иначе из него нельзя прочитать
+                if (!fh.open_P(m_fname))
+                    WRK_RETURN_ERR("Can't open wifi-file for chksum");
+                uint32_t cks = fh.chksum();
+                fh.close();
+                
+                SEND(0x4a, "N", cks); // wifiok
+                m_isok = true;
+                break;
+            }
+
+            default: WRK_RETURN_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
+        }
+    
+    WRK_END
+};
+
+WrkProc::key_t recvWiFiPass(BinProto *pro, bool noremove) {
+    if (pro == NULL)
+        return WRKKEY_NONE;
+    
+    if (!noremove)
+        return wrkRand(RECV_WIFIPASS, pro, noremove);
+    
+    wrkRun(RECV_WIFIPASS, pro, noremove);
+    return WRKKEY_RECV_WIFIPASS;
+}
+
+bool isokWiFiPass(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(RECV_WIFIPASS) :
+            reinterpret_cast<const WRK_CLASS(RECV_WIFIPASS) *>(_wrk);
+    
+    return (wrk != NULL) && (wrk->isok());
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Приём veravail - доступных версий прошивки
+ * ------------------------------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Обновление прошивки по сети
+ * ------------------------------------------------------------------------------------------- */

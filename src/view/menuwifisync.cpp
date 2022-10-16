@@ -838,6 +838,14 @@ class ViewNetSync2 : public ViewBase {
                 case wSync::stSrvConnect:       TITLE(MSG_SRVCONNECT);
                 case wSync::stSrvAuth:          TITLE(MSG_SRVAUTH);
                 case wSync::stSendConfig:       TITLE(MSG_SENDCONFIG);
+                case wSync::stSendJumpCount:    TITLE(MSG_SENDJUMPCOUNT);
+                case wSync::stSendPoint:        TITLE(MSG_SENDPOINT);
+                case wSync::stSendLogBook:      TITLE(MSG_SENDLOGBOOK);
+                case wSync::stSendTrack:        TITLE(MSG_SENDTRACK);
+                case wSync::stSendDataFin:      TITLE(MSG_SENDFIN);
+                case wSync::stRecvWiFiPass:     TITLE(NEXT_RCVPASS);
+                case wSync::stRecvVerAvail:     TITLE(NEXT_RCVFWVER);
+                case wSync::stRecvFirmware:     TITLE(NEXT_FWUPDATE);
                 case wSync::stFinOk:            TITLE(SYNCFINISHED);
                 case wSync::stUserCancel:       TITLE(MSG_USERCANCEL);
                 case wSync::errWiFiInit:        TITLE(ERR_WIFIINIT);
@@ -851,13 +859,6 @@ class ViewNetSync2 : public ViewBase {
                 case wSync::errJoinLoad:        TITLE(ERR_JOINLOAD);
                 case wSync::errJoinSave:        TITLE(ERR_SAVEJOIN);
                 case wSync::errWorker:          TITLE(ERR_WORKER);
-                
-                /*
-                case WorkerWiFiSync::opSndJumpCount:    TITLE(MSG_SENDJUMPCOUNT);
-                case WorkerWiFiSync::opSndPoint:        TITLE(MSG_SENDPOINT);
-                case WorkerWiFiSync::opSndLogBook:      TITLE(MSG_SENDLOGBOOK);
-                case WorkerWiFiSync::opSndDataFin:      TITLE(MSG_SENDFIN);
-                */
             }
 #undef TITLE
             

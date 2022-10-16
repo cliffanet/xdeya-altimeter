@@ -334,8 +334,8 @@ WorkerWiFiSync * wifiSyncProc() {
 
 #define ERR(s)                  err(err ## s)
 #define RETURN_ERR(s)           return ERR(s)
-#define STATE(s)                m_st = st ## s; CONSOLE("state: %d", m_st);
-#define TIMEOUT(s,n)            STATE(s); m_timeout = n
+#define STATE(s)                m_st = st ## s; CONSOLE("state: %d, timeout: %d", m_st, m_timeout);
+#define TIMEOUT(s,n)            m_timeout = n; STATE(s);
 #define WRK_BREAK_STATE(s)      STATE(s);       WRK_BREAK_RUN
 #define WRK_BREAK_TIMEOUT(s,n)  TIMEOUT(s,n);   WRK_BREAK_RUN
 #define WRK_BREAK_RECV          WRK_BREAK \
@@ -421,6 +421,8 @@ WRK_DEFINE(WIFI_SYNC) {
             bool isok =
                 m_wrk == WRKKEY_SEND_LOGBOOK ?
                     isokLogBook(wrk) :
+                m_wrk == WRKKEY_RECV_WIFIPASS ?
+                    isokWiFiPass(wrk) :
                     false;
             CONSOLE("worker[key=%d] finished isok: %d", m_wrk, isok);
             
@@ -430,6 +432,11 @@ WRK_DEFINE(WIFI_SYNC) {
             
             if (!isok) // Если процесс завершился с ошибкой, завершаем и себя тоже с ошибкой
                 RETURN_ERR(Worker);
+            
+            // Обновляем таймаут после завершения процесса на случай, если это был приём данных
+            // и следующим циклом ожидается приём уже в основной процесс
+            if (m_timeout == 0)
+                m_timeout = 200;
         }
         
         if (m_st == stUserCancel)
@@ -576,16 +583,36 @@ WRK_DEFINE(WIFI_SYNC) {
         m_wrk = sendLogBook(&m_pro, m_accept.ckslog, m_accept.poslog, true);
         if (m_wrk == WRKKEY_NONE)
             RETURN_ERR(SendData);
-    
-    WRK_BREAK_TIMEOUT(SendDataFin, 300)
+        
+    WRK_BREAK_RUN // Надо запомнить точку и выйти, но не менять m_st
+        TIMEOUT(SendDataFin, 300);
         // завершение отправки данных, теперь будем получать обновления с сервера
         if (!sendDataFin(&m_pro))
             RETURN_ERR(SendData);
     
     WRK_BREAK_RECV
         CONSOLE("[waitFin] cmd: %02x", m_pro.rcvcmd());
+        switch (m_pro.rcvcmd()) {
+            case 0x41: // wifi beg
+                TIMEOUT(RecvWiFiPass, 0);
+                m_wrk = recvWiFiPass(&m_pro, true);
+                if (m_wrk == WRKKEY_NONE)
+                    RETURN_ERR(RecvData);
+                WRK_RETURN_RUN;
+            /*
+            case 0x44: // veravail beg
+                TIMEOUT(RecvVerAvail, 0);
+                WRK_RETURN_RUN;
+                
+            case 0x47: // firmware update beg
+                TIMEOUT(RecvFirmware, 0);
+                WRK_RETURN_RUN;
+            */
+            case 0x0f: // bye
+                TIMEOUT(FinOk, 0);
+                break;
+        };
         
-        TIMEOUT(FinOk, 0);
     WRK_FINISH
         
     void end() {

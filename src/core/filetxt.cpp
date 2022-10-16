@@ -137,6 +137,10 @@ uint32_t FileTxt::chksum() {
     cks.clear();
     uint8_t buf[256];
     
+    // сохраняем pos
+    auto pos = fh.position();
+    fh.seek(0, SeekSet);
+    
     while (fh.available() > 0) {
         auto sz = fh.read(buf, sizeof(buf));
         CONSOLE("read: %d", sz);
@@ -145,6 +149,8 @@ uint32_t FileTxt::chksum() {
         
         cks.add(buf, sz);
     }
+    
+    fh.seek(pos, SeekSet);
     
     return cks.full();
 }

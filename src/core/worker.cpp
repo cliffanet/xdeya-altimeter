@@ -54,11 +54,11 @@ static inline void _wrkFinish(worker_list_t::iterator it) {
 static void _wrkRemove(worker_list_t::iterator it) {
     _wrkFinish(it);
         
-    auto &wrk = it->second;
+    auto wrk = it->second;
     CONSOLE("key: %d, ptr: %x, opts: %02x", it->first, wrk, wrk->opts());
+    wrkall.erase(it);
     if (!wrk->opt(WrkProc::O_NODESTROY))
         delete wrk;
-    wrkall.erase(it);
 }
 
 bool _wrkDel(WrkProc::key_t key) {
@@ -67,9 +67,13 @@ bool _wrkDel(WrkProc::key_t key) {
         return false;
         
     auto &wrk = it->second;
-    if (wrk->opt(WrkProc::O_FINISHED))
-        _wrkRemove(it);
-    else
+    //if (wrk->opt(WrkProc::O_FINISHED))
+    //    _wrkRemove(it);
+    //else
+    // оставим удаление из списка основному процессу wrkProcess(),
+    // иначе, создаются ненужные петли, когда мы из одного воркера удаляем следующий в списке,
+    // и рабочий цикл в wrkProcess() уже работает некорректно и пытается повторно убить уже
+    // убитый процесс.
         wrk->optset(WrkProc::O_NEEDREMOVE);
     
     return true;
@@ -103,9 +107,10 @@ void wrkProcess(uint32_t tmmax) {
             itnxt++; // такие сложности, чтобы проще было удалить текущий элемент
             auto &wrk = it->second;
             
-            if ( wrk->opt(WrkProc::O_NEEDREMOVE) )
+            if ( wrk->opt(WrkProc::O_NEEDREMOVE) ) {
                 _wrkRemove(it);
-            else
+                continue;
+            } else
             if ( wrk->opt(WrkProc::O_FINISHED) )
                 continue;
             

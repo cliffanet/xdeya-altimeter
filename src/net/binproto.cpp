@@ -190,8 +190,12 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
                     }
                     CHKSZ_(l+1, l)
                     memcpy(dst, src, l);
-                    dst[l] = '\0';
-                    NXTSZ_(l+1, l)
+                    dst[l] = '\0';  // кажется, тут неправильно, 
+                                    // это в локальной структуре должно быть нультерминированная строка,
+                                    // т.к. это д.б. в unpack, а не в pack
+                    NXTSZ_(l+1, l)  // И тут, наверное, должна быть строка не l+1, а просто l
+                                    // надо искать, где используются эти модификаторы, правильно ли там работает
+                                    // Этот модификатор пока ещё нигде не использовался, т.е. скорее всего тут ошибка и надо переделывать, отлаживать
                 }
                 else {
                     CHKSZ(1, char)
@@ -199,6 +203,23 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
                     NXTSZ(1, char)
                 }
                 break;
+            
+            case 's': {
+                // этот модификатор рассчитывает, что в локальной структуре данных (в src)
+                // в этом месте находится char[BINPROTO_STRSZ]
+                uint8_t l = 0;
+                const uint8_t *s = src;
+                while ((*s != '\0') && (l < srcsz) && (l < 255) && (l < (BINPROTO_STRSZ-1))) {
+                    s++;
+                    l++;
+                }
+                CHKSZ_(l+1, BINPROTO_STRSZ)
+                *dst = l;
+                if (l > 0)
+                    memcpy(dst+1, src, l);
+                NXTSZ_(l+1, BINPROTO_STRSZ)
+                break;
+            }
             
             default:
                 return -1;
@@ -318,6 +339,22 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
                 }
                 break;
             
+            case 's': {
+                // этот модификатор рассчитывает, что в локальной структуре данных (в dst)
+                // в этом месте находится char[BINPROTO_STRSZ]
+                CHKSZ_(BINPROTO_STRSZ, 1)
+                int l = *src, l1 = *src;
+                if (l1 > 0) {
+                    CHKSZ_(BINPROTO_STRSZ, l+1)
+                    if (l1 >= BINPROTO_STRSZ)
+                        l1 = BINPROTO_STRSZ-1;
+                    memcpy(dst, src+1, l1);
+                }
+                dst[l1] = '\0';
+                NXTSZ_(BINPROTO_STRSZ, l+1)
+                break;
+            }
+            
             default:
                 return false;
         }
@@ -400,7 +437,7 @@ bool BinProto::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, 
     else
         len = 0;
     
-    CONSOLE("len: %d", len);
+    CONSOLE("cmd: 0x%02x; len: %d", cmd, len);
     
     hdrpack(buf, cmd, static_cast<uint16_t>(len));
     len += hdrsz();
@@ -454,6 +491,33 @@ BinProto::rcvst_t BinProto::rcvprocess() {
         
         rcvclear();
     }
+
+    if (m_rcvstate == RCV_NULL) {
+        if (m_nsock == NULL) {
+            m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        if (m_nsock->available() <= 0) {
+            if (!m_nsock->connected())
+                m_rcvstate = RCV_DISCONNECTED;
+            return m_rcvstate;
+        }
+        
+        // Стравливание остатков данных команды, 
+        // которых мы не ожидали.
+        size_t sz = m_nsock->recv(m_rcvsz);
+        if ((sz < 0) || (sz > m_rcvsz)) {
+            m_rcvstate = RCV_ERROR;
+            return m_rcvstate;
+        }
+        
+        m_rcvsz -= sz;
+        if (m_rcvsz > 0)
+            return m_rcvstate;
+        
+        // Стравили всё, что нужно, теперь ждём следующую команду
+        rcvclear();
+    }
     
     if (m_rcvstate == RCV_WAITCMD) {
         if (m_nsock == NULL) {
@@ -496,33 +560,6 @@ BinProto::rcvst_t BinProto::rcvprocess() {
         // Мы получили нужный объём данных
         m_rcvstate = RCV_COMPLETE;
     }
-    else
-    if (m_rcvstate == RCV_NULL) {
-        if (m_nsock == NULL) {
-            m_rcvstate = RCV_DISCONNECTED;
-            return m_rcvstate;
-        }
-        if (m_nsock->available() <= 0) {
-            if (!m_nsock->connected())
-                m_rcvstate = RCV_DISCONNECTED;
-            return m_rcvstate;
-        }
-        
-        // Стравливание остатков данных команды, 
-        // которых мы не ожидали.
-        size_t sz = m_nsock->recv(m_rcvsz);
-        if ((sz < 0) || (sz > m_rcvsz)) {
-            m_rcvstate = RCV_ERROR;
-            return m_rcvstate;
-        }
-        
-        m_rcvsz -= sz;
-        if (m_rcvsz > 0)
-            return m_rcvstate;
-        
-        // Стравили всё, что нужно, теперь ждём следующую команду
-        rcvclear();
-    }
     
     return m_rcvstate;
 }
@@ -559,7 +596,26 @@ bool BinProto::rcvdata(const char *pk_P, uint8_t *data, size_t sz) {
     if (m_rcvsz > 0)
         m_rcvstate = RCV_NULL;
     else
-        rcvclear();
+        rcvnext();
     
     return ok;
+}
+
+bool BinProto::rcvnext() {
+    // пропускаем данные по ожидаемой команде
+    // и пытаемся принять следующую команду
+    if (m_nsock == NULL)
+        return false;
+    if ((m_rcvstate != RCV_DATA) && (m_rcvstate != RCV_COMPLETE))
+        return false;
+    
+    if (m_rcvsz > 0)
+        m_rcvstate = RCV_NULL;
+    else
+        rcvclear();
+    
+    if (rcvprocess() < RCV_WAITCMD)
+        return false;
+    
+    return true;
 }

@@ -26,6 +26,10 @@ class NetSocket {
 /* ------------------------------------------------------------------------------------------- *
  *  Процессинг по передаче упакованных данных
  * ------------------------------------------------------------------------------------------- */
+
+// Размер строки, ожидаемой в структуре данных, при работе pack/unpack с форматтером 's'
+#define BINPROTO_STRSZ      256
+
 class BinProto {
     public:
         typedef uint8_t cmdkey_t;
@@ -90,6 +94,9 @@ class BinProto {
         bool rcvdata(const char *pk_P, T &data) {
             return rcvdata(pk_P, reinterpret_cast<uint8_t *>(&data), sizeof(T));
         }
+        
+        // Переход к следующей команде (пропускаем приём данных от текущей)
+        bool rcvnext();
     
     private:
         char m_mgcsnd, m_mgcrcv;
