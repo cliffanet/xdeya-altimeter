@@ -2,7 +2,7 @@
     Data transfere functions
 */
 
-#include "wifisync.h"
+#include "netsync.h"
 #include "../log.h"
 #include "../core/workerloc.h"
 #include "binproto.h"
@@ -13,9 +13,12 @@
 #include "../core/filetxt.h"
 #include "../jump/logbook.h"
 
+#include <Update.h>         // Обновление прошивки
+
 #define WRK_RETURN_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); WRK_RETURN_END; } while (0)
 #define SEND(cmd, ...)          if (!m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) WRK_RETURN_ERR("send fail")
 #define RECV(pk, ...)           if (!m_pro || !m_pro->rcvdata(PSTR(pk), ##__VA_ARGS__)) WRK_RETURN_ERR("recv data fail")
+#define RECVRAW(data)           m_pro ? m_pro->rcvraw(data, sizeof(data)) : -1
 #define RECVNEXT()              if (!m_pro || !m_pro->rcvnext()) WRK_RETURN_ERR("recv data fail")
 #define WRK_BREAK_RECV          WRK_BREAK \
                                 if (!m_pro || !m_pro->rcvvalid()) WRK_RETURN_ERR("recv not valid"); \
@@ -257,7 +260,8 @@ bool sendDataFin(BinProto *pro) {
         uint8_t     vern3;
         uint8_t     vtype;
         uint8_t     hwver;
-        uint8_t     _[3];
+        // uint8_t     _[3]; - это не нужно тут указывать,
+                            // т.к. мы в pk используем модификаторы ' '
         char        fwupdver[33];
     } d = {
         .ckswifi    = ckswifi,
@@ -275,7 +279,7 @@ bool sendDataFin(BinProto *pro) {
             (f.read_line(d.fwupdver, sizeof(d.fwupdver)) < 1))
             d.fwupdver[0] = '\0';
         f.close();
-        CONSOLE("update ver: %s", d.fwupdver);
+        CONSOLE("update ver: {%s}", d.fwupdver);
     }
     
     return pro->send( 0x3f, "XXCCCaC   a32", d ); // datafin
@@ -287,7 +291,6 @@ bool sendDataFin(BinProto *pro) {
  * ------------------------------------------------------------------------------------------- */
 WRK_DEFINE(RECV_WIFIPASS) {
     private:
-        int         m_fn;
         bool        m_isok;
         uint16_t    m_timeout;
         
@@ -409,7 +412,6 @@ bool isokWiFiPass(const WrkProc *_wrk) {
  * ------------------------------------------------------------------------------------------- */
 WRK_DEFINE(RECV_VERAVAIL) {
     private:
-        int         m_fn;
         bool        m_isok;
         uint16_t    m_timeout;
         
@@ -525,3 +527,149 @@ bool isokVerAvail(const WrkProc *_wrk) {
 /* ------------------------------------------------------------------------------------------- *
  *  Обновление прошивки по сети
  * ------------------------------------------------------------------------------------------- */
+WRK_DEFINE(RECV_FIRMWARE) {
+    private:
+        bool        m_isok;
+        uint16_t    m_timeout;
+        
+        BinProto *m_pro;
+    
+    public:
+        uint32_t    m_sz, m_rcv;
+        bool isok() const { return m_isok; }
+
+        state_t chktimeout() {
+            if (m_timeout == 0)
+                WRK_RETURN_WAIT;
+            
+            m_timeout--;
+            if (m_timeout > 0)
+                WRK_RETURN_WAIT;
+            
+            WRK_RETURN_ERR("Wait timeout");
+        }
+    
+    WRK_CLASS(RECV_FIRMWARE)(BinProto *pro, bool noremove = false) :
+        m_isok(false),
+        m_timeout(0),
+        m_pro(pro),
+        m_sz(0),
+        m_rcv(0)
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+
+    state_t every() {
+        m_pro->rcvprocess();
+        if (!m_pro->rcvvalid())
+            WRK_RETURN_ERR("recv data fail");
+        
+        WRK_RETURN_RUN;
+    }
+    
+    WRK_PROCESS
+        
+        m_timeout = 200;
+    WRK_BREAK_RECV
+        if (m_pro->rcvcmd() != 0x47)
+            WRK_RETURN_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
+        RECVNEXT();  // Эта команда без данных,
+        
+        m_timeout = 200;
+    WRK_BREAK_RECV
+        if (m_pro->rcvcmd() != 0x48)
+            WRK_RETURN_ERR("Recv wrong cmd=0x%02x info", m_pro->rcvcmd());
+        
+        struct {
+            uint32_t    size;
+            char        md5[37];
+        } info;
+        RECV("Na36", info);
+        CONSOLE("recv fw info: size: %lu; md5: %s", info.size, info.md5);
+        
+        uint32_t freesz = ESP.getFreeSketchSpace();
+        uint32_t cursz = ESP.getSketchSize();
+        CONSOLE("current fw size: %lu, avail size for new fw: %lu", cursz, freesz);
+        
+        if (info.size > freesz)
+            WRK_RETURN_ERR("FW size too big: %lu > %lu", info.size, freesz);
+
+        // start burn
+        if (!Update.begin(info.size, U_FLASH) || !Update.setMD5(info.md5))
+            WRK_RETURN_ERR("Upd begin fail: errno=%d", Update.getError());
+        
+        m_sz = info.size;
+    
+        m_timeout = 200;
+    WRK_BREAK_RECV
+        switch (m_pro->rcvcmd()) {
+            case 0x49: { // fwupd data
+                uint16_t    sz;
+                uint8_t     buf[1000];
+                
+                RECV("n", sz);
+                int sz1 = RECVRAW(buf);
+                if ((sz1 == 0) || (sz1 != sz))
+                    WRK_RETURN_ERR("Recv sz wrong: %d <-> %u", sz1, sz);
+                sz1 = Update.write(buf, sz);
+                if ((sz1 == 0) || (sz1 != sz))
+                    WRK_RETURN_ERR("Burn sz wrong: %d <-> %u", sz1, sz);
+                
+                m_rcv += sz;
+                
+                m_timeout = 200;
+                WRK_RETURN_RUN;
+            }
+
+            case 0x4a: { // fwupd end
+                RECVNEXT();  // Эта команда без данных
+                if (!Update.end())
+                    WRK_RETURN_ERR("Finalize fail: errno=%d", Update.getError());
+                
+                cfg.set().fwupdind = 0;
+                if (!cfg.save())
+                    WRK_RETURN_ERR("Config save fail");
+                
+                SEND(0x4c); // fwupd ok
+                
+                m_isok = true;
+                break;
+            }
+
+            default: WRK_RETURN_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
+        }
+    
+    WRK_END
+};
+
+WrkProc::key_t recvFirmware(BinProto *pro, bool noremove) {
+    if (pro == NULL)
+        return WRKKEY_NONE;
+    
+    if (!noremove)
+        return wrkRand(RECV_FIRMWARE, pro, noremove);
+    
+    wrkRun(RECV_FIRMWARE, pro, noremove);
+    return WRKKEY_RECV_FIRMWARE;
+}
+
+bool isokFirmware(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(RECV_FIRMWARE) :
+            reinterpret_cast<const WRK_CLASS(RECV_FIRMWARE) *>(_wrk);
+    
+    return (wrk != NULL) && (wrk->isok());
+}
+
+cmpl_t cmplFirmware(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(RECV_FIRMWARE) :
+            reinterpret_cast<const WRK_CLASS(RECV_FIRMWARE) *>(_wrk);
+    
+    if (wrk == NULL)
+        return { 0, 0 };
+    return { wrk->m_rcv, wrk->m_sz };
+}

@@ -365,6 +365,7 @@ WRK_DEFINE(WIFI_SYNC) {
             uint32_t poslog;
             FileTrack::chs_t ckstrack;
         } m_accept;
+        uint8_t m_fwupd;
         
         WRK_CLASS(WIFI_SYNC)(const char *ssid, const char *pass) :
             m_st(stWiFiInit),
@@ -373,7 +374,8 @@ WRK_DEFINE(WIFI_SYNC) {
             m_pro(NULL, '%', '#'),
             m_wrk(WRKKEY_NONE),
             m_joinnum(0),
-            m_accept({ 0 })
+            m_accept({ 0 }),
+            m_fwupd(0)
         {
             // Приходится копировать, т.к. к моменту,
             // когда мы этими строками воспользуемся, их источник будет удалён.
@@ -404,6 +406,13 @@ WRK_DEFINE(WIFI_SYNC) {
             if (isrun())
                 m_st = stUserCancel;
         }
+        
+        cmpl_t complete() {
+            if (m_wrk == WRKKEY_RECV_FIRMWARE)
+                return cmplFirmware();
+            
+            return { 0, 0 };
+        }
     
     // Это выполняем всегда перед входом в process
     state_t every() {
@@ -425,6 +434,8 @@ WRK_DEFINE(WIFI_SYNC) {
                     isokWiFiPass(wrk) :
                 m_wrk == WRKKEY_RECV_VERAVAIL ?
                     isokVerAvail(wrk) :
+                m_wrk == WRKKEY_RECV_FIRMWARE ?
+                    isokFirmware(wrk) :
                     false;
             CONSOLE("worker[key=%d] finished isok: %d", m_wrk, isok);
             
@@ -611,6 +622,10 @@ WRK_DEFINE(WIFI_SYNC) {
             
             case 0x47: // firmware update beg
                 TIMEOUT(RecvFirmware, 0);
+                m_wrk = recvFirmware(&m_pro, true);
+                if (m_wrk == WRKKEY_NONE)
+                    RETURN_ERR(RecvData);
+                m_fwupd = 1;
                 WRK_RETURN_RUN;
             
             case 0x0f: // bye
@@ -646,6 +661,13 @@ WRK_DEFINE(WIFI_SYNC) {
             m_pass = NULL;
         }
     }
+    
+    void remove() {
+        if (m_fwupd && (m_st == stFinOk)) {
+            CONSOLE("reboot after firmware update");
+            ESP.restart();
+        }
+    }
 };
 
 /* ------------------------------------------------------------------------------------------- *
@@ -660,27 +682,30 @@ void wifiSyncBegin(const char *ssid, const char *pass) {
 }
 
 wSync::st_t wifiSyncState(wSync::info_t &inf) {
-    auto proc = wrkGet(WIFI_SYNC);
-    if (proc == NULL)
+    auto wrk = wrkGet(WIFI_SYNC);
+    if (wrk == NULL)
         return wSync::stNotRun;
     
-    inf.joinnum = proc->m_joinnum;
-    inf.timeout = proc->m_timeout;
+    inf.joinnum = wrk->m_joinnum;
+    inf.timeout = wrk->m_timeout;
+    auto cmpl   = wrk->complete();
+    inf.cmplval = cmpl.val;
+    inf.cmplsz  = cmpl.sz;
     
-    return proc->m_st;
+    return wrk->m_st;
 }
 
 bool wifiSyncIsRun() {
-    auto proc = wrkGet(WIFI_SYNC);
-    return (proc != NULL) && proc->isrun();
+    auto wrk = wrkGet(WIFI_SYNC);
+    return (wrk != NULL) && wrk->isrun();
 }
 
 bool wifiSyncStop() {
-    auto proc = wrkGet(WIFI_SYNC);
-    if ((proc == NULL) || !proc->isrun())
+    auto wrk = wrkGet(WIFI_SYNC);
+    if ((wrk == NULL) || !wrk->isrun())
         return false;
     
-    proc->cancel();
+    wrk->cancel();
     return true;
 }
 

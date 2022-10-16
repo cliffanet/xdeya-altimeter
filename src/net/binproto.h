@@ -81,7 +81,9 @@ class BinProto {
         void    rcvclear();
         // процессинг приёма данных
         rcvst_t rcvprocess();
-
+        
+        // Приём данных с распаковкой:
+        // - формат pk_P - это PROGMEM-строка
         bool rcvdata(const char *pk_P, uint8_t *data, size_t sz);
         bool rcvdata(const char *pk_P, char *data, size_t sz) {
             return rcvdata(pk_P, reinterpret_cast<uint8_t *>(data), sz);
@@ -97,6 +99,11 @@ class BinProto {
         bool rcvdata(const char *pk_P, T &data) {
             return rcvdata(pk_P, reinterpret_cast<uint8_t *>(&data), sizeof(T));
         }
+        
+        // Читает данные как есть, без распаковки
+        // Допустимо использовать как при RCV_DATA, так и при RCV_NULL,
+        // т.е. уже после применения rcvdata()
+        size_t rcvraw(uint8_t *data, size_t sz);
         
         // Переход к следующей команде (пропускаем приём данных от текущей)
         bool rcvnext();

@@ -128,6 +128,7 @@ namespace wSync {
     typedef struct {
         uint32_t joinnum;
         uint16_t timeout;
+        uint32_t cmplval, cmplsz;
     } info_t;
 }
 

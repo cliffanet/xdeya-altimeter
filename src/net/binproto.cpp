@@ -183,24 +183,24 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
             
             case 'a':
                 if ((pk[1] >= '0') && (pk[1] <= '9')) {
+                    // этот модификатор, если указаны цифры (даже если только 1),
+                    // рассчитывает, что в локальной структуре данных (в src)
+                    // в этом месте находится char[N+1], где N - указанное число
+                    // Предполагается, что тут строка, но копироваться будут все N байт
+                    // Возможно, при отправке потребуется все байты после первого '\0' - так же обнулить
                     int l = 0;
                     while ((pk[1] >= '0') && (pk[1] <= '9')) {
                         l = l*10 + (pk[1] - '0');
                         pk++;
                     }
-                    CHKSZ_(l+1, l)
+                    CHKSZ_(l, l+1)
                     memcpy(dst, src, l);
-                    dst[l] = '\0';  // кажется, тут неправильно, 
-                                    // это в локальной структуре должно быть нультерминированная строка,
-                                    // т.к. это д.б. в unpack, а не в pack
-                    NXTSZ_(l+1, l)  // И тут, наверное, должна быть строка не l+1, а просто l
-                                    // надо искать, где используются эти модификаторы, правильно ли там работает
-                                    // Этот модификатор пока ещё нигде не использовался, т.е. скорее всего тут ошибка и надо переделывать, отлаживать
+                    NXTSZ_(l, l+1)
                 }
                 else {
-                    CHKSZ(1, char)
+                    CHKSZ(1, uint8_t)
                     *dst = *src;
-                    NXTSZ(1, char)
+                    NXTSZ(1, uint8_t)
                 }
                 break;
             
@@ -323,19 +323,24 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
             
             case 'a':
                 if ((pk[1] >= '0') && (pk[1] <= '9')) {
+                    // этот модификатор, если указаны цифры (даже если только 1),
+                    // рассчитывает, что в локальной структуре данных (в dst)
+                    // в этом месте находится char[N+1], где N - указанное число
+                    // Предполагается, что тут строка, но копироваться будут все N байт
                     int l = 0;
                     while ((pk[1] >= '0') && (pk[1] <= '9')) {
                         l = l*10 + (pk[1] - '0');
                         pk++;
                     }
-                    CHKSZ_(l, l+1)
+                    CHKSZ_(l+1, l)
                     memcpy(dst, src, l);
-                    NXTSZ_(l, l+1)
+                    dst[l] = '\0';
+                    NXTSZ_(l+1, l)
                 }
                 else {
-                    CHKSZ(char, 1)
+                    CHKSZ(uint8_t, 1)
                     *dst = *src;
-                    NXTSZ(char, 1)
+                    NXTSZ(uint8_t, 1)
                 }
                 break;
             
@@ -565,32 +570,43 @@ BinProto::rcvst_t BinProto::rcvprocess() {
 }
 
 bool BinProto::rcvdata(const char *pk_P, uint8_t *data, size_t sz) {
-    // Принимаем данные по ожидаемой команде
-    if (m_nsock == NULL)
-        return false;
     if ((m_rcvstate != RCV_DATA) && (m_rcvstate != RCV_COMPLETE))
         return false;
+    // Все модификаторы предполагают, что наши локальные данные (data) -
+    // либо такие же по размеру, либо больше, поэтому передаваемого sz
+    // должно хватить, чтобы принять все raw-исходные данные
+    // Неверно - у нас могут быть модификаторы ' ' - и это значит, что
+    // в локальных данных (data) будет меньше полей и меньше общий размер,
+    // чем в пришедших данных. Непонятно пока, что с этим делать.
+    // Надо предварительно читать pk и по ней узнавать размер требуемого буфера
+    // для принимаемых данных
+    uint8_t src[sz];
+    size_t sz1 = rcvraw(src, sz);
+    if (sz1 < 0)
+        return false;
+
+    char pk[ strlen_P(pk_P) + 1 ];
+    strcpy_P(pk, pk_P);
+
+    return dataunpack(data, sz, pk, src, sz1);
+}
+
+size_t BinProto::rcvraw(uint8_t *data, size_t sz) {
+    // Принимаем данные по ожидаемой команде
+    if (m_nsock == NULL)
+        return -1;
+    if ((m_rcvstate != RCV_DATA) && (m_rcvstate != RCV_COMPLETE) && (m_rcvstate != RCV_NULL))
+        return -1;
     
     size_t rsz = sz < m_rcvsz ? sz : m_rcvsz;
-    bool ok = false;
+    size_t sz1 = -1;
     if (rsz > 0) {
-        uint8_t src[rsz];
-        size_t sz1 = m_nsock->recv(src, rsz);
-        if (sz1 == rsz) {
-            char pk[ strlen_P(pk_P) + 1 ];
-            strcpy_P(pk, pk_P);
-    
-            ok = dataunpack(data, sz, pk, src, sz1);
-            
+        sz1 = m_nsock->recv(data, rsz);
+        if (sz1 > m_rcvsz)
+            m_rcvsz = 0;
+        else
+        if (sz1 > 0)
             m_rcvsz -= sz1;
-        }
-        else {
-            if (sz1 > m_rcvsz)
-                m_rcvsz = 0;
-            else
-            if (sz1 > 0)
-                m_rcvsz -= sz1;
-        }
     }
     
     if (m_rcvsz > 0)
@@ -598,7 +614,7 @@ bool BinProto::rcvdata(const char *pk_P, uint8_t *data, size_t sz) {
     else
         rcvnext();
     
-    return ok;
+    return sz1;
 }
 
 bool BinProto::rcvnext() {

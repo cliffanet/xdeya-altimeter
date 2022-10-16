@@ -68,6 +68,7 @@ class WrkProc {
         virtual state_t every() { return STATE_RUN; }
         virtual state_t process() = 0;
         virtual void end() {};
+        virtual void remove() {};
         
         typedef enum {
             O_NODESTROY,        // не уничтожать объект при удалении воркера из списка

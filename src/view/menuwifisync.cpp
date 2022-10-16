@@ -12,9 +12,9 @@
 #include "../net/wifi.h"
 #include "../net/wifisync.h"
 
-#include <Update.h>         // Обновление прошивки
+//#include <Update.h>         // Обновление прошивки
 #include <vector>
-#include <lwip/inet.h>      // htonl
+//#include <lwip/inet.h>      // htonl
 
 
 
@@ -862,11 +862,10 @@ class ViewNetSync2 : public ViewBase {
             }
 #undef TITLE
             
-            /*
             y += 10;
             if (wifiStatus() > WIFI_STA_NULL) {
-                if (progress_max > 0) {
-                    uint8_t p = progress_val * 20 / progress_max;
+                if (inf.cmplsz > 0) {
+                    uint8_t p = inf.cmplval * 20 / inf.cmplsz;
                     char *ss = s;
                     *ss = '|';
                     ss++;
@@ -886,7 +885,6 @@ class ViewNetSync2 : public ViewBase {
                 }
                 u8g2.drawStr((u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2, y, s);
             }
-            */
         }
 };
 ViewNetSync2 vNetSync;

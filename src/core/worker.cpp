@@ -57,6 +57,7 @@ static void _wrkRemove(worker_list_t::iterator it) {
     auto wrk = it->second;
     CONSOLE("key: %d, ptr: %x, opts: %02x", it->first, wrk, wrk->opts());
     wrkall.erase(it);
+    wrk->remove();
     if (!wrk->opt(WrkProc::O_NODESTROY))
         delete wrk;
 }
