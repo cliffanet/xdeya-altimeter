@@ -839,7 +839,6 @@ class ViewNetSync2 : public ViewBase {
                 case wSync::stSrvAuth:          TITLE(MSG_SRVAUTH);
                 case wSync::stSendConfig:       TITLE(MSG_SENDCONFIG);
                 case wSync::stFinOk:            TITLE(SYNCFINISHED);
-                case wSync::stUserCanceling:
                 case wSync::stUserCancel:       TITLE(MSG_USERCANCEL);
                 case wSync::errWiFiInit:        TITLE(ERR_WIFIINIT);
                 case wSync::errWiFiConnect:     TITLE(ERR_WIFICONNECT);

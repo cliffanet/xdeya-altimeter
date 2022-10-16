@@ -342,8 +342,8 @@ WorkerWiFiSync * wifiSyncProc() {
                                 if ((m_pro == NULL) || !m_pro->rcvvalid()) RETURN_ERR(RecvData); \
                                 if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
 
-#define SEND(cmd, ...)          if (!m_sock || !m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) RETURN_ERR(SendData);
-#define RECV(pk, data)          if (!m_sock || !m_pro || !m_pro->rcvdata(PSTR(pk), data)) RETURN_ERR(SendData);
+#define SEND(cmd, ...)          if (!m_sock || !m_pro.send(cmd, ##__VA_ARGS__)) RETURN_ERR(SendData);
+#define RECV(pk, data)          if (!m_sock || !m_pro.rcvdata(PSTR(pk), data)) RETURN_ERR(SendData);
 
 using namespace wSync;
 
@@ -353,7 +353,8 @@ WRK_DEFINE(WIFI_SYNC) {
         uint16_t    m_timeout;
         const char  *m_ssid, *m_pass;
         NetSocket   *m_sock;
-        BinProto    *m_pro;
+        BinProto    m_pro;
+        WrkProc::key_t m_wrk;
 
         uint32_t    m_joinnum;
         struct __attribute__((__packed__)) {
@@ -369,7 +370,8 @@ WRK_DEFINE(WIFI_SYNC) {
             m_st(stWiFiInit),
             m_timeout(0),
             m_sock(NULL),
-            m_pro(NULL),
+            m_pro(NULL, '%', '#'),
+            m_wrk(WRKKEY_NONE),
             m_joinnum(0),
             m_accept({ 0 })
         {
@@ -379,12 +381,13 @@ WRK_DEFINE(WIFI_SYNC) {
             // но эти процессы не быстрые, лучше их оставить воркеру.
             m_ssid = strdup(ssid);
             m_pass = pass != NULL ? strdup(pass) : NULL;
+            //optset(O_NOREMOVE); не требуется
         }
     
         state_t err(st_t st) {
             m_st = st;
             CONSOLE("err: %d", st);
-            WRK_RETURN_WAIT;
+            WRK_RETURN_FINISH;
         }
         state_t chktimeout() {
             if (m_timeout == 0)
@@ -399,24 +402,23 @@ WRK_DEFINE(WIFI_SYNC) {
         
         void cancel() {
             if (isrun())
-                m_st = stUserCanceling;
-        }
-        
-        bool isrun() {
-            return m_st < stFinOk;
+                m_st = stUserCancel;
         }
     
     // Это выполняем всегда перед входом в process
     state_t every() {
-        if (!isrun())
-            WRK_RETURN_WAIT;
-        if (m_st == stUserCanceling) {
-            end();
-            m_st = stUserCancel;
+        if (m_wrk != WRKKEY_NONE) {
+            if (_wrkExists(m_wrk))
+                WRK_RETURN_WAIT;
+            m_wrk = WRKKEY_NONE;
         }
-        if ((m_sock != NULL) && m_sock->connected() && (m_pro != NULL)) {
-            m_pro->rcvprocess();
-            if (!m_pro->rcvvalid())
+        
+        if (m_st == stUserCancel)
+            WrkProc::STATE_FINISH;
+        
+        if ((m_sock != NULL) && m_sock->connected()) {
+            m_pro.rcvprocess();
+            if (!m_pro.rcvvalid())
                 RETURN_ERR(RecvData);
         }
         
@@ -453,8 +455,7 @@ WRK_DEFINE(WIFI_SYNC) {
             m_sock = wifiCliCreate();
         if (!m_sock->connect())
             RETURN_ERR(SrvConnect);
-        if (m_pro == NULL)
-            m_pro = new BinProto(m_sock, '%', '#');
+        m_pro.sock_set(m_sock);
     
     WRK_BREAK_TIMEOUT(SrvAuth, 200)
         // авторизируемся на сервере
@@ -468,13 +469,13 @@ WRK_DEFINE(WIFI_SYNC) {
         // из-за непоследовательности операций при авторизации
         // тут вместо макроса WRK_BREAK_RECV
         // делаем приём ответа от сервера вручную
-        if ((m_pro == NULL) || !m_pro->rcvvalid()) RETURN_ERR(RecvData);
+        if (!m_pro.rcvvalid()) RETURN_ERR(RecvData);
         
         if (m_st == stSrvAuth) {
-            if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
+            if (m_pro.rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
             // Ожидаем ответ на наш запрос авторизации
-            CONSOLE("[waitHello] cmd: %02x", m_pro->rcvcmd());
-            switch (m_pro->rcvcmd()) {
+            CONSOLE("[waitHello] cmd: %02x", m_pro.rcvcmd());
+            switch (m_pro.rcvcmd()) {
                 case 0x10: // rejoin
                     // требуется привязка к аккаунту
                     RECV("N", m_joinnum);
@@ -497,7 +498,7 @@ WRK_DEFINE(WIFI_SYNC) {
         else
         if (m_st == stProfileJoin) {
             // устройство не прикреплено ни к какому профайлу, ожидается привязка
-            if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) {
+            if (m_pro.rcvstate() < BinProto::RCV_COMPLETE) {
                 // Собственно, тут и есть причина того, что нам приходится вручную
                 // разбирать приём команды с сервера.
                 // Отправляем idle- чтобы на сервере не сработал таймаут передачи
@@ -509,7 +510,7 @@ WRK_DEFINE(WIFI_SYNC) {
             }
             
             // в этой команде должны прийти данные с привязкой к вебу
-            if (m_pro->rcvcmd() != 0x13)
+            if (m_pro.rcvcmd() != 0x13)
                 RETURN_ERR(RcvCmdUnknown);
             struct __attribute__((__packed__)) {
                 uint32_t id;
@@ -532,19 +533,36 @@ WRK_DEFINE(WIFI_SYNC) {
         }
     
     WRK_BREAK_TIMEOUT(SendConfig, 0)
+        // отправка основного конфига
+        if ((m_accept.ckscfg == 0) || (m_accept.ckscfg != cfg.chksum()))
+            if (!sendCfgMain(&m_pro))
+                RETURN_ERR(SendData);
+    
+    WRK_BREAK_TIMEOUT(SendJumpCount, 0)
+        if ((m_accept.cksjmp == 0) || (m_accept.cksjmp != jmp.chksum()))
+            if (!sendJmpCount(&m_pro))
+                RETURN_ERR(SendData);
+    
+    WRK_BREAK_TIMEOUT(SendPoint, 0)
+        if ((m_accept.ckspnt == 0) || (m_accept.ckspnt != pnt.chksum()))
+            if (!sendPoint(&m_pro))
+                RETURN_ERR(SendData);
+    
+    WRK_BREAK_TIMEOUT(SendPoint, 0)
+        if ((m_accept.ckspnt == 0) || (m_accept.ckspnt != pnt.chksum()))
+            if (!sendPoint(&m_pro))
+                RETURN_ERR(SendData);
+    
+    WRK_BREAK_TIMEOUT(SendLogBook, 0)
+        //if (!sendLogBook(&m_pro, m_wrk, m_accept.ckslog, m_accept.poslog))
+        //    RETURN_ERR(SendData);
         
-    WRK_BREAK_RUN
-        end();
-        
-    WRK_BREAK_STATE(FinOk)
-    WRK_END
+    WRK_BREAK_TIMEOUT(FinOk, 0)
+    WRK_FINISH
         
     void end() {
-        if (m_pro != NULL) {
-            CONSOLE("delete m_pro");
-            delete m_pro;
-            m_pro = NULL;
-        }
+        m_pro.sock_clear();
+        
         if (m_sock != NULL) {
             m_sock->disconnect();
             CONSOLE("delete m_sock");

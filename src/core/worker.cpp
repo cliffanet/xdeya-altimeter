@@ -8,10 +8,12 @@
 
 #include <map>
 
+#include "../log.h" // временно для отладки
+
 
 /////////
 
-typedef std::map<WrkProc::key_t, WrkProc::elem_t> worker_list_t;
+typedef std::map<WrkProc::key_t, WrkProc *> worker_list_t;
 
 static worker_list_t wrkall;
 
@@ -19,39 +21,57 @@ bool wrkEmpty() {
     return wrkall.size() == 0;
 }
 
-void _wrkAdd(WrkProc::key_t key, WrkProc *proc, bool autodestroy) {
+void _wrkAdd(WrkProc::key_t key, WrkProc *wrk) {
     _wrkDel(key);
-    if (proc != NULL)
-        wrkall[key] = { proc, autodestroy };
+    if (wrk != NULL)
+        wrkall[key] = wrk;
+    CONSOLE("key: %d, ptr: %x", key, wrk);
 }
 
-WrkProc::key_t _wrkAddRand(WrkProc::key_t key_min, WrkProc::key_t key_max, WrkProc *proc, bool autodestroy) {
+WrkProc::key_t _wrkAddRand(WrkProc::key_t key_min, WrkProc::key_t key_max, WrkProc *wrk) {
     for (auto key = key_min; key <= key_max; key++)
         if (wrkall.find(key) == wrkall.end()) {
-            _wrkAdd(key, proc, autodestroy);
+            _wrkAdd(key, wrk);
             return key;
         }
     
     return 0;
 }
 
-static void _wrkDel(worker_list_t::iterator it) {
-    if (it == wrkall.end())
-        return;
+
+static inline void _wrkFinish(worker_list_t::iterator it) {
     auto &wrk = it->second;
-    wrk.proc->end();
-    if (wrk.autodestroy)
-        delete wrk.proc;
+    if (wrk->opt(WrkProc::O_FINISHED))
+        return;
+
+    CONSOLE("key: %d, ptr: %x", it->first, wrk);
+    wrk->end();
+    wrk->optset(WrkProc::O_FINISHED);
+    wrk->optdel(WrkProc::O_NEEDFINISH);
+    CONSOLE("opts: %02x", wrk->opts());
+}
+
+static void _wrkRemove(worker_list_t::iterator it) {
+    _wrkFinish(it);
+        
+    auto &wrk = it->second;
+    CONSOLE("key: %d, ptr: %x, opts: %02x", it->first, wrk, wrk->opts());
+    if (!wrk->opt(WrkProc::O_NODESTROY))
+        delete wrk;
     wrkall.erase(it);
 }
 
 bool _wrkDel(WrkProc::key_t key) {
-    //_wrkDel(wrkall.find(key));
     auto it = wrkall.find(key);
     if (it == wrkall.end())
         return false;
+        
+    auto &wrk = it->second;
+    if (wrk->opt(WrkProc::O_FINISHED))
+        _wrkRemove(it);
+    else
+        wrk->optset(WrkProc::O_NEEDREMOVE);
     
-    it->second.needend = true;
     return true;
 }
 
@@ -63,7 +83,7 @@ WrkProc *_wrkGet(WrkProc::key_t key) {
     auto it = wrkall.find(key);
     if (it == wrkall.end())
         return NULL;
-    return it->second.proc;
+    return it->second;
 }
 
 void wrkProcess(uint32_t tmmax) {
@@ -72,7 +92,7 @@ void wrkProcess(uint32_t tmmax) {
     
     for (auto &it : wrkall)
         // сбрасываем флаг needwait
-        it.second.needwait = false;
+        it.second->optdel(WrkProc::O_NEEDWAIT);
     
     uint32_t beg = millis();
     bool run = true;
@@ -81,39 +101,52 @@ void wrkProcess(uint32_t tmmax) {
         run = false;
         for(auto it = wrkall.begin(), itnxt = it; it != wrkall.end(); it = itnxt) {
             itnxt++; // такие сложности, чтобы проще было удалить текущий элемент
+            auto &wrk = it->second;
             
-            if ( it->second.needend )
-                _wrkDel(it);
+            if ( wrk->opt(WrkProc::O_NEEDREMOVE) )
+                _wrkRemove(it);
             else
-            if ( ! it->second.needwait )
-                switch (it->second.proc->every()) {
+            if ( wrk->opt(WrkProc::O_FINISHED) )
+                continue;
+            
+            if ( wrk->opt(WrkProc::O_NEEDFINISH) )
+                _wrkFinish(it);
+            else
+            if ( ! wrk->opt(WrkProc::O_NEEDWAIT) )
+                switch ( wrk->every() ) {
                     case WrkProc::STATE_WAIT:
-                        // При возвращении STATE_WAIT мы больше не должны
-                        // выполнять этот процесс в текущем вызове wrkProcess()
-                        it->second.needwait = true;
+                        wrk->optset(WrkProc::O_NEEDWAIT);
                         break;
                         
                     case WrkProc::STATE_RUN:
-                        switch (it->second.proc->process()) {
+                        switch ( wrk->process() ) {
                             case WrkProc::STATE_WAIT:
-                                // При возвращении STATE_WAIT мы больше не должны
-                                // выполнять этот процесс в текущем вызове wrkProcess()
-                                it->second.needwait = true;
+                                wrk->optset(WrkProc::O_NEEDWAIT);
                                 break;
                 
                             case WrkProc::STATE_RUN:
                                 run = true;
                                 break;
                 
+                            case WrkProc::STATE_FINISH:
+                                wrk->optset(WrkProc::O_NEEDFINISH);
+                                run = true;
+                                break;
+                
                             case WrkProc::STATE_END:
-                                it->second.needend = true;
+                                wrk->optset( wrk->opt(WrkProc::O_NOREMOVE) ? WrkProc::O_NEEDFINISH : WrkProc::O_NEEDREMOVE );
                                 run = true;
                                 break;
                         }
                         break;
+                
+                    case WrkProc::STATE_FINISH:
+                        wrk->optset(WrkProc::O_NEEDFINISH);
+                        run = true;
+                        break;
                         
                     case WrkProc::STATE_END:
-                        it->second.needend = true;
+                        wrk->optset( wrk->opt(WrkProc::O_NOREMOVE) ? WrkProc::O_NEEDFINISH : WrkProc::O_NEEDREMOVE );
                         run = true;
                         break;
                 };
