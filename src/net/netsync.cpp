@@ -15,7 +15,7 @@
 
 #define WRK_RETURN_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); WRK_RETURN_END; } while (0)
 #define SEND(cmd, ...)          if (!m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) WRK_RETURN_ERR("send fail")
-#define RECV(pk, data)          if (!m_pro || !m_pro->rcvdata(PSTR(pk), data)) WRK_RETURN_ERR("recv data fail")
+#define RECV(pk, ...)           if (!m_pro || !m_pro->rcvdata(PSTR(pk), ##__VA_ARGS__)) WRK_RETURN_ERR("recv data fail")
 #define RECVNEXT()              if (!m_pro || !m_pro->rcvnext()) WRK_RETURN_ERR("recv data fail")
 #define WRK_BREAK_RECV          WRK_BREAK \
                                 if (!m_pro || !m_pro->rcvvalid()) WRK_RETURN_ERR("recv not valid"); \
@@ -407,6 +407,120 @@ bool isokWiFiPass(const WrkProc *_wrk) {
 /* ------------------------------------------------------------------------------------------- *
  *  Приём veravail - доступных версий прошивки
  * ------------------------------------------------------------------------------------------- */
+WRK_DEFINE(RECV_VERAVAIL) {
+    private:
+        int         m_fn;
+        bool        m_isok;
+        uint16_t    m_timeout;
+        
+        BinProto *m_pro;
+        FileTxt fh;
+        
+        const char *m_fname;
+    
+    public:
+        bool isok() const { return m_isok; }
+
+        state_t chktimeout() {
+            if (m_timeout == 0)
+                WRK_RETURN_WAIT;
+            
+            m_timeout--;
+            if (m_timeout > 0)
+                WRK_RETURN_WAIT;
+            
+            WRK_RETURN_ERR("Wait timeout");
+        }
+    
+    WRK_CLASS(RECV_VERAVAIL)(BinProto *pro, bool noremove = false) :
+        m_isok(false),
+        m_timeout(0),
+        m_pro(pro),
+        m_fname(PSTR(VERAVAIL_FILE))
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+
+    state_t every() {
+        m_pro->rcvprocess();
+        if (!m_pro->rcvvalid())
+            WRK_RETURN_ERR("recv data fail");
+        
+        WRK_RETURN_RUN;
+    }
+    
+    WRK_PROCESS
+        if ( fileExists(m_fname) &&
+            !fileRemove(m_fname))
+            WRK_RETURN_ERR("Can't remove prev veravail-file");
+    
+    WRK_BREAK_RUN
+        if (!fh.open_P(m_fname, FileMy::MODE_APPEND))
+            WRK_RETURN_ERR("Can't open veravail-file for write");
+        
+        m_timeout = 200;
+    WRK_BREAK_RECV
+        if (m_pro->rcvcmd() != 0x44)
+            WRK_RETURN_ERR("Recv wrong cmd=0x%02x", m_pro->rcvcmd());
+        RECVNEXT();  // Эта команда без данных,
+                            // нам надо перейти к приёму следующей команды
+    
+        m_timeout = 200;
+    WRK_BREAK_RECV
+        switch (m_pro->rcvcmd()) {
+            case 0x45: { // veravail item
+                char ver[BINPROTO_STRSZ];
+                // тут нужен вызов через два аргумента (ссылка на данные и sizeof()),
+                // чтобы верно передалась ссылка и размер выделенной памяти
+                RECV("s", ver, sizeof(ver));
+                
+                CONSOLE("add veravail: {%s}", ver);
+                if ( !fh.print_line(ver) )
+                    WRK_RETURN_ERR("Fail write version");
+                m_timeout = 200;
+                WRK_RETURN_RUN;
+            }
+
+            case 0x46: { // veravail end
+                RECVNEXT();  // Эта команда без данных
+                
+                fh.close(); // надо переоткрыть файл, иначе из него нельзя прочитать
+                if (!fh.open_P(m_fname))
+                    WRK_RETURN_ERR("Can't open veravail-file for chksum");
+                uint32_t cks = fh.chksum();
+                fh.close();
+                
+                SEND(0x4b, "N", cks); // veravail ok
+                m_isok = true;
+                break;
+            }
+
+            default: WRK_RETURN_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
+        }
+    
+    WRK_END
+};
+
+WrkProc::key_t recvVerAvail(BinProto *pro, bool noremove) {
+    if (pro == NULL)
+        return WRKKEY_NONE;
+    
+    if (!noremove)
+        return wrkRand(RECV_VERAVAIL, pro, noremove);
+    
+    wrkRun(RECV_VERAVAIL, pro, noremove);
+    return WRKKEY_RECV_VERAVAIL;
+}
+
+bool isokVerAvail(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(RECV_VERAVAIL) :
+            reinterpret_cast<const WRK_CLASS(RECV_VERAVAIL) *>(_wrk);
+    
+    return (wrk != NULL) && (wrk->isok());
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Обновление прошивки по сети

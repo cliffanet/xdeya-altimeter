@@ -83,6 +83,9 @@ class BinProto {
         rcvst_t rcvprocess();
 
         bool rcvdata(const char *pk_P, uint8_t *data, size_t sz);
+        bool rcvdata(const char *pk_P, char *data, size_t sz) {
+            return rcvdata(pk_P, reinterpret_cast<uint8_t *>(data), sz);
+        }
         // Данные будем распаковывать не в аргументы вызова recv,
         // как это было изначально реализовано в BinProtoSend,
         // а в упакованную структуру данных, но где поля уже будем считать аргументами

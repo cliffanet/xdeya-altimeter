@@ -343,7 +343,7 @@ WorkerWiFiSync * wifiSyncProc() {
                                 if (m_pro.rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
 
 #define SEND(cmd, ...)          if (!m_sock || !m_pro.send(cmd, ##__VA_ARGS__)) RETURN_ERR(SendData);
-#define RECV(pk, data)          if (!m_sock || !m_pro.rcvdata(PSTR(pk), data)) RETURN_ERR(SendData);
+#define RECV(pk, ...)           if (!m_sock || !m_pro.rcvdata(PSTR(pk), ##__VA_ARGS__)) RETURN_ERR(SendData);
 
 using namespace wSync;
 
@@ -423,6 +423,8 @@ WRK_DEFINE(WIFI_SYNC) {
                     isokLogBook(wrk) :
                 m_wrk == WRKKEY_RECV_WIFIPASS ?
                     isokWiFiPass(wrk) :
+                m_wrk == WRKKEY_RECV_VERAVAIL ?
+                    isokVerAvail(wrk) :
                     false;
             CONSOLE("worker[key=%d] finished isok: %d", m_wrk, isok);
             
@@ -599,15 +601,18 @@ WRK_DEFINE(WIFI_SYNC) {
                 if (m_wrk == WRKKEY_NONE)
                     RETURN_ERR(RecvData);
                 WRK_RETURN_RUN;
-            /*
+            
             case 0x44: // veravail beg
                 TIMEOUT(RecvVerAvail, 0);
+                m_wrk = recvVerAvail(&m_pro, true);
+                if (m_wrk == WRKKEY_NONE)
+                    RETURN_ERR(RecvData);
                 WRK_RETURN_RUN;
-                
+            
             case 0x47: // firmware update beg
                 TIMEOUT(RecvFirmware, 0);
                 WRK_RETURN_RUN;
-            */
+            
             case 0x0f: // bye
                 TIMEOUT(FinOk, 0);
                 break;
