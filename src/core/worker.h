@@ -95,19 +95,20 @@ class WrkProc {
 bool wrkEmpty();
 
 void _wrkAdd(WrkProc::key_t key, WrkProc *wrk);
-#define wrkRun(key, ...)     _wrkAdd(WRKKEY_ ## key, new WRK_CLASS(key)(__VA_ARGS__))
+#define wrkRun(key, ...)    _wrkAdd(WRKKEY_ ## key, new WRK_CLASS(key)(__VA_ARGS__))
 
 WrkProc::key_t _wrkAddRand(WrkProc::key_t key_min, WrkProc::key_t key_max, WrkProc *wrk);
-#define wrkRand(key, ...)    wrkAddRand(WRKKEY_RAND_MIN, WRKKEY_RAND_MAX, new WRK_CLASS(key)(__VA_ARGS__));
+#define wrkRand(key, ...)   _wrkAddRand(WRKKEY_RAND_MIN, WRKKEY_RAND_MAX, new WRK_CLASS(key)(__VA_ARGS__));
 
 bool _wrkDel(WrkProc::key_t key);
-#define wrkStop(key)         _wrkDel(WRKKEY_ ## key)
+#define wrkStop(key)        _wrkDel(WRKKEY_ ## key)
 
 bool _wrkExists(WrkProc::key_t key);
-#define wrkExists(key)       _wrkExists(WRKKEY_ ## key)
+#define wrkExists(key)      _wrkExists(WRKKEY_ ## key)
 
 WrkProc *_wrkGet(WrkProc::key_t key);
-#define wrkGet(key)          reinterpret_cast<WRK_CLASS(key) *>(  _wrkGet(WRKKEY_ ## key) )
+#define wrkGetBase(key)     _wrkGet(WRKKEY_ ## key)
+#define wrkGet(key)         reinterpret_cast<WRK_CLASS(key) *>(  _wrkGet(WRKKEY_ ## key) )
 
 // исполнение всех существующих воркеров в течение времени tmmax (мс)
 void wrkProcess(uint32_t tmmax = 50);

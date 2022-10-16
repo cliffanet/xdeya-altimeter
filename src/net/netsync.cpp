@@ -13,6 +13,9 @@
 #include "../core/filetxt.h"
 #include "../jump/logbook.h"
 
+#define RETURN_ERR              WRK_RETURN_END
+#define SEND(cmd, ...)          if (!m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) RETURN_ERR
+
 /* ------------------------------------------------------------------------------------------- *
  *  Основной конфиг
  * ------------------------------------------------------------------------------------------- */
@@ -96,77 +99,136 @@ bool sendPoint(BinProto *pro) {
 
 /* ------------------------------------------------------------------------------------------- *
  *  Логбук
- *  В будущем надо переделать через worker,
- *  в т.ч. разбить lb.findfile(...);
- *  Пока временно рассчитываем, что тут за раз не будет много прыжков
+ *  В будущем надо lb.findfile(...) переделать через worker.
+ *
+ *  Эта процедура будет всегда отправлять 0x31/0x33, даже если не найдено новых прыжков
+ *  Для wifisync это необязательно, а вот при синхре из приложения, эту будет ответ запрос,
+ *  на который надо обязательно ответить
  * ------------------------------------------------------------------------------------------- */
-bool sendLogBook(BinProto *pro, uint32_t _cks, uint32_t _pos) {
-    if (pro == NULL)
-        return false;
+WRK_DEFINE(SEND_LOGBOOK) {
+    private:
+        int m_fn;
+        bool m_isok, m_begsnd;
+        FileLogBook m_lb;
+        
+        BinProto *m_pro;
+        uint32_t m_cks;
+        int32_t  m_pos;
     
-    int max;
-    FileLogBook lb;
+    public:
+        bool isok() const { return m_isok; }
     
-    CONSOLE("sendLogBook: chksum: %08x, pos: %d", _cks, _pos);
+    WRK_CLASS(SEND_LOGBOOK)(BinProto *pro, uint32_t cks, int32_t pos, bool noremove = false) :
+        m_isok(false),
+        m_begsnd(false),
+        m_pro(pro),
+        m_cks(cks),
+        m_pos(pos)
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
     
-    if (_cks > 0) {
-        max = lb.findfile(_cks);
-        if (max > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
-            CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %d", max, _pos);
-            if (!lb.open(max))
-                return false;
-            if ((max == 1) && (_pos >= lb.sizefile())) {
-                CONSOLE("sendLogBook: by chksum finded num 1 and pos is last; no need send");
-                return true;
-            }
-            if (!lb.seekto(_pos))
-                return false;
-        }
-        else { // тот, что мы раньше передавали уже не найден, будем передавать всё заного
+    WRK_PROCESS
+        CONSOLE("sendLogBook: chksum: %08x, pos: %d", m_cks, m_pos);
+        if (m_pro == NULL)
+            RETURN_ERR;
+    
+    WRK_BREAK_RUN
+        // Ищем файл логбука, с которого начнём
+        m_fn =
+            m_cks > 0 ?
+                m_lb.findfile(m_cks) :
+                0;
+        
+        if ((m_cks > 0) && (m_fn <= 0)) {
             CONSOLE("sendLogBook: nothing finded by chksum");
-            max = lb.count();
         }
-    }
-    else { // ещё ничего не передавали, передаём всё заного
-        max = lb.count();
-    }
-    
-    if (max <= 0) // либо ошибка, либо вообще файлов нет - в любом случае выходим
-        return max == 0;
-    
-    if (!pro->send(0x31))
-        return false;
-    
-    int32_t pos = 0;
-    for (int n = max; n > 0; n--) {
-        if (!lb && !lb.open(n)) {
-            pos = 0;
-            break;
+            
+        if (m_fn > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
+            CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %d", m_fn, m_pos);
+            if (!m_lb.open(m_fn))
+                RETURN_ERR;
+            if (!m_lb.seekto(m_pos))
+                RETURN_ERR;
         }
-        size_t beg = lb.pos();
-        while (lb.avail() > 0) {
-            FileLogBook::item_t jmp;
-            if (!lb.get(jmp))
-                break;
-    
-            if (!pro->send(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp))
-                return false;
+        else
+            m_fn = m_lb.count();
+        
+        if (m_fn < 0)       // ошибка поиска
+            RETURN_ERR;
+        
+    WRK_BREAK_RUN
+        SEND(0x31);
+        m_pos = 0;
+        m_begsnd = true;
+        
+    WRK_BREAK_RUN
+        if (m_fn > 0) {
+            if (!m_lb && !m_lb.open(m_fn))
+                RETURN_ERR;
+            CONSOLE("logbook num=%d, pos=%d, avail=%d", m_fn, m_lb.pos(), m_lb.avail());
+            if (m_lb.avail() > 0) {
+                FileLogBook::item_t jmp;
+                if (!m_lb.get(jmp))
+                    RETURN_ERR;
+                
+                SEND(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp);
+            }
+            
+            if (m_lb.avail() <= 0) {
+                if (m_fn > 1) {
+                    m_lb.close();
+                    CONSOLE("logbook closed num=%d", m_fn);
+                }
+                else {// Завершился процесс
+                    m_isok = true;
+                    CONSOLE("logbook finished");
+                }
+                m_fn--;
+            }
         }
-        pos = lb.pos();
-        if (pos < 0)
-            break;
-        CONSOLE("logbook sended ok: %d (beg: %d, pos: %d)", n, beg, pos);
-        lb.close();
+    WRK_END
+        
+    void end() {
+        CONSOLE("lb isopen: %d", m_lb ? 1 : 0);
+        if (m_begsnd) {
+            struct __attribute__((__packed__)) {
+                uint32_t    chksum;
+                int32_t     pos;
+            } d = { 
+                m_lb ? m_lb.chksum() : 0,
+                m_lb ? static_cast<int32_t>(m_lb.pos()) : 0
+            };
+            
+            if (m_pro)
+                m_pro->send(0x33, "XN", d);
+        }
+        
+        m_lb.close();
     }
-    auto cks = lb.chksum(1);
+};
+
+WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, int32_t pos, bool noremove) {
+    if (pro == NULL)
+        return WRKKEY_NONE;
     
-    struct __attribute__((__packed__)) {
-        uint32_t    chksum;
-        int32_t     pos;
-    } d = { cks, pos > 0 ? pos : 0 };
+    if (!noremove)
+        return wrkRand(SEND_LOGBOOK, pro, cks, pos, noremove);
     
-    return pro->send(0x33, "XN", d) && (pos > 0);
+    wrkRun(SEND_LOGBOOK, pro, cks, pos, noremove);
+    return WRKKEY_SEND_LOGBOOK;
 }
+
+bool isokLogBook(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(SEND_LOGBOOK) :
+            reinterpret_cast<const WRK_CLASS(SEND_LOGBOOK) *>(_wrk);
+    
+    return (wrk != NULL) && (wrk->isok());
+}
+
 
 /* ------------------------------------------------------------------------------------------- *
  *  Завершение отправки данных на сервер

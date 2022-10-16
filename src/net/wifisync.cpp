@@ -339,8 +339,8 @@ WorkerWiFiSync * wifiSyncProc() {
 #define WRK_BREAK_STATE(s)      STATE(s);       WRK_BREAK_RUN
 #define WRK_BREAK_TIMEOUT(s,n)  TIMEOUT(s,n);   WRK_BREAK_RUN
 #define WRK_BREAK_RECV          WRK_BREAK \
-                                if ((m_pro == NULL) || !m_pro->rcvvalid()) RETURN_ERR(RecvData); \
-                                if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
+                                if (!m_sock || !m_pro.rcvvalid()) RETURN_ERR(RecvData); \
+                                if (m_pro.rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
 
 #define SEND(cmd, ...)          if (!m_sock || !m_pro.send(cmd, ##__VA_ARGS__)) RETURN_ERR(SendData);
 #define RECV(pk, data)          if (!m_sock || !m_pro.rcvdata(PSTR(pk), data)) RETURN_ERR(SendData);
@@ -408,9 +408,28 @@ WRK_DEFINE(WIFI_SYNC) {
     // Это выполняем всегда перед входом в process
     state_t every() {
         if (m_wrk != WRKKEY_NONE) {
-            if (_wrkExists(m_wrk))
+            // Ожидание выполнения дочернего процесса
+            auto wrk = _wrkGet(m_wrk);
+            if (wrk == NULL) {
+                CONSOLE("worker[key=%d] finished unexpectedly", m_wrk);
+                RETURN_ERR(Worker);
+            }
+            if (wrk->isrun())
                 WRK_RETURN_WAIT;
+            
+            // Дочерний процесс завершился, проверяем его статус
+            bool isok =
+                m_wrk == WRKKEY_SEND_LOGBOOK ?
+                    isokLogBook(wrk) :
+                    false;
+            CONSOLE("worker[key=%d] finished isok: %d", m_wrk, isok);
+            
+            // Удаляем завершённый процесс
+            _wrkDel(m_wrk);
             m_wrk = WRKKEY_NONE;
+            
+            if (!isok) // Если процесс завершился с ошибкой, завершаем и себя тоже с ошибкой
+                RETURN_ERR(Worker);
         }
         
         if (m_st == stUserCancel)
@@ -554,13 +573,27 @@ WRK_DEFINE(WIFI_SYNC) {
                 RETURN_ERR(SendData);
     
     WRK_BREAK_TIMEOUT(SendLogBook, 0)
-        //if (!sendLogBook(&m_pro, m_wrk, m_accept.ckslog, m_accept.poslog))
-        //    RETURN_ERR(SendData);
+        m_wrk = sendLogBook(&m_pro, m_accept.ckslog, m_accept.poslog, true);
+        if (m_wrk == WRKKEY_NONE)
+            RETURN_ERR(SendData);
+    
+    WRK_BREAK_TIMEOUT(SendDataFin, 300)
+        // завершение отправки данных, теперь будем получать обновления с сервера
+        if (!sendDataFin(&m_pro))
+            RETURN_ERR(SendData);
+    
+    WRK_BREAK_RECV
+        CONSOLE("[waitFin] cmd: %02x", m_pro.rcvcmd());
         
-    WRK_BREAK_TIMEOUT(FinOk, 0)
+        TIMEOUT(FinOk, 0);
     WRK_FINISH
         
     void end() {
+        if (m_wrk != WRKKEY_NONE) {
+            _wrkDel(m_wrk);
+            m_wrk = WRKKEY_NONE;
+        }
+        
         m_pro.sock_clear();
         
         if (m_sock != NULL) {

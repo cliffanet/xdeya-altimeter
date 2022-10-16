@@ -57,11 +57,18 @@ uint32_t FileLogBook::chksum() {
     if (!fh)
         return 0;
     
+    // сохраняем pos
+    auto pos = fh.position();
+    
     fh.seek(0, SeekSet);
     
     uint8_t data[sizeitem()];
-    if (fh.read(data, sizeof(data)) != sizeof(data))
+    if (fh.read(data, sizeof(data)) != sizeof(data)) {
+        fh.seek(pos, SeekSet);
         return 0;
+    }
+    
+    fh.seek(pos, SeekSet);
     
     uint8_t csa = 0;
     uint8_t csb = 0;
