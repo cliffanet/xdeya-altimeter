@@ -44,6 +44,9 @@ class FileBinNum : public FileBin {
         FileBinNum() : FileBin(), m_fname_P(NULL) {}
         FileBinNum(const char *fname_P) : FileBin(), m_fname_P(fname_P) {}
         
+        const char *fname_P() const { return m_fname_P; };
+        bool exists(uint8_t n, bool external = false);
+        
         bool open(uint8_t n, mode_t mode = MODE_READ, bool external = false);
         bool open(mode_t mode = MODE_READ, bool external = false) {
             return open(1, mode, external);

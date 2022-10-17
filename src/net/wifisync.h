@@ -105,6 +105,7 @@ namespace wSync {
         stSendJumpCount,
         stSendPoint,
         stSendLogBook,
+        stSendTrackList,
         stSendTrack,
         stSendDataFin,
         stRecvWiFiPass,

@@ -57,6 +57,7 @@ class FileTrack : public FileBinNum {
         size_t pos() const { return (fh.position() - sizehead()) / sizeitem(); }
         size_t avail() { return (fh.available() - sizehead()) / sizeitem(); }
         size_t sizefile() const { return (fh.size() - sizehead()) / sizeitem(); }
+        size_t sizebin() const { return fh.size(); }
         
         chs_t chksum();
         chs_t chksum(uint8_t n);
@@ -97,9 +98,5 @@ typedef struct __attribute__((__packed__)) {
 bool trkStart(uint8_t by = TRK_RUNBY_HAND, uint16_t old = 0);
 void trkStop(uint8_t by = TRK_RUNBY_ANY);
 bool trkRunning(uint8_t by = TRK_RUNBY_ANY);
-
-class NetSocket;
-uint8_t trkSenderCreate(NetSocket *nsock);
-void trkSenderStop(uint8_t wrkey);
 
 #endif // _file_track_H

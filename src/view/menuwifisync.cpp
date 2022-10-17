@@ -841,6 +841,7 @@ class ViewNetSync2 : public ViewBase {
                 case wSync::stSendJumpCount:    TITLE(MSG_SENDJUMPCOUNT);
                 case wSync::stSendPoint:        TITLE(MSG_SENDPOINT);
                 case wSync::stSendLogBook:      TITLE(MSG_SENDLOGBOOK);
+                case wSync::stSendTrackList:
                 case wSync::stSendTrack:        TITLE(MSG_SENDTRACK);
                 case wSync::stSendDataFin:      TITLE(MSG_SENDFIN);
                 case wSync::stRecvWiFiPass:     TITLE(NEXT_RCVPASS);

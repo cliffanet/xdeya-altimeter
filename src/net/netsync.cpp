@@ -12,6 +12,7 @@
 #include "../cfg/point.h"
 #include "../core/filetxt.h"
 #include "../jump/logbook.h"
+#include "../jump/track.h"
 
 #include <Update.h>         // Обновление прошивки
 
@@ -284,6 +285,114 @@ bool sendDataFin(BinProto *pro) {
     
     return pro->send( 0x3f, "XXCCCaC   a32", d ); // datafin
 }
+
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Треки: Отправка списка треков (новый формат пересылки треков)
+ * ------------------------------------------------------------------------------------------- */
+WRK_DEFINE(SEND_TRACKLIST) {
+    private:
+        uint8_t m_fn;
+        bool m_isok;
+        bool m_useext;
+        FileTrack m_tr;
+        
+        BinProto *m_pro;
+    
+    public:
+        bool isok() const { return m_isok; }
+    
+    WRK_CLASS(SEND_TRACKLIST)(BinProto *pro, bool noremove = false) :
+        m_isok(false),
+        m_fn(0),
+        m_pro(pro)
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+    
+    WRK_PROCESS
+        if (m_pro == NULL)
+            WRK_RETURN_ERR("pro is NULL");
+#ifdef USE_SDCARD
+        m_useext = fileExtInit();
+#else
+        m_useext = false;
+#endif
+        CONSOLE("useext: %d", m_useext);
+        SEND(0x51);
+    
+    WRK_BREAK_RUN
+        m_fn++;
+        if ((m_fn > 99) || !m_tr.exists(m_fn)) {
+            CONSOLE("files: %d, terminate", m_fn-1);
+            m_isok = true;
+            WRK_RETURN_END;
+        }
+        
+        if (!m_tr.open(m_fn))
+            WRK_RETURN_ERR("Can't open num: %d", m_fn);
+        
+        FileTrack::head_t th;
+        if (!m_tr.get(th))
+            WRK_RETURN_ERR("Can't get head num: %d", m_fn);
+
+        struct __attribute__((__packed__)) {
+            uint32_t id;
+            uint32_t flags;
+            uint32_t jmpnum;
+            uint32_t jmpkey;
+            tm_t     tmbeg;
+            uint32_t fsize;
+            uint8_t  num;
+        } h = {
+            .id         = th.id,
+            .flags      = th.flags,
+            .jmpnum     = th.jmpnum,
+            .jmpkey     = th.jmpkey,
+            .tmbeg      = th.tmbeg,
+            .fsize      = m_tr.sizebin(),
+            .num        = m_fn
+        };
+        SEND(0x52, "NNNNTN", h);
+        m_tr.close();
+        
+        WRK_RETURN_RUN;
+    WRK_END
+        
+    void end() {
+        if (m_pro)
+            m_pro->send(0x53);
+        
+        if (m_useext)
+            fileExtStop();
+    }
+};
+
+WrkProc::key_t sendTrackList(BinProto *pro, bool noremove) {
+    if (pro == NULL)
+        return WRKKEY_NONE;
+    
+    if (!noremove)
+        return wrkRand(SEND_TRACKLIST, pro, noremove);
+    
+    wrkRun(SEND_TRACKLIST, pro, noremove);
+    return WRKKEY_SEND_TRACKLIST;
+}
+
+bool isokTrackList(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(SEND_TRACKLIST) :
+            reinterpret_cast<const WRK_CLASS(SEND_TRACKLIST) *>(_wrk);
+    
+    return (wrk != NULL) && (wrk->isok());
+}
+
+/* =========================================================================================== */
+/* =========================================================================================== */
+/* =========================================================================================== */
+
 
 
 /* ------------------------------------------------------------------------------------------- *
