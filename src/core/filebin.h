@@ -45,11 +45,16 @@ class FileBinNum : public FileBin {
         FileBinNum(const char *fname_P) : FileBin(), m_fname_P(fname_P) {}
         
         const char *fname_P() const { return m_fname_P; };
-        bool exists(uint8_t n, bool external = false);
         
-        bool open(uint8_t n, mode_t mode = MODE_READ, bool external = false);
-        bool open(mode_t mode = MODE_READ, bool external = false) {
+        bool open(uint8_t n, mode_t mode, bool external);
+        virtual bool open(uint8_t n, mode_t mode = MODE_READ) {
+            return open(n, mode, false);
+        }
+        bool open(mode_t mode, bool external) {
             return open(1, mode, external);
+        }
+        virtual bool open(mode_t mode = MODE_READ) {
+            return open(1, mode, false);
         }
         
         size_t count(bool external);
@@ -58,7 +63,9 @@ class FileBinNum : public FileBin {
         virtual bool renum() { return renum(false); }
         bool rotate(uint8_t count, bool external);
         virtual bool rotate(uint8_t count = 0) { return rotate(count, false); }
-        
+
+        bool exists(uint8_t n, bool external);
+        virtual bool exists(uint8_t n) { return exists(n, false); }
         bool remove(uint8_t n, bool external);
         virtual bool remove(uint8_t n) { return remove(n, false); }
     

@@ -83,7 +83,7 @@ FileTrack::chs_t FileTrack::chksum(uint8_t n) {
     if (fh)
         fh.close();
     
-    if (!open(n, MODE_READ, true))
+    if (!open(n, MODE_READ))
         return { 0, 0, 0 };
     
     auto cks = chksum();
@@ -110,7 +110,7 @@ bool FileTrack::create(const head_t &head) {
     if (!rotate())
         return false;
     
-    if (!open(1, MODE_WRITE, true))
+    if (!open(1, MODE_WRITE))
         return false;
     
     return add(head);

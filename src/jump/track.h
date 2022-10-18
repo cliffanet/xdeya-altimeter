@@ -50,8 +50,15 @@ class FileTrack : public FileBinNum {
         typedef log_item_t item_t;
         
         FileTrack() : FileBinNum(PSTR(TRK_FILE_NAME)) {}
-        FileTrack(uint8_t n, mode_t mode = MODE_READ) : FileTrack() { open(n, mode, true); }
-
+        FileTrack(uint8_t n, mode_t mode = MODE_READ) : FileTrack() { open(n, mode); }
+        
+        virtual bool open(uint8_t n, mode_t mode = MODE_READ) {
+            return FileBinNum::open(n, mode, true);
+        }
+        virtual bool open(mode_t mode = MODE_READ) {
+            return FileBinNum::open(1, mode, true);
+        }
+        
         static inline size_t sizehead() { return sizeof(head_t)+4; }
         static inline size_t sizeitem() { return sizeof(item_t)+4; }
         size_t pos() const { return (fh.position() - sizehead()) / sizeitem(); }
@@ -62,10 +69,11 @@ class FileTrack : public FileBinNum {
         chs_t chksum();
         chs_t chksum(uint8_t n);
         uint8_t findfile(chs_t cks);
-
+        
         virtual size_t count() { return FileBinNum::count(true); }
         virtual bool renum() { return FileBinNum::renum(true); }
         virtual bool rotate(uint8_t count = 0) { return FileBinNum::rotate(count, true); }
+        virtual bool exists(uint8_t n) { return FileBinNum::exists(n, true); }
         virtual bool remove(uint8_t n) { return FileBinNum::remove(n, true); }
         
         bool create(const head_t &head);

@@ -295,7 +295,6 @@ WRK_DEFINE(SEND_TRACKLIST) {
         uint8_t m_fn;
         bool m_isok;
         bool m_useext;
-        FileTrack m_tr;
         
         BinProto *m_pro;
     
@@ -324,17 +323,18 @@ WRK_DEFINE(SEND_TRACKLIST) {
     
     WRK_BREAK_RUN
         m_fn++;
-        if ((m_fn > 99) || !m_tr.exists(m_fn)) {
+        FileTrack tr;
+        if ((m_fn > 99) || !tr.exists(m_fn)) {
             CONSOLE("files: %d, terminate", m_fn-1);
             m_isok = true;
             WRK_RETURN_END;
         }
-        
-        if (!m_tr.open(m_fn))
+
+        if (!tr.open(m_fn))
             WRK_RETURN_ERR("Can't open num: %d", m_fn);
         
         FileTrack::head_t th;
-        if (!m_tr.get(th))
+        if (!tr.get(th))
             WRK_RETURN_ERR("Can't get head num: %d", m_fn);
 
         struct __attribute__((__packed__)) {
@@ -344,18 +344,18 @@ WRK_DEFINE(SEND_TRACKLIST) {
             uint32_t jmpkey;
             tm_t     tmbeg;
             uint32_t fsize;
-            uint8_t  num;
+            uint8_t  fnum;
         } h = {
             .id         = th.id,
             .flags      = th.flags,
             .jmpnum     = th.jmpnum,
             .jmpkey     = th.jmpkey,
             .tmbeg      = th.tmbeg,
-            .fsize      = m_tr.sizebin(),
-            .num        = m_fn
+            .fsize      = tr.sizebin(),
+            .fnum       = m_fn
         };
-        SEND(0x52, "NNNNTN", h);
-        m_tr.close();
+        SEND(0x52, "NNNNTNC", h);
+        tr.close();
         
         WRK_RETURN_RUN;
     WRK_END

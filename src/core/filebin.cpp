@@ -91,13 +91,6 @@ bool FileBin::add(const uint8_t *data, uint16_t dsz) {
 /* ------------------------------------------------------------------------------------------- *
  *  FileBinNum - работа с бинарными файлами, которые пишуться как лог файлы с суффиксом .N
  * ------------------------------------------------------------------------------------------- */
-bool FileBinNum::exists(uint8_t n, bool external) {
-    if (m_fname_P == NULL)
-        return false;
-    
-    return fileExists(m_fname_P, n, external);
-}
-
 bool FileBinNum::open(uint8_t n, mode_t mode, bool external) {
     if (m_fname_P == NULL)
         return false;
@@ -131,6 +124,13 @@ bool FileBinNum::rotate(uint8_t count, bool external) {
         return false;
     
     return fileRotate(m_fname_P, count, external);
+}
+
+bool FileBinNum::exists(uint8_t n, bool external) {
+    if (m_fname_P == NULL)
+        return false;
+    
+    return fileExists(m_fname_P, n, external);
 }
 
 bool FileBinNum::remove(uint8_t n, bool external) {
