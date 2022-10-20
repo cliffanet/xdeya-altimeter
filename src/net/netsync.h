@@ -7,6 +7,7 @@
 
 #include "../../def.h"
 #include "../core/worker.h"
+#include "../clock.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -24,6 +25,17 @@ bool isokLogBook(const WrkProc *_wrk = NULL);
 bool sendDataFin(BinProto *pro);
 WrkProc::key_t sendTrackList(BinProto *pro, bool noremove = false);
 bool isokTrackList(const WrkProc *_wrk = NULL);
+
+typedef struct __attribute__((__packed__)) {
+    uint32_t id;
+    uint32_t jmpnum;
+    uint32_t jmpkey;
+    tm_t     tmbeg;
+    uint8_t  fnum;
+} trksrch_t;
+WrkProc::key_t sendTrack(BinProto *pro, const trksrch_t &srch, bool noremove = false);
+bool isokTrack(const WrkProc *_wrk = NULL);
+cmpl_t cmplTrack(const WrkProc *_wrk = NULL);
 
 WrkProc::key_t recvWiFiPass(BinProto *pro, bool noremove = false);
 bool isokWiFiPass(const WrkProc *_wrk = NULL);

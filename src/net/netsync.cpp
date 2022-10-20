@@ -389,6 +389,150 @@ bool isokTrackList(const WrkProc *_wrk) {
     return (wrk != NULL) && (wrk->isok());
 }
 
+
+WRK_DEFINE(SEND_TRACK) {
+    private:
+        bool m_isok;
+        bool m_useext;
+        trksrch_t m_srch;
+        bool m_sndbeg;
+        FileTrack m_tr;
+        
+        BinProto *m_pro;
+    
+    public:
+        uint32_t    m_sz, m_snd;
+        bool isok() const { return m_isok; }
+    
+    WRK_CLASS(SEND_TRACK)(BinProto *pro, const trksrch_t &srch, bool noremove = false) :
+        m_srch(srch),
+        m_isok(false),
+        m_sndbeg(false),
+        m_pro(pro),
+        m_sz(0),
+        m_snd(0)
+    {
+        CONSOLE("Requested fnum: %d", m_srch.fnum);
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+    
+    WRK_PROCESS
+        if (m_pro == NULL)
+            WRK_RETURN_ERR("pro is NULL");
+#ifdef USE_SDCARD
+        m_useext = fileExtInit();
+#else
+        m_useext = false;
+#endif
+        CONSOLE("useext: %d", m_useext);
+        
+        // Сначала попытаемся найти нужный трек.
+        // Начнём с номера, присланного в srch
+        if ((m_srch.fnum < 1) || (m_srch.fnum > 99))
+            WRK_RETURN_ERR("fnum not valid: %d", m_srch.fnum);
+    
+    WRK_BREAK_RUN
+        if (!m_tr.open(m_srch.fnum))
+            WRK_RETURN_ERR("Can't open track fnum=%d", m_srch.fnum);
+        
+        FileTrack::head_t th;
+        if (!m_tr.get(th))
+            WRK_RETURN_ERR("Can't get head num: %d", m_srch.fnum);
+        
+        if ((th.id      != m_srch.id) ||
+            (th.jmpnum  != m_srch.jmpnum) ||
+            (th.jmpkey  != m_srch.jmpkey) ||
+            (th.tmbeg   != m_srch.tmbeg)) {
+            CONSOLE("Track fnum=%d, header not equal", m_srch.fnum);
+            m_tr.close();
+            // Возможно, файл уже перенумерован дальше, надо тоже проверить
+            m_srch.fnum++;
+            if (m_srch.fnum > 99)
+                WRK_RETURN_ERR("track not found");
+            
+            WRK_RETURN_RUN;
+        }
+        
+        m_sz = m_tr.sizebin();
+    
+    // WRK_BREAK_RUN тут нельзя прерывать, т.к. теряется область видимости для th
+        struct __attribute__((__packed__)) {
+            uint32_t id;
+            uint32_t flags;
+            uint32_t jmpnum;
+            uint32_t jmpkey;
+            tm_t     tmbeg;
+            uint32_t fsize;
+            FileTrack::chs_t    chksum;
+        } h = {
+            .id         = th.id,
+            .flags      = th.flags,
+            .jmpnum     = th.jmpnum,
+            .jmpkey     = th.jmpkey,
+            .tmbeg      = th.tmbeg,
+            .fsize      = m_tr.sizebin(),
+            .chksum     = m_tr.chksum()
+        };
+        SEND(0x54, "NNNNTNH", h);
+        m_sndbeg = true;
+    
+    WRK_BREAK_RUN
+        if (m_tr.available() >= m_tr.sizeitem()) {
+            FileTrack::item_t ti;
+            if (!m_tr.get(ti))
+                CONSOLE("Can't get track data fnum=%d", m_srch.fnum);
+            SEND(0x55, LOG_PK, ti);
+            
+            m_snd += m_tr.sizeitem();
+            
+            WRK_RETURN_RUN;
+        }
+        
+        m_isok = true;
+    WRK_END
+        
+    void end() {
+        m_tr.close();
+        if (m_pro && m_sndbeg)
+            m_pro->send(0x56);
+        
+        if (m_useext)
+            fileExtStop();
+    }
+};
+
+WrkProc::key_t sendTrack(BinProto *pro, const trksrch_t &srch, bool noremove) {
+    if (pro == NULL)
+        return WRKKEY_NONE;
+    
+    if (!noremove)
+        return wrkRand(SEND_TRACK, pro, srch, noremove);
+    
+    wrkRun(SEND_TRACK, pro, srch, noremove);
+    return WRKKEY_SEND_TRACK;
+}
+
+bool isokTrack(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(SEND_TRACK) :
+            reinterpret_cast<const WRK_CLASS(SEND_TRACK) *>(_wrk);
+    
+    return (wrk != NULL) && (wrk->isok());
+}
+
+cmpl_t cmplTrack(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(SEND_TRACK) :
+            reinterpret_cast<const WRK_CLASS(SEND_TRACK) *>(_wrk);
+    
+    if (wrk == NULL)
+        return { 0, 0 };
+    return { wrk->m_snd, wrk->m_sz };
+}
+
 /* =========================================================================================== */
 /* =========================================================================================== */
 /* =========================================================================================== */

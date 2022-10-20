@@ -48,6 +48,12 @@ WRK_DEFINE(WIFI_SYNC) {
             FileTrack::chs_t ckstrack;
         } m_accept;
         uint8_t m_fwupd;
+
+        struct __attribute__((__packed__)) {
+            uint8_t  count;
+            uint32_t fsize;
+        } m_trklist;
+        uint32_t m_trksnd;
         
         WRK_CLASS(WIFI_SYNC)(const char *ssid, const char *pass) :
             m_st(stWiFiInit),
@@ -57,7 +63,9 @@ WRK_DEFINE(WIFI_SYNC) {
             m_wrk(WRKKEY_NONE),
             m_joinnum(0),
             m_accept({ 0 }),
-            m_fwupd(0)
+            m_fwupd(0),
+            m_trklist({ 0 }),
+            m_trksnd(0)
         {
             // Приходится копировать, т.к. к моменту,
             // когда мы этими строками воспользуемся, их источник будет удалён.
@@ -92,6 +100,10 @@ WRK_DEFINE(WIFI_SYNC) {
         cmpl_t complete() {
             if (m_wrk == WRKKEY_RECV_FIRMWARE)
                 return cmplFirmware();
+            if (m_wrk == WRKKEY_SEND_TRACK) {
+                auto c = cmplTrack();
+                return { m_trksnd + c.val, m_trklist.fsize };
+            }
             
             return { 0, 0 };
         }
@@ -114,6 +126,8 @@ WRK_DEFINE(WIFI_SYNC) {
                     isokLogBook(wrk) :
                 m_wrk == WRKKEY_SEND_TRACKLIST ?
                     isokTrackList(wrk) :
+                m_wrk == WRKKEY_SEND_TRACK ?
+                    isokTrack(wrk) :
                 m_wrk == WRKKEY_RECV_WIFIPASS ?
                     isokWiFiPass(wrk) :
                 m_wrk == WRKKEY_RECV_VERAVAIL ?
@@ -122,6 +136,12 @@ WRK_DEFINE(WIFI_SYNC) {
                     isokFirmware(wrk) :
                     false;
             CONSOLE("worker[key=%d] finished isok: %d", m_wrk, isok);
+            
+            if (m_wrk == WRKKEY_SEND_TRACK) {
+                // обновляем m_trksnd - суммарный размер уже полностью отправленных треков
+                auto c = cmplTrack();
+                m_trksnd += c.val;
+            }
             
             // Удаляем завершённый процесс
             _wrkDel(m_wrk);
@@ -316,6 +336,27 @@ WRK_DEFINE(WIFI_SYNC) {
                     RETURN_ERR(RecvData);
                 m_fwupd = 1;
                 WRK_RETURN_RUN;
+            
+            case 0x50: // track list summary
+                TIMEOUT(SendTrack, 100);
+                // команды выше распаковывают данные внутри подворкеров,
+                // а нам надо распаковать тут
+                RECV("C   N", m_trklist);
+                CONSOLE("request %d tracks; fsize: %lu", m_trklist.count, m_trklist.fsize);
+                WRK_RETURN_RUN;
+            
+            case 0x54: { // track request
+                TIMEOUT(SendTrack, 0);
+                // команды выше распаковывают данные внутри подворкеров,
+                // а нам надо распаковать тут
+                trksrch_t srch;
+                RECV("NNNTC", srch);
+                
+                m_wrk = sendTrack(&m_pro, srch, true);
+                if (m_wrk == WRKKEY_NONE)
+                    RETURN_ERR(RecvData);
+                WRK_RETURN_RUN;
+            }
             
             case 0x0f: // bye
                 TIMEOUT(FinOk, 0);

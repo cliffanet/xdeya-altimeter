@@ -55,6 +55,9 @@ FileTrack::chs_t FileTrack::chksum() {
     if (sz > cks.sz)
         sz = cks.sz;
     
+    // созраняем позицию
+    size_t pos = fh.position();
+    
     fh.seek(0, SeekSet);
     if (fh.read(data, sz) != sz)
         return { 0, 0, 0 };
@@ -75,6 +78,9 @@ FileTrack::chs_t FileTrack::chksum() {
         cks.csa += d;
         cks.csb += cks.csa;
     }
+    
+    // восстанавливаем позицию в файле
+    fh.seek(pos, SeekSet);
     
     return cks;
 }

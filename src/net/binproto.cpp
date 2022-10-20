@@ -442,7 +442,7 @@ bool BinProto::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, 
     else
         len = 0;
     
-    CONSOLE("cmd: 0x%02x; len: %d", cmd, len);
+    //CONSOLE("cmd: 0x%02x; len: %d", cmd, len);
     
     hdrpack(buf, cmd, static_cast<uint16_t>(len));
     len += hdrsz();
@@ -580,8 +580,8 @@ bool BinProto::rcvdata(const char *pk_P, uint8_t *data, size_t sz) {
     // чем в пришедших данных. Непонятно пока, что с этим делать.
     // Надо предварительно читать pk и по ней узнавать размер требуемого буфера
     // для принимаемых данных
-    uint8_t src[sz];
-    size_t sz1 = rcvraw(src, sz);
+    uint8_t src[m_rcvsz];
+    size_t sz1 = rcvraw(src, m_rcvsz);
     if (sz1 < 0)
         return false;
 
