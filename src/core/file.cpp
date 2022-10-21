@@ -177,6 +177,8 @@ size_t fileSizeAvail(bool external) {
 #endif
     if ((initok & 2) > 0)
         return SPIFFS.usedBytes();
+    
+    return 0;
 }
 
 /* ------------------------------------------------------------------------------------------- *

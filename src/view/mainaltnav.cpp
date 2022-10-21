@@ -158,7 +158,7 @@ static void drawText(ARG_COMP_DEF) {
 
     if (NAV_VALID_SPEED(gps)) {
         u8g2.setFont(menuFont);
-        sprintf_P(s, PTXT(MAIN_3DSPEED_MS), NAV_CM(gps.gSpeed));
+        sprintf_P(s, PTXT(MAIN_3DSPEED_MS), NAV_CM_F(gps.gSpeed));
         u8g2.drawTxt(u8g2.getDisplayWidth()-64, 64, s);
     }
 }
@@ -238,7 +238,7 @@ static void drawText(ARG_COMP_DEF) {
 
     if (NAV_VALID_SPEED(gps)) {
         u8g2.setFont(u8g2_font_ImpactBits_tr);
-        sprintf_P(s, PSTR("%0.1f m/s"), NAV_CM(gps.gSpeed));
+        sprintf_P(s, PSTR("%0.1f m/s"), NAV_CM_F(gps.gSpeed));
         u8g2.drawStr(u8g2.getDisplayWidth()-64, 95, s);
     }
 }
@@ -353,9 +353,9 @@ static void drawMoveArr(ARG_COMP_DEF, int n = 0, double ang = 0) {
 
 static void drawMove(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
-    double ang = NAV_RAD(gps.heading) + head;
+    double ang = NAV_RAD_F(gps.heading) + head;
     
-    double speed = NAV_CM(gps.gSpeed);
+    double speed = NAV_CM_F(gps.gSpeed);
     
     if (speed < 0.5)
         return;

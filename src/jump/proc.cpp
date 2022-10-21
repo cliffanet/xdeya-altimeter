@@ -43,13 +43,13 @@ static void jmpPreLogAdd(uint16_t interval) {
         flags       : 0,
         state       : 'U',
         direct      : 'U',
-        alt         : ac.alt() + cfg.d().altcorrect,
-        altspeed    : ac.speedapp()*100,
+        alt         : static_cast<int16_t>(ac.alt() + cfg.d().altcorrect),
+        altspeed    : static_cast<int16_t>(ac.speedapp()*100),
         lon         : gps.lon,
         lat         : gps.lat,
         hspeed      : gps.gSpeed,
-        heading     : NAV_DEG(gps.heading),
-        gpsalt      : NAV_MM(gps.hMSL),
+        heading     : static_cast<int16_t>(NAV_DEG(gps.heading)),
+        gpsalt      : static_cast<int16_t>(NAV_MM(gps.hMSL)),
         vspeed      : gps.speed,
         gpsdage     : gpsDataAge(), // тут вместо millis уже используется только 1 байт для хранения, можно пересмотреть формат
         sat         : gps.numSV,
@@ -64,7 +64,7 @@ static void jmpPreLogAdd(uint16_t interval) {
         sAcc        : gps.sAcc,
         cAcc        : gps.cAcc,
         //tm          : gps.tm,
-        millis      : utm() / 1000,
+        millis      : static_cast<uint32_t>(utm() / 1000),
     };
     
     if (NAV_VALID(gps))

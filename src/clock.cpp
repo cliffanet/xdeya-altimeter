@@ -185,7 +185,7 @@ tm_t tmNow(uint32_t earlerms) {
         h   : dt.hour(),
         m   : dt.minute(),
         s   : dt.second(),
-        tick: tick
+        tick: static_cast<uint8_t>(tick >= 0 ? tick : 0)
     };
 }
 

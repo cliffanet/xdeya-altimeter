@@ -176,7 +176,7 @@ static void drawTxtCourse(ARG_COMP_DEF) {
         y += u8g2.getAscent()+2;
         u8g2.drawTxt(cx-u8g2.getTxtWidth(s)-10, y, s);
         
-        sprintf_P(s, PSTR("%0.0f"), NAV_DEG(gps.heading));
+        sprintf_P(s, PSTR("%d"), NAV_DEG(gps.heading));
         #if HWVER < 4
             u8g2.setFont(u8g2_font_helvB08_tr);
         #else // if HWVER < 4
@@ -262,9 +262,9 @@ static void drawPoint(ARG_COMP_DEF, double head = 0) {
 
 static void drawMove(ARG_COMP_DEF, double head = 0) {
     auto &gps = gpsInf();
-    double ang = NAV_RAD(gps.heading) + head;
+    double ang = NAV_RAD_F(gps.heading) + head;
     
-    double speed = NAV_CM(gps.gSpeed);
+    double speed = NAV_CM_F(gps.gSpeed);
     
     if (speed < 0.5)
         return;

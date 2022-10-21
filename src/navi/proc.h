@@ -22,11 +22,15 @@
 #define NAV_KOEF_MM     1000L
 #define NAV_KOEF_CM     100L
 
-#define NAV_LATLON(x)   ((double)(x) / NAV_KOEF_LATLON)
-#define NAV_DEG(x)      ((double)(x) / NAV_KOEF_DEG)
-#define NAV_RAD(x)      ((double)(x) / NAV_KOEF_DEG * DEG_TO_RAD)
-#define NAV_MM(x)       ((double)(x) / NAV_KOEF_MM)
-#define NAV_CM(x)       ((double)(x) / NAV_KOEF_CM)
+#define NAV_LATLON(x)   (static_cast<double>(x) / NAV_KOEF_LATLON)
+#define NAV_DEG(x)      ((x) / NAV_KOEF_DEG)
+#define NAV_DEG_F(x)    NAV_DEG(static_cast<double>(x))
+#define NAV_RAD(x)      ((x) / NAV_KOEF_DEG * DEG_TO_RAD)
+#define NAV_RAD_F(x)    NAV_RAD(static_cast<double>(x))
+#define NAV_MM(x)       ((x) / NAV_KOEF_MM)
+#define NAV_MM_F(x)     NAV_MM(static_cast<double>(x))
+#define NAV_CM(x)       ((x) / NAV_KOEF_CM)
+#define NAV_CM_F(x)     NAV_CM(static_cast<double>(x))
 
 #define NAV_VALID(gps)              (gps.rcvok && (gps.numSV > 0) && (gps.gpsFix == 3))
 #define NAV_VALID_LOCATION(gps)     (NAV_VALID(gps) && (gps.hAcc < 30000))

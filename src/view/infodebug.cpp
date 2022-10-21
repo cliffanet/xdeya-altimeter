@@ -174,57 +174,57 @@ class ViewInfoDebug : public ViewInfo {
                 
                 case 23:
                     PRNL("NAVI hMSL");
-                    PRNR("%.2f m", NAV_MM(gpsInf().hMSL));
+                    PRNR("%.2f m", NAV_MM_F(gpsInf().hMSL));
                     break;
                 
                 case 24:
                     PRNL("NAVI hAcc");
-                    PRNR("%.2f m", NAV_MM(gpsInf().hAcc));
+                    PRNR("%.2f m", NAV_MM_F(gpsInf().hAcc));
                     break;
                 
                 case 25:
                     PRNL("NAVI vAcc");
-                    PRNR("%.2f m", NAV_MM(gpsInf().vAcc));
+                    PRNR("%.2f m", NAV_MM_F(gpsInf().vAcc));
                     break;
                 
                 case 26:
                     PRNL("NAVI velN");
-                    PRNR("%.2f m/s", NAV_CM(gpsInf().velN));
+                    PRNR("%.2f m/s", NAV_CM_F(gpsInf().velN));
                     break;
                 
                 case 27:
                     PRNL("NAVI velE");
-                    PRNR("%.2f m/s", NAV_CM(gpsInf().velE));
+                    PRNR("%.2f m/s", NAV_CM_F(gpsInf().velE));
                     break;
                 
                 case 28:
                     PRNL("NAVI velD");
-                    PRNR("%.2f m/s", NAV_CM(gpsInf().velD));
+                    PRNR("%.2f m/s", NAV_CM_F(gpsInf().velD));
                     break;
                 
                 case 29:
                     PRNL("NAVI speed");
-                    PRNR("%.2f m/s", NAV_CM(gpsInf().speed));
+                    PRNR("%.2f m/s", NAV_CM_F(gpsInf().speed));
                     break;
                 
                 case 30:
                     PRNL("NAVI gSpeed");
-                    PRNR("%.2f m/s", NAV_CM(gpsInf().gSpeed));
+                    PRNR("%.2f m/s", NAV_CM_F(gpsInf().gSpeed));
                     break;
                 
                 case 31:
                     PRNL("NAVI heading");
-                    PRNR("%.1f deg", NAV_DEG(gpsInf().heading));
+                    PRNR("%.1f deg", NAV_DEG_F(gpsInf().heading));
                     break;
                 
                 case 32:
                     PRNL("NAVI sAcc");
-                    PRNR("%.2f m/s", NAV_CM(gpsInf().sAcc));
+                    PRNR("%.2f m/s", NAV_CM_F(gpsInf().sAcc));
                     break;
                 
                 case 33:
                     PRNL("NAVI cAcc");
-                    PRNR("%.1f deg", NAV_DEG(gpsInf().cAcc));
+                    PRNR("%.1f deg", NAV_DEG_F(gpsInf().cAcc));
                     break;
                 
                 case 34:
