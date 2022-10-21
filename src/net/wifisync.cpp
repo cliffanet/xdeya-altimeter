@@ -93,8 +93,10 @@ WRK_DEFINE(WIFI_SYNC) {
         }
         
         void cancel() {
-            if (isrun())
+            if (isrun()) {
                 m_st = stUserCancel;
+                m_timeout = 0;
+            }
         }
         
         cmpl_t complete() {
@@ -157,7 +159,7 @@ WRK_DEFINE(WIFI_SYNC) {
         }
         
         if (m_st == stUserCancel)
-            WrkProc::STATE_FINISH;
+            WRK_RETURN_FINISH;
         
         if ((m_sock != NULL) && m_sock->connected()) {
             m_pro.rcvprocess();
@@ -346,12 +348,15 @@ WRK_DEFINE(WIFI_SYNC) {
                 WRK_RETURN_RUN;
             
             case 0x54: { // track request
-                TIMEOUT(SendTrack, 0);
+                // Сделаем тут таймаут побольше, считаться он будет только после завершения процесса передачи.
+                // Большой таймаут нужен, чтобы после отправки данных нужно время, чтобы принимающая сторона
+                // доприняла все даныне и отправила запрос на следующий трек.
+                TIMEOUT(SendTrack, 300);
                 // команды выше распаковывают данные внутри подворкеров,
                 // а нам надо распаковать тут
                 trksrch_t srch;
                 RECV("NNNTC", srch);
-                
+
                 m_wrk = sendTrack(&m_pro, srch, true);
                 if (m_wrk == WRKKEY_NONE)
                     RETURN_ERR(RecvData);
