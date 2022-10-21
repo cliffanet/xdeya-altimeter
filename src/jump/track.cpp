@@ -112,8 +112,8 @@ uint8_t FileTrack::findfile(chs_t cks) {
     return 0;
 }
 
-bool FileTrack::create(const head_t &head) {
-    if (!rotate())
+bool FileTrack::create(const head_t &head, bool _rotate) {
+    if (_rotate && !rotate())
         return false;
     
     if (!open(1, MODE_WRITE))
@@ -161,6 +161,84 @@ static bool trkCheckAvail(bool removeFirst) {
 /* ------------------------------------------------------------------------------------------- *
  *  Процесс трекинга
  * ------------------------------------------------------------------------------------------- */
+bool file_exists(const char *fname, bool external);
+bool file_rename(const char *fname1, const char *fname2, bool external);
+bool file_remove(const char *fname, bool external);
+
+#define WRK_RETURN_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); WRK_RETURN_END; } while (0)
+
+WRK_DEFINE(TRK_ROTATE) {
+    private:
+        bool m_isok;
+        bool m_useext;
+        uint8_t m_fn;
+        const char *m_fname_P;
+    
+    public:
+        bool isok() const { return m_isok; }
+    
+    WRK_CLASS(TRK_ROTATE)(bool external, bool noremove = false) :
+        m_isok(false),
+        m_useext(external),
+        m_fn(1),
+        m_fname_P(PSTR(TRK_FILE_NAME))
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+    
+    WRK_PROCESS
+        CONSOLE("track rotate begin, useext: %d", m_useext);
+    
+    WRK_BREAK
+        // ищем первый свободный слот
+        char fname[37];
+        fileName(fname, sizeof(fname), m_fname_P, m_fn);
+        if (file_exists(fname, m_useext)) {
+            if (m_fn < 99) {
+                m_fn++; // пока ещё не достигли максимального номера файла, продолжаем
+                WRK_RETURN_RUN;
+            }
+            
+            // достигнут максимальный номер файла
+            // его надо удалить и посчитать первым свободным слотом
+            if (!file_remove(fname, m_useext))
+                WRK_RETURN_ERR("Can't remove file '%s'", fname);
+            CONSOLE("file '%s' removed", fname);
+        }
+        CONSOLE("free fnum: %d", m_fn);
+    
+    WRK_BREAK_RUN
+        // теперь переименовываем все по порядку
+        if (m_fn > 1) {
+            char src[37], dst[37];
+            fileName(src, sizeof(src), m_fname_P, m_fn-1);
+            fileName(dst, sizeof(dst), m_fname_P, m_fn);
+        
+            if (!file_rename(src, dst, m_useext))
+                WRK_RETURN_ERR("Can't rename file '%s' to '%s'", src, dst);
+            CONSOLE("file '%s' renamed to '%s'", src, dst);
+        
+            m_fn--;
+            WRK_RETURN_RUN;
+        }
+
+        CONSOLE("track rotate finish");
+        m_isok = true;
+    WRK_END
+};
+
+WrkProc::key_t trkRotate(bool external, bool noremove) {
+    if (!noremove)
+        return wrkRand(TRK_ROTATE, external, noremove);
+    
+    wrkRun(TRK_ROTATE, external, noremove);
+    return WRKKEY_TRK_ROTATE;
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Процесс трекинга
+ * ------------------------------------------------------------------------------------------- */
 
 WRK_DEFINE(TRK_SAVE) {
     private:
@@ -195,9 +273,22 @@ WRK_DEFINE(TRK_SAVE) {
 #else
         useext = false;
 #endif
-        CONSOLE("track started by: 0x%02x, useext: %d", m_by, useext);
+        CONSOLE("track starting by: 0x%02x, useext: %d", m_by, useext);
         
-        WRK_BREAK_RUN
+        // rotate файлов
+        trkRotate(useext, true);
+        
+    WRK_BREAK_RUN
+        // Проверяем завершение выполнения rotate
+        const auto wrk = wrkGet(TRK_ROTATE);
+        if (wrk == NULL)
+            WRK_RETURN_ERR("Rotate die");
+        if (wrk->isrun())
+            WRK_RETURN_WAIT;
+        if (!wrk->isok())
+            WRK_RETURN_END;
+        
+    WRK_BREAK_RUN
             
         if (m_by == 0)
             WRK_RETURN_END;

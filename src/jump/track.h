@@ -76,7 +76,7 @@ class FileTrack : public FileBinNum {
         virtual bool exists(uint8_t n) { return FileBinNum::exists(n, true); }
         virtual bool remove(uint8_t n) { return FileBinNum::remove(n, true); }
         
-        bool create(const head_t &head);
+        bool create(const head_t &head, bool _rotate = false);
 };
 
 // Под сколько ещё записей доступно место

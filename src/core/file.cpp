@@ -54,7 +54,7 @@ void fileIntStop() {
     initok &= ~2;
 }
 
-static bool file_exists(const char *fname, bool external = false) {
+bool file_exists(const char *fname, bool external) {
 #ifdef USE_SDCARD
     if (external && ((initok & 1) > 0))
         return SD.exists(fname);
@@ -66,7 +66,7 @@ static bool file_exists(const char *fname, bool external = false) {
     return false;
 }
 
-static bool file_remove(const char *fname, bool external = false) {
+bool file_remove(const char *fname, bool external) {
 #ifdef USE_SDCARD
     if (external && ((initok & 1) > 0))
         return SD.remove(fname);
@@ -78,7 +78,7 @@ static bool file_remove(const char *fname, bool external = false) {
     return false;
 }
 
-static bool file_rename(const char *fname1, const char *fname2, bool external = false) {
+bool file_rename(const char *fname1, const char *fname2, bool external) {
 #ifdef USE_SDCARD
     if (external && ((initok & 1) > 0))
         return SD.rename(fname1, fname2);
