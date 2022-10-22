@@ -181,6 +181,35 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
                 NXTSZ_(8, 8)
                 break;
             
+            case 'B':
+                if ((pk[1] >= '0') && (pk[1] <= '9')) {
+                    // этот модификатор означает наличие буфера размером в N байт,
+                    // который будем передавать как есть:
+                    // и в src и в dst д.б. N байт
+                    // однако, позволительно как в src, так и в dst иметь меньше байт,
+                    // если это конец соответствующих входных объектов памяти (srcsz/dstsz).
+                    int l = 0;
+                    while ((pk[1] >= '0') && (pk[1] <= '9')) {
+                        l = l*10 + (pk[1] - '0');
+                        pk++;
+                    }
+                    int ld = l <= dstsz ? l : dstsz;
+                    int ls = l <= srcsz ? l : srcsz;
+                    if (ld <= ls)
+                        memcpy(dst, src, ld);
+                    else {
+                        memcpy(dst, src, ls);
+                        // заполнение остатка нулями пока выключено,
+                        // непонятна необходимость, а время может занимать
+                        // заполнять нулями можно и снаружи при инициализации переменной *dst
+                        //bzero(dst+ls, ld-ls);
+                    }
+                    NXTSZ_(ld, ls)
+                    break;
+                }
+                else
+                    return false;
+            
             case 'a':
                 if ((pk[1] >= '0') && (pk[1] <= '9')) {
                     // этот модификатор, если указаны цифры (даже если только 1),
@@ -320,6 +349,35 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
                 memcpy(dst+2, src+2, 6);
                 NXTSZ_(8, 8)
                 break;
+            
+            case 'B':
+                if ((pk[1] >= '0') && (pk[1] <= '9')) {
+                    // этот модификатор означает наличие буфера размером в N байт,
+                    // который будем передавать как есть:
+                    // и в src и в dst д.б. N байт,
+                    // однако, позволительно как в src, так и в dst иметь меньше байт,
+                    // если это конец соответствующих входных объектов памяти (srcsz/dstsz).
+                    int l = 0;
+                    while ((pk[1] >= '0') && (pk[1] <= '9')) {
+                        l = l*10 + (pk[1] - '0');
+                        pk++;
+                    }
+                    int ld = l <= dstsz ? l : dstsz;
+                    int ls = l <= srcsz ? l : srcsz;
+                    if (ld <= ls)
+                        memcpy(dst, src, ld);
+                    else {
+                        memcpy(dst, src, ls);
+                        // заполнение остатка нулями пока выключено,
+                        // непонятна необходимость, а время может занимать
+                        // заполнять нулями можно и снаружи при инициализации переменной *dst
+                        //bzero(dst+ls, ld-ls);
+                    }
+                    NXTSZ_(ld, ls)
+                    break;
+                }
+                else
+                    return false;
             
             case 'a':
                 if ((pk[1] >= '0') && (pk[1] <= '9')) {

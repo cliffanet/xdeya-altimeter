@@ -834,7 +834,7 @@ WRK_DEFINE(RECV_FIRMWARE) {
         if (m_pro->rcvcmd() != 0x48)
             WRK_RETURN_ERR("Recv wrong cmd=0x%02x info", m_pro->rcvcmd());
         
-        struct {
+        struct __attribute__((__packed__)) {
             uint32_t    size;
             char        md5[37];
         } info;
@@ -858,16 +858,15 @@ WRK_DEFINE(RECV_FIRMWARE) {
     WRK_BREAK_RECV
         switch (m_pro->rcvcmd()) {
             case 0x49: { // fwupd data
-                uint16_t    sz;
-                uint8_t     buf[1000];
+                struct __attribute__((__packed__)) {
+                    uint16_t    sz;
+                    uint8_t     buf[1000];
+                } d;
+                RECV("nB1000", d);
                 
-                RECV("n", sz);
-                int sz1 = RECVRAW(buf);
-                if ((sz1 == 0) || (sz1 != sz))
-                    WRK_RETURN_ERR("Recv sz wrong: %d <-> %u", sz1, sz);
-                sz1 = Update.write(buf, sz);
-                if ((sz1 == 0) || (sz1 != sz))
-                    WRK_RETURN_ERR("Burn sz wrong: %d <-> %u", sz1, sz);
+                auto sz = Update.write(d.buf, d.sz);
+                if ((sz == 0) || (sz != d.sz))
+                    WRK_RETURN_ERR("Burn sz wrong: %d <-> %u", sz, d.sz);
                 
                 m_rcv += sz;
                 
