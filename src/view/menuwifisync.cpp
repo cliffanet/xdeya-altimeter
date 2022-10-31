@@ -9,6 +9,7 @@
 #include "../cfg/jump.h"
 #include "../net/wifi.h"
 #include "../net/wifisync.h"
+#include "../net/wifiapp.h"
 
 #include <vector>
 
@@ -212,7 +213,8 @@ ViewNetSync vNetSync;
 
 
 /* ------------------------------------------------------------------------------------------- *
- *  ViewMenuWifiSync - список wifi-сетей
+ *  ViewMenuWifiNet - список wifi-сетей
+ *  вызываем doafter, чтобы выбрать нужную
  * ------------------------------------------------------------------------------------------- */
 typedef struct {
     char name[33];
@@ -220,7 +222,7 @@ typedef struct {
     bool isopen;
 } wifi_t;
 
-class ViewMenuWifiSync : public ViewMenu {
+class ViewMenuWifiNet : public ViewMenu {
     public:
         void restore() {
             CONSOLE("Wifi init begin");
@@ -305,9 +307,7 @@ class ViewMenuWifiSync : public ViewMenu {
                 return;
             
             if (n->isopen) {
-                wifiSyncBegin(n->ssid);
-                viewSet(vNetSync);
-                //vNetSync.begin(n->ssid, NULL);
+                netopen(n->ssid);
             }
             else {
                 char pass[64];
@@ -315,9 +315,8 @@ class ViewMenuWifiSync : public ViewMenu {
                     menuFlashP(PTXT(WIFI_NEEDPASSWORD));
                     return;
                 }
-
-                wifiSyncBegin(n->ssid, pass);
-                viewSet(vNetSync);
+                
+                netopen(n->ssid, pass);
             }
         }
         
@@ -331,11 +330,28 @@ class ViewMenuWifiSync : public ViewMenu {
     private:
         std::vector<wifi_t> wifiall;
         bool _isinit = true;
+        
+        virtual void netopen(const char *ssid, const char *pass = NULL) = 0;
 };
 
-static ViewMenuWifiSync vMenuWifiSync;
-ViewMenu *menuWifiSync() { return &vMenuWifiSync; }
+class ViewMenuWifi2Cli : public ViewMenuWifiNet {
+    void netopen(const char *ssid, const char *pass = NULL) {
+        wifiCliBegin(ssid, pass);
+        setViewMain();
+    }
+};
+static ViewMenuWifi2Cli vMenuWifi2Cli;
+ViewMenu *menuWifi2Cli() { return &vMenuWifi2Cli; }
+
+class ViewMenuWifi2Server : public ViewMenuWifiNet {
+    void netopen(const char *ssid, const char *pass = NULL) {
+        wifiSyncBegin(ssid, pass);
+        viewSet(vNetSync);
+    }
+};
+static ViewMenuWifi2Server vMenuWifi2Server;
+ViewMenu *menuWifi2Server() { return &vMenuWifi2Server; }
 
 bool menuIsWifi() {
-    return viewIs(vMenuWifiSync) || viewIs(vNetSync);
+    return viewIs(vMenuWifi2Cli) || viewIs(vMenuWifi2Server) || viewIs(vNetSync);
 }

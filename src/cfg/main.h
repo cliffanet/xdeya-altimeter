@@ -68,7 +68,7 @@ typedef struct __attribute__((__packed__)) {
     
     uint8_t navmode = 3;                        // режим навигации - gps/glonass
     
-    uint8_t _1 = 0;                             // выравнивающие байты
+    uint8_t net = 0;                            // net: 0x1 = bluetooth, 0x2 = wifi
     uint32_t _2 = 0;
 } cfg_main_t;
 

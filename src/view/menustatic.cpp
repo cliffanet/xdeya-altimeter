@@ -13,6 +13,8 @@
 #include "../jump/proc.h"
 #include "../jump/track.h"
 #include "../core/filetxt.h"
+#include "../net/bt.h"
+#include "../net/wifiapp.h"
 #include "../../def.h" // time/pwr
 
 #if HWVER >= 5
@@ -169,7 +171,8 @@ class ViewMenuStatic : public ViewMenu {
  *  Внешние подменю
  * ------------------------------------------------------------------------------------------- */
 ViewMenu *menuLogBook();
-ViewMenu *menuWifiSync();
+ViewMenu *menuWifi2Cli();
+ViewMenu *menuWifi2Server();
 #if HWVER >= 5
 ViewMenu *menuFwSdCard();
 #endif
@@ -1153,6 +1156,42 @@ static const menu_el_t menusystem[] {
 static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Меню синхронизации по сети
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menunetsync[] {
+    {
+        .name       = PTXT(MENU_NET_WIFICLI),
+        .submenu    = menuWifi2Cli(),
+        .enter      = NULL,
+        .showval    = wifiCliNet,
+    },
+    
+#ifdef USE_BLUETOOTH
+    {
+        .name       = PTXT(MENU_NET_BLUETOOTH),
+        .submenu    = NULL,
+        .enter      = [] () {
+            if ((cfg.d().net & 0x1) == 0) {
+                cfg.set().net |= 0x1;
+                bluetoothStart();
+            }
+            else {
+                cfg.set().net &= ~0x1;
+                bluetoothStop();
+            }
+        },
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().bt == 1); },
+    },
+#endif // #ifdef USE_BLUETOOTH
+    
+    {
+        .name       = PTXT(MENU_NET_WIFISERVER),
+        .submenu    = menuWifi2Server(),
+    },
+};
+static ViewMenuStatic vMenuNetSync(menunetsync, sizeof(menunetsync)/sizeof(menu_el_t));
+
+/* ------------------------------------------------------------------------------------------- *
  *  Главное меню конфига, тут в основном только подразделы
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menumain[] {
@@ -1185,8 +1224,8 @@ static const menu_el_t menumain[] {
         .submenu    = &vMenuSystem,
     },
     {
-        .name       = PTXT(MENU_ROOT_WIFISYNC),
-        .submenu    = menuWifiSync(),
+        .name       = PTXT(MENU_ROOT_NETSYNC),
+        .submenu    = &vMenuNetSync,
     },
 };
 static ViewMenuStatic vMenuMain(menumain, sizeof(menumain)/sizeof(menu_el_t));

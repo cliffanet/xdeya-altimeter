@@ -147,12 +147,16 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_SYSTEM_HWTEST      "Тестирование аппарат."
 #define TXT_MENU_SYSTEM_MAGCALIB    "Калибровка магнетом."
 
+#define TXT_MENU_NET_BLUETOOTH      "Bluetooth"
+#define TXT_MENU_NET_WIFICLI        "Приложение по WiFi"
+#define TXT_MENU_NET_WIFISERVER     "На сервер по WiFi"
+
 #define TXT_MENU_ROOT_NAVPOINT      "NAVI точки"
 #define TXT_MENU_ROOT_JUMPCOUNT     "Кол-во прыжков"
 #define TXT_MENU_ROOT_LOGBOOK       "LogBook"
 #define TXT_MENU_ROOT_OPTIONS       "Параметры"
 #define TXT_MENU_ROOT_SYSTEM        "Система"
-#define TXT_MENU_ROOT_WIFISYNC      "Wifi синхронизация"
+#define TXT_MENU_ROOT_NETSYNC       "Синхронизация"
 
 #define TXT_MENU_ROOT               "Настройки"
 

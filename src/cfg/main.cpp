@@ -8,6 +8,7 @@
 #include "../core/filebin.h"
 #include "../view/base.h"
 #include "../navi/compass.h"
+#include "../net/bt.h"
 
 #include <SPIFFS.h> // cfg reset default = format
 
@@ -181,6 +182,11 @@ bool cfgLoad(bool apply) {
         btnFlipp180(cfg.d().flipp180);
         if (cfg.d().navonpwron)
             gpsOn(NAV_PWRBY_PWRON);
+        
+#ifdef USE_BLUETOOTH
+        if ((cfg.d().net & 0x1) > 0)
+            bluetoothStart();
+#endif // #ifdef USE_BLUETOOTH
     }
     
     return ok;

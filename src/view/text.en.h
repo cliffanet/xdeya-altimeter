@@ -141,12 +141,16 @@
 #define TXT_MENU_SYSTEM_HWTEST      "Hardware test"
 #define TXT_MENU_SYSTEM_MAGCALIB    "Mag calibrate"
 
+#define TXT_MENU_NET_BLUETOOTH      "Bluetooth"
+#define TXT_MENU_NET_WIFICLI        "App whith WiFi"
+#define TXT_MENU_NET_WIFISERVER     "To server whith WiFi"
+
 #define TXT_MENU_ROOT_NAVPOINT      "NAVI points"
 #define TXT_MENU_ROOT_JUMPCOUNT     "Jump count"
 #define TXT_MENU_ROOT_LOGBOOK       "LogBook"
 #define TXT_MENU_ROOT_OPTIONS       "Options"
 #define TXT_MENU_ROOT_SYSTEM        "System"
-#define TXT_MENU_ROOT_WIFISYNC      "Wifi sync"
+#define TXT_MENU_ROOT_NETSYNC       "Net Sync"
 
 #define TXT_MENU_ROOT               "Configuration"
 
