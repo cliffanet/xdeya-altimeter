@@ -42,7 +42,7 @@ Qt::ItemFlags ModBtSrch::flags(const QModelIndex &index) const
 void ModBtSrch::update(const CList &list)
 {
     m_list.clear();
-    for (auto &item: list)
+    for (const auto &item: list)
         if (
                 item.isValid() &&
                 !item.address().isNull() &&
@@ -52,4 +52,12 @@ void ModBtSrch::update(const CList &list)
             m_list.push_back(item);
 
     emit layoutChanged();
+}
+
+QBluetoothDeviceInfo ModBtSrch::device(qsizetype i)
+{
+    if ((i < 0) || (i >= m_list.count()))
+        return QBluetoothDeviceInfo();
+
+    return m_list[i];
 }

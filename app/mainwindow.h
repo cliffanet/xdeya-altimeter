@@ -9,6 +9,7 @@ QT_END_NAMESPACE
 
 class ModBtSrch;
 
+class QItemSelection;
 class QBluetoothDeviceDiscoveryAgent;
 class QBluetoothDeviceInfo;
 
@@ -22,9 +23,13 @@ public:
 
 private slots:
     void on_btnBlueSrch_clicked();
+    void on_btnConnect_clicked();
+    void on_tvBT_activated(const QModelIndex &index);
+    void btSrchSelect(const QItemSelection &, const QItemSelection &);
     void btDiscovery(const QBluetoothDeviceInfo &device);
     void btError();
     void btDiscoverFinish();
+    void btConnect(qsizetype i);
 
 private:
     Ui::MainWindow *ui;

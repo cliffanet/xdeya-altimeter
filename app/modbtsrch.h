@@ -16,6 +16,7 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     void update(const CList &list);
+    QBluetoothDeviceInfo device(qsizetype i);
 
 private:
     CList m_list;

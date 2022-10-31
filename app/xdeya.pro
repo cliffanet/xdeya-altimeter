@@ -20,7 +20,7 @@ HEADERS += \
 FORMS += \
     mainwindow.ui
 
-ios: QMAKE_INFO_PLIST = Info/Info.plist
+ios: QMAKE_INFO_PLIST = Info/Info.ios.plist.app.in
 macos: QMAKE_INFO_PLIST = Info/Info.qmake.macos.plist
 
 # Default rules for deployment.
