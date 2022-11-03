@@ -11,11 +11,13 @@ CONFIG += c++11
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    modbtsrch.cpp
+    moddevsrch.cpp \
+    wifidevicediscovery.cpp
 
 HEADERS += \
     mainwindow.h \
-    modbtsrch.h
+    moddevsrch.h \
+    wifidevicediscovery.h
 
 FORMS += \
     mainwindow.ui

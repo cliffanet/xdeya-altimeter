@@ -3,11 +3,13 @@
 
 #include <QMainWindow>
 
+#include "wifidevicediscovery.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-class ModBtSrch;
+class ModDevSrch;
 
 class QItemSelection;
 class QBluetoothDeviceDiscoveryAgent;
@@ -22,18 +24,23 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_btnBlueSrch_clicked();
+    void on_btnDevSrch_clicked();
     void on_btnConnect_clicked();
-    void on_tvBT_activated(const QModelIndex &index);
-    void btSrchSelect(const QItemSelection &, const QItemSelection &);
-    void btDiscovery(const QBluetoothDeviceInfo &device);
+    void on_tvDevSrch_activated(const QModelIndex &index);
+    void devSrchSelect(const QItemSelection &, const QItemSelection &);
+    void btDiscovery(const QBluetoothDeviceInfo &dev);
     void btError();
     void btDiscoverFinish();
-    void btConnect(qsizetype i);
+    void wfDiscovery(const WifiDeviceItem &dev);
+    void wfError(const QString &msg);
+    void wfDiscoverFinish();
+    void updDiscoverState();
+    void devConnect(qsizetype i);
 
 private:
     Ui::MainWindow *ui;
-    ModBtSrch *mod_btdiscovery;
+    ModDevSrch *mod_devsrch;
     QBluetoothDeviceDiscoveryAgent *btDAgent;
+    WifiDeviceDiscovery *wfDAgent;
 };
 #endif // MAINWINDOW_H
