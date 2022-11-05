@@ -5,23 +5,7 @@
 #ifndef _net_binproto_H
 #define _net_binproto_H
 
-#include <stdint.h>
-#include <stddef.h>
-
-/* ------------------------------------------------------------------------------------------- *
- *  Виртуальный класс, обеспечивающий необходимые функции передачи данных
- * ------------------------------------------------------------------------------------------- */
-class NetSocket {
-    public:
-        virtual bool connect() = 0;
-        virtual void disconnect() = 0;
-        virtual bool connected() = 0;
-        virtual size_t available() = 0;
-        virtual size_t recv(uint8_t *data, size_t sz) = 0;
-        virtual size_t recv(size_t sz); // стравливание буфера
-        virtual size_t send(const uint8_t *data, size_t sz) = 0;
-        virtual const char *err_P() const { return NULL; }
-};
+#include "netsocket.h"
 
 /* ------------------------------------------------------------------------------------------- *
  *  Процессинг по передаче упакованных данных
@@ -53,6 +37,7 @@ class BinProto {
         static
         bool dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t *src, size_t srcsz);
 
+        NetSocket *sock() const { return m_nsock; }
         void sock_set(NetSocket * nsock);
         void sock_clear();
         

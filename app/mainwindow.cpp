@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include "moddevsrch.h"
+#include "netprocess.h";
 
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
@@ -25,6 +26,8 @@ MainWindow::MainWindow(QWidget *parent)
         SLOT(devSrchSelect(const QItemSelection &, const QItemSelection &))
     );
 
+    netProc = new NetProcess(this);
+
     btDAgent = new QBluetoothDeviceDiscoveryAgent(this);
     btDAgent->setLowEnergyDiscoveryTimeout(10000);
     qDebug() << btDAgent->supportedDiscoveryMethods();
@@ -36,6 +39,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(wfDAgent, &WifiDeviceDiscovery::discoverDeviceFound,    this, &MainWindow::wfDiscovery);
     connect(wfDAgent, &WifiDeviceDiscovery::onError,                this, &MainWindow::wfError);
     connect(wfDAgent, &WifiDeviceDiscovery::discoverFinish,         this, &MainWindow::wfDiscoverFinish);
+
+
 }
 
 MainWindow::~MainWindow()
@@ -48,7 +53,7 @@ void MainWindow::on_btnDevSrch_clicked()
 {
     ui->labErr->setVisible(false);
     mod_devsrch->clear();
-    btDAgent->start();
+    //btDAgent->start();
     wfDAgent->start();
     updDiscoverState();
 }
@@ -101,7 +106,7 @@ void MainWindow::btDiscoverFinish()
 
 void MainWindow::wfDiscovery(const WifiDeviceItem &dev)
 {
-    qDebug() << "Wifi Found new device:" << dev.name << '(' << dev.ip.toString() << ')';
+    qDebug() << "Wifi Found new device:" << dev.name << '(' << dev.ip.toString() << ':' << dev.port << ')';
     mod_devsrch->addWifi(dev);
 }
 
@@ -137,9 +142,11 @@ void MainWindow::devConnect(qsizetype i)
 
     qDebug() << "Connect to: " << mod_devsrch->name(i) << " (" << mod_devsrch->src(i) << ")";
     switch (mod_devsrch->src(i)) {
-        case ModDevSrch::SRC_WIFI:
-
+        case ModDevSrch::SRC_WIFI: {
+            auto &wifi = mod_devsrch->wifi(i);
+            netProc->connectTcp(wifi.ip, wifi.port);
             break;
+        }
 
         default:
             return;

@@ -10,6 +10,7 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class ModDevSrch;
+class NetProcess;
 
 class QItemSelection;
 class QBluetoothDeviceDiscoveryAgent;
@@ -40,6 +41,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     ModDevSrch *mod_devsrch;
+    NetProcess *netProc;
     QBluetoothDeviceDiscoveryAgent *btDAgent;
     WifiDeviceDiscovery *wfDAgent;
 };

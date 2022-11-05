@@ -2,6 +2,8 @@
 
 #include <QBluetoothAddress>
 
+static WifiDeviceItem wifiNull = {};
+
 ModDevSrch::ModDevSrch(QObject *parent)
     : QAbstractTableModel(parent)
 {
@@ -73,4 +75,12 @@ ModDevSrch::src_t ModDevSrch::src(qsizetype i) const
         (i >= 0) && (i < m_list.count()) ?
             m_list[i].src :
             SRS_UNKNOWN;
+}
+
+const WifiDeviceItem &ModDevSrch::wifi(qsizetype i) const
+{
+    return
+        (i >= 0) && (i < m_list.count()) ?
+            m_list[i].wifi :
+            wifiNull;
 }

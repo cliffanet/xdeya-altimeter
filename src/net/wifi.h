@@ -64,6 +64,6 @@ int8_t wifiPower();
 #define WIFI_SRV_PORT    9971
 
 class NetSocket;
-NetSocket *wifiCliCreate();
+NetSocket *wifiCliConnect();
 
 #endif // _net_wifi_H

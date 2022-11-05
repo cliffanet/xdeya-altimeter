@@ -8,7 +8,7 @@
 #include <math.h>
 #include <sys/select.h>
 
-#include "../log.h" // временно для отладки
+//#include "../log.h" // временно для отладки
 
 #if defined(ARDUINO_ARCH_ESP32)
 
@@ -434,6 +434,10 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
     return true;
 }
 
+#if !defined(strlen_P) && !defined(strcpy_P)
+#define pk pk_P
+#endif
+
 /* ------------------------------------------------------------------------------------------- *
  *  BinProto
  * ------------------------------------------------------------------------------------------- */
@@ -489,9 +493,11 @@ bool BinProto::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, 
     if (sz > 0) {
         if (pk_P == NULL)
             return false;
-        
+
+#if defined(strlen_P) && defined(strcpy_P)        
         char pk[ strlen_P(pk_P) + 1 ];
         strcpy_P(pk, pk_P);
+#endif
         
         len = datapack(buf+hdrsz(), sizeof(buf)-hdrsz(), pk, data, sz);
         if (len < 0)
@@ -614,7 +620,7 @@ BinProto::rcvst_t BinProto::rcvprocess() {
             return m_rcvstate;
         }
         if (m_nsock->available() < m_rcvsz) {
-            CONSOLE("wait data");
+//            CONSOLE("wait data");
             if (!m_nsock->connected())
                 m_rcvstate = RCV_DISCONNECTED;
             return m_rcvstate;
@@ -643,8 +649,10 @@ bool BinProto::rcvdata(const char *pk_P, uint8_t *data, size_t sz) {
     if (sz1 < 0)
         return false;
 
+#if defined(strlen_P) && defined(strcpy_P)  
     char pk[ strlen_P(pk_P) + 1 ];
     strcpy_P(pk, pk_P);
+#endif
 
     return dataunpack(data, sz, pk, src, sz1);
 }

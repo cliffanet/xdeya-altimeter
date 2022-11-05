@@ -34,6 +34,7 @@ public:
     void addWifi(const WifiDeviceItem &dev);
     QString name(qsizetype i) const;
     src_t src(qsizetype i) const;
+    const WifiDeviceItem &wifi(qsizetype i) const;
 
 private:
     CList m_list;

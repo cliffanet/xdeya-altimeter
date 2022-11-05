@@ -197,8 +197,8 @@ WRK_DEFINE(WIFI_SYNC) {
     WRK_BREAK_TIMEOUT(SrvConnect, 0)
         // ожидаем соединения к серверу
         if (m_sock == NULL)
-            m_sock = wifiCliCreate();
-        if (!m_sock->connect())
+            m_sock = wifiCliConnect();
+        if (m_sock == NULL)
             RETURN_ERR(SrvConnect);
         m_pro.sock_set(m_sock);
     
@@ -379,7 +379,7 @@ WRK_DEFINE(WIFI_SYNC) {
         m_pro.sock_clear();
         
         if (m_sock != NULL) {
-            m_sock->disconnect();
+            m_sock->close();
             CONSOLE("delete m_sock");
             delete m_sock;
             m_sock = NULL;

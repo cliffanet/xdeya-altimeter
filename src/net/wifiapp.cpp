@@ -14,6 +14,8 @@
 #include <lwip/sockets.h>
 #include <lwip/netdb.h>
 
+#include "esp_system.h" // esp_random
+
 
 //#define ERR(s)                  err(err ## s)
 #define ERR(s)
@@ -25,23 +27,16 @@ WRK_DEFINE(WIFI_CLI) {
         bool        m_cancel, m_wifi;
         uint16_t    m_timeout;
         const char  *m_ssid, *m_pass;
-        int         m_bcast;
-        /*
-        NetSocket   *m_sock;
-        BinProto    m_pro;
-        WrkProc::key_t m_wrk;
-        */
+        int         m_bcast, m_srvsock;
+        uint16_t    m_srvport;
         
         WRK_CLASS(WIFI_CLI)(const char *ssid, const char *pass) :
             m_cancel(false),
             m_wifi(false),
             m_timeout(0),
-            m_bcast(0)
-            /*
-            m_sock(NULL),
-            m_pro(NULL, '%', '#'),
-            m_wrk(WRKKEY_NONE),
-            */
+            m_bcast(0),
+            m_srvsock(0),
+            m_srvport(0)
         {
             // Приходится копировать, т.к. к моменту,
             // когда мы этими строками воспользуемся, их источник будет удалён.
@@ -49,7 +44,14 @@ WRK_DEFINE(WIFI_CLI) {
             // но эти процессы не быстрые, лучше их оставить воркеру.
             m_ssid = strdup(ssid);
             m_pass = pass != NULL ? strdup(pass) : NULL;
-            //optset(O_NOREMOVE); не требуется
+            //optset(O_NOREMOVE); потребуется, если будем использовать код ошибки выполнения
+            
+            // Для m_srvsock можно было бы использовать WiFiServer,
+            // однако, нам бы знать, на каком порту он слушает, т.к. порт мы выбираем
+            // случайным образом. А текущая реализация WiFiServer не позволяет это выяснить.
+            // Чтобы не заниматься дублированием переменных, перепишем себе код реализации,
+            // тем более, там просто, а WiFiServer перезаморочен на варианты применения
+            // available/accept/hasClient
         }
         
         /*
@@ -58,7 +60,6 @@ WRK_DEFINE(WIFI_CLI) {
             CONSOLE("err: %d", st);
             WRK_RETURN_FINISH;
         }
-        */
         state_t chktimeout() {
             if (m_timeout == 0)
                 WRK_RETURN_WAIT;
@@ -69,6 +70,7 @@ WRK_DEFINE(WIFI_CLI) {
             
             RETURN_ERR(Timeout);
         }
+        */
         
         void cancel() {
             if (isrun()) {
@@ -77,41 +79,6 @@ WRK_DEFINE(WIFI_CLI) {
                 m_timeout = 0;
             }
         }
-    
-    // Это выполняем всегда перед входом в process
-    state_t every() {
-        /*
-        if (m_wrk != WRKKEY_NONE) {
-            // Ожидание выполнения дочернего процесса
-            auto wrk = _wrkGet(m_wrk);
-            if (wrk == NULL) {
-                CONSOLE("worker[key=%d] finished unexpectedly", m_wrk);
-                RETURN_ERR(Worker);
-            }
-            if (wrk->isrun())
-                WRK_RETURN_WAIT;
-            
-            CONSOLE("worker[key=%d] finished", m_wrk);
-            
-            // Удаляем завершённый процесс
-            _wrkDel(m_wrk);
-            m_wrk = WRKKEY_NONE;
-        }
-        */
-        
-        if (m_cancel)
-            WRK_RETURN_FINISH;
-        
-        /*
-        if ((m_sock != NULL) && m_sock->connected()) {
-            m_pro.rcvprocess();
-            if (!m_pro.rcvvalid())
-                RETURN_ERR(RecvData);
-        }
-        */
-        
-        WRK_RETURN_RUN;
-    }
     
     WRK_PROCESS
         if (!wifiStart())
@@ -124,7 +91,10 @@ WRK_DEFINE(WIFI_CLI) {
         m_timeout = 300;
     
     WRK_BREAK_RUN
-        // ожидаем соединения по вифи
+        // отмена работы по wifi
+        if (m_cancel)
+            WRK_RETURN_FINISH;
+        // ожидаем соединения по вифи и проверяем состояние
         auto wst = wifiStatus();
         if (wst == WIFI_STA_CONNECTED) {
             if (!m_wifi) {
@@ -139,6 +109,18 @@ WRK_DEFINE(WIFI_CLI) {
                 CONSOLE("wifi fail: %d", wst);
                 m_timeout = 300;
             }
+            if (m_bcast>0) {
+                close(m_bcast);
+                CONSOLE("bcast socket closed (fd: %d)", m_bcast);
+                m_bcast = 0;
+            }
+            if (m_srvsock>0) {
+                close(m_srvsock);
+                CONSOLE("server socket closed (fd: %d; port: %d)", m_srvsock, m_srvport);
+                m_srvsock = 0;
+                m_srvport = 0;
+            }
+            
             if (m_timeout > 0)
                 m_timeout--;
             if (m_timeout == 0) {
@@ -147,52 +129,87 @@ WRK_DEFINE(WIFI_CLI) {
                     RETURN_ERR(WiFiConnect);
                 m_timeout = 300;
             }
+            
             WRK_RETURN_WAIT;
         }
         
+        // Широковещательный сокет для DeviceDiscovery
         if (m_bcast == 0) {
             m_bcast = socket(AF_INET, SOCK_DGRAM, 0);
             int opt=1;
             if (setsockopt(m_bcast, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt)) < 0)
                 RETURN_ERR(SockOpt);
-            CONSOLE("bcast created");
+            CONSOLE("bcast created (fd: %d)", m_bcast);
         }
         
         if (m_timeout > 0)
             m_timeout--;
-        if (m_timeout == 0) {
+        if ((m_srvsock > 0) && (m_timeout == 0)) {
             struct sockaddr_in s;
             bzero(&s, sizeof(s));
             s.sin_family = AF_INET;
             s.sin_port = (in_port_t)htons(3310);
             s.sin_addr.s_addr = htonl(INADDR_BROADCAST);
             
-            const char mess[] = "\0\0XdeYa";
+            char mess[] = "\0\0XdeYa";
+            uint16_t port = htons(m_srvport);
+            memcpy(mess, &port, sizeof(port));
             if(sendto(m_bcast, mess, sizeof(mess)-1, 0, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0)
                 RETURN_ERR(SockSend);
-            CONSOLE("send to bcast");
+            CONSOLE("send to bcast (port: %d)", m_srvport);
             m_timeout = 50;
+        }
+        
+        // Сервер
+        if (m_srvsock == 0) {
+            m_srvsock = socket(AF_INET, SOCK_STREAM, 0);
+            CONSOLE("server socket created (fd: %d)", m_srvsock);
+            int reuse = 1;
+            setsockopt(m_srvsock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+            
+            m_srvport = 35005 + (esp_random() % 256);
+            struct sockaddr_in srv;
+            srv.sin_family = AF_INET;
+            srv.sin_addr.s_addr = htonl(INADDR_ANY);
+            srv.sin_port = htons(m_srvport);
+            if (bind(m_srvsock, (struct sockaddr *)&srv, sizeof(srv)) < 0)
+                RETURN_ERR(SockSrvBind);
+            if (listen(m_srvsock, 4) < 0)
+                RETURN_ERR(SockSrvListen);
+            fcntl(m_srvsock, F_SETFL, O_NONBLOCK);
+            CONSOLE("server socket listen (port: %d)", m_srvport);
+        }
+        
+        if (m_srvsock > 0) {
+            struct sockaddr_in addr;
+            int len = sizeof(struct sockaddr_in);
+#ifdef ESP_IDF_VERSION_MAJOR
+            int sock = lwip_accept(m_srvsock, (struct sockaddr *)&addr, (socklen_t*)&len);
+#else
+            int sock = lwip_accept_r(m_srvsock, (struct sockaddr *)&addr, (socklen_t*)&len);
+#endif
+            if (sock > 0) {
+                uint8_t ip[4];
+                memcpy(ip, &addr.sin_addr, sizeof(ip));
+                CONSOLE("request connection from: %d.%d.%d.%d : %d", ip[0], ip[1], ip[2], ip[3], ntohs(addr.sin_port));
+            }
         }
         
         WRK_RETURN_WAIT;
     WRK_FINISH
         
     void end() {
-        /*
-        if (m_wrk != WRKKEY_NONE) {
-            _wrkDel(m_wrk);
-            m_wrk = WRKKEY_NONE;
+        if (m_bcast>0) {
+            close(m_bcast);
+            CONSOLE("bcast socket closed (fd: %d)", m_bcast);
+            m_bcast = 0;
         }
-        
-        m_pro.sock_clear();
-        
-        if (m_sock != NULL) {
-            m_sock->disconnect();
-            CONSOLE("delete m_sock");
-            delete m_sock;
-            m_sock = NULL;
+        if (m_srvsock>0) {
+            close(m_srvsock);
+            CONSOLE("server socket closed (fd: %d; port: %d)", m_srvsock, m_srvport);
+            m_srvsock = 0;
+            m_srvport = 0;
         }
-        */
         
         wifiStop();
         
