@@ -12,6 +12,7 @@ CONFIG += c++11
 SOURCES += \
     BinProto/BinProto.cpp \
     BinProto/nettcpsocket.cpp \
+    formauth.cpp \
     main.cpp \
     mainwindow.cpp \
     moddevsrch.cpp \
@@ -22,12 +23,14 @@ HEADERS += \
     BinProto/BinProto.h \
     BinProto/netsocket.h \
     BinProto/nettcpsocket.h \
+    formauth.h \
     mainwindow.h \
     moddevsrch.h \
     netprocess.h \
     wifidevicediscovery.h
 
 FORMS += \
+    formauth.ui \
     mainwindow.ui
 
 ios: QMAKE_INFO_PLIST = Info/Info.ios.plist.app.in

@@ -150,6 +150,10 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_NET_BLUETOOTH      "Bluetooth"
 #define TXT_MENU_NET_WIFICLI        "Приложение по WiFi"
 #define TXT_MENU_NET_WIFISERVER     "На сервер по WiFi"
+#define TXT_NET_AUTH_TITLE          "Авторизация в приложении"
+#define TXT_NET_AUTH_TEXT1          "Кто-то к вам подключился"
+#define TXT_NET_AUTH_TEXT2          "и ему нужен этот код:"
+#define TXT_NET_AUTH_WAIT           "Время ожидания: % 2d:%02d"
 
 #define TXT_MENU_ROOT_NAVPOINT      "NAVI точки"
 #define TXT_MENU_ROOT_JUMPCOUNT     "Кол-во прыжков"

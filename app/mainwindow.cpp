@@ -2,7 +2,8 @@
 #include "ui_mainwindow.h"
 
 #include "moddevsrch.h"
-#include "netprocess.h";
+#include "netprocess.h"
+#include "formauth.h"
 
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
@@ -16,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->progressBar->setVisible(false);
     ui->progressBar->setRange(0, 0);
-    ui->labErr->setVisible(false);
+    ui->labSrchErr->setVisible(false);
 
     mod_devsrch = new ModDevSrch(this);
     ui->tvDevSrch->setModel(mod_devsrch);
@@ -27,6 +28,8 @@ MainWindow::MainWindow(QWidget *parent)
     );
 
     netProc = new NetProcess(this);
+    connect(netProc, &NetProcess::waitChange,   this, &MainWindow::netWait);
+    connect(netProc, &NetProcess::rcvInit,      this, &MainWindow::netInit);
 
     btDAgent = new QBluetoothDeviceDiscoveryAgent(this);
     btDAgent->setLowEnergyDiscoveryTimeout(10000);
@@ -39,8 +42,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(wfDAgent, &WifiDeviceDiscovery::discoverDeviceFound,    this, &MainWindow::wfDiscovery);
     connect(wfDAgent, &WifiDeviceDiscovery::onError,                this, &MainWindow::wfError);
     connect(wfDAgent, &WifiDeviceDiscovery::discoverFinish,         this, &MainWindow::wfDiscoverFinish);
-
-
 }
 
 MainWindow::~MainWindow()
@@ -51,7 +52,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_btnDevSrch_clicked()
 {
-    ui->labErr->setVisible(false);
+    ui->labSrchErr->setVisible(false);
     mod_devsrch->clear();
     //btDAgent->start();
     wfDAgent->start();
@@ -69,6 +70,11 @@ void MainWindow::on_btnConnect_clicked()
 void MainWindow::on_tvDevSrch_activated(const QModelIndex &index)
 {
     devConnect(index.row());
+}
+
+void MainWindow::on_btnBackJmp_clicked()
+{
+    ui->stackWnd->setCurrentIndex(0);
 }
 
 void MainWindow::devSrchSelect(const QItemSelection &, const QItemSelection &)
@@ -93,8 +99,8 @@ void MainWindow::btDiscovery(const QBluetoothDeviceInfo &dev)
 
 void MainWindow::btError()
 {
-    ui->labErr->setText( btDAgent->errorString() );
-    ui->labErr->setVisible(true);
+    ui->labSrchErr->setText( btDAgent->errorString() );
+    ui->labSrchErr->setVisible(true);
     updDiscoverState();
 }
 
@@ -112,8 +118,8 @@ void MainWindow::wfDiscovery(const WifiDeviceItem &dev)
 
 void MainWindow::wfError(const QString &msg)
 {
-    ui->labErr->setText( msg );
-    ui->labErr->setVisible(true);
+    ui->labSrchErr->setText( msg );
+    ui->labSrchErr->setVisible(true);
     updDiscoverState();
 }
 
@@ -153,5 +159,52 @@ void MainWindow::devConnect(qsizetype i)
     }
 
     ui->stackWnd->setCurrentIndex(1);
+}
+
+void MainWindow::netWait()
+{
+    switch (netProc->wait()) {
+        case NetProcess::wtDisconnected:
+            switch (netProc->err()) {
+                case NetProcess::errAuth:
+                    ui->labRcvState->setText("Неверный код авторизации");
+                    break;
+
+                case NetProcess::errProto:
+                    ui->labRcvState->setText("Ошибка протокола");
+                    break;
+
+                default:
+                    ui->labRcvState->setText("Соединение прервано");
+            }
+            break;
+        case NetProcess::wtInit:
+            ui->labRcvState->setText("Ожидание подключения");
+            ui->progRcvData->setRange(0, 0);
+            break;
+
+        default:
+            ui->labRcvState->setText("");
+    }
+
+    ui->progRcvData->setVisible(netProc->wait() > NetProcess::wtUnknown);
+}
+
+void MainWindow::netInit()
+{
+    FormAuth f;
+
+    uint16_t code =
+        f.exec() == QDialog::Accepted ?
+                f.getCode() :
+                0;
+
+    if (code > 0) {
+        netProc->requestAuth(code);
+    }
+    else {
+        netProc->disconnect();
+        ui->stackWnd->setCurrentIndex(0);
+    }
 }
 

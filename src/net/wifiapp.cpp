@@ -7,12 +7,15 @@
 #include "../core/workerloc.h"
 #include "../core/worker.h"
 #include "wifi.h"
+#include "netsync.h"
+#include "netsocket.h"
 #include "../view/menu.h" // MENUSZ_VAL
 
 #include <string.h>
 
 #include <lwip/sockets.h>
 #include <lwip/netdb.h>
+#include <WiFiClient.h>
 
 #include "esp_system.h" // esp_random
 
@@ -192,6 +195,8 @@ WRK_DEFINE(WIFI_CLI) {
                 uint8_t ip[4];
                 memcpy(ip, &addr.sin_addr, sizeof(ip));
                 CONSOLE("request connection from: %d.%d.%d.%d : %d", ip[0], ip[1], ip[2], ip[3], ntohs(addr.sin_port));
+                auto nsock = new NetSocketClient<WiFiClient>(WiFiClient(sock));
+                netApp(nsock);
             }
         }
         

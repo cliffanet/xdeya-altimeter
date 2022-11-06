@@ -62,6 +62,7 @@ class BinProto {
         bool    rcvvalid()  const { return m_rcvstate > RCV_DISCONNECTED; }
         // текущая принятая команда
         cmdkey_t rcvcmd()   const { return m_rcvcmd; }
+        cmdkey_t rcvsz()    const { return m_rcvsz; }
         // сбрасывает процесс приёма команды (например, при дисконнекте от сервера)
         void    rcvclear();
         // процессинг приёма данных

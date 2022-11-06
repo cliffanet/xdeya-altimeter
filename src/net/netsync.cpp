@@ -13,17 +13,20 @@
 #include "../core/filetxt.h"
 #include "../jump/logbook.h"
 #include "../jump/track.h"
+#include "../view/main.h"
+#include "../view/netauth.h"
 
 #include <Update.h>         // Обновление прошивки
+#include "esp_system.h" // esp_random
 
 #define WRK_RETURN_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); WRK_RETURN_END; } while (0)
 #define SEND(cmd, ...)          if (!m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) WRK_RETURN_ERR("send fail")
 #define RECV(pk, ...)           if (!m_pro || !m_pro->rcvdata(PSTR(pk), ##__VA_ARGS__)) WRK_RETURN_ERR("recv data fail")
 #define RECVRAW(data)           m_pro ? m_pro->rcvraw(data, sizeof(data)) : -1
 #define RECVNEXT()              if (!m_pro || !m_pro->rcvnext()) WRK_RETURN_ERR("recv data fail")
-#define WRK_BREAK_RECV          WRK_BREAK \
-                                if (!m_pro || !m_pro->rcvvalid()) WRK_RETURN_ERR("recv not valid"); \
+#define CHK_RECV                if (!m_pro || !m_pro->rcvvalid()) WRK_RETURN_ERR("recv not valid"); \
                                 if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
+#define WRK_BREAK_RECV          WRK_BREAK CHK_RECV
 
 /* ------------------------------------------------------------------------------------------- *
  *  Основной конфиг
@@ -924,4 +927,112 @@ cmpl_t cmplFirmware(const WrkProc *_wrk) {
     if (wrk == NULL)
         return { 0, 0 };
     return { wrk->m_rcv, wrk->m_sz };
+}
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Взаимодействие с приложением
+ * ------------------------------------------------------------------------------------------- */
+WRK_DEFINE(NET_APP) {
+    private:
+        uint16_t m_timeout;
+        uint16_t m_code;
+        
+        BinProto *m_pro;
+    
+    public:
+        state_t chktimeout() {
+            if (m_timeout == 0)
+                WRK_RETURN_WAIT;
+            
+            m_timeout--;
+            if (m_timeout > 0)
+                WRK_RETURN_WAIT;
+            
+            WRK_RETURN_ERR("Wait timeout");
+        }
+        
+        state_t every() {
+            m_pro->rcvprocess();
+            switch (m_pro->rcvstate()) {
+                case BinProto::RCV_ERROR:
+                    WRK_RETURN_ERR("recv proto fail");
+                case BinProto::RCV_DISCONNECTED:
+                    WRK_RETURN_ERR("disconnected");
+            }
+        
+            WRK_RETURN_RUN;
+        }
+    
+    WRK_CLASS(NET_APP)(NetSocket *sock, bool noremove = false) :
+        m_timeout(0),
+        m_code(0),
+        m_pro(new BinProto(sock))
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+    
+    WRK_PROCESS
+        
+        m_timeout = 200;
+    WRK_BREAK_RECV
+        // hello/init
+        if (m_pro->rcvcmd() != 0x02)
+            WRK_RETURN_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
+        RECVNEXT();  // Эта команда без данных,
+        SEND(0x02); // init ok
+        m_code = static_cast<uint16_t>(esp_random());
+        CONSOLE("Auth code: 0x%04x", m_code);
+        setViewNetAuth(m_code);
+        
+        m_timeout = 0;
+    WRK_BREAK_RUN
+        // wait auth code
+        if (!viewIsNetAuth())
+            WRK_RETURN_ERR("Recv auth fail: canceled");
+        
+        CHK_RECV
+        // auth
+        if (m_pro->rcvcmd() != 0x03)
+            WRK_RETURN_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
+        uint16_t code = 0;
+        RECV("n", code);
+        uint8_t err = code == m_code ? 0 : 1;
+        SEND(0x03, "C", err);
+        if (code != m_code)
+            WRK_RETURN_ERR("Recv auth fail: wrong code 0x%04x != 0x%04x", code, m_code);
+        CONSOLE("Recv code: 0x%04x = auth ok", code);
+        m_code = 0;
+        setViewMain();
+        
+        m_timeout = 0;
+    WRK_BREAK_RECV
+        
+        WRK_RETURN_WAIT;
+    WRK_END
+    
+    void end() {
+        if (m_pro != NULL) {
+            auto sock = m_pro->sock();
+            if (sock != NULL) {
+                sock->close();
+                delete sock;
+            }
+            delete m_pro;
+            m_pro = NULL;
+        }
+        if ((m_code > 0) && viewIsNetAuth())
+            setViewMain();
+    }
+};
+
+WrkProc::key_t netApp(NetSocket *sock, bool noremove) {
+    if (sock == NULL)
+        return WRKKEY_NONE;
+    
+    if (!noremove)
+        return wrkRand(NET_APP, sock, noremove);
+    
+    wrkRun(NET_APP, sock, noremove);
+    return WRKKEY_NET_APP;
 }

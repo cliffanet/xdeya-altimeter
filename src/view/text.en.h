@@ -144,6 +144,10 @@
 #define TXT_MENU_NET_BLUETOOTH      "Bluetooth"
 #define TXT_MENU_NET_WIFICLI        "App whith WiFi"
 #define TXT_MENU_NET_WIFISERVER     "To server whith WiFi"
+#define TXT_NET_AUTH_TITLE          "Network authorization"
+#define TXT_NET_AUTH_TEXT1          "Need enter this code"
+#define TXT_NET_AUTH_TEXT2          "in application:"
+#define TXT_NET_AUTH_WAIT           "Wait time: % 2d:%02d"
 
 #define TXT_MENU_ROOT_NAVPOINT      "NAVI points"
 #define TXT_MENU_ROOT_JUMPCOUNT     "Jump count"

@@ -686,8 +686,6 @@ size_t BinProto::rcvraw(uint8_t *data, size_t sz) {
 bool BinProto::rcvnext() {
     // пропускаем данные по ожидаемой команде
     // и пытаемся принять следующую команду
-    if (m_nsock == NULL)
-        return false;
     if ((m_rcvstate != RCV_DATA) && (m_rcvstate != RCV_COMPLETE))
         return false;
     

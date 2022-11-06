@@ -28,7 +28,10 @@ private slots:
     void on_btnDevSrch_clicked();
     void on_btnConnect_clicked();
     void on_tvDevSrch_activated(const QModelIndex &index);
+    void on_btnBackJmp_clicked();
+
     void devSrchSelect(const QItemSelection &, const QItemSelection &);
+
     void btDiscovery(const QBluetoothDeviceInfo &dev);
     void btError();
     void btDiscoverFinish();
@@ -36,7 +39,11 @@ private slots:
     void wfError(const QString &msg);
     void wfDiscoverFinish();
     void updDiscoverState();
+
     void devConnect(qsizetype i);
+
+    void netWait();
+    void netInit();
 
 private:
     Ui::MainWindow *ui;
