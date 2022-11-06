@@ -15,10 +15,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle(tr("Xde-Ya"));
 
-    ui->progressBar->setVisible(false);
-    ui->progressBar->setRange(0, 0);
-    ui->labSrchErr->setVisible(false);
-
     mod_devsrch = new ModDevSrch(this);
     ui->tvDevSrch->setModel(mod_devsrch);
     connect(
@@ -42,6 +38,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(wfDAgent, &WifiDeviceDiscovery::discoverDeviceFound,    this, &MainWindow::wfDiscovery);
     connect(wfDAgent, &WifiDeviceDiscovery::onError,                this, &MainWindow::wfError);
     connect(wfDAgent, &WifiDeviceDiscovery::discoverFinish,         this, &MainWindow::wfDiscoverFinish);
+
+    updState();
+    ui->labState->setText("");
 }
 
 MainWindow::~MainWindow()
@@ -49,16 +48,58 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-
-void MainWindow::on_btnDevSrch_clicked()
+void MainWindow::updState()
 {
-    ui->labSrchErr->setVisible(false);
-    mod_devsrch->clear();
-    //btDAgent->start();
-    wfDAgent->start();
-    updDiscoverState();
+    ui->btnBack->setVisible(ui->stackWnd->currentIndex() > pageDevSrch);
+
+    ui->btnConnect->setVisible(ui->stackWnd->currentIndex() == pageDevSrch);
+    ui->btnConnect->setEnabled(
+        (ui->stackWnd->currentIndex() == pageDevSrch) &&
+        (ui->tvDevSrch->selectionModel()->selection().count() > 0)
+    );
+
+    switch (ui->stackWnd->currentIndex()) {
+        case pageDevSrch: {
+            bool active =
+                    btDAgent->isActive() ||
+                    wfDAgent->isActive();
+
+            ui->progRcvData->setVisible(active);
+            ui->progRcvData->setRange(0, 0);
+            ui->btnReload->setEnabled(!active);
+            break;
+        }
+
+        default:
+            ui->progRcvData->setRange(0, 0);
+            ui->progRcvData->setVisible(netProc->wait() > NetProcess::wtUnknown);
+            ui->btnReload->setEnabled(netProc->wait() == NetProcess::wtUnknown);
+    }
 }
 
+
+void MainWindow::on_btnBack_clicked()
+{
+    switch (ui->stackWnd->currentIndex()) {
+        case pageJmpList:
+            ui->stackWnd->setCurrentIndex(pageDevSrch);
+            break;
+    }
+    updState();
+}
+
+void MainWindow::on_btnReload_clicked()
+{
+    switch (ui->stackWnd->currentIndex()) {
+        case pageDevSrch:
+            mod_devsrch->clear();
+            //btDAgent->start();
+            wfDAgent->start();
+            break;
+    }
+    ui->labState->setText("");
+    updState();
+}
 
 void MainWindow::on_btnConnect_clicked()
 {
@@ -72,10 +113,6 @@ void MainWindow::on_tvDevSrch_activated(const QModelIndex &index)
     devConnect(index.row());
 }
 
-void MainWindow::on_btnBackJmp_clicked()
-{
-    ui->stackWnd->setCurrentIndex(0);
-}
 
 void MainWindow::devSrchSelect(const QItemSelection &, const QItemSelection &)
 {
@@ -99,15 +136,14 @@ void MainWindow::btDiscovery(const QBluetoothDeviceInfo &dev)
 
 void MainWindow::btError()
 {
-    ui->labSrchErr->setText( btDAgent->errorString() );
-    ui->labSrchErr->setVisible(true);
-    updDiscoverState();
+    ui->labState->setText( btDAgent->errorString() );
+    updState();
 }
 
 void MainWindow::btDiscoverFinish()
 {
     qDebug() << "BT Found finish()";
-    updDiscoverState();
+    updState();
 }
 
 void MainWindow::wfDiscovery(const WifiDeviceItem &dev)
@@ -118,24 +154,14 @@ void MainWindow::wfDiscovery(const WifiDeviceItem &dev)
 
 void MainWindow::wfError(const QString &msg)
 {
-    ui->labSrchErr->setText( msg );
-    ui->labSrchErr->setVisible(true);
-    updDiscoverState();
+    ui->labState->setText( msg );
+    updState();
 }
 
 void MainWindow::wfDiscoverFinish()
 {
     qDebug() << "Wifi Found finish()";
-    updDiscoverState();
-}
-
-void MainWindow::updDiscoverState()
-{
-    bool active =
-            btDAgent->isActive() ||
-            wfDAgent->isActive();
-    ui->progressBar->setVisible(active);
-    ui->btnDevSrch->setEnabled(!active);
+    updState();
 }
 
 void MainWindow::devConnect(qsizetype i)
@@ -144,7 +170,9 @@ void MainWindow::devConnect(qsizetype i)
         btDAgent->stop();
     if (wfDAgent->isActive())
         wfDAgent->stop();
-    updDiscoverState();
+
+    ui->labState->setText("");
+    ui->stackWnd->setCurrentIndex(pageJmpList);
 
     qDebug() << "Connect to: " << mod_devsrch->name(i) << " (" << mod_devsrch->src(i) << ")";
     switch (mod_devsrch->src(i)) {
@@ -158,7 +186,7 @@ void MainWindow::devConnect(qsizetype i)
             return;
     }
 
-    ui->stackWnd->setCurrentIndex(1);
+    updState();
 }
 
 void MainWindow::netWait()
@@ -167,27 +195,25 @@ void MainWindow::netWait()
         case NetProcess::wtDisconnected:
             switch (netProc->err()) {
                 case NetProcess::errAuth:
-                    ui->labRcvState->setText("Неверный код авторизации");
+                    ui->labState->setText("Неверный код авторизации");
                     break;
 
                 case NetProcess::errProto:
-                    ui->labRcvState->setText("Ошибка протокола");
+                    ui->labState->setText("Ошибка протокола");
                     break;
 
                 default:
-                    ui->labRcvState->setText("Соединение прервано");
+                    ui->labState->setText("Соединение прервано");
             }
             break;
         case NetProcess::wtInit:
-            ui->labRcvState->setText("Ожидание подключения");
-            ui->progRcvData->setRange(0, 0);
+            ui->labState->setText("Ожидание подключения");
             break;
 
         default:
-            ui->labRcvState->setText("");
+            ui->labState->setText("");
     }
-
-    ui->progRcvData->setVisible(netProc->wait() > NetProcess::wtUnknown);
+    updState();
 }
 
 void MainWindow::netInit()
@@ -204,7 +230,8 @@ void MainWindow::netInit()
     }
     else {
         netProc->disconnect();
-        ui->stackWnd->setCurrentIndex(0);
+        ui->stackWnd->setCurrentIndex(pageDevSrch);
     }
+    updState();
 }
 

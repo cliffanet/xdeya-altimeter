@@ -20,15 +20,22 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    enum {
+        pageDevSrch = 0,
+        pageJmpList
+    };
+
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void updState();
+
 private slots:
-    void on_btnDevSrch_clicked();
+    void on_btnBack_clicked();
+    void on_btnReload_clicked();
     void on_btnConnect_clicked();
     void on_tvDevSrch_activated(const QModelIndex &index);
-    void on_btnBackJmp_clicked();
 
     void devSrchSelect(const QItemSelection &, const QItemSelection &);
 
@@ -38,7 +45,6 @@ private slots:
     void wfDiscovery(const WifiDeviceItem &dev);
     void wfError(const QString &msg);
     void wfDiscoverFinish();
-    void updDiscoverState();
 
     void devConnect(qsizetype i);
 
