@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include "moddevsrch.h"
+#include "modlogbook.h"
 #include "netprocess.h"
 #include "formauth.h"
 
@@ -15,17 +16,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle(tr("Xde-Ya"));
 
-    mod_devsrch = new ModDevSrch(this);
-    ui->tvDevSrch->setModel(mod_devsrch);
-    connect(
-        ui->tvDevSrch->selectionModel(),
-        SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-        SLOT(devSrchSelect(const QItemSelection &, const QItemSelection &))
-    );
-
     netProc = new NetProcess(this);
     connect(netProc, &NetProcess::waitChange,   this, &MainWindow::netWait);
     connect(netProc, &NetProcess::rcvInit,      this, &MainWindow::netInit);
+    connect(netProc, &NetProcess::rcvAuth,      this, &MainWindow::netAuth);
+    connect(netProc, &NetProcess::rcvData,      this, &MainWindow::netData);
 
     btDAgent = new QBluetoothDeviceDiscoveryAgent(this);
     btDAgent->setLowEnergyDiscoveryTimeout(10000);
@@ -38,6 +33,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(wfDAgent, &WifiDeviceDiscovery::discoverDeviceFound,    this, &MainWindow::wfDiscovery);
     connect(wfDAgent, &WifiDeviceDiscovery::onError,                this, &MainWindow::wfError);
     connect(wfDAgent, &WifiDeviceDiscovery::discoverFinish,         this, &MainWindow::wfDiscoverFinish);
+
+    mod_devsrch = new ModDevSrch(this);
+    ui->tvDevSrch->setModel(mod_devsrch);
+    connect(
+        ui->tvDevSrch->selectionModel(),
+        SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+        SLOT(devSrchSelect(const QItemSelection &, const QItemSelection &))
+    );
+
+    mod_logbook = new ModLogBook(netProc->logbook(), this);
+    ui->tvJmpList->setModel(mod_logbook);
 
     updState();
     ui->labState->setText("");
@@ -71,7 +77,10 @@ void MainWindow::updState()
         }
 
         default:
-            ui->progRcvData->setRange(0, 0);
+            if (
+                    (netProc->wait() != NetProcess::wtLogBook)
+                )
+                ui->progRcvData->setRange(0, 0);
             ui->progRcvData->setVisible(netProc->wait() > NetProcess::wtUnknown);
             ui->btnReload->setEnabled(netProc->wait() == NetProcess::wtUnknown);
     }
@@ -90,14 +99,18 @@ void MainWindow::on_btnBack_clicked()
 
 void MainWindow::on_btnReload_clicked()
 {
+    ui->labState->setText("");
     switch (ui->stackWnd->currentIndex()) {
         case pageDevSrch:
             mod_devsrch->clear();
             //btDAgent->start();
             wfDAgent->start();
             break;
+
+        case pageJmpList:
+            netProc->requestLogBook();
+            break;
     }
-    ui->labState->setText("");
     updState();
 }
 
@@ -210,6 +223,11 @@ void MainWindow::netWait()
             ui->labState->setText("Ожидание подключения");
             break;
 
+        case NetProcess::wtLogBookBeg:
+        case NetProcess::wtLogBook:
+            ui->labState->setText("Приём логбука");
+            break;
+
         default:
             ui->labState->setText("");
     }
@@ -233,5 +251,25 @@ void MainWindow::netInit()
         ui->stackWnd->setCurrentIndex(pageDevSrch);
     }
     updState();
+}
+
+void MainWindow::netAuth(bool ok)
+{
+    if (!ok)
+        return;
+    netProc->requestLogBook();
+}
+
+void MainWindow::netData(quint32 pos, quint32 max)
+{
+    ui->progRcvData->setRange(0, max);
+    ui->progRcvData->setValue(pos);
+
+    switch (netProc->wait()) {
+        case NetProcess::wtLogBook:
+            emit mod_logbook->layoutChanged();
+            ui->tvJmpList->scrollToBottom();
+            break;
+    }
 }
 

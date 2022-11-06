@@ -18,10 +18,15 @@ typedef struct {
     uint32_t val, sz;
 } cmpl_t;
 
+typedef struct {
+    uint32_t beg, count;
+} posi_t;
+
 bool sendCfgMain(BinProto *pro);
 bool sendJmpCount(BinProto *pro);
 bool sendPoint(BinProto *pro);
-WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, int32_t pos, bool noremove = false);
+WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos, bool noremove = false);
+WrkProc::key_t sendLogBook(BinProto *pro, const posi_t &posi, bool noremove = false);
 bool isokLogBook(const WrkProc *_wrk = NULL);
 bool sendDataFin(BinProto *pro);
 WrkProc::key_t sendTrackList(BinProto *pro, bool noremove = false);

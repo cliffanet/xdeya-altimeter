@@ -10,6 +10,7 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class ModDevSrch;
+class ModLogBook;
 class NetProcess;
 
 class QItemSelection;
@@ -50,10 +51,13 @@ private slots:
 
     void netWait();
     void netInit();
+    void netAuth(bool ok);
+    void netData(quint32 pos, quint32 max);
 
 private:
     Ui::MainWindow *ui;
     ModDevSrch *mod_devsrch;
+    ModLogBook *mod_logbook;
     NetProcess *netProc;
     QBluetoothDeviceDiscoveryAgent *btDAgent;
     WifiDeviceDiscovery *wfDAgent;

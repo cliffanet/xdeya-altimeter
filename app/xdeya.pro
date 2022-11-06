@@ -16,6 +16,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     moddevsrch.cpp \
+    modlogbook.cpp \
     netprocess.cpp \
     wifidevicediscovery.cpp
 
@@ -26,6 +27,7 @@ HEADERS += \
     formauth.h \
     mainwindow.h \
     moddevsrch.h \
+    modlogbook.h \
     netprocess.h \
     wifidevicediscovery.h
 

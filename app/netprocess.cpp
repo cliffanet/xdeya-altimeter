@@ -5,7 +5,8 @@
 NetProcess::NetProcess(QObject *parent)
     : QObject{parent},
       m_err(errNoError),
-      m_wait(wtDisconnected)
+      m_wait(wtDisconnected),
+      m_rcvpos(0), m_rcvcnt(0)
 {
     tcpClient = new QTcpSocket(this);
     connect(tcpClient, &QAbstractSocket::connected,     this, &NetProcess::tcpConnected);
@@ -36,6 +37,8 @@ void NetProcess::resetAll()
         tcpClient->close();
     setWait(wtDisconnected);
     m_err = errNoError;
+    m_rcvpos = 0;
+    m_rcvcnt = 0;
 }
 
 bool NetProcess::requestInit()
@@ -57,6 +60,21 @@ bool NetProcess::requestAuth(uint16_t code)
     if (!m_pro.send(0x03, "n", code))
         return false;
     setWait(wtAuth);
+    return true;
+}
+
+bool NetProcess::requestLogBook(uint32_t beg, uint32_t count)
+{
+    if (m_wait != wtUnknown)
+        return false;
+
+    struct {
+        uint32_t beg;
+        uint32_t count;
+    } data = { beg, count };
+    if (!m_pro.send(0x31, "NN", data))
+        return false;
+    setWait(wtLogBookBeg);
     return true;
 }
 
@@ -130,6 +148,39 @@ void NetProcess::rcvProcess()
             else
                 setWait(wtUnknown);
             emit rcvAuth(err == 0);
+            break;
+        }
+
+        case 0x31: { // logbook begin
+            if (m_wait != wtLogBookBeg)
+                return rcvWrong();
+            struct { uint32_t beg, count; } d;
+            m_pro.rcvdata("NN", d);
+            qDebug() << "Log book beg: " << d.beg << " / " << d.count;
+            m_rcvpos = 0;
+            m_rcvcnt = d.count;
+            m_logbook.clear();
+            setWait(wtLogBook);
+            break;
+        }
+
+        case 0x32: { // logbook item
+            if (m_wait != wtLogBook)
+                return rcvWrong();
+            logbook_item_t d;
+            m_pro.rcvdata("NNT" LOG_PK LOG_PK LOG_PK LOG_PK, d);
+            m_logbook.push_back(d);
+            m_rcvpos ++;
+            emit rcvData(m_rcvpos, m_rcvcnt);
+            break;
+        }
+
+        case 0x33: { // logbook end
+            if (m_wait != wtLogBook)
+                return rcvWrong();
+            m_pro.rcvnext(); // данные у команды есть, но нам они не нужны
+            setWait(wtUnknown);
+            emit rcvLogBook();
             break;
         }
 

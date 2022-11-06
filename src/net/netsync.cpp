@@ -124,55 +124,108 @@ WRK_DEFINE(SEND_LOGBOOK) {
         FileLogBook m_lb;
         
         BinProto *m_pro;
-        uint32_t m_cks;
-        int32_t  m_pos;
+        uint32_t m_cks, m_beg, m_cnt, m_pos;
+        enum {
+            byCks,
+            byBeg
+        } m_meth;
     
     public:
         bool isok() const { return m_isok; }
     
-    WRK_CLASS(SEND_LOGBOOK)(BinProto *pro, uint32_t cks, int32_t pos, bool noremove = false) :
+    WRK_CLASS(SEND_LOGBOOK)(BinProto *pro, uint32_t cks, uint32_t pos, bool noremove = false) :
         m_isok(false),
         m_begsnd(false),
         m_pro(pro),
         m_cks(cks),
-        m_pos(pos)
+        m_beg(pos),
+        m_cnt(0),
+        m_pos(0),
+        m_meth(byCks)
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+    
+    WRK_CLASS(SEND_LOGBOOK)(BinProto *pro, const posi_t &posi, bool noremove = false) :
+        // struct в аргументах, чтобы вычленить нужный метод по аргументам, иначе они такие же
+        m_fn(0),
+        m_isok(false),
+        m_begsnd(false),
+        m_pro(pro),
+        m_cks(0),
+        m_beg(posi.beg),
+        m_cnt(posi.count),
+        m_pos(0),
+        m_meth(byBeg)
     {
         if (noremove)
             optset(O_NOREMOVE);
     }
     
     WRK_PROCESS
-        CONSOLE("sendLogBook: chksum: %08x, pos: %d", m_cks, m_pos);
+        CONSOLE("sendLogBook: chksum: %08x, beg: %lu, count: %lu", m_cks, m_beg, m_cnt);
         if (m_pro == NULL)
             WRK_RETURN_ERR("pro is NULL");
     
     WRK_BREAK_RUN
         // Ищем файл логбука, с которого начнём
-        m_fn =
-            m_cks > 0 ?
-                m_lb.findfile(m_cks) :
-                0;
+        if (m_meth == byCks) {
+            m_fn =
+                m_cks > 0 ?
+                    m_lb.findfile(m_cks) :
+                    0;
         
-        if ((m_cks > 0) && (m_fn <= 0)) {
-            CONSOLE("sendLogBook: nothing finded by chksum");
-        }
+            if ((m_cks > 0) && (m_fn <= 0)) {
+                CONSOLE("sendLogBook: nothing finded by chksum");
+            }
             
-        if (m_fn > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
-            CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %d", m_fn, m_pos);
-            if (!m_lb.open(m_fn))
-                WRK_RETURN_ERR("Can't open logbook num=%d", m_fn);
-            if (!m_lb.seekto(m_pos))
-                WRK_RETURN_ERR("Can't logbook num=%d seek to pos=%d", m_fn, m_pos);
+            if (m_fn > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
+                CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %lu", m_fn, m_beg);
+                if (!m_lb.open(m_fn))
+                    WRK_RETURN_ERR("Can't open logbook num=%d", m_fn);
+                if (!m_lb.seekto(m_beg))
+                    WRK_RETURN_ERR("Can't logbook num=%d seek to pos=%lu", m_fn, m_beg);
+            }
+            else
+                m_fn = m_lb.count();
+        
+            if (m_fn < 0)       // ошибка поиска
+                WRK_RETURN_ERR("Fail find file by cks=%08x", m_cks);
         }
         else
-            m_fn = m_lb.count();
-        
-        if (m_fn < 0)       // ошибка поиска
-            WRK_RETURN_ERR("Fail find file by cks=%08x", m_cks);
+        if (m_meth == byBeg) {
+            if ((m_fn < 99) && (m_lb.exists(m_fn + 1))) {
+                m_fn++;
+                if (m_lb)
+                    m_lb.close();
+                if (!m_lb.open(m_fn))
+                    WRK_RETURN_ERR("Can't open logbook num=%d", m_fn);
+                auto cnt = m_lb.sizefile();
+                if (cnt < 1)
+                    WRK_RETURN_ERR("Empty logbook file num=%d", m_fn);
+                CONSOLE("logbook file num=%d; all rec count=%d", m_fn, cnt);
+                m_pos += cnt;
+                if (m_pos < m_beg) // ещё не нашли нужной позиции, пойдём к следующему файлу
+                     WRK_RETURN_RUN;
+                m_beg = m_pos-m_beg;
+                if ((m_beg > 0) && !m_lb.seekto(m_beg))
+                    WRK_RETURN_ERR("Can't logbook num=%d seek to pos=%lu", m_fn, m_beg);
+                m_pos -= m_beg;
+            }
+            else
+                m_beg = 0;
+            
+            CONSOLE("Begin send from num=%d; start by pos: %lu", m_fn, m_beg);
+        }
+        else
+            WRK_RETURN_ERR("Unknown meth: %d", m_meth);
         
     WRK_BREAK_RUN
-        SEND(0x31);
-        m_pos = 0;
+        struct {
+            uint32_t beg, count;
+        } d = { m_pos, m_cnt };
+        SEND(0x31, "NN", d);
         m_begsnd = true;
         
     WRK_BREAK_RUN
@@ -186,6 +239,15 @@ WRK_DEFINE(SEND_LOGBOOK) {
                     WRK_RETURN_ERR("Can't get item jump");
                 
                 SEND(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp);
+                if (m_cnt > 0) {
+                    m_cnt--;
+                    if (m_cnt == 0) {
+                        // отправили нужное количество
+                        m_isok = true;
+                        CONSOLE("logbook need count finished");
+                        WRK_RETURN_END;
+                    }
+                }
             }
             
             if (m_lb.avail() <= 0) {
@@ -196,9 +258,11 @@ WRK_DEFINE(SEND_LOGBOOK) {
                 else {// Завершился процесс
                     m_isok = true;
                     CONSOLE("logbook finished");
+                    WRK_RETURN_END;
                 }
                 m_fn--;
             }
+            WRK_RETURN_RUN;
         }
     WRK_END
         
@@ -221,7 +285,7 @@ WRK_DEFINE(SEND_LOGBOOK) {
     }
 };
 
-WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, int32_t pos, bool noremove) {
+WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos, bool noremove) {
     if (pro == NULL)
         return WRKKEY_NONE;
     
@@ -229,6 +293,16 @@ WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, int32_t pos, bool noremo
         return wrkRand(SEND_LOGBOOK, pro, cks, pos, noremove);
     
     wrkRun(SEND_LOGBOOK, pro, cks, pos, noremove);
+    return WRKKEY_SEND_LOGBOOK;
+}
+WrkProc::key_t sendLogBook(BinProto *pro, const posi_t &posi, bool noremove) {
+    if (pro == NULL)
+        return WRKKEY_NONE;
+    
+    if (!noremove)
+        return wrkRand(SEND_LOGBOOK, pro, posi, noremove);
+    
+    wrkRun(SEND_LOGBOOK, pro, posi, noremove);
     return WRKKEY_SEND_LOGBOOK;
 }
 
@@ -1007,6 +1081,15 @@ WRK_DEFINE(NET_APP) {
         
         m_timeout = 0;
     WRK_BREAK_RECV
+        
+        switch (m_pro->rcvcmd()) {
+            case 0x31: { // logbook
+                posi_t posi = { 10, 10 };
+                RECV("NN", posi);
+                sendLogBook(m_pro, posi);
+                break;
+            }
+        }
         
         WRK_RETURN_WAIT;
     WRK_END
