@@ -2,6 +2,8 @@
 
 #include <QTcpSocket>
 
+static logbook_item_t lb_item_null = {};
+
 NetProcess::NetProcess(QObject *parent)
     : QObject{parent},
       m_err(errNoError),
@@ -76,6 +78,13 @@ bool NetProcess::requestLogBook(uint32_t beg, uint32_t count)
         return false;
     setWait(wtLogBookBeg);
     return true;
+}
+
+const logbook_item_t &NetProcess::logbook(quint32 i) const
+{
+    if (i >= m_logbook.size())
+        return lb_item_null;
+    return m_logbook[i];
 }
 
 void NetProcess::tcpConnected()

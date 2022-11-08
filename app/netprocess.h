@@ -102,6 +102,7 @@ public:
     bool requestLogBook(uint32_t beg = 50, uint32_t count = 50);
 
     const QList<logbook_item_t> & logbook() const { return m_logbook; }
+    const logbook_item_t &logbook(quint32 i) const;
 
 signals:
     void waitChange(wait_t _wait);

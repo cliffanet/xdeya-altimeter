@@ -23,7 +23,8 @@ class MainWindow : public QMainWindow
 
     enum {
         pageDevSrch = 0,
-        pageJmpList
+        pageJmpList,
+        pageJmpView
     };
 
 public:
@@ -35,10 +36,11 @@ public:
 private slots:
     void on_btnBack_clicked();
     void on_btnReload_clicked();
-    void on_btnConnect_clicked();
+    void on_btnView_clicked();
     void on_tvDevSrch_activated(const QModelIndex &index);
-
-    void devSrchSelect(const QItemSelection &, const QItemSelection &);
+    void on_tvJmpList_activated(const QModelIndex &index);
+    void on_btnJmpPrev_clicked();
+    void on_btnJmpNext_clicked();
 
     void btDiscovery(const QBluetoothDeviceInfo &dev);
     void btError();
@@ -48,6 +50,7 @@ private slots:
     void wfDiscoverFinish();
 
     void devConnect(qsizetype i);
+    void jmpView(qsizetype i);
 
     void netWait();
     void netInit();

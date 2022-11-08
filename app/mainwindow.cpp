@@ -8,6 +8,11 @@
 
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
+#include <QItemSelectionModel>
+
+#include <QDateTime>
+#include <QDate>
+#include <QTime>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -36,15 +41,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     mod_devsrch = new ModDevSrch(this);
     ui->tvDevSrch->setModel(mod_devsrch);
-    connect(
-        ui->tvDevSrch->selectionModel(),
-        SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-        SLOT(devSrchSelect(const QItemSelection &, const QItemSelection &))
-    );
+    connect(ui->tvDevSrch->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::updState);
 
     mod_logbook = new ModLogBook(netProc->logbook(), this);
     ui->tvJmpList->setModel(mod_logbook);
+    connect(ui->tvJmpList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::updState);
 
+    ui->stackWnd->setCurrentIndex(pageDevSrch);
     updState();
     ui->labState->setText("");
 }
@@ -56,13 +59,27 @@ MainWindow::~MainWindow()
 
 void MainWindow::updState()
 {
-    ui->btnBack->setVisible(ui->stackWnd->currentIndex() > pageDevSrch);
+    ui->btnBack->setVisible( ui->stackWnd->currentIndex() > pageDevSrch );
+    ui->btnReload->setVisible( ui->stackWnd->currentIndex() != pageJmpView );
 
-    ui->btnConnect->setVisible(ui->stackWnd->currentIndex() == pageDevSrch);
-    ui->btnConnect->setEnabled(
-        (ui->stackWnd->currentIndex() == pageDevSrch) &&
-        (ui->tvDevSrch->selectionModel()->selection().count() > 0)
-    );
+    switch (ui->stackWnd->currentIndex()) {
+        case pageDevSrch:
+            ui->btnView->setVisible(true);
+            ui->btnView->setEnabled(
+                ui->tvDevSrch->selectionModel()->selection().count() > 0
+            );
+            break;
+
+        case pageJmpList:
+            ui->btnView->setVisible(true);
+            ui->btnView->setEnabled(
+                ui->tvJmpList->selectionModel()->selection().count() > 0
+            );
+            break;
+
+        default:
+            ui->btnView->setVisible(false);
+    }
 
     switch (ui->stackWnd->currentIndex()) {
         case pageDevSrch: {
@@ -93,6 +110,10 @@ void MainWindow::on_btnBack_clicked()
         case pageJmpList:
             ui->stackWnd->setCurrentIndex(pageDevSrch);
             break;
+
+        case pageJmpView:
+            ui->stackWnd->setCurrentIndex(pageJmpList);
+            break;
     }
     updState();
 }
@@ -114,11 +135,23 @@ void MainWindow::on_btnReload_clicked()
     updState();
 }
 
-void MainWindow::on_btnConnect_clicked()
+void MainWindow::on_btnView_clicked()
 {
-    auto &sel = ui->tvDevSrch->selectionModel()->selection();
-    if (sel.count() > 0)
-        devConnect(sel.indexes().first().row());
+    switch (ui->stackWnd->currentIndex()) {
+        case pageDevSrch: {
+            auto &sel = ui->tvDevSrch->selectionModel()->selection();
+            if (sel.count() > 0)
+                devConnect(sel.indexes().first().row());
+            break;
+        }
+
+        case pageJmpList: {
+            auto &sel = ui->tvJmpList->selectionModel()->selection();
+            if (sel.count() > 0)
+                jmpView(sel.indexes().first().row());
+            break;
+        }
+    }
 }
 
 void MainWindow::on_tvDevSrch_activated(const QModelIndex &index)
@@ -126,12 +159,31 @@ void MainWindow::on_tvDevSrch_activated(const QModelIndex &index)
     devConnect(index.row());
 }
 
-
-void MainWindow::devSrchSelect(const QItemSelection &, const QItemSelection &)
+void MainWindow::on_tvJmpList_activated(const QModelIndex &index)
 {
-    int cnt = ui->tvDevSrch->selectionModel()->selection().count();
-    ui->btnConnect->setEnabled(cnt > 0);
+    jmpView(index.row());
 }
+
+void MainWindow::on_btnJmpPrev_clicked()
+{
+    auto &sel = ui->tvJmpList->selectionModel()->selection();
+    if (sel.count() == 0)
+        return;
+    int row = sel.indexes().first().row();
+    if (row > 0)
+        jmpView(row-1);
+}
+
+void MainWindow::on_btnJmpNext_clicked()
+{
+    auto &sel = ui->tvJmpList->selectionModel()->selection();
+    if (sel.count() == 0)
+        return;
+    int row = sel.indexes().first().row();
+    if (row+1 < netProc->logbook().size())
+        jmpView(row+1);
+}
+
 
 void MainWindow::btDiscovery(const QBluetoothDeviceInfo &dev)
 {
@@ -199,6 +251,54 @@ void MainWindow::devConnect(qsizetype i)
             return;
     }
 
+    updState();
+}
+
+void MainWindow::jmpView(qsizetype i)
+{
+    auto &jmp = netProc->logbook(i);
+
+    QDateTime dt(QDate(jmp.tm.year, jmp.tm.mon, jmp.tm.day), QTime(jmp.tm.h, jmp.tm.m, jmp.tm.s));
+    qDebug() << "View jump: " << jmp.num << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
+
+    ui->lvJmpNumber->setText(QString::number(jmp.num));
+
+    if (jmp.toff.tmoffset) {
+        QDateTime dtbeg = dt.addMSecs(-1*jmp.toff.tmoffset);
+        ui->lvJmpDTTakeoff->setText(dtbeg.toString("d.MM.yyyy hh:mm"));
+    }
+    else {
+        ui->lvJmpDTTakeoff->setText("");
+    }
+    ui->lvJmpDTBegin  ->setText(dt.toString("d.MM.yyyy hh:mm"));
+    ui->lvJmpAltBegin ->setText(QString::number(jmp.beg.alt) + " m");
+
+    char s[64];
+    uint hour, min, sec;
+    sec = (jmp.cnp.tmoffset - jmp.beg.tmoffset) / 1000;
+    min = sec / 60;
+    sec -= min*60;
+    hour = min / 60;
+    min -= hour*60;
+    snprintf(s, sizeof(s), "%d:%02d:%02d", hour, min, sec);
+    ui->lvJmpTimeFF   ->setText(QString(s));
+
+    ui->lvJmpAltCnp   ->setText(QString::number(jmp.cnp.alt) + " m");
+
+    sec = (jmp.end.tmoffset - jmp.cnp.tmoffset) / 1000;
+    min = sec / 60;
+    sec -= min*60;
+    hour = min / 60;
+    min -= hour*60;
+    snprintf(s, sizeof(s), "%d:%02d:%02d", hour, min, sec);
+    ui->lvJmpTimeCnp  ->setText(QString(s));
+
+    ui->btnJmpPrev->setEnabled(i > 0);
+    ui->btnJmpNext->setEnabled(i < (netProc->logbook().size()-1));
+
+    ui->tvJmpList->setCurrentIndex(ui->tvJmpList->model()->index(i, 0));
+
+    ui->stackWnd->setCurrentIndex(pageJmpView);
     updState();
 }
 
