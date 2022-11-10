@@ -18,6 +18,7 @@ SOURCES += \
     moddevsrch.cpp \
     modlogbook.cpp \
     netprocess.cpp \
+    trkbutton.cpp \
     wifidevicediscovery.cpp
 
 HEADERS += \
@@ -29,6 +30,8 @@ HEADERS += \
     moddevsrch.h \
     modlogbook.h \
     netprocess.h \
+    nettypes.h \
+    trkbutton.h \
     wifidevicediscovery.h
 
 FORMS += \

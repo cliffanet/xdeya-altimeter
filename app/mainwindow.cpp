@@ -5,6 +5,7 @@
 #include "modlogbook.h"
 #include "netprocess.h"
 #include "formauth.h"
+#include "trkbutton.h"
 
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
@@ -21,11 +22,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle(tr("Xde-Ya"));
 
+    m_lbinfrows = ui->jmpInfLayout->rowCount();
+
     netProc = new NetProcess(this);
     connect(netProc, &NetProcess::waitChange,   this, &MainWindow::netWait);
     connect(netProc, &NetProcess::rcvInit,      this, &MainWindow::netInit);
     connect(netProc, &NetProcess::rcvAuth,      this, &MainWindow::netAuth);
     connect(netProc, &NetProcess::rcvData,      this, &MainWindow::netData);
+    connect(netProc, &NetProcess::rcvLogBook,   this, &MainWindow::netLogBook);
 
     btDAgent = new QBluetoothDeviceDiscoveryAgent(this);
     btDAgent->setLowEnergyDiscoveryTimeout(10000);
@@ -104,6 +108,100 @@ void MainWindow::updState()
 }
 
 
+void MainWindow::devConnect(qsizetype i)
+{
+    if (btDAgent->isActive())
+        btDAgent->stop();
+    if (wfDAgent->isActive())
+        wfDAgent->stop();
+
+    ui->labState->setText("");
+    ui->stackWnd->setCurrentIndex(pageJmpList);
+
+    qDebug() << "Connect to: " << mod_devsrch->name(i) << " (" << mod_devsrch->src(i) << ")";
+    switch (mod_devsrch->src(i)) {
+        case ModDevSrch::SRC_WIFI: {
+            auto &wifi = mod_devsrch->wifi(i);
+            netProc->connectTcp(wifi.ip, wifi.port);
+            break;
+        }
+
+        default:
+            return;
+    }
+
+    updState();
+}
+
+void MainWindow::jmpView(qsizetype i)
+{
+    auto &jmp = netProc->logbook(i);
+
+    QDateTime dt(QDate(jmp.tm.year, jmp.tm.mon, jmp.tm.day), QTime(jmp.tm.h, jmp.tm.m, jmp.tm.s));
+    qDebug() << "View jump: " << jmp.num << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
+
+    ui->lvJmpNumber->setText(QString::number(jmp.num));
+
+    if (jmp.toff.tmoffset) {
+        QDateTime dtbeg = dt.addMSecs(-1*jmp.toff.tmoffset);
+        ui->lvJmpDTTakeoff->setText(dtbeg.toString("d.MM.yyyy hh:mm"));
+    }
+    else {
+        ui->lvJmpDTTakeoff->setText("");
+    }
+    ui->lvJmpDTBegin  ->setText(dt.toString("d.MM.yyyy hh:mm"));
+    ui->lvJmpAltBegin ->setText(QString::number(jmp.beg.alt) + " m");
+
+    char s[64];
+    uint hour, min, sec;
+    sec = (jmp.cnp.tmoffset - jmp.beg.tmoffset) / 1000;
+    min = sec / 60;
+    sec -= min*60;
+    hour = min / 60;
+    min -= hour*60;
+    snprintf(s, sizeof(s), "%d:%02d:%02d", hour, min, sec);
+    ui->lvJmpTimeFF   ->setText(QString(s));
+
+    ui->lvJmpAltCnp   ->setText(QString::number(jmp.cnp.alt) + " m");
+
+    sec = (jmp.end.tmoffset - jmp.cnp.tmoffset) / 1000;
+    min = sec / 60;
+    sec -= min*60;
+    hour = min / 60;
+    min -= hour*60;
+    snprintf(s, sizeof(s), "%d:%02d:%02d", hour, min, sec);
+    ui->lvJmpTimeCnp  ->setText(QString(s));
+
+    while (ui->jmpInfLayout->rowCount() > m_lbinfrows)
+        ui->jmpInfLayout->removeRow(m_lbinfrows);
+    for (const auto &trk : netProc->trklist()) {
+        if (trk.jmpnum != jmp.num)
+            continue;
+        QDateTime dt(QDate(trk.tmbeg.year, trk.tmbeg.mon, trk.tmbeg.day), QTime(trk.tmbeg.h, trk.tmbeg.m, trk.tmbeg.s));
+        qDebug() << "trk: " << trk.jmpkey << " -- " << jmp.key << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
+
+        ui->jmpInfLayout->addRow(tr("Трэк:"), new TrkButton(dt.toString("d.MM.yyyy hh:mm:ss"), trk, this));
+    }
+
+    ui->btnJmpPrev->setEnabled(i > 0);
+    ui->btnJmpNext->setEnabled(i < (netProc->logbook().size()-1));
+
+    ui->tvJmpList->setCurrentIndex(ui->tvJmpList->model()->index(i, 0));
+
+    ui->stackWnd->setCurrentIndex(pageJmpView);
+    updState();
+}
+
+void MainWindow::trkView(const trklist_item_t &trk)
+{
+    QDateTime dt(QDate(trk.tmbeg.year, trk.tmbeg.mon, trk.tmbeg.day), QTime(trk.tmbeg.h, trk.tmbeg.m, trk.tmbeg.s));
+    qDebug() << "trk view: " << trk.jmpnum << " -- " << trk.jmpkey << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
+
+    ui->stackWnd->setCurrentIndex(pageTrkView);
+    updState();
+}
+
+
 void MainWindow::on_btnBack_clicked()
 {
     switch (ui->stackWnd->currentIndex()) {
@@ -113,6 +211,10 @@ void MainWindow::on_btnBack_clicked()
 
         case pageJmpView:
             ui->stackWnd->setCurrentIndex(pageJmpList);
+            break;
+
+        case pageTrkView:
+            ui->stackWnd->setCurrentIndex(pageJmpView);
             break;
     }
     updState();
@@ -229,79 +331,6 @@ void MainWindow::wfDiscoverFinish()
     updState();
 }
 
-void MainWindow::devConnect(qsizetype i)
-{
-    if (btDAgent->isActive())
-        btDAgent->stop();
-    if (wfDAgent->isActive())
-        wfDAgent->stop();
-
-    ui->labState->setText("");
-    ui->stackWnd->setCurrentIndex(pageJmpList);
-
-    qDebug() << "Connect to: " << mod_devsrch->name(i) << " (" << mod_devsrch->src(i) << ")";
-    switch (mod_devsrch->src(i)) {
-        case ModDevSrch::SRC_WIFI: {
-            auto &wifi = mod_devsrch->wifi(i);
-            netProc->connectTcp(wifi.ip, wifi.port);
-            break;
-        }
-
-        default:
-            return;
-    }
-
-    updState();
-}
-
-void MainWindow::jmpView(qsizetype i)
-{
-    auto &jmp = netProc->logbook(i);
-
-    QDateTime dt(QDate(jmp.tm.year, jmp.tm.mon, jmp.tm.day), QTime(jmp.tm.h, jmp.tm.m, jmp.tm.s));
-    qDebug() << "View jump: " << jmp.num << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
-
-    ui->lvJmpNumber->setText(QString::number(jmp.num));
-
-    if (jmp.toff.tmoffset) {
-        QDateTime dtbeg = dt.addMSecs(-1*jmp.toff.tmoffset);
-        ui->lvJmpDTTakeoff->setText(dtbeg.toString("d.MM.yyyy hh:mm"));
-    }
-    else {
-        ui->lvJmpDTTakeoff->setText("");
-    }
-    ui->lvJmpDTBegin  ->setText(dt.toString("d.MM.yyyy hh:mm"));
-    ui->lvJmpAltBegin ->setText(QString::number(jmp.beg.alt) + " m");
-
-    char s[64];
-    uint hour, min, sec;
-    sec = (jmp.cnp.tmoffset - jmp.beg.tmoffset) / 1000;
-    min = sec / 60;
-    sec -= min*60;
-    hour = min / 60;
-    min -= hour*60;
-    snprintf(s, sizeof(s), "%d:%02d:%02d", hour, min, sec);
-    ui->lvJmpTimeFF   ->setText(QString(s));
-
-    ui->lvJmpAltCnp   ->setText(QString::number(jmp.cnp.alt) + " m");
-
-    sec = (jmp.end.tmoffset - jmp.cnp.tmoffset) / 1000;
-    min = sec / 60;
-    sec -= min*60;
-    hour = min / 60;
-    min -= hour*60;
-    snprintf(s, sizeof(s), "%d:%02d:%02d", hour, min, sec);
-    ui->lvJmpTimeCnp  ->setText(QString(s));
-
-    ui->btnJmpPrev->setEnabled(i > 0);
-    ui->btnJmpNext->setEnabled(i < (netProc->logbook().size()-1));
-
-    ui->tvJmpList->setCurrentIndex(ui->tvJmpList->model()->index(i, 0));
-
-    ui->stackWnd->setCurrentIndex(pageJmpView);
-    updState();
-}
-
 void MainWindow::netWait()
 {
     switch (netProc->wait()) {
@@ -326,6 +355,11 @@ void MainWindow::netWait()
         case NetProcess::wtLogBookBeg:
         case NetProcess::wtLogBook:
             ui->labState->setText("Приём логбука");
+            break;
+
+        case NetProcess::wtTrkListBeg:
+        case NetProcess::wtTrkList:
+            ui->labState->setText("Приём списка треков");
             break;
 
         default:
@@ -363,7 +397,8 @@ void MainWindow::netAuth(bool ok)
 void MainWindow::netData(quint32 pos, quint32 max)
 {
     ui->progRcvData->setRange(0, max);
-    ui->progRcvData->setValue(pos);
+    if (max > 0)
+        ui->progRcvData->setValue(pos);
 
     switch (netProc->wait()) {
         case NetProcess::wtLogBook:
@@ -371,5 +406,10 @@ void MainWindow::netData(quint32 pos, quint32 max)
             ui->tvJmpList->scrollToBottom();
             break;
     }
+}
+
+void MainWindow::netLogBook()
+{
+    netProc->requestTrackList();
 }
 

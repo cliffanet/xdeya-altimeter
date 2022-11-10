@@ -2,7 +2,7 @@
 #define MODLOGBOOK_H
 
 #include <QAbstractTableModel>
-#include "netprocess.h"
+#include "nettypes.h"
 
 class ModLogBook : public QAbstractTableModel
 {

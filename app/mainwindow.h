@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 #include "wifidevicediscovery.h"
+#include "nettypes.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -24,7 +25,8 @@ class MainWindow : public QMainWindow
     enum {
         pageDevSrch = 0,
         pageJmpList,
-        pageJmpView
+        pageJmpView,
+        pageTrkView
     };
 
 public:
@@ -32,6 +34,10 @@ public:
     ~MainWindow();
 
     void updState();
+
+    void devConnect(qsizetype i);
+    void jmpView(qsizetype i);
+    void trkView(const trklist_item_t &trk);
 
 private slots:
     void on_btnBack_clicked();
@@ -49,13 +55,11 @@ private slots:
     void wfError(const QString &msg);
     void wfDiscoverFinish();
 
-    void devConnect(qsizetype i);
-    void jmpView(qsizetype i);
-
     void netWait();
     void netInit();
     void netAuth(bool ok);
     void netData(quint32 pos, quint32 max);
+    void netLogBook();
 
 private:
     Ui::MainWindow *ui;
@@ -64,5 +68,6 @@ private:
     NetProcess *netProc;
     QBluetoothDeviceDiscoveryAgent *btDAgent;
     WifiDeviceDiscovery *wfDAgent;
+    int m_lbinfrows;
 };
 #endif // MAINWINDOW_H

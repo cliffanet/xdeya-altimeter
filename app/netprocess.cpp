@@ -3,6 +3,7 @@
 #include <QTcpSocket>
 
 static logbook_item_t lb_item_null = {};
+static trklist_item_t tl_item_null = {};
 
 NetProcess::NetProcess(QObject *parent)
     : QObject{parent},
@@ -80,11 +81,28 @@ bool NetProcess::requestLogBook(uint32_t beg, uint32_t count)
     return true;
 }
 
+bool NetProcess::requestTrackList()
+{
+    if (m_wait != wtUnknown)
+        return false;
+
+    if (!m_pro.send(0x51))
+        return false;
+    setWait(wtTrkListBeg);
+}
+
 const logbook_item_t &NetProcess::logbook(quint32 i) const
 {
     if (i >= m_logbook.size())
         return lb_item_null;
     return m_logbook[i];
+}
+
+const trklist_item_t &NetProcess::trklist(quint32 i) const
+{
+    if (i >= m_trklist.size())
+        return tl_item_null;
+    return m_trklist[i];
 }
 
 void NetProcess::tcpConnected()
@@ -144,54 +162,85 @@ void NetProcess::rcvProcess()
                 emit rcvInit();
                 break;
 
-        case 0x03: { // auth result
-            if (m_wait != wtAuth)
-                return rcvWrong();
-            uint8_t err = 0;
-            m_pro.rcvdata("C", err);
-            qDebug() << "Auth err: " << err;
-            if (err > 0) {
-                m_err = errAuth;
-                m_pro.sock()->close();
+            case 0x03: { // auth result
+                if (m_wait != wtAuth)
+                    return rcvWrong();
+                uint8_t err = 0;
+                m_pro.rcvdata("C", err);
+                qDebug() << "Auth err: " << err;
+                if (err > 0) {
+                    m_err = errAuth;
+                    m_pro.sock()->close();
+                }
+                else
+                    setWait(wtUnknown);
+                emit rcvAuth(err == 0);
+                break;
             }
-            else
+
+            case 0x31: { // logbook begin
+                if (m_wait != wtLogBookBeg)
+                    return rcvWrong();
+                struct { uint32_t beg, count; } d;
+                m_pro.rcvdata("NN", d);
+                qDebug() << "Log book beg: " << d.beg << " / " << d.count;
+                m_rcvpos = 0;
+                m_rcvcnt = d.count;
+                m_logbook.clear();
+                setWait(wtLogBook);
+                break;
+            }
+
+            case 0x32: { // logbook item
+                if (m_wait != wtLogBook)
+                    return rcvWrong();
+                logbook_item_t d;
+                m_pro.rcvdata("NNT" LOG_PK LOG_PK LOG_PK LOG_PK, d);
+                m_logbook.push_back(d);
+                m_rcvpos ++;
+                emit rcvData(m_rcvpos, m_rcvcnt);
+                break;
+            }
+
+            case 0x33: { // logbook end
+                if (m_wait != wtLogBook)
+                    return rcvWrong();
+                m_pro.rcvnext(); // данные у команды есть, но нам они не нужны
                 setWait(wtUnknown);
-            emit rcvAuth(err == 0);
-            break;
-        }
+                emit rcvLogBook();
+                break;
+            }
 
-        case 0x31: { // logbook begin
-            if (m_wait != wtLogBookBeg)
-                return rcvWrong();
-            struct { uint32_t beg, count; } d;
-            m_pro.rcvdata("NN", d);
-            qDebug() << "Log book beg: " << d.beg << " / " << d.count;
-            m_rcvpos = 0;
-            m_rcvcnt = d.count;
-            m_logbook.clear();
-            setWait(wtLogBook);
-            break;
-        }
+            case 0x51: { // tracklist begin
+                if (m_wait != wtTrkListBeg)
+                    return rcvWrong();
+                m_pro.rcvnext(); // данных у команды нет
+                m_rcvpos = 0;
+                m_rcvcnt = 0;
+                m_trklist.clear();
+                setWait(wtTrkList);
+                break;
+            }
 
-        case 0x32: { // logbook item
-            if (m_wait != wtLogBook)
-                return rcvWrong();
-            logbook_item_t d;
-            m_pro.rcvdata("NNT" LOG_PK LOG_PK LOG_PK LOG_PK, d);
-            m_logbook.push_back(d);
-            m_rcvpos ++;
-            emit rcvData(m_rcvpos, m_rcvcnt);
-            break;
-        }
+            case 0x52: { // tracklist item
+                if (m_wait != wtTrkList)
+                    return rcvWrong();
+                trklist_item_t d;
+                m_pro.rcvdata("NNNNTNC", d);
+                m_trklist.push_back(d);
+                m_rcvpos ++;
+                emit rcvData(m_rcvpos, m_rcvcnt);
+                break;
+            }
 
-        case 0x33: { // logbook end
-            if (m_wait != wtLogBook)
-                return rcvWrong();
-            m_pro.rcvnext(); // данные у команды есть, но нам они не нужны
-            setWait(wtUnknown);
-            emit rcvLogBook();
-            break;
-        }
+            case 0x53: { // tracklist end
+                if (m_wait != wtTrkList)
+                    return rcvWrong();
+                m_pro.rcvnext(); // данных у команды нет
+                setWait(wtUnknown);
+                emit rcvTrkList();
+                break;
+            }
 
             default:
                 return rcvWrong();

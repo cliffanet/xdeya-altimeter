@@ -1089,6 +1089,11 @@ WRK_DEFINE(NET_APP) {
                 sendLogBook(m_pro, posi);
                 break;
             }
+            case 0x51: { // trklist
+                m_pro->rcvnext(); // нет данных
+                sendTrackList(m_pro);
+                break;
+            }
         }
         
         WRK_RETURN_WAIT;
