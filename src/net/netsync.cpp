@@ -1094,6 +1094,13 @@ WRK_DEFINE(NET_APP) {
                 sendTrackList(m_pro);
                 break;
             }
+            case 0x54: { // track request
+                trksrch_t srch = { 0 };
+                RECV("NNNTC", srch);
+
+                sendTrack(m_pro, srch);
+                break;
+            }
         }
         
         WRK_RETURN_WAIT;

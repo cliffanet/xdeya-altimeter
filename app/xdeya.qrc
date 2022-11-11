@@ -1,5 +1,6 @@
 <RCC>
-    <qresource prefix="/">
-        <file>spinner.gif</file>
+    <qresource prefix="/" base="res">
+        <!-- file>spinner.gif</file -->
+        <file alias="navi.html">res/navi.html</file>
     </qresource>
 </RCC>

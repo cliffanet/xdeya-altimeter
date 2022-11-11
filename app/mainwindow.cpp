@@ -14,10 +14,14 @@
 #include <QDateTime>
 #include <QDate>
 #include <QTime>
+#include <QFile>
+#include <QTemporaryFile>
+#include <QDir>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , ui(new Ui::MainWindow),
+      m_ftmp(nullptr)
 {
     ui->setupUi(this);
     setWindowTitle(tr("Xde-Ya"));
@@ -30,6 +34,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(netProc, &NetProcess::rcvAuth,      this, &MainWindow::netAuth);
     connect(netProc, &NetProcess::rcvData,      this, &MainWindow::netData);
     connect(netProc, &NetProcess::rcvLogBook,   this, &MainWindow::netLogBook);
+    connect(netProc, &NetProcess::rcvTrack,     this, &MainWindow::netTrack);
+    connect(netProc, &NetProcess::rcvTrkMapCenter, this, &MainWindow::netTrkMapCenter);
 
     btDAgent = new QBluetoothDeviceDiscoveryAgent(this);
     btDAgent->setLowEnergyDiscoveryTimeout(10000);
@@ -99,7 +105,8 @@ void MainWindow::updState()
 
         default:
             if (
-                    (netProc->wait() != NetProcess::wtLogBook)
+                    (netProc->wait() != NetProcess::wtLogBook) &&
+                    (netProc->wait() != NetProcess::wtTrack)
                 )
                 ui->progRcvData->setRange(0, 0);
             ui->progRcvData->setVisible(netProc->wait() > NetProcess::wtUnknown);
@@ -197,6 +204,9 @@ void MainWindow::trkView(const trklist_item_t &trk)
     QDateTime dt(QDate(trk.tmbeg.year, trk.tmbeg.mon, trk.tmbeg.day), QTime(trk.tmbeg.h, trk.tmbeg.m, trk.tmbeg.s));
     qDebug() << "trk view: " << trk.jmpnum << " -- " << trk.jmpkey << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
 
+    ui->wvTrack->setHtml("");
+    netProc->requestTrack(trk);
+
     ui->stackWnd->setCurrentIndex(pageTrkView);
     updState();
 }
@@ -232,6 +242,15 @@ void MainWindow::on_btnReload_clicked()
 
         case pageJmpList:
             netProc->requestLogBook();
+            break;
+
+        case pageTrkView:
+            //ui->wvTrack->reload();
+            {
+        QString cmd("loadGPX('" + netProc->httpAddr() +"/track.gpx');");
+        qDebug() << "cmd1: " << cmd;
+        ui->wvTrack->page()->runJavaScript(cmd);
+            }
             break;
     }
     updState();
@@ -362,6 +381,11 @@ void MainWindow::netWait()
             ui->labState->setText("Приём списка треков");
             break;
 
+        case NetProcess::wtTrackBeg:
+        case NetProcess::wtTrack:
+            ui->labState->setText("Приём трека");
+            break;
+
         default:
             ui->labState->setText("");
     }
@@ -411,5 +435,49 @@ void MainWindow::netData(quint32 pos, quint32 max)
 void MainWindow::netLogBook()
 {
     netProc->requestTrackList();
+}
+
+void MainWindow::netTrack()
+{
+    if (!netProc->trkMapCenter()) {
+        ui->labState->setText("Нет связи со спутниками");
+        return;
+    }
+
+    if (m_ftmp != nullptr)
+        delete m_ftmp;
+    m_ftmp = new QTemporaryFile(QDir::tempPath() + "/trackXXXXXX.gpx", this);
+    if (!m_ftmp->open()) {
+        qDebug() << "can't open tmp-file: " << m_ftmp->fileName();
+        return;
+    }
+    qDebug() << "Tmp file: " << m_ftmp->fileName();
+    if (!netProc->trkSaveGPX(*m_ftmp)) {
+        qDebug() << "fail write GPX";
+        return;
+    }
+    m_ftmp->close();
+    //QString cmd("loadGPX('file://"+m_ftmp->fileName()+"');");
+    QString cmd("loadGPX('" + netProc->httpAddr() +"/track.gpx');");
+    qDebug() << "cmd: " << cmd;
+    ui->wvTrack->page()->runJavaScript(cmd);
+}
+
+void MainWindow::netTrkMapCenter(const log_item_t &ti)
+{
+    QString center(QString::number(static_cast<double>(ti.lat)/10000000) + tr(", ") + QString::number(static_cast<double>(ti.lon)/10000000));
+    qDebug() << "netTrkMapCenter: " << center;
+
+    QString data;
+    QFile ftxt(QString(":/navi.html"));
+    if (!ftxt.open(QIODevice::ReadOnly)) {
+        qDebug() << "file(" << ftxt.fileName() << ") not opened";
+        return;
+    }
+    data = ftxt.readAll();
+    ftxt.close();
+    data.replace(QString("%MAP_CENTER%"), center);
+
+    ui->wvTrack->setHtml(data);
 }
 

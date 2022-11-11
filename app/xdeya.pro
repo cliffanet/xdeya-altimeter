@@ -1,4 +1,4 @@
-QT       += core gui bluetooth
+QT       += core gui bluetooth webenginewidgets httpserver
 
 #greaterThan(QT_MAJOR_VERSION, 4):
 QT += widgets
@@ -48,5 +48,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES +=
 
-#RESOURCES += \
-#    xdeya.qrc
+RESOURCES += \
+    xdeya.qrc

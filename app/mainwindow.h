@@ -18,6 +18,8 @@ class QItemSelection;
 class QBluetoothDeviceDiscoveryAgent;
 class QBluetoothDeviceInfo;
 
+class QTemporaryFile;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -60,6 +62,8 @@ private slots:
     void netAuth(bool ok);
     void netData(quint32 pos, quint32 max);
     void netLogBook();
+    void netTrack();
+    void netTrkMapCenter(const log_item_t &ti);
 
 private:
     Ui::MainWindow *ui;
@@ -69,5 +73,6 @@ private:
     QBluetoothDeviceDiscoveryAgent *btDAgent;
     WifiDeviceDiscovery *wfDAgent;
     int m_lbinfrows;
+    QTemporaryFile *m_ftmp;
 };
 #endif // MAINWINDOW_H

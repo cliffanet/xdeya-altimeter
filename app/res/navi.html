@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <style type="text/css">
+        html, body, #map-body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+    </style>
+    <!-- script src="https://api-maps.yandex.ru/2.1/?apikey=4e65ad4b-a834-42df-baf6-5c0d5e8135e8&lang=ru_RU" type="text/javascript"></script -->
+    <script src="https://api-maps.yandex.ru/2.1/?load=package.full&lang=ru-RU" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        // Обработчик загрузки XML-файлов.
+        var myMap;
+        function onGeoXmlLoad(res) {
+            alert("onGeoXmlLoad");
+            myMap.geoObjects.add(res.geoObjects);
+            if (res.mapState) {
+                res.mapState.applyToMap(myMap);
+            }
+            else {
+                myMap.setBounds(res.geoObjects.getBounds());
+            }
+        }
+
+        var isReady = false;
+        var onReady = false;
+        function loadGPX(fname) {
+            //console.log('loadGPX: ', fname);
+            //alert('loadGPX: ' + fname + "\n isReady: " + isReady);
+            //if (isReady)
+                ymaps.geoXml.load(fname).then(onGeoXmlLoad);
+            //else
+            //    onReady = function() {
+            //        ymaps.geoXml.load(fname).then(onGeoXmlLoad);
+            //    };
+        }
+    </script>
+</head>
+<body>
+    <div id="map-body"></div>
+    <script type="text/javascript">
+        ymaps.ready(function(){
+            // Указывается идентификатор HTML-элемента.
+            myMap = new ymaps.Map("map-body", {
+                center: [%MAP_CENTER%],
+                zoom: 15
+            });
+            myMap.setType('yandex#satellite');
+            isReady = true;
+            if (onReady)
+                onReady();
+        });
+    </script>
+</body>
+</html>

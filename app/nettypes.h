@@ -51,6 +51,9 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
     uint32_t    msave;
 } log_item_t;
 
+#define LOG_PK              "NnaaiiNNNiiNNCCnNNNNNN"
+                         // 'NnaaiiNNNiiNNC nNNNNNN'
+
 typedef struct __attribute__((__packed__)) {
     uint32_t    num;
     uint32_t    key;
@@ -61,8 +64,6 @@ typedef struct __attribute__((__packed__)) {
     log_item_t  end;
 } logbook_item_t;
 
-#define LOG_PK              "NnaaiiNNNiiNNCCnNNNNNN"
-
 typedef struct __attribute__((__packed__)) {
     uint32_t id;
     uint32_t flags;
@@ -72,5 +73,23 @@ typedef struct __attribute__((__packed__)) {
     uint32_t fsize;
     uint8_t  fnum;
 } trklist_item_t;
+
+typedef struct __attribute__((__packed__)) {
+    uint32_t id;
+    uint32_t jmpnum;
+    uint32_t jmpkey;
+    tm_t     tmbeg;
+    uint8_t  fnum;
+} trksrch_t;
+
+typedef struct __attribute__((__packed__)) {
+    uint32_t id;
+    uint32_t flags;
+    uint32_t jmpnum;
+    uint32_t jmpkey;
+    tm_t     tmbeg;
+    uint32_t fsize;
+    uint64_t chksum;
+} trkinfo_t;
 
 #endif // NETTYPES_H

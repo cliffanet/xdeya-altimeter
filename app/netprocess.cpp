@@ -1,6 +1,8 @@
 #include "netprocess.h"
 
 #include <QTcpSocket>
+#include <QHttpServer>
+#include <QTcpServer>
 
 static logbook_item_t lb_item_null = {};
 static trklist_item_t tl_item_null = {};
@@ -9,13 +11,15 @@ NetProcess::NetProcess(QObject *parent)
     : QObject{parent},
       m_err(errNoError),
       m_wait(wtDisconnected),
-      m_rcvpos(0), m_rcvcnt(0)
+      m_rcvpos(0), m_rcvcnt(0),
+      m_trkmapcenter(false)
 {
     tcpClient = new QTcpSocket(this);
     connect(tcpClient, &QAbstractSocket::connected,     this, &NetProcess::tcpConnected);
     connect(tcpClient, &QAbstractSocket::disconnected,  this, &NetProcess::tcpDisconnected);
     connect(tcpClient, &QAbstractSocket::errorOccurred, this, &NetProcess::tcpError);
     connect(tcpClient, &QIODevice::readyRead,           this, &NetProcess::rcvProcess);
+    m_http = new QHttpServer(this);
 }
 
 void NetProcess::connectTcp(const QHostAddress &ip, quint16 port)
@@ -42,6 +46,7 @@ void NetProcess::resetAll()
     m_err = errNoError;
     m_rcvpos = 0;
     m_rcvcnt = 0;
+    m_http->servers().clear();
 }
 
 bool NetProcess::requestInit()
@@ -89,6 +94,33 @@ bool NetProcess::requestTrackList()
     if (!m_pro.send(0x51))
         return false;
     setWait(wtTrkListBeg);
+    return true;
+}
+
+bool NetProcess::requestTrack(quint32 i)
+{
+    if (i >= m_trklist.size())
+        return false;
+    return requestTrack(m_trklist[i]);
+}
+
+bool NetProcess::requestTrack(const trklist_item_t &trk)
+{
+    if (m_wait != wtUnknown)
+        return false;
+
+    trksrch_t ts = {
+        .id     = trk.id,
+        .jmpnum = trk.jmpnum,
+        .jmpkey = trk.jmpkey,
+        .tmbeg  = trk.tmbeg,
+        .fnum   = trk.fnum
+    };
+
+    if (!m_pro.send(0x54, "NNNTC", ts))
+        return false;
+    setWait(wtTrackBeg);
+    return true;
 }
 
 const logbook_item_t &NetProcess::logbook(quint32 i) const
@@ -103,6 +135,88 @@ const trklist_item_t &NetProcess::trklist(quint32 i) const
     if (i >= m_trklist.size())
         return tl_item_null;
     return m_trklist[i];
+}
+
+bool NetProcess::trkSaveGPX(QIODevice &fh)
+{
+    if (!fh.isOpen() || !fh.isWritable())
+        return false;
+
+#define FSTR(len, str) if (fh.write( str ) < len) return false
+
+    FSTR(100,
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<gpx version=\"1.1\" creator=\"XdeYa\" xmlns=\"http://www.topografix.com/GPX/1/1\">"
+            "<metadata>"
+                "<name><![CDATA[Без названия]]></name>"
+                "<desc/>"
+                "<time>2017-10-18T12:19:23.353Z</time>"
+            "</metadata>"
+            "<trk>"
+                    "<name>трек</name>"
+    );
+
+    bool prevok = false;
+    char s[1024];
+#define FFMT(fmt, ...)  \
+        do { \
+            snprintf(s, sizeof(s), fmt, ##__VA_ARGS__); \
+            FSTR(5, s); \
+        } while (0)
+
+    for (const auto &p : m_track) {
+        bool isok = (p.flags & 0x0001) > 0;
+        if (prevok != isok) {
+            FSTR(5, isok ? "<trkseg>" : "</trkseg>");
+            prevok = isok;
+        }
+        if (!isok)
+            continue;
+
+        FFMT("<trkpt lat=\"%0.6f\" lon=\"%0.6f\">",
+             static_cast<double>(p.lat)/10000000,
+             static_cast<double>(p.lon)/10000000);
+
+        uint32_t sec = p.tmoffset / 1000;
+        uint32_t min = sec / 60;
+        sec -= min*60;
+        FFMT("<name>%d:%02d, %d m / %0.1f m/s</name>",
+             min, sec, p.alt, static_cast<double>(p.altspeed)/100
+        );
+
+        FFMT("<desc>Горизонт: %d&deg; / %0.1f m/s", p.heading, static_cast<double>(p.hspeed)/100);
+        if (p.altspeed > 0) {
+            FFMT(" (кач: %0.1f)", -1.0 * p.hspeed / p.altspeed);
+        }
+        FFMT("</desc>");
+
+        FFMT("<ele>%d</ele>", p.alt);
+        FFMT("<magvar>%d</magvar>", p.heading);
+        FFMT("<sat>%d</sat>", p.sat);
+
+        FFMT("</trkpt>");
+    }
+
+    if (prevok)
+        FSTR(5, "</trkseg>");
+
+    FSTR(10,
+            "</trk>"
+        "</gpx>"
+    );
+
+#undef FSTR
+#undef FFMT
+
+    return true;
+}
+
+QString NetProcess::httpAddr()
+{
+    if (m_http->servers().count() == 0)
+        return "";
+
+    return "http://" + QHostAddress(QHostAddress::LocalHost).toString() + ":" + QString::number(m_http->servers()[0]->serverPort());
 }
 
 void NetProcess::tcpConnected()
@@ -242,6 +356,44 @@ void NetProcess::rcvProcess()
                 break;
             }
 
+            case 0x54: { // trackdata begin
+                if (m_wait != wtTrackBeg)
+                    return rcvWrong();
+                m_pro.rcvdata("NNNNTNH", m_trkinfo);
+                m_rcvpos = 0;
+                m_rcvcnt = m_trkinfo.fsize;
+                m_track.clear();
+                m_trkmapcenter = false;
+                setWait(wtTrack);
+                break;
+            }
+
+            case 0x55: { // trackdata item
+                if (m_wait != wtTrack)
+                    return rcvWrong();
+                log_item_t ti;
+                m_pro.rcvdata(LOG_PK, ti);
+                m_track.push_back(ti);
+                m_rcvpos += sizeof(log_item_t);
+                emit rcvData(m_rcvpos, m_rcvcnt);
+                if (!m_trkmapcenter && ((ti.flags & 0x0001) > 0)) {
+                    m_trkmapcenter = true;
+                    emit rcvTrkMapCenter(ti);
+                }
+                break;
+            }
+
+            case 0x56: { // trackdata end
+                if (m_wait != wtTrack)
+                    return rcvWrong();
+                m_pro.rcvnext(); // данных у команды нет
+                setWait(wtUnknown);
+                if (m_http->servers().count() == 0)
+                    httpInit();
+                emit rcvTrack(m_trkinfo);
+                break;
+            }
+
             default:
                 return rcvWrong();
         }
@@ -266,4 +418,14 @@ void NetProcess::rcvWrong()
 
     m_pro.rcvnext();
     setWait(wtUnknown);
+}
+
+void NetProcess::httpInit()
+{
+    m_http->route("/track.gpx", [] () {
+        qDebug() << "request track";
+        return "hello world";
+    });
+    m_http->listen(QHostAddress::LocalHost);
+    qDebug() << "server init: " << m_http->servers().count();
 }
