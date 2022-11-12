@@ -5,11 +5,11 @@
 #include "BinProto/nettcpsocket.h"
 #include "BinProto/BinProto.h"
 #include "nettypes.h"
+#include "trackhnd.h"
 
 class QHostAddress;
 class QTcpSocket;
-class QIODevice;
-class QHttpServer;
+class TrackHnd;
 
 class NetProcess : public QObject
 {
@@ -55,10 +55,7 @@ public:
     const logbook_item_t &logbook(quint32 i) const;
     const QList<trklist_item_t> & trklist() const { return m_trklist; }
     const trklist_item_t &trklist(quint32 i) const;
-
-    bool trkMapCenter() const { return m_trkmapcenter; }
-    bool trkSaveGPX(QIODevice &fh);
-    QString httpAddr();
+    const TrackHnd *track() { return m_track; };
 
 signals:
     void waitChange(NetProcess::wait_t);
@@ -68,7 +65,6 @@ signals:
     void rcvLogBook();
     void rcvTrkList();
     void rcvTrack(const trkinfo_t &);
-    void rcvTrkMapCenter(const log_item_t &);
 
 private:
     err_t m_err;
@@ -79,10 +75,7 @@ private:
     quint32 m_rcvpos, m_rcvcnt;
     QList<logbook_item_t> m_logbook;
     QList<trklist_item_t> m_trklist;
-    trkinfo_t m_trkinfo;
-    QList<log_item_t> m_track;
-    bool m_trkmapcenter;
-    QHttpServer *m_http;
+    TrackHnd *m_track;
 
     void tcpConnected();
     void tcpDisconnected();
@@ -91,8 +84,6 @@ private:
     void setWait(wait_t _wait);
     void rcvProcess();
     void rcvWrong();
-
-    void httpInit();
 };
 
 #endif // NETPROCESS_H

@@ -18,8 +18,6 @@ class QItemSelection;
 class QBluetoothDeviceDiscoveryAgent;
 class QBluetoothDeviceInfo;
 
-class QTemporaryFile;
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -73,6 +71,5 @@ private:
     QBluetoothDeviceDiscoveryAgent *btDAgent;
     WifiDeviceDiscovery *wfDAgent;
     int m_lbinfrows;
-    QTemporaryFile *m_ftmp;
 };
 #endif // MAINWINDOW_H

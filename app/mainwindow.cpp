@@ -6,6 +6,7 @@
 #include "netprocess.h"
 #include "formauth.h"
 #include "trkbutton.h"
+#include "trackhnd.h"
 
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
@@ -20,8 +21,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow),
-      m_ftmp(nullptr)
+    , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     setWindowTitle(tr("Xde-Ya"));
@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(netProc, &NetProcess::rcvData,      this, &MainWindow::netData);
     connect(netProc, &NetProcess::rcvLogBook,   this, &MainWindow::netLogBook);
     connect(netProc, &NetProcess::rcvTrack,     this, &MainWindow::netTrack);
-    connect(netProc, &NetProcess::rcvTrkMapCenter, this, &MainWindow::netTrkMapCenter);
+    connect(netProc->track(), &TrackHnd::onMapCenter, this, &MainWindow::netTrkMapCenter);
 
     btDAgent = new QBluetoothDeviceDiscoveryAgent(this);
     btDAgent->setLowEnergyDiscoveryTimeout(10000);
@@ -246,11 +246,6 @@ void MainWindow::on_btnReload_clicked()
 
         case pageTrkView:
             //ui->wvTrack->reload();
-            {
-        QString cmd("loadGPX('" + netProc->httpAddr() +"/track.gpx');");
-        qDebug() << "cmd1: " << cmd;
-        ui->wvTrack->page()->runJavaScript(cmd);
-            }
             break;
     }
     updState();
@@ -439,11 +434,11 @@ void MainWindow::netLogBook()
 
 void MainWindow::netTrack()
 {
-    if (!netProc->trkMapCenter()) {
+    if (!netProc->track()->mapCenter()) {
         ui->labState->setText("Нет связи со спутниками");
         return;
     }
-
+    /*
     if (m_ftmp != nullptr)
         delete m_ftmp;
     m_ftmp = new QTemporaryFile(QDir::tempPath() + "/trackXXXXXX.gpx", this);
@@ -461,6 +456,7 @@ void MainWindow::netTrack()
     QString cmd("loadGPX('" + netProc->httpAddr() +"/track.gpx');");
     qDebug() << "cmd: " << cmd;
     ui->wvTrack->page()->runJavaScript(cmd);
+    */
 }
 
 void MainWindow::netTrkMapCenter(const log_item_t &ti)

@@ -1,4 +1,4 @@
-QT       += core gui bluetooth webenginewidgets httpserver
+QT       += core gui bluetooth webenginewidgets
 
 #greaterThan(QT_MAJOR_VERSION, 4):
 QT += widgets
@@ -18,6 +18,7 @@ SOURCES += \
     moddevsrch.cpp \
     modlogbook.cpp \
     netprocess.cpp \
+    trackhnd.cpp \
     trkbutton.cpp \
     wifidevicediscovery.cpp
 
@@ -31,6 +32,7 @@ HEADERS += \
     modlogbook.h \
     netprocess.h \
     nettypes.h \
+    trackhnd.h \
     trkbutton.h \
     wifidevicediscovery.h
 
