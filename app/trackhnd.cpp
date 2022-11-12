@@ -1,6 +1,7 @@
 #include "trackhnd.h"
 
 #include <QIODevice>
+#include <QByteArray>
 
 TrackHnd::TrackHnd(QObject *parent)
     : QObject{parent},
@@ -34,12 +35,17 @@ void TrackHnd::clear()
     memset(&m_mapcenter, 0, sizeof(m_mapcenter));
 }
 
-bool TrackHnd::saveGPX(QIODevice &fh)
+#define FSTR(len, str) if (fh.write( str ) < len) return false
+#define FFMT(fmt, ...)  \
+        do { \
+            snprintf(s, sizeof(s), fmt, ##__VA_ARGS__); \
+            FSTR(5, s); \
+        } while (0)
+
+bool TrackHnd::saveGPX(QIODevice &fh) const
 {
     if (!fh.isOpen() || !fh.isWritable())
         return false;
-
-#define FSTR(len, str) if (fh.write( str ) < len) return false
 
     FSTR(100,
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -55,11 +61,6 @@ bool TrackHnd::saveGPX(QIODevice &fh)
 
     bool prevok = false;
     char s[1024];
-#define FFMT(fmt, ...)  \
-        do { \
-            snprintf(s, sizeof(s), fmt, ##__VA_ARGS__); \
-            FSTR(5, s); \
-        } while (0)
 
     for (const auto &p : m_data) {
         bool isok = (p.flags & 0x0001) > 0;
@@ -102,8 +103,58 @@ bool TrackHnd::saveGPX(QIODevice &fh)
         "</gpx>"
     );
 
-#undef FSTR
-#undef FFMT
-
     return true;
 }
+
+#undef FSTR
+
+#define FSTR(len, str) buf.append( str )
+
+void TrackHnd::saveGeoJson(QByteArray &buf) const
+{
+    FSTR(10,
+        "{"
+            "\"type\": \"FeatureCollection\","
+            "\"features\": ["
+    );
+
+    bool prevok = false;
+    uint32_t segid = 0;
+    char s[1024];
+
+    for (const auto &p : m_data) {
+        bool isok = (p.flags & 0x0001) > 0;
+        if (prevok != isok) {
+            if (isok) {
+                segid++;
+                FFMT(
+                    "{"
+                        "\"type\": \"Feature\","
+                        "\"id\": %u,"
+                        "\"options\": {\"strokeWidth\": 3, \"strokeColor\": \"#7318bf\"},"
+                        "\"geometry\": {"
+                            "\"type\": \"LineString\","
+                            "\"coordinates\": [",
+                    segid
+                );
+            }
+            else
+                FSTR(4, "]}},");
+            prevok = isok;
+        }
+        if (!isok)
+            continue;
+
+        FFMT("[%0.7f,%0.7f],",
+             static_cast<double>(p.lat)/10000000,
+             static_cast<double>(p.lon)/10000000);
+    }
+
+    if (prevok)
+        FSTR(4, "]}},");
+
+    FSTR(2, "]}");
+}
+
+#undef FSTR
+#undef FFMT

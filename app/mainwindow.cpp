@@ -16,8 +16,6 @@
 #include <QDate>
 #include <QTime>
 #include <QFile>
-#include <QTemporaryFile>
-#include <QDir>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -438,25 +436,11 @@ void MainWindow::netTrack()
         ui->labState->setText("Нет связи со спутниками");
         return;
     }
-    /*
-    if (m_ftmp != nullptr)
-        delete m_ftmp;
-    m_ftmp = new QTemporaryFile(QDir::tempPath() + "/trackXXXXXX.gpx", this);
-    if (!m_ftmp->open()) {
-        qDebug() << "can't open tmp-file: " << m_ftmp->fileName();
-        return;
-    }
-    qDebug() << "Tmp file: " << m_ftmp->fileName();
-    if (!netProc->trkSaveGPX(*m_ftmp)) {
-        qDebug() << "fail write GPX";
-        return;
-    }
-    m_ftmp->close();
-    //QString cmd("loadGPX('file://"+m_ftmp->fileName()+"');");
-    QString cmd("loadGPX('" + netProc->httpAddr() +"/track.gpx');");
-    qDebug() << "cmd: " << cmd;
+
+    QByteArray json;
+    netProc->track()->saveGeoJson(json);
+    QString cmd(QString("loadGPX(")+json.constData()+");");
     ui->wvTrack->page()->runJavaScript(cmd);
-    */
 }
 
 void MainWindow::netTrkMapCenter(const log_item_t &ti)

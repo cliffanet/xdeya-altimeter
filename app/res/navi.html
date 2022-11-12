@@ -16,28 +16,21 @@
     <script type="text/javascript">
         // Обработчик загрузки XML-файлов.
         var myMap;
-        function onGeoXmlLoad(res) {
-            alert("onGeoXmlLoad");
-            myMap.geoObjects.add(res.geoObjects);
-            if (res.mapState) {
-                res.mapState.applyToMap(myMap);
-            }
-            else {
-                myMap.setBounds(res.geoObjects.getBounds());
-            }
+        function addGeoJson(json) {
+            geoObj = new ymaps.ObjectManager();
+            geoObj.add(json);
+            myMap.geoObjects.add(geoObj);
         }
 
         var isReady = false;
         var onReady = false;
-        function loadGPX(fname) {
-            //console.log('loadGPX: ', fname);
-            //alert('loadGPX: ' + fname + "\n isReady: " + isReady);
-            //if (isReady)
-                ymaps.geoXml.load(fname).then(onGeoXmlLoad);
-            //else
-            //    onReady = function() {
-            //        ymaps.geoXml.load(fname).then(onGeoXmlLoad);
-            //    };
+        function loadGPX(json) {
+            if (isReady)
+                addGeoJson(json);
+            else
+                onReady = function() {
+                    addGeoJson(json);
+                };
         }
     </script>
 </head>

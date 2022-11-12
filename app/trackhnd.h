@@ -19,7 +19,8 @@ public:
 
     bool mapCenter(log_item_t &ti) const { if (m_ismapcenter) ti = m_mapcenter; return m_ismapcenter; }
     bool mapCenter() const { return m_ismapcenter; }
-    bool saveGPX(QIODevice &fh);
+    bool saveGPX(QIODevice &fh) const;
+    void saveGeoJson(QByteArray &fh) const;
 
 signals:
     void onMapCenter(const log_item_t &);
