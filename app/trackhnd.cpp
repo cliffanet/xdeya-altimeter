@@ -119,24 +119,44 @@ void TrackHnd::saveGeoJson(QByteArray &buf) const
     );
 
     bool prevok = false;
+    uint8_t state = 0;
     uint32_t segid = 0;
     char s[1024];
+    QByteArray prop;
 
     for (const auto &p : m_data) {
         bool isok = (p.flags & 0x0001) > 0;
+        if (prevok && (state != p.state)) {
+            prop.append("]}}");
+            FFMT("]}%s},", prop.constData());
+            prevok = false;
+            state = p.state;
+        }
         if (prevok != isok) {
             if (isok) {
                 segid++;
+                const char *color =
+                    (p.state == 's') || (p.state == 't') ? // takeoff
+                        "#2e2f30" :
+                    p.state == 'f' ? // freefall
+                        "#7318bf" :
+                    (p.state == 'c') || (p.state == 'l') ? // canopy
+                        "#0052ef" :
+                        "#fcb615";
                 FFMT(
                     "{"
                         "\"type\": \"Feature\","
                         "\"id\": %u,"
-                        "\"options\": {\"strokeWidth\": 3, \"strokeColor\": \"#7318bf\"},"
+                        "\"options\": {\"strokeWidth\": 4, \"strokeColor\": \"%s\"},"
+                        "\"hint\": \"asdfasdf\","
                         "\"geometry\": {"
                             "\"type\": \"LineString\","
                             "\"coordinates\": [",
-                    segid
+                    segid, color
                 );
+                prop.clear();
+                prop.append(", \"properties\": { \"hintContent\": \"Москва-Берлин\", \"metaDataProperty\": { \"gpxPoints\": [");
+                //"\"properties\": { \"hintContent\": \"Москва-Берлин\" },"
             }
             else
                 FSTR(4, "]}},");
@@ -148,6 +168,13 @@ void TrackHnd::saveGeoJson(QByteArray &buf) const
         FFMT("[%0.7f,%0.7f],",
              static_cast<double>(p.lat)/10000000,
              static_cast<double>(p.lon)/10000000);
+
+        uint32_t sec = p.tmoffset / 1000;
+        uint32_t min = sec / 60;
+        snprintf(s, sizeof(s), "{ \"name\": \"%d:%02d\" },",
+                 min, sec//, p.alt, static_cast<double>(p.altspeed)/100
+                 );
+        //prop.append(s);
     }
 
     if (prevok)

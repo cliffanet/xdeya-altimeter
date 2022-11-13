@@ -68,7 +68,10 @@ MainWindow::~MainWindow()
 void MainWindow::updState()
 {
     ui->btnBack->setVisible( ui->stackWnd->currentIndex() > pageDevSrch );
-    ui->btnReload->setVisible( ui->stackWnd->currentIndex() != pageJmpView );
+    ui->btnReload->setVisible(
+                (ui->stackWnd->currentIndex() != pageJmpView) &&
+                (ui->stackWnd->currentIndex() != pageTrkView)
+            );
 
     switch (ui->stackWnd->currentIndex()) {
         case pageDevSrch:
@@ -141,6 +144,8 @@ void MainWindow::devConnect(qsizetype i)
 void MainWindow::jmpView(qsizetype i)
 {
     auto &jmp = netProc->logbook(i);
+    char s[64];
+    uint hour, min, sec;
 
     QDateTime dt(QDate(jmp.tm.year, jmp.tm.mon, jmp.tm.day), QTime(jmp.tm.h, jmp.tm.m, jmp.tm.s));
     qDebug() << "View jump: " << jmp.num << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
@@ -148,8 +153,13 @@ void MainWindow::jmpView(qsizetype i)
     ui->lvJmpNumber->setText(QString::number(jmp.num));
 
     if (jmp.toff.tmoffset) {
-        QDateTime dtbeg = dt.addMSecs(-1*jmp.toff.tmoffset);
-        ui->lvJmpDTTakeoff->setText(dtbeg.toString("d.MM.yyyy hh:mm"));
+        sec = jmp.toff.tmoffset / 1000;
+        min = sec / 60;
+        sec -= min*60;
+        hour = min / 60;
+        min -= hour*60;
+        snprintf(s, sizeof(s), "%d:%02d:%02d", hour, min, sec);
+        ui->lvJmpDTTakeoff->setText(QString(s));
     }
     else {
         ui->lvJmpDTTakeoff->setText("");
@@ -157,8 +167,6 @@ void MainWindow::jmpView(qsizetype i)
     ui->lvJmpDTBegin  ->setText(dt.toString("d.MM.yyyy hh:mm"));
     ui->lvJmpAltBegin ->setText(QString::number(jmp.beg.alt) + " m");
 
-    char s[64];
-    uint hour, min, sec;
     sec = (jmp.cnp.tmoffset - jmp.beg.tmoffset) / 1000;
     min = sec / 60;
     sec -= min*60;
