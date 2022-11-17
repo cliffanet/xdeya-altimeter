@@ -1,7 +1,5 @@
 #include "modlogbook.h"
 
-#include <QBluetoothAddress>
-
 ModLogBook::ModLogBook(const QList<logbook_item_t> &_list, QObject *parent)
     : QAbstractTableModel(parent),
     m_list(_list)

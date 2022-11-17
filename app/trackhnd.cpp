@@ -42,6 +42,7 @@ void TrackHnd::clear()
             FSTR(5, s); \
         } while (0)
 
+/*
 bool TrackHnd::saveGPX(QIODevice &fh) const
 {
     if (!fh.isOpen() || !fh.isWritable())
@@ -105,6 +106,7 @@ bool TrackHnd::saveGPX(QIODevice &fh) const
 
     return true;
 }
+*/
 
 #undef FSTR
 

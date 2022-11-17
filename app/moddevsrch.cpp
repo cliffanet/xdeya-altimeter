@@ -1,7 +1,5 @@
 #include "moddevsrch.h"
 
-#include <QBluetoothAddress>
-
 static WifiDeviceItem wifiNull = {};
 
 ModDevSrch::ModDevSrch(QObject *parent)

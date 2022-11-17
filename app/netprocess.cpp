@@ -2,6 +2,7 @@
 #include "trackhnd.h"
 
 #include <QTcpSocket>
+#include <QHostAddress>
 
 static logbook_item_t lb_item_null = {};
 static trklist_item_t tl_item_null = {};
