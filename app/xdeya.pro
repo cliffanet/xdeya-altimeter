@@ -1,7 +1,6 @@
-QT       += core gui bluetooth webenginewidgets
+QT       += quick quickcontrols2
 
-#greaterThan(QT_MAJOR_VERSION, 4):
-QT += widgets
+#greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
 
@@ -12,33 +11,23 @@ CONFIG += c++11
 SOURCES += \
     BinProto/BinProto.cpp \
     BinProto/nettcpsocket.cpp \
-    formauth.cpp \
     main.cpp \
-    mainwindow.cpp \
     moddevsrch.cpp \
     modlogbook.cpp \
     netprocess.cpp \
     trackhnd.cpp \
-    trkbutton.cpp \
     wifidevicediscovery.cpp
 
 HEADERS += \
     BinProto/BinProto.h \
     BinProto/netsocket.h \
     BinProto/nettcpsocket.h \
-    formauth.h \
-    mainwindow.h \
     moddevsrch.h \
     modlogbook.h \
     netprocess.h \
     nettypes.h \
     trackhnd.h \
-    trkbutton.h \
     wifidevicediscovery.h
-
-FORMS += \
-    formauth.ui \
-    mainwindow.ui
 
 ios: QMAKE_INFO_PLIST = Info/Info.ios.plist.app.in
 macos: QMAKE_INFO_PLIST = Info/Info.qmake.macos.plist
