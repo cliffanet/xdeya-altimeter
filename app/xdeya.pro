@@ -1,4 +1,4 @@
-QT       += quick quickcontrols2
+QT       += quick quickcontrols2 bluetooth
 
 #greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -11,6 +11,8 @@ CONFIG += c++11
 SOURCES += \
     BinProto/BinProto.cpp \
     BinProto/nettcpsocket.cpp \
+    apphnd.cpp \
+    devinfo.cpp \
     main.cpp \
     moddevsrch.cpp \
     modlogbook.cpp \
@@ -22,6 +24,8 @@ HEADERS += \
     BinProto/BinProto.h \
     BinProto/netsocket.h \
     BinProto/nettcpsocket.h \
+    apphnd.h \
+    devinfo.h \
     moddevsrch.h \
     modlogbook.h \
     netprocess.h \

@@ -1,8 +1,12 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QQmlEngine>
 #include <QIcon>
 #include <QQuickStyle>
 
+#include "apphnd.h"
+#include "netprocess.h"
 
 int main(int argc, char *argv[])
 {
@@ -10,11 +14,13 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
     QGuiApplication app(argc, argv);
+    qmlRegisterType<AppHnd>("com.xdeya.app", 1, 0, "AppHnd");
 
     QIcon::setThemeName("default");
     auto style =
 #if defined(Q_OS_MACOS)
-        QLatin1String("macOS");
+        //QLatin1String("macOS"); // тут не работает ProgressBar в indeterminate режиме
+        QLatin1String("Fusion");
 #elif defined(Q_OS_IOS)
         QLatin1String("iOS");
 #elif defined(Q_OS_WINDOWS)
@@ -37,6 +43,11 @@ int main(int argc, char *argv[])
         },
         Qt::QueuedConnection
     );
+
+    AppHnd apphnd;
+    engine.rootContext()->setContextProperty("app", &apphnd);
+    engine.rootContext()->setContextProperty("netProc", apphnd.netProc);
+
     engine.load(url);
 
     return app.exec();

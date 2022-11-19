@@ -43,6 +43,8 @@ public:
     err_t err() const { return m_err; }
     wait_t wait() const { return m_wait; }
     bool connected() const { return m_pro.rcvstate() > BinProto::RCV_DISCONNECTED; }
+    quint32 rcvMax() const { return m_rcvcnt; }
+    quint32 rcvPos() const { return m_rcvpos; }
 
     bool requestInit();
     bool requestAuth(uint16_t code);
