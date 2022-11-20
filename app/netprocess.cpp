@@ -1,10 +1,10 @@
 #include "netprocess.h"
+#include "jmpinfo.h"
 #include "trackhnd.h"
 
 #include <QTcpSocket>
 #include <QHostAddress>
 
-static logbook_item_t lb_item_null = {};
 static trklist_item_t tl_item_null = {};
 
 NetProcess::NetProcess(QObject *parent)
@@ -123,13 +123,6 @@ bool NetProcess::requestTrack(const trklist_item_t &trk)
     return true;
 }
 
-const logbook_item_t &NetProcess::logbook(quint32 i) const
-{
-    if (i >= m_logbook.size())
-        return lb_item_null;
-    return m_logbook[i];
-}
-
 const trklist_item_t &NetProcess::trklist(quint32 i) const
 {
     if (i >= m_trklist.size())
@@ -228,7 +221,7 @@ void NetProcess::rcvProcess()
                     return rcvWrong();
                 logbook_item_t d;
                 m_pro.rcvdata("NNT" LOG_PK LOG_PK LOG_PK LOG_PK, d);
-                m_logbook.push_back(d);
+                m_logbook.push_back(new JmpInfo(d, m_logbook.size()));
                 m_rcvpos ++;
                 emit rcvData(m_rcvpos, m_rcvcnt);
                 break;

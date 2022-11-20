@@ -7,6 +7,7 @@
 
 #include "apphnd.h"
 #include "netprocess.h"
+#include "jmpinfo.h"
 
 int main(int argc, char *argv[])
 {
@@ -15,6 +16,7 @@ int main(int argc, char *argv[])
 #endif
     QGuiApplication app(argc, argv);
     qmlRegisterType<AppHnd>("com.xdeya.app", 1, 0, "AppHnd");
+    qmlRegisterType<JmpInfo>("com.xdeya.jmpinfo", 1, 0, "JmpInfo");
 
     QIcon::setThemeName("default");
     auto style =
@@ -46,7 +48,7 @@ int main(int argc, char *argv[])
 
     AppHnd apphnd;
     engine.rootContext()->setContextProperty("app", &apphnd);
-    engine.rootContext()->setContextProperty("netProc", apphnd.netProc);
+    engine.rootContext()->setContextProperty("jmpInfo", apphnd.getJmp());
 
     engine.load(url);
 

@@ -1,16 +1,16 @@
 #include "devinfo.h"
 #include <QBluetoothUuid>
 
-DevInfo::DevInfo(const QBluetoothDeviceInfo &bt)
+DevInfo::DevInfo(const QBluetoothDeviceInfo &bt) :
+    m_src(SRC_BLUETOOTH),
+    m_bt(bt)
 {
-    m_src = SRC_BLUETOOTH;
-    m_bt = bt;
 }
 
-DevInfo::DevInfo(const WifiDeviceItem &wf)
+DevInfo::DevInfo(const WifiDeviceItem &wf) :
+    m_src(SRC_WIFI),
+    m_wifi(wf)
 {
-    m_src = SRC_WIFI;
-    m_wifi = wf;
 }
 
 QString DevInfo::getAddress() const

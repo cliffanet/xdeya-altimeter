@@ -9,7 +9,8 @@
 
 AppHnd::AppHnd(QObject *parent)
     : QObject{parent},
-      m_page(PageDevSrch)
+      m_page(PageDevSrch),
+      m_jmp({})
 {
     m_pagehistory.push_back(PageDevSrch);
 
@@ -32,14 +33,16 @@ AppHnd::AppHnd(QObject *parent)
     connect(wfDAgent, &WifiDeviceDiscovery::discoverDeviceFound,    this, &AppHnd::wfDiscovery);
     connect(wfDAgent, &WifiDeviceDiscovery::onError,                this, &AppHnd::wfError);
     connect(wfDAgent, &WifiDeviceDiscovery::discoverFinish,         this, &AppHnd::wfDiscoverFinish);
+
+    connect(&m_jmp, &JmpInfo::changed, this, &AppHnd::jmpInfoChanged);
 }
 
-const bool AppHnd::isDevSrch()
+bool AppHnd::isDevSrch() const
 {
     return btDAgent->isActive() || wfDAgent->isActive();
 }
 
-const QString AppHnd::getState()
+const QString AppHnd::getState() const
 {
     if (!m_err.isEmpty())
         return m_err;
@@ -127,7 +130,7 @@ void AppHnd::setPage(PageSelector page)
                 m_pagehistory.push_back(page);
                 emit pagePushed("qrc:/page/jmplist.qml");
                 break;
-            case PageJmpView:
+            case PageJmpInfo:
                 m_pagehistory.push_back(page);
                 emit pagePushed("qrc:/page/jmpinfo.qml");
                 break;
@@ -152,7 +155,7 @@ void AppHnd::pageBack()
     setPage(m_pagehistory.back());
 }
 
-const bool AppHnd::getProgressEnabled()
+bool AppHnd::getProgressEnabled() const
 {
     switch (m_page) {
         case PageDevSrch:
@@ -163,7 +166,7 @@ const bool AppHnd::getProgressEnabled()
     }
 }
 
-const int AppHnd::getProgressMax()
+int AppHnd::getProgressMax() const
 {
     switch (m_page) {
         case PageDevSrch:
@@ -181,7 +184,7 @@ const int AppHnd::getProgressMax()
     }
 }
 
-const int AppHnd::getProgressVal()
+int AppHnd::getProgressVal() const
 {
     switch (m_page) {
         case PageDevSrch:
@@ -212,15 +215,15 @@ bool AppHnd::isAuth()
     return netProc->wait() == NetProcess::wtAuthReq;
 }
 
-const bool AppHnd::getReloadVisibled()
+bool AppHnd::getReloadVisibled() const
 {
     return
         (m_page != PageAuth) &&
-        (m_page != PageJmpView) &&
+        (m_page != PageJmpInfo) &&
         (m_page != PageTrkView);
 }
 
-const bool AppHnd::getReloadEnabled()
+bool AppHnd::getReloadEnabled() const
 {
     switch (m_page) {
         case PageDevSrch:
@@ -258,7 +261,7 @@ void AppHnd::clickReload()
     emit progressChanged();
 }
 
-QVariant AppHnd::getDevList()
+QVariant AppHnd::getDevList() const
 {
     return QVariant::fromValue(m_devlist);
 }
@@ -309,6 +312,26 @@ void AppHnd::authEdit(const QString &str)
 
     netProc->requestAuth(code);
 
+}
+
+QVariant AppHnd::getJmpList() const
+{
+    return QVariant::fromValue(netProc->logbook());
+}
+
+void AppHnd::setJmpInfo(int index)
+{
+    if ((index < 0) || (index >= netProc->logbook().size()))
+        m_jmp.clear();
+    else {
+        m_jmp.set(netProc->logbook()[index], index);
+        emit jmpSelected(index);
+    }
+}
+
+bool AppHnd::validJmpInfo(int index) const
+{
+    return (index >= 0) && (index < netProc->logbook().size());
 }
 
 
@@ -376,18 +399,12 @@ void AppHnd::netAuth(bool ok)
 void AppHnd::netData(quint32 pos, quint32 max)
 {
     emit progressChanged();
-    /*
-    ui->progRcvData->setRange(0, max);
-    if (max > 0)
-        ui->progRcvData->setValue(pos);
 
     switch (netProc->wait()) {
         case NetProcess::wtLogBook:
-            emit mod_logbook->layoutChanged();
-            ui->tvJmpList->scrollToBottom();
+            emit jmpListChanged();
             break;
     }
-    */
 }
 
 void AppHnd::netLogBook()
@@ -427,5 +444,10 @@ void AppHnd::netTrkMapCenter(const log_item_t &ti)
 
     ui->wvTrack->setHtml(data);
     */
+}
+
+void AppHnd::jmpInfoChanged()
+{
+    emit jmpChanged();
 }
 

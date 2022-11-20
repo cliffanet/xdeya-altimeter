@@ -105,7 +105,7 @@ ApplicationWindow {
 
                 delegate: Component {
                     Item {
-                        width: parent.width
+                        width: lvDevSrch.width
                         height: 40
 
                         Column {

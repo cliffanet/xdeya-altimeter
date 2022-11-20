@@ -9,6 +9,7 @@
 
 class QHostAddress;
 class QTcpSocket;
+class JmpInfo;
 class TrackHnd;
 
 class NetProcess : public QObject
@@ -56,8 +57,7 @@ public:
     bool requestTrack(quint32 i);
     bool requestTrack(const trklist_item_t &trk);
 
-    const QList<logbook_item_t> & logbook() const { return m_logbook; }
-    const logbook_item_t &logbook(quint32 i) const;
+    const QList<JmpInfo *> & logbook() const { return m_logbook; }
     const QList<trklist_item_t> & trklist() const { return m_trklist; }
     const trklist_item_t &trklist(quint32 i) const;
     const TrackHnd *track() { return m_track; };
@@ -78,7 +78,7 @@ private:
     NetTcpSocket m_nettcp;
     QTcpSocket *tcpClient;
     quint32 m_rcvpos, m_rcvcnt;
-    QList<logbook_item_t> m_logbook;
+    QList<JmpInfo *> m_logbook;
     QList<trklist_item_t> m_trklist;
     TrackHnd *m_track;
 

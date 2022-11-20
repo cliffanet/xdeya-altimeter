@@ -5,6 +5,7 @@
 
 #include "nettypes.h"
 #include "wifidevicediscovery.h"
+#include "jmpinfo.h"
 
 #include <QList>
 #include <QVariant>
@@ -28,24 +29,24 @@ class AppHnd : public QObject
     Q_PROPERTY(bool reloadVisibled READ getReloadVisibled NOTIFY stateChanged)
     Q_PROPERTY(bool reloadEnabled READ getReloadEnabled NOTIFY stateChanged)
     Q_PROPERTY(QVariant devlist READ getDevList NOTIFY devListChanged)
+    Q_PROPERTY(QVariant jmplist READ getJmpList NOTIFY jmpListChanged)
+    //Q_PROPERTY(JmpInfo jmpinfo READ getJmp NOTIFY jmpChanged)
 
 public:
     enum PageSelector {
         PageDevSrch = 0,
         PageAuth,
         PageJmpList,
-        PageJmpView,
+        PageJmpInfo,
         PageTrkView
     };
     Q_ENUM(PageSelector)
 
-    NetProcess *netProc;
-
 public:
     explicit AppHnd(QObject *parent = nullptr);
 
-    const bool isDevSrch();
-    const QString getState();
+    bool isDevSrch() const;
+    const QString getState() const;
 
     void setErr(const QString &err);
     void clearErr();
@@ -54,21 +55,26 @@ public:
     void setPage(PageSelector page);
     Q_INVOKABLE void pageBack();
 
-    const bool getProgressEnabled();
-    const int getProgressMax();
-    const int getProgressVal();
+    bool getProgressEnabled() const;
+    int getProgressMax() const;
+    int getProgressVal() const;
     bool isInit();
     bool isAuth();
 
-    const bool getReloadVisibled();
-    const bool getReloadEnabled();
+    bool getReloadVisibled() const;
+    bool getReloadEnabled() const;
     Q_INVOKABLE void clickReload();
 
-    QVariant getDevList();
+    QVariant getDevList() const;
     Q_INVOKABLE void devConnect(qsizetype i);
     Q_INVOKABLE void devDisconnect();
 
     Q_INVOKABLE void authEdit(const QString &str);
+
+    QVariant getJmpList() const;
+    JmpInfo * getJmp() { return &m_jmp; }
+    Q_INVOKABLE void setJmpInfo(int index);
+    Q_INVOKABLE bool validJmpInfo(int index) const;
 
 signals:
     void stateChanged();
@@ -77,6 +83,9 @@ signals:
     void pageChanged();
     void progressChanged();
     void devListChanged();
+    void jmpListChanged();
+    void jmpChanged();
+    void jmpSelected(int index);
 
 private slots:
     void btDiscovery(const QBluetoothDeviceInfo &dev);
@@ -93,14 +102,19 @@ private slots:
     void netTrack();
     void netTrkMapCenter(const log_item_t &ti);
 
+    void jmpInfoChanged();
+
 private:
     QString m_err;
     PageSelector m_page;
     QList<PageSelector> m_pagehistory;
 
+    NetProcess *netProc;
     QBluetoothDeviceDiscoveryAgent *btDAgent;
     WifiDeviceDiscovery *wfDAgent;
+
     QList<DevInfo *> m_devlist;
+    JmpInfo m_jmp;
 };
 
 #endif // APPHND_H

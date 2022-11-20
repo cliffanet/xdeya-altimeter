@@ -13,9 +13,8 @@ SOURCES += \
     BinProto/nettcpsocket.cpp \
     apphnd.cpp \
     devinfo.cpp \
+    jmpinfo.cpp \
     main.cpp \
-    moddevsrch.cpp \
-    modlogbook.cpp \
     netprocess.cpp \
     trackhnd.cpp \
     wifidevicediscovery.cpp
@@ -26,8 +25,7 @@ HEADERS += \
     BinProto/nettcpsocket.h \
     apphnd.h \
     devinfo.h \
-    moddevsrch.h \
-    modlogbook.h \
+    jmpinfo.h \
     netprocess.h \
     nettypes.h \
     trackhnd.h \
