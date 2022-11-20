@@ -6,6 +6,7 @@
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
 #include <QItemSelectionModel>
+#include <QFile>
 
 AppHnd::AppHnd(QObject *parent)
     : QObject{parent},
@@ -325,6 +326,7 @@ void AppHnd::setJmpInfo(int index)
         m_jmp.clear();
     else {
         m_jmp.set(netProc->logbook()[index], index);
+        m_jmp.fetchTrkList(netProc->trklist());
         emit jmpSelected(index);
     }
 }
@@ -332,6 +334,17 @@ void AppHnd::setJmpInfo(int index)
 bool AppHnd::validJmpInfo(int index) const
 {
     return (index >= 0) && (index < netProc->logbook().size());
+}
+
+void AppHnd::trkView(const trklist_item_t &trk)
+{
+    /*
+    #include <QDateTime>
+    QDateTime dt(QDate(trk.tmbeg.year, trk.tmbeg.mon, trk.tmbeg.day), QTime(trk.tmbeg.h, trk.tmbeg.m, trk.tmbeg.s));
+    qDebug() << "trk view: " << trk.jmpnum << " -- " << trk.jmpkey << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
+    */
+
+    netProc->requestTrack(trk);
 }
 
 
@@ -423,12 +436,12 @@ void AppHnd::netTrack()
     QByteArray json;
     netProc->track()->saveGeoJson(json);
     QString cmd(QString("loadGPX(")+json.constData()+");");
-    //ui->wvTrack->page()->runJavaScript(cmd);
+
+    emit trkRunJS(cmd);
 }
 
 void AppHnd::netTrkMapCenter(const log_item_t &ti)
 {
-    /*
     QString center(QString::number(static_cast<double>(ti.lat)/10000000) + tr(", ") + QString::number(static_cast<double>(ti.lon)/10000000));
     qDebug() << "netTrkMapCenter: " << center;
 
@@ -442,8 +455,7 @@ void AppHnd::netTrkMapCenter(const log_item_t &ti)
     ftxt.close();
     data.replace(QString("%MAP_CENTER%"), center);
 
-    ui->wvTrack->setHtml(data);
-    */
+    emit trkHtmlLoad(data);
 }
 
 void AppHnd::jmpInfoChanged()

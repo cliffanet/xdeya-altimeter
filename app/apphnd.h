@@ -76,6 +76,8 @@ public:
     Q_INVOKABLE void setJmpInfo(int index);
     Q_INVOKABLE bool validJmpInfo(int index) const;
 
+    Q_INVOKABLE void trkView(const trklist_item_t &trk);
+
 signals:
     void stateChanged();
     void pagePushed(QString src);
@@ -86,6 +88,8 @@ signals:
     void jmpListChanged();
     void jmpChanged();
     void jmpSelected(int index);
+    void trkHtmlLoad(QString html);
+    void trkRunJS(QString code);
 
 private slots:
     void btDiscovery(const QBluetoothDeviceInfo &dev);

@@ -4,6 +4,7 @@
 #include <QQmlEngine>
 #include <QIcon>
 #include <QQuickStyle>
+#include <QtWebView>
 
 #include "apphnd.h"
 #include "netprocess.h"
@@ -17,6 +18,9 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     qmlRegisterType<AppHnd>("com.xdeya.app", 1, 0, "AppHnd");
     qmlRegisterType<JmpInfo>("com.xdeya.jmpinfo", 1, 0, "JmpInfo");
+    qmlRegisterType<JmpInfo>("com.xdeya.trkinfo", 1, 0, "TrkInfo");
+
+    QtWebView::initialize();
 
     QIcon::setThemeName("default");
     auto style =

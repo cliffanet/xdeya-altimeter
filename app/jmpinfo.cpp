@@ -1,10 +1,11 @@
 #include "jmpinfo.h"
+#include "trkinfo.h"
 
 #include <QDateTime>
 #include <QDate>
 #include <QTime>
 
-QString sec2time(uint sec) {
+static QString sec2time(uint sec) {
     uint min = sec / 60;
     sec -= min*60;
     uint hour = min / 60;
@@ -15,7 +16,7 @@ QString sec2time(uint sec) {
     return QString(s);
 }
 
-QString dt2format(const tm_t &tm, QString format = "d.MM.yyyy hh:mm") {
+static QString dt2format(const tm_t &tm, QString format = "d.MM.yyyy hh:mm") {
     QDateTime dt(QDate(tm.year, tm.mon, tm.day), QTime(tm.h, tm.m, tm.s));
     return dt.toString(format);
 }
@@ -68,6 +69,11 @@ QString JmpInfo::getTimeCnp() const
     return sec2time((m_jmp.end.tmoffset - m_jmp.cnp.tmoffset) / 1000);
 }
 
+QVariant JmpInfo::getTrkList() const
+{
+    return QVariant::fromValue(m_trklist);
+}
+
 void JmpInfo::set(const logbook_item_t &jmp, int index)
 {
     m_index = index;
@@ -92,4 +98,18 @@ void JmpInfo::clear()
 {
     m_index = -1;
     set({});
+    m_trklist.clear();
+    emit trkListChanged();
+}
+
+void JmpInfo::fetchTrkList(const QList<trklist_item_t> &trklist)
+{
+    m_trklist.clear();
+    for (auto &trk: trklist) {
+        if (trk.jmpnum != m_jmp.num)
+            continue;
+        m_trklist.push_back(new TrkInfo(trk));
+    }
+
+    emit trkListChanged();
 }

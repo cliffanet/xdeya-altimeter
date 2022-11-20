@@ -1,4 +1,4 @@
-QT       += quick quickcontrols2 bluetooth
+QT       += quick quickcontrols2 bluetooth webview
 
 #greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -17,6 +17,7 @@ SOURCES += \
     main.cpp \
     netprocess.cpp \
     trackhnd.cpp \
+    trkinfo.cpp \
     wifidevicediscovery.cpp
 
 HEADERS += \
@@ -29,6 +30,7 @@ HEADERS += \
     netprocess.h \
     nettypes.h \
     trackhnd.h \
+    trkinfo.h \
     wifidevicediscovery.h
 
 ios: QMAKE_INFO_PLIST = Info/Info.ios.plist.app.in

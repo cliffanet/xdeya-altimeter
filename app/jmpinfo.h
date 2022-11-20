@@ -2,8 +2,12 @@
 #define JMPINFO_H
 
 #include <QObject>
+#include <QList>
+#include <QVariant>
 
 #include "nettypes.h"
+
+class TrkInfo;
 
 class JmpInfo : public QObject
 {
@@ -17,6 +21,7 @@ class JmpInfo : public QObject
     Q_PROPERTY(QString  timeFF      READ getTimeFF      NOTIFY changed)
     Q_PROPERTY(int      altCnp      READ getAltCnp      NOTIFY changed)
     Q_PROPERTY(QString  timeCnp     READ getTimeCnp     NOTIFY changed)
+    Q_PROPERTY(QVariant trklist     READ getTrkList     NOTIFY trkListChanged)
 public:
     explicit JmpInfo() = default;
     explicit JmpInfo(const logbook_item_t &jmp, int index = -1);
@@ -32,18 +37,23 @@ public:
     QString getTimeFF() const;
     int     getAltCnp() const;
     QString getTimeCnp() const;
+    QVariant getTrkList() const;
 
     void set(const logbook_item_t &jmp, int index = -1);
     void set(const JmpInfo &jmp, int index = -1);
     void set(const JmpInfo *jmp, int index = -1);
     void clear();
 
+    void fetchTrkList(const QList<trklist_item_t> &trklist);
+
 signals:
     void changed();
+    void trkListChanged();
 
 private:
     logbook_item_t m_jmp;
     int m_index;
+    QList<TrkInfo *> m_trklist;
 };
 
 #endif // JMPINFO_H

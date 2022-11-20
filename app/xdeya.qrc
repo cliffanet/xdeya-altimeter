@@ -4,6 +4,7 @@
         <file>page/auth.qml</file>
         <file>page/jmplist.qml</file>
         <file>page/jmpinfo.qml</file>
+        <file>page/trkview.qml</file>
 
         <file>icons/default/20x20/back.png</file>
         <file>icons/default/20x20/drawer.png</file>
