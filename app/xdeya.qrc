@@ -1,6 +1,9 @@
 <RCC>
-    <qresource prefix="/" base="res">
+    <qresource prefix="/">
         <file>page/main.qml</file>
+        <file>page/auth.qml</file>
+        <file>page/jmplist.qml</file>
+
         <file>icons/default/20x20/back.png</file>
         <file>icons/default/20x20/drawer.png</file>
         <file>icons/default/20x20/menu.png</file>
@@ -18,6 +21,7 @@
         <file>icons/default/20x20@4/menu.png</file>
         <file>icons/default/20x20@4/reload.png</file>
         <file>icons/default/index.theme</file>
+        <file>icons/warning.png</file>
 
         <file alias="navi.html">res/navi.html</file>
     </qresource>

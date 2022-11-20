@@ -17,6 +17,7 @@ class NetProcess : public QObject
 public:
     typedef enum {
         errNoError,
+        errSock,
         errProto,
         errAuth
     } err_t;
@@ -24,7 +25,9 @@ public:
     typedef enum {
         wtDisconnected = -1,
         wtUnknown = 0,
+        wtConnecting,
         wtInit,
+        wtAuthReq,
         wtAuth,
         wtLogBookBeg,
         wtLogBook,
@@ -61,7 +64,7 @@ public:
 
 signals:
     void waitChange(NetProcess::wait_t);
-    void rcvInit();
+    void rcvAuthReq();
     void rcvAuth(bool isok);
     void rcvData(quint32 pos, quint32 max);
     void rcvLogBook();

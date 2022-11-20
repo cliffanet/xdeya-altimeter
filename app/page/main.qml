@@ -14,6 +14,18 @@ ApplicationWindow {
     visible: true
     title: qsTr("Xde-Ya")
 
+    Connections {
+        target: app
+        onPagePushed: {
+            console.log("page push: ", src);
+            stack.push(src);
+        }
+        onPagePoped: {
+            console.log("page poped");
+            stack.pop();
+        }
+    }
+
     property real hideValue: 0
     Behavior on hideValue {
         NumberAnimation { duration: 200 }
@@ -29,9 +41,14 @@ ApplicationWindow {
 
             ToolButton {
                 id: btnBack
-                icon.name: /*stack.depth > 1 ? "back" : */"drawer"
+                icon.name: stack.depth > 1 ? "back" : "drawer"
                 visible: stack.depth > 1
                 Layout.preferredWidth: menu.height
+                onClicked: {
+                    app.pageBack();
+                    if (stack.depth <= 1)
+                        app.devDisconnect();
+                }
             }
 
             ProgressBar {
@@ -41,6 +58,11 @@ ApplicationWindow {
                 from: 0
                 to: app.progressMax
                 value: app.progressVal
+            }
+
+            Item {
+                // spacer item
+                Layout.fillWidth: true
             }
 
             Label {
@@ -77,6 +99,10 @@ ApplicationWindow {
                 anchors.fill: parent
 
                 model: app.devlist
+                currentIndex: -1
+                highlightFollowsCurrentItem: true
+                focus: true
+
                 delegate: Component {
                     Item {
                         width: parent.width
@@ -104,6 +130,8 @@ ApplicationWindow {
                             onClicked: {
                                 lvDevSrch.currentIndex = index;
                                 console.log('selected: ', index, '=', modelData.name);
+                                app.page = AppHnd.PageAuth;
+                                app.devConnect(index);
                             }
                         }
                     }
@@ -112,12 +140,11 @@ ApplicationWindow {
                     color: 'grey'
                     radius: 5
                 }
-                focus: false
                 add: Transition {
-                    NumberAnimation { properties: "y"; duration: 1000 }
+                    NumberAnimation { properties: "x,y"; duration: 1000 }
                 }
                 displaced: Transition {
-                    NumberAnimation { properties: "y"; duration: 1000 }
+                    NumberAnimation { properties: "x,y"; duration: 1000 }
                 }
             }
         }

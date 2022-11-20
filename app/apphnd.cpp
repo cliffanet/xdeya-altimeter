@@ -9,11 +9,12 @@
 
 AppHnd::AppHnd(QObject *parent)
     : QObject{parent},
-      m_page(pageDevSrch)
+      m_page(PageDevSrch)
 {
+    m_pagehistory.push_back(PageDevSrch);
+
     netProc = new NetProcess(this);
     connect(netProc, &NetProcess::waitChange,   this, &AppHnd::netWait);
-    connect(netProc, &NetProcess::rcvInit,      this, &AppHnd::netInit);
     connect(netProc, &NetProcess::rcvAuth,      this, &AppHnd::netAuth);
     connect(netProc, &NetProcess::rcvData,      this, &AppHnd::netData);
     connect(netProc, &NetProcess::rcvLogBook,   this, &AppHnd::netLogBook);
@@ -46,6 +47,9 @@ const QString AppHnd::getState()
     switch (netProc->wait()) {
         case NetProcess::wtDisconnected:
             switch (netProc->err()) {
+                case NetProcess::errSock:
+                    return "Соединение разорвано";
+
                 case NetProcess::errAuth:
                     return "Неверный код авторизации";
 
@@ -56,8 +60,13 @@ const QString AppHnd::getState()
                     return "Нет соединения";
             }
 
+        case NetProcess::wtConnecting:
         case NetProcess::wtInit:
             return "Ожидание подключения";
+
+        //case NetProcess::wtAuthReq:
+        case NetProcess::wtAuth:
+            return "Идентификация";
 
         case NetProcess::wtLogBookBeg:
         case NetProcess::wtLogBook:
@@ -89,19 +98,64 @@ void AppHnd::clearErr()
     setErr("");
 }
 
-void AppHnd::setPage(page_t page)
+void AppHnd::setPage(PageSelector page)
 {
+    qDebug() << "set page: " + QString::number(page);
     if (page == m_page)
         return;
     m_page = page;
 
+    int n = 0;
+    for (const auto p: m_pagehistory) {
+        n++;
+        if (p == page) break;
+    }
+
+    if (n > 0)
+        while (n > m_pagehistory.size()) {
+            m_pagehistory.pop_back();
+            emit pagePoped();
+        }
+
+    if (m_pagehistory.back() != page)
+        switch (page) {
+            case PageAuth:
+                m_pagehistory.push_back(page);
+                emit pagePushed("qrc:/page/auth.qml");
+                break;
+            case PageJmpList:
+                m_pagehistory.push_back(page);
+                emit pagePushed("qrc:/page/jmplist.qml");
+                break;
+            case PageJmpView:
+                m_pagehistory.push_back(page);
+                emit pagePushed("qrc:/page/jmpinfo.qml");
+                break;
+            case PageTrkView:
+                m_pagehistory.push_back(page);
+                emit pagePushed("qrc:/page/trkview.qml");
+                break;
+        }
+
+    emit pageChanged();
+    emit stateChanged();
     emit progressChanged();
+}
+
+void AppHnd::pageBack()
+{
+    if (m_pagehistory.size() <= 1)
+        return;
+    m_pagehistory.pop_back();
+    emit pagePoped();
+
+    setPage(m_pagehistory.back());
 }
 
 const bool AppHnd::getProgressEnabled()
 {
     switch (m_page) {
-        case pageDevSrch:
+        case PageDevSrch:
             return isDevSrch();
 
         default:
@@ -112,7 +166,7 @@ const bool AppHnd::getProgressEnabled()
 const int AppHnd::getProgressMax()
 {
     switch (m_page) {
-        case pageDevSrch:
+        case PageDevSrch:
             return 0;
 
         default:
@@ -130,7 +184,7 @@ const int AppHnd::getProgressMax()
 const int AppHnd::getProgressVal()
 {
     switch (m_page) {
-        case pageDevSrch:
+        case PageDevSrch:
             return 0;
 
         default:
@@ -145,17 +199,31 @@ const int AppHnd::getProgressVal()
     }
 }
 
+bool AppHnd::isInit()
+{
+    return
+        (netProc->wait() == NetProcess::wtConnecting) ||
+        (netProc->wait() == NetProcess::wtInit) ||
+        (netProc->wait() == NetProcess::wtAuth);
+}
+
+bool AppHnd::isAuth()
+{
+    return netProc->wait() == NetProcess::wtAuthReq;
+}
+
 const bool AppHnd::getReloadVisibled()
 {
     return
-        (m_page != pageJmpView) &&
-        (m_page != pageTrkView);
+        (m_page != PageAuth) &&
+        (m_page != PageJmpView) &&
+        (m_page != PageTrkView);
 }
 
 const bool AppHnd::getReloadEnabled()
 {
     switch (m_page) {
-        case pageDevSrch:
+        case PageDevSrch:
             return !isDevSrch();
 
         default:
@@ -170,18 +238,18 @@ void AppHnd::clickReload()
     clearErr();
 
     switch (m_page) {
-        case pageDevSrch:
+        case PageDevSrch:
             m_devlist.clear();
             emit devListChanged();
             //btDAgent->start();
             wfDAgent->start();
             break;
 
-        case pageJmpList:
+        case PageJmpList:
             netProc->requestLogBook();
             break;
 
-        case pageTrkView:
+        case PageTrkView:
             //ui->wvTrack->reload();
             break;
     }
@@ -193,6 +261,54 @@ void AppHnd::clickReload()
 QVariant AppHnd::getDevList()
 {
     return QVariant::fromValue(m_devlist);
+}
+
+void AppHnd::devConnect(qsizetype i)
+{
+    if ((i < 0) || (i >= m_devlist.size()))
+        return;
+
+    if (btDAgent->isActive())
+        btDAgent->stop();
+    if (wfDAgent->isActive())
+        wfDAgent->stop();
+
+    const auto dev = m_devlist[i];
+
+    qDebug() << "Connect to: " << dev->getName() << " (" << dev->getAddress() << ")";
+    switch (dev->src()) {
+        case DevInfo::SRC_WIFI: {
+            auto &wifi = dev->wifi();
+            netProc->connectTcp(wifi.ip, wifi.port);
+            break;
+        }
+
+        default:
+            return;
+    }
+
+    emit stateChanged();
+    emit progressChanged();
+}
+
+void AppHnd::devDisconnect()
+{
+    netProc->disconnect();
+}
+
+void AppHnd::authEdit(const QString &str)
+{
+    qDebug() << "edit: " << str;
+    if (str.length() != 4)
+        return;
+
+    bool ok = false;
+    uint16_t code = str.toUShort(&ok, 16);
+    if (!ok)
+        return;
+
+    netProc->requestAuth(code);
+
 }
 
 
@@ -248,33 +364,13 @@ void AppHnd::netWait()
     emit progressChanged();
 }
 
-void AppHnd::netInit()
-{
-    clearErr();
-    /*
-    FormAuth f;
-
-    uint16_t code =
-        f.exec() == QDialog::Accepted ?
-                f.getCode() :
-                0;
-
-    if (code > 0) {
-        netProc->requestAuth(code);
-    }
-    else {
-        netProc->disconnect();
-        ui->stackWnd->setCurrentIndex(pageDevSrch);
-    }
-    updState();
-    */
-}
-
 void AppHnd::netAuth(bool ok)
 {
     if (!ok)
         return;
     netProc->requestLogBook();
+    pageBack();
+    setPage(PageJmpList);
 }
 
 void AppHnd::netData(quint32 pos, quint32 max)

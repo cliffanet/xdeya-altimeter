@@ -3,20 +3,19 @@
 
 DevInfo::DevInfo(const QBluetoothDeviceInfo &bt)
 {
-    m_type = SRC_BLUETOOTH;
+    m_src = SRC_BLUETOOTH;
     m_bt = bt;
 }
 
 DevInfo::DevInfo(const WifiDeviceItem &wf)
 {
-    m_type = SRC_WIFI;
+    m_src = SRC_WIFI;
     m_wifi = wf;
-    emit changed();
 }
 
 QString DevInfo::getAddress() const
 {
-    switch (m_type) {
+    switch (m_src) {
         case SRC_BLUETOOTH:
 #ifdef Q_OS_MAC
             // On OS X and iOS we do not have addresses,
@@ -36,7 +35,7 @@ QString DevInfo::getAddress() const
 
 QString DevInfo::getName() const
 {
-    switch (m_type) {
+    switch (m_src) {
         case SRC_BLUETOOTH:
             return m_bt.name();
 
@@ -50,14 +49,14 @@ QString DevInfo::getName() const
 
 void DevInfo::set(const QBluetoothDeviceInfo &bt)
 {
-    m_type = SRC_BLUETOOTH;
+    m_src = SRC_BLUETOOTH;
     m_bt = bt;
     emit changed();
 }
 
 void DevInfo::set(const WifiDeviceItem &wf)
 {
-    m_type = SRC_WIFI;
+    m_src = SRC_WIFI;
     m_wifi = wf;
     emit changed();
 }

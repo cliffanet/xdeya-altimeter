@@ -25,6 +25,7 @@ NetProcess::NetProcess(QObject *parent)
 void NetProcess::connectTcp(const QHostAddress &ip, quint16 port)
 {
     resetAll();
+    setWait(wtConnecting);
     tcpClient->connectToHost(ip, port);
 }
 
@@ -50,7 +51,7 @@ void NetProcess::resetAll()
 
 bool NetProcess::requestInit()
 {
-    if (m_wait != wtUnknown)
+    if (m_wait != wtConnecting)
         return false;
     if (!m_pro.send(0x02))
         return false;
@@ -60,7 +61,7 @@ bool NetProcess::requestInit()
 
 bool NetProcess::requestAuth(uint16_t code)
 {
-    if (m_wait != wtUnknown)
+    if (m_wait != wtAuthReq)
         return false;
     if (code == 0)
         return false;
@@ -140,7 +141,6 @@ void NetProcess::tcpConnected()
 {
     m_nettcp.setsock(tcpClient);
     m_pro.sock_set(&m_nettcp);
-    setWait(wtUnknown);
 
     qDebug() << "TCP Socket connected to: " << tcpClient->peerAddress().toString() << ":" << tcpClient->peerPort();
 
@@ -156,6 +156,7 @@ void NetProcess::tcpDisconnected()
 void NetProcess::tcpError()
 {
     qDebug() << "TCP Socket error: [" << tcpClient->error() << "] " << tcpClient->errorString();
+    rcvProcess();
 }
 
 void NetProcess::setWait(wait_t _wait)
@@ -189,8 +190,8 @@ void NetProcess::rcvProcess()
                 if (m_wait != wtInit)
                     return rcvWrong();
                 m_pro.rcvnext(); // эта команда без данных
-                setWait(wtUnknown);
-                emit rcvInit();
+                setWait(wtAuthReq);
+                emit rcvAuthReq();
                 break;
 
             case 0x03: { // auth result
@@ -313,12 +314,15 @@ void NetProcess::rcvProcess()
     }
 
     if (m_pro.rcvstate() <= BinProto::RCV_DISCONNECTED) {
+        if (m_pro.rcvstate() == BinProto::RCV_ERROR)
+            m_err = errProto;
+        else
+        if ((m_wait >= wtUnknown) && (m_err == errNoError))
+            m_err = errSock;
         if (m_pro.sock() == &m_nettcp)
             m_nettcp.setsock(nullptr);
         m_pro.sock_clear();
         setWait(wtDisconnected);
-        if (m_pro.rcvstate() == BinProto::RCV_ERROR)
-            m_err = errProto;
     }
 }
 
