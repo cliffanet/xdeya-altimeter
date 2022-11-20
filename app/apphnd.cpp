@@ -344,6 +344,7 @@ void AppHnd::trkView(const trklist_item_t &trk)
     qDebug() << "trk view: " << trk.jmpnum << " -- " << trk.jmpkey << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
     */
 
+    emit trkHtmlLoad("");
     netProc->requestTrack(trk);
 }
 
