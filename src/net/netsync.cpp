@@ -228,6 +228,9 @@ WRK_DEFINE(SEND_LOGBOOK) {
         SEND(0x31, "NN", d);
         m_begsnd = true;
         
+        if (m_fn == 0)
+            m_isok = true;
+        
     WRK_BREAK_RUN
         if (m_fn > 0) {
             if (!m_lb && !m_lb.open(m_fn))
