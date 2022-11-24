@@ -101,12 +101,11 @@ ApplicationWindow {
                 model: app.devlist
                 currentIndex: -1
                 highlightFollowsCurrentItem: true
-                focus: true
 
                 delegate: Component {
                     Item {
                         width: lvDevSrch.width
-                        height: 40
+                        height: childrenRect.height
 
                         Column {
                             width: parent.width

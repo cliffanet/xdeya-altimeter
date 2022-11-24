@@ -9,11 +9,11 @@ Page {
 
     Connections {
         target: app
-        onTrkHtmlLoad: {
+        function onTrkHtmlLoad(html) {
             //console.log("webView html: ", html);
             webView.loadHtml(html);
         }
-        onTrkRunJS: {
+        function onTrkRunJS(code) {
             //console.log("webView js: ", code);
             webView.runJavaScript(code);
         }

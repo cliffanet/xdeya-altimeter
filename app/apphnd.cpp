@@ -277,6 +277,8 @@ void AppHnd::devConnect(qsizetype i)
     if (wfDAgent->isActive())
         wfDAgent->stop();
 
+    clearErr();
+
     const auto dev = m_devlist[i];
 
     qDebug() << "Connect to: " << dev->getName() << " (" << dev->getAddress() << ")";
@@ -322,6 +324,7 @@ QVariant AppHnd::getJmpList() const
 
 void AppHnd::setJmpInfo(int index)
 {
+    clearErr();
     if ((index < 0) || (index >= netProc->logbook().size()))
         m_jmp.clear();
     else {
@@ -344,6 +347,7 @@ void AppHnd::trkView(const trklist_item_t &trk)
     qDebug() << "trk view: " << trk.jmpnum << " -- " << trk.jmpkey << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
     */
 
+    clearErr();
     emit trkHtmlLoad("");
     netProc->requestTrack(trk);
 }

@@ -91,7 +91,7 @@ Flickable {
         Column {
             id: trkBtnList
             spacing: 10
-            anchors.horizontalCenter: parent.horizontalCenter
+            Layout.alignment: Qt.AlignHCenter
             topPadding: 10
 
             Repeater {
@@ -102,7 +102,7 @@ Flickable {
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 200
-                    text: "Трэк: " + modelData.dtBeg
+                    text: modelData.dtBeg != "" ? "Трэк: " + modelData.dtBeg : "Трэк (без даты)"
                     onClicked: {
                         app.page = AppHnd.PageTrkView;
                         app.trkView(modelData.trk);

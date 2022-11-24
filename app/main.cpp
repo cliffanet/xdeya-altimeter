@@ -28,7 +28,8 @@ int main(int argc, char *argv[])
         //QLatin1String("macOS"); // тут не работает ProgressBar в indeterminate режиме
         QLatin1String("Fusion");
 #elif defined(Q_OS_IOS)
-        QLatin1String("iOS");
+        //QLatin1String("iOS");
+        QLatin1String("Fusion");
 #elif defined(Q_OS_WINDOWS)
         QLatin1String("Windows");
 #else

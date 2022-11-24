@@ -26,6 +26,8 @@ Flickable {
             width: parent.width
             anchors.horizontalCenter: parent.horizontalCenter
 
+            onVisibleChanged: if (visible) inpCode.forceActiveFocus()
+
             Label {
                 Layout.fillWidth: true
                 wrapMode: Label.Wrap

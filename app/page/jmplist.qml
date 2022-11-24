@@ -7,7 +7,7 @@ Flickable {
 
     Connections {
         target: app
-        onJmpSelected: {
+        function onJmpSelected(index) {
             console.log("lvLogBook selected: ", index);
             lvLogBook.currentIndex = index;
         }
@@ -30,19 +30,16 @@ Flickable {
         delegate: Component {
             Item {
                 width: lvLogBook.width
-                height: 40
+                //height: 40
+                height: childrenRect.height
 
                 Row {
-                    anchors.fill: parent
+                    //anchors.fill: parent
                     padding: 5
                     spacing: 2
                     Label {
                         Layout.fillWidth: true
-                        text: '<h2>№ ' + modelData.num + '</h2>'
-                    }
-                    Item {
-                        // spacer item
-                        Layout.fillWidth: true
+                        text: '<b>№ ' + modelData.num + '</b>'
                     }
                     Label {
                         Layout.fillWidth: true
