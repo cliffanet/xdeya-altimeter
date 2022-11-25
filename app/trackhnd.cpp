@@ -35,11 +35,12 @@ void TrackHnd::clear()
     memset(&m_mapcenter, 0, sizeof(m_mapcenter));
 }
 
-#define FSTR(len, str) if (fh.write( str ) < len) return false
-#define FFMT(fmt, ...)  \
+#define FMT(s,fmt, ...) snprintf(s, sizeof(s), fmt, ##__VA_ARGS__)
+#define WRT(len, str)  if (fh.write( str ) < len) return false
+#define FMTWR(fmt, ...)  \
         do { \
-            snprintf(s, sizeof(s), fmt, ##__VA_ARGS__); \
-            FSTR(5, s); \
+            int len = FMT(s, fmt, ##__VA_ARGS__); \
+            WRT(len, s); \
         } while (0)
 
 /*
@@ -48,7 +49,7 @@ bool TrackHnd::saveGPX(QIODevice &fh) const
     if (!fh.isOpen() || !fh.isWritable())
         return false;
 
-    FSTR(100,
+    WRT(100,
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<gpx version=\"1.1\" creator=\"XdeYa\" xmlns=\"http://www.topografix.com/GPX/1/1\">"
             "<metadata>"
@@ -66,40 +67,40 @@ bool TrackHnd::saveGPX(QIODevice &fh) const
     for (const auto &p : m_data) {
         bool isok = (p.flags & 0x0001) > 0;
         if (prevok != isok) {
-            FSTR(5, isok ? "<trkseg>" : "</trkseg>");
+            WRT(5, isok ? "<trkseg>" : "</trkseg>");
             prevok = isok;
         }
         if (!isok)
             continue;
 
-        FFMT("<trkpt lat=\"%0.6f\" lon=\"%0.6f\">",
+        FMTWR("<trkpt lat=\"%0.6f\" lon=\"%0.6f\">",
              static_cast<double>(p.lat)/10000000,
              static_cast<double>(p.lon)/10000000);
 
         uint32_t sec = p.tmoffset / 1000;
         uint32_t min = sec / 60;
         sec -= min*60;
-        FFMT("<name>%d:%02d, %d m / %0.1f m/s</name>",
+        FMTWR("<name>%d:%02d, %d m / %0.1f m/s</name>",
              min, sec, p.alt, static_cast<double>(p.altspeed)/100
         );
 
-        FFMT("<desc>Горизонт: %d&deg; / %0.1f m/s", p.heading, static_cast<double>(p.hspeed)/100);
+        FMTWR("<desc>Горизонт: %d&deg; / %0.1f m/s", p.heading, static_cast<double>(p.hspeed)/100);
         if (p.altspeed > 0) {
-            FFMT(" (кач: %0.1f)", -1.0 * p.hspeed / p.altspeed);
+            FMTWR(" (кач: %0.1f)", -1.0 * p.hspeed / p.altspeed);
         }
-        FFMT("</desc>");
+        FMTWR("</desc>");
 
-        FFMT("<ele>%d</ele>", p.alt);
-        FFMT("<magvar>%d</magvar>", p.heading);
-        FFMT("<sat>%d</sat>", p.sat);
+        FMTWR("<ele>%d</ele>", p.alt);
+        FMTWR("<magvar>%d</magvar>", p.heading);
+        FMTWR("<sat>%d</sat>", p.sat);
 
-        FFMT("</trkpt>");
+        FMTWR("</trkpt>");
     }
 
     if (prevok)
-        FSTR(5, "</trkseg>");
+        WRT(5, "</trkseg>");
 
-    FSTR(10,
+    WRT(10,
             "</trk>"
         "</gpx>"
     );
@@ -108,82 +109,117 @@ bool TrackHnd::saveGPX(QIODevice &fh) const
 }
 */
 
-#undef FSTR
+#undef WRT
 
-#define FSTR(len, str) buf.append( str )
+#define WRT(len, str) buf.append( str )
+
+void _geoJsonPoint(const QList<log_item_t>::const_iterator &pp, QByteArray &crd/*, QByteArray &gpx*/) {
+    char s[1024];
+    snprintf(s, sizeof(s),
+             "[%0.7f,%0.7f],",
+             static_cast<double>(pp->lat)/10000000,
+             static_cast<double>(pp->lon)/10000000);
+    crd.append(s);
+}
 
 void TrackHnd::saveGeoJson(QByteArray &buf) const
 {
-    FSTR(10,
+    WRT(10,
         "{"
             "\"type\": \"FeatureCollection\","
             "\"features\": ["
     );
 
-    bool prevok = false;
-    uint8_t state = 0;
+    auto pp = m_data.begin();
+    auto prv = m_data.begin();
     uint32_t segid = 0;
-    char s[1024];
-    QByteArray prop;
+    char s[1024], time[100], vert[512], horz[512];
 
-    for (const auto &p : m_data) {
-        bool isok = (p.flags & 0x0001) > 0;
-        if (prevok && (state != p.state)) {
-            prop.append("]}}");
-            FFMT("]}%s},", prop.constData());
-            prevok = false;
-            state = p.state;
+    while (pp != m_data.end()) {
+        while (// пропустим все точки без спутников
+                (pp != m_data.end()) &&
+                ((pp->flags & 0x0001) == 0)
+              ) {
+              pp++;
+              prv = pp;
         }
-        if (prevok != isok) {
-            if (isok) {
-                segid++;
-                const char *color =
-                    (p.state == 's') || (p.state == 't') ? // takeoff
-                        "#2e2f30" :
-                    p.state == 'f' ? // freefall
-                        "#7318bf" :
-                    (p.state == 'c') || (p.state == 'l') ? // canopy
-                        "#0052ef" :
-                        "#fcb615";
-                FFMT(
-                    "{"
-                        "\"type\": \"Feature\","
-                        "\"id\": %u,"
-                        "\"options\": {\"strokeWidth\": 4, \"strokeColor\": \"%s\"},"
-                        "\"hint\": \"asdfasdf\","
-                        "\"geometry\": {"
-                            "\"type\": \"LineString\","
-                            "\"coordinates\": [",
-                    segid, color
-                );
-                prop.clear();
-                prop.append(", \"properties\": { \"hintContent\": \"Москва-Берлин\", \"metaDataProperty\": { \"gpxPoints\": [");
-                //"\"properties\": { \"hintContent\": \"Москва-Берлин\" },"
-            }
-            else
-                FSTR(4, "]}},");
-            prevok = isok;
+        if (pp == m_data.end())
+            break;
+
+        QByteArray crd/*, gpx*/;
+        segid++;
+
+        // Предыдущая точка, c неё будем всегда начинать список координат
+        _geoJsonPoint(prv, crd/*, gpx*/);
+
+        // очередная партия точек
+        auto frst = pp;
+        for (
+                int n=1;
+                (n<=5) && (pp != m_data.end()) && (pp->state == frst->state) && ((pp->flags & 0x0001) > 0);
+                pp++, n++
+            ) {
+            _geoJsonPoint(pp, crd/*, gpx*/);
+            prv = pp;
         }
-        if (!isok)
-            continue;
 
-        FFMT("[%0.7f,%0.7f],",
-             static_cast<double>(p.lat)/10000000,
-             static_cast<double>(p.lon)/10000000);
+        const char *color =
+            (prv->state == 's') || (prv->state == 't') ? // takeoff
+                "#2e2f30" :
+            prv->state == 'f' ? // freefall
+                "#7318bf" :
+            (prv->state == 'c') || (prv->state == 'l') ? // canopy
+                "#0052ef" :
+                "#fcb615";
 
-        uint32_t sec = p.tmoffset / 1000;
+
+        uint32_t sec = prv->tmoffset / 1000;
         uint32_t min = sec / 60;
-        snprintf(s, sizeof(s), "{ \"name\": \"%d:%02d\" },",
-                 min, sec//, p.alt, static_cast<double>(p.altspeed)/100
-                 );
-        //prop.append(s);
+        sec -= min*60;
+        FMT(time, "%d:%02d",  min, sec);
+
+        FMT(vert, "%d m (%0.1f m/s)", prv->alt, static_cast<double>(prv->altspeed)/100);
+
+        int l = FMT(horz, "%d&deg; (%0.1f m/s)", prv->heading, static_cast<double>(prv->hspeed)/100);
+        if (prv->altspeed > 10)
+            snprintf(horz+l, sizeof(horz)-l,
+                " [кач: %0.1f]", -1.0 * prv->hspeed / prv->altspeed
+            );
+
+        FMTWR(
+            "{"
+                "\"type\": \"Feature\","
+                "\"id\": %u,"
+                "\"options\": {\"strokeWidth\": 4, \"strokeColor\": \"%s\"},"
+                "\"geometry\": {"
+                    "\"type\": \"LineString\","
+                    "\"coordinates\": [",
+             segid, color
+        );
+        buf.append(crd);
+        FMTWR(
+                    "]"
+                "},"
+                "\"properties\": {"
+                    "\"balloonContentHeader\": \"%s\","
+                    "\"balloonContentBody\": \"Вертикаль: %s<br />Горизонт: %s\","
+                    "\"hintContent\": \"%s<br/>Вер: %s<br/>Гор: %s\",",
+                    //"\"metaDataProperty\": {"
+                    //    "\"gpxPoints\": ["
+            time, vert, horz, time, vert, horz
+        );
+        //buf.append(gpx);
+        WRT(4,
+                    //    "]"
+                    //"}"
+                "}"
+            "},"
+        );
     }
 
-    if (prevok)
-        FSTR(4, "]}},");
-
-    FSTR(2, "]}");
+    WRT(2, "]}");
 }
 
-#undef FSTR
-#undef FFMT
+#undef WRT
+#undef FMTWR
+#undef FMT

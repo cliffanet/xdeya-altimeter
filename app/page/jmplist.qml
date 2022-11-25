@@ -64,14 +64,6 @@ Flickable {
             color: 'grey'
             radius: 5
         }
-        /*
-        add: Transition {
-            NumberAnimation { properties: "x,y"; duration: 1000 }
-        }
-        displaced: Transition {
-            NumberAnimation { properties: "x,y"; duration: 1000 }
-        }
-        */
     }
 }
 

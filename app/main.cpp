@@ -12,6 +12,8 @@
 
 int main(int argc, char *argv[])
 {
+    QtWebView::initialize();
+
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
@@ -19,8 +21,6 @@ int main(int argc, char *argv[])
     qmlRegisterType<AppHnd>("com.xdeya.app", 1, 0, "AppHnd");
     qmlRegisterType<JmpInfo>("com.xdeya.jmpinfo", 1, 0, "JmpInfo");
     qmlRegisterType<JmpInfo>("com.xdeya.trkinfo", 1, 0, "TrkInfo");
-
-    QtWebView::initialize();
 
     QIcon::setThemeName("default");
     auto style =
