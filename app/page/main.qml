@@ -133,6 +133,10 @@ ApplicationWindow {
                     icon.height: 20
                     icon.source: "/icons/track.png"
                     text: "Все треки"
+                    onClicked: {
+                        drawer.visible = false;
+                        app.page = AppHnd.PageTrkList;
+                    }
                 }
             }
         }

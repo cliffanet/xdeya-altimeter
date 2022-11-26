@@ -102,13 +102,13 @@ void JmpInfo::clear()
     emit trkListChanged();
 }
 
-void JmpInfo::fetchTrkList(const QList<trklist_item_t> &trklist)
+void JmpInfo::fetchTrkList(const QList<TrkInfo *> &trklist)
 {
     m_trklist.clear();
-    for (auto &trk: trklist) {
-        if (trk.jmpnum != m_jmp.num)
+    for (auto &tinf: trklist) {
+        if (tinf->trk().jmpnum != m_jmp.num)
             continue;
-        m_trklist.push_back(new TrkInfo(trk));
+        m_trklist.push_back(new TrkInfo(tinf->trk()));
     }
 
     emit trkListChanged();

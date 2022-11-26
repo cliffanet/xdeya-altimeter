@@ -181,7 +181,7 @@ void TrackHnd::saveGeoJson(QByteArray &buf) const
         FMT(vert, "%d m (%0.1f m/s)", prv->alt, static_cast<double>(prv->altspeed)/100);
 
         int l = FMT(horz, "%d&deg; (%0.1f m/s)", prv->heading, static_cast<double>(prv->hspeed)/100);
-        if (prv->altspeed > 10)
+        if (prv->altspeed < 10)
             snprintf(horz+l, sizeof(horz)-l,
                 " [кач: %0.1f]", -1.0 * prv->hspeed / prv->altspeed
             );

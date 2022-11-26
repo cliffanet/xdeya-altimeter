@@ -31,6 +31,7 @@ class AppHnd : public QObject
     Q_PROPERTY(QVariant devlist READ getDevList NOTIFY devListChanged)
     Q_PROPERTY(QVariant wifilist READ getWiFiList NOTIFY wifiListChanged)
     Q_PROPERTY(QVariant jmplist READ getJmpList NOTIFY jmpListChanged)
+    Q_PROPERTY(QVariant trklist READ getTrkList NOTIFY trkListChanged)
 
 public:
     enum PageSelector {
@@ -39,6 +40,7 @@ public:
         PageWiFiPass,
         PageJmpList,
         PageJmpInfo,
+        PageTrkList,
         PageTrkView
     };
     Q_ENUM(PageSelector)
@@ -85,6 +87,7 @@ public:
     Q_INVOKABLE void setJmpInfo(int index);
     Q_INVOKABLE bool validJmpInfo(int index) const;
 
+    QVariant getTrkList() const;
     Q_INVOKABLE void trkView(const trklist_item_t &trk);
 
 signals:
@@ -98,6 +101,7 @@ signals:
     void jmpListChanged();
     void jmpChanged();
     void jmpSelected(int index);
+    void trkListChanged();
     void trkHtmlLoad(QString html);
     void trkRunJS(QString code);
 

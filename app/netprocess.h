@@ -11,6 +11,7 @@ class QHostAddress;
 class QTcpSocket;
 class WiFiInfo;
 class JmpInfo;
+class TrkInfo;
 class TrackHnd;
 
 class NetProcess : public QObject
@@ -65,8 +66,7 @@ public:
 
     QList<WiFiInfo *> & wifipass() { return m_wifipass; } // это можно редактировать снаружи
     const QList<JmpInfo *> & logbook() const { return m_logbook; }
-    const QList<trklist_item_t> & trklist() const { return m_trklist; }
-    const trklist_item_t &trklist(quint32 i) const;
+    const QList<TrkInfo *> & trklist() const { return m_trklist; }
     const TrackHnd *track() { return m_track; };
 
 signals:
@@ -89,7 +89,7 @@ private:
     quint32 m_rcvpos, m_rcvcnt;
     QList<WiFiInfo *> m_wifipass;
     QList<JmpInfo *> m_logbook;
-    QList<trklist_item_t> m_trklist;
+    QList<TrkInfo *> m_trklist;
     TrackHnd *m_track;
 
     void tcpConnected();

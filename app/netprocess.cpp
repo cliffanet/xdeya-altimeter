@@ -1,6 +1,7 @@
 #include "netprocess.h"
 #include "wifiinfo.h"
 #include "jmpinfo.h"
+#include "trkinfo.h"
 #include "trackhnd.h"
 
 #include <QTcpSocket>
@@ -142,7 +143,7 @@ bool NetProcess::requestTrack(quint32 i)
 {
     if (i >= m_trklist.size())
         return false;
-    return requestTrack(m_trklist[i]);
+    return requestTrack(m_trklist[i]->trk());
 }
 
 bool NetProcess::requestTrack(const trklist_item_t &trk)
@@ -162,13 +163,6 @@ bool NetProcess::requestTrack(const trklist_item_t &trk)
         return false;
     setWait(wtTrackBeg);
     return true;
-}
-
-const trklist_item_t &NetProcess::trklist(quint32 i) const
-{
-    if (i >= m_trklist.size())
-        return tl_item_null;
-    return m_trklist[i];
 }
 
 void NetProcess::tcpConnected()
@@ -358,7 +352,7 @@ void NetProcess::rcvProcess()
                     return rcvWrong();
                 trklist_item_t d;
                 m_pro.rcvdata("NNNNTNC", d);
-                m_trklist.push_back(d);
+                m_trklist.push_back(new TrkInfo(d));
                 m_rcvpos ++;
                 emit rcvData(m_rcvpos, m_rcvcnt);
                 break;

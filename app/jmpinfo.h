@@ -44,7 +44,7 @@ public:
     void set(const JmpInfo *jmp, int index = -1);
     void clear();
 
-    void fetchTrkList(const QList<trklist_item_t> &trklist);
+    void fetchTrkList(const QList<TrkInfo *> &trklist);
 
 signals:
     void changed();

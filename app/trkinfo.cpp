@@ -14,6 +14,11 @@ TrkInfo::TrkInfo(const trklist_item_t &trk) :
 {
 }
 
+QString TrkInfo::getJmpNum() const
+{
+    return QString::number(m_trk.jmpnum);
+}
+
 QString TrkInfo::getDateTimeBeg() const
 {
     return dt2format(m_trk.tmbeg);

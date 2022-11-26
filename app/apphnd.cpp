@@ -3,6 +3,7 @@
 #include "netprocess.h"
 #include "devinfo.h"
 #include "wifiinfo.h"
+#include "trkinfo.h"
 
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
@@ -148,6 +149,10 @@ void AppHnd::setPage(PageSelector page)
                 m_pagehistory.push_back(page);
                 emit pagePushed("qrc:/page/jmpinfo.qml");
                 break;
+            case PageTrkList:
+                m_pagehistory.push_back(page);
+                emit pagePushed("qrc:/page/trklist.qml");
+                break;
             case PageTrkView:
                 m_pagehistory.push_back(page);
                 emit pagePushed("qrc:/page/trkview.qml");
@@ -266,10 +271,17 @@ void AppHnd::clickReload()
 
         case PageWiFiPass:
             netProc->requestWiFiPass();
+            emit wifiListChanged();
             break;
 
         case PageJmpList:
             netProc->requestLogBook();
+            emit jmpListChanged();
+            break;
+
+        case PageTrkList:
+            netProc->requestTrackList();
+            emit trkListChanged();
             break;
 
         case PageTrkView:
@@ -414,6 +426,11 @@ bool AppHnd::validJmpInfo(int index) const
     return (index >= 0) && (index < netProc->logbook().size());
 }
 
+QVariant AppHnd::getTrkList() const
+{
+    return QVariant::fromValue(netProc->trklist());
+}
+
 void AppHnd::trkView(const trklist_item_t &trk)
 {
     /*
@@ -514,6 +531,9 @@ void AppHnd::netData(quint32 pos, quint32 max)
             break;
         case NetProcess::wtWiFi:
             emit wifiListChanged();
+            break;
+        case NetProcess::wtTrkList:
+            emit trkListChanged();
             break;
     }
 }
