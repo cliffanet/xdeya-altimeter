@@ -29,6 +29,8 @@ WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos, bool norem
 WrkProc::key_t sendLogBook(BinProto *pro, const posi_t &posi, bool noremove = false);
 bool isokLogBook(const WrkProc *_wrk = NULL);
 bool sendDataFin(BinProto *pro);
+WrkProc::key_t sendWiFiPass(BinProto *pro, bool noremove = false);
+bool isokSendWiFiPass(const WrkProc *_wrk = NULL);
 WrkProc::key_t sendTrackList(BinProto *pro, bool noremove = false);
 bool isokTrackList(const WrkProc *_wrk = NULL);
 

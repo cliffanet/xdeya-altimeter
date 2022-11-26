@@ -16,11 +16,11 @@ ApplicationWindow {
 
     Connections {
         target: app
-        onPagePushed: {
+        function onPagePushed(src) {
             console.log("page push: ", src);
             stack.push(src);
         }
-        onPagePoped: {
+        function onPagePoped() {
             console.log("page poped");
             stack.pop();
         }
@@ -36,7 +36,7 @@ ApplicationWindow {
         id: menu
 
         RowLayout {
-            spacing: 20
+            spacing: 10
             anchors.fill: parent
 
             ToolButton {
@@ -49,6 +49,13 @@ ApplicationWindow {
                     if (stack.depth <= 1)
                         app.devDisconnect();
                 }
+            }
+
+            ToolButton {
+                icon.name: "menu"
+                visible: (stack.depth > 1) && (app.page != AppHnd.PageAuth)
+                Layout.preferredWidth: menu.height
+                onClicked: drawer.visible = !drawer.visible
             }
 
             ProgressBar {
@@ -83,6 +90,50 @@ ApplicationWindow {
                 icon.name: "reload"
                 Layout.preferredWidth: menu.height
                 onClicked: app.clickReload();
+            }
+        }
+    }
+
+    Drawer {
+        id: drawer
+        edge: Qt.TopEdge
+        width: main.width
+        height: 50
+
+        Flickable {
+            anchors.fill: parent
+            contentWidth: drawerContent.width
+            Row {
+                id: drawerContent
+                spacing: 20
+                leftPadding: 20
+                rightPadding: 20
+                height: drawer.height
+
+                Button {
+                    anchors.verticalCenter: drawerContent.verticalCenter
+                    width: 150
+                    height: 40
+                    icon.width: 50
+                    icon.height: 20
+                    icon.source: "/icons/wifi.png"
+                    text: "Wi-Fi пароли"
+                    onClicked: {
+                        drawer.visible = false;
+                        app.page = AppHnd.PageWiFiPass;
+                        app.wifiPassLoad();
+                    }
+                }
+
+                Button {
+                    anchors.verticalCenter: drawerContent.verticalCenter
+                    width: 150
+                    height: 40
+                    icon.width: 50
+                    icon.height: 20
+                    icon.source: "/icons/track.png"
+                    text: "Все треки"
+                }
             }
         }
     }

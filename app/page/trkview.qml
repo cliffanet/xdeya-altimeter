@@ -4,7 +4,7 @@ import QtQuick.Controls
 import QtWebView
 import com.xdeya.app
 
-Page {
+Pane {
     anchors.fill: parent
 
     Connections {

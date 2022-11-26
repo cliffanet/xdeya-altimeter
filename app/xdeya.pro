@@ -18,7 +18,8 @@ SOURCES += \
     netprocess.cpp \
     trackhnd.cpp \
     trkinfo.cpp \
-    wifidevicediscovery.cpp
+    wifidevicediscovery.cpp \
+    wifiinfo.cpp
 
 HEADERS += \
     BinProto/BinProto.h \
@@ -31,7 +32,8 @@ HEADERS += \
     nettypes.h \
     trackhnd.h \
     trkinfo.h \
-    wifidevicediscovery.h
+    wifidevicediscovery.h \
+    wifiinfo.h
 
 ios: QMAKE_INFO_PLIST = Info/Info.ios.plist.app.in
 macos: QMAKE_INFO_PLIST = Info/Info.qmake.macos.plist

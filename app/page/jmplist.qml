@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import com.xdeya.app
 
-Flickable {
+Pane {
 
     Connections {
         target: app

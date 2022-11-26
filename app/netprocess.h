@@ -9,6 +9,7 @@
 
 class QHostAddress;
 class QTcpSocket;
+class WiFiInfo;
 class JmpInfo;
 class TrackHnd;
 
@@ -30,6 +31,9 @@ public:
         wtInit,
         wtAuthReq,
         wtAuth,
+        wtWiFiBeg,
+        wtWiFi,
+        wtWiFiSend,
         wtLogBookBeg,
         wtLogBook,
         wtTrkListBeg,
@@ -52,11 +56,14 @@ public:
 
     bool requestInit();
     bool requestAuth(uint16_t code);
+    bool requestWiFiPass();
+    bool sendWiFiPass();
     bool requestLogBook(uint32_t beg = 50, uint32_t count = 50);
     bool requestTrackList();
     bool requestTrack(quint32 i);
     bool requestTrack(const trklist_item_t &trk);
 
+    QList<WiFiInfo *> & wifipass() { return m_wifipass; } // это можно редактировать снаружи
     const QList<JmpInfo *> & logbook() const { return m_logbook; }
     const QList<trklist_item_t> & trklist() const { return m_trklist; }
     const trklist_item_t &trklist(quint32 i) const;
@@ -66,7 +73,9 @@ signals:
     void waitChange(NetProcess::wait_t);
     void rcvAuthReq();
     void rcvAuth(bool isok);
+    void rcvCmdConfirm(uint8_t cmd, uint8_t err);
     void rcvData(quint32 pos, quint32 max);
+    void rcvWiFiPass();
     void rcvLogBook();
     void rcvTrkList();
     void rcvTrack(const trkinfo_t &);
@@ -78,6 +87,7 @@ private:
     NetTcpSocket m_nettcp;
     QTcpSocket *tcpClient;
     quint32 m_rcvpos, m_rcvcnt;
+    QList<WiFiInfo *> m_wifipass;
     QList<JmpInfo *> m_logbook;
     QList<trklist_item_t> m_trklist;
     TrackHnd *m_track;

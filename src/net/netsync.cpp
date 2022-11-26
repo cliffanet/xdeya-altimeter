@@ -368,6 +368,100 @@ bool sendDataFin(BinProto *pro) {
 
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Треки: Отправка wifi-паролей
+ * ------------------------------------------------------------------------------------------- */
+WRK_DEFINE(SEND_WIFIPASS) {
+    private:
+        bool m_isok;
+        BinProto *m_pro;
+        FileTxt fh;
+        
+        const char *m_fname;
+    
+    public:
+        bool isok() const { return m_isok; }
+    
+    WRK_CLASS(SEND_WIFIPASS)(BinProto *pro, bool noremove = false) :
+        m_isok(false),
+        m_pro(pro),
+        m_fname(PSTR(WIFIPASS_FILE))
+    {
+        if (noremove)
+            optset(O_NOREMOVE);
+    }
+    
+    WRK_PROCESS
+        if (m_pro == NULL)
+            WRK_RETURN_ERR("pro is NULL");
+        
+        uint32_t sz = 0;
+        if (fileExists(m_fname)) {
+            if (!fh.open_P(m_fname))
+                WRK_RETURN_ERR("Can't open wifi-file for read");
+            sz = fh.size();
+        }
+        SEND(0x37, "N", sz);
+        m_isok = true;
+    
+    WRK_BREAK_RUN
+        if (!fh)
+            WRK_RETURN_END;
+        if ((fh.available() <= 0) || !fh.find_param(PSTR("ssid"))) {
+            fh.close();
+            WRK_RETURN_END;
+        }
+        
+        struct __attribute__((__packed__)) {
+            char ssid[BINPROTO_STRSZ];
+            char pass[BINPROTO_STRSZ];
+            uint32_t pos;
+        } d;
+        if (!fh.read_line(d.ssid, sizeof(d.ssid)))
+            WRK_RETURN_ERR("Can't wifi-file read");
+        
+        char param[30];
+        if (!fh.read_param(param, sizeof(param)))
+            WRK_RETURN_ERR("Can't wifi-file read");
+        if (strcmp_P(param, PSTR("pass")) == 0)
+            fh.read_line(d.pass, sizeof(d.pass));
+        else
+            d.pass[0] = '\0';
+        
+        d.pos = fh.position();
+        
+        SEND(0x38, "ssN", d);
+        WRK_RETURN_RUN;
+        
+    WRK_END
+        
+    void end() {
+        if (m_pro)
+            m_pro->send(0x39);
+    }
+};
+
+WrkProc::key_t sendWiFiPass(BinProto *pro, bool noremove) {
+    if (pro == NULL)
+        return WRKKEY_NONE;
+    
+    if (!noremove)
+        return wrkRand(SEND_WIFIPASS, pro, noremove);
+    
+    wrkRun(SEND_WIFIPASS, pro, noremove);
+    return WRKKEY_SEND_WIFIPASS;
+}
+
+bool isokSendWiFiPass(const WrkProc *_wrk) {
+    const auto wrk = 
+        _wrk == NULL ?
+            wrkGet(SEND_WIFIPASS) :
+            reinterpret_cast<const WRK_CLASS(SEND_WIFIPASS) *>(_wrk);
+    
+    return (wrk != NULL) && (wrk->isok());
+}
+
+
+/* ------------------------------------------------------------------------------------------- *
  *  Треки: Отправка списка треков (новый формат пересылки треков)
  * ------------------------------------------------------------------------------------------- */
 WRK_DEFINE(SEND_TRACKLIST) {
@@ -1015,8 +1109,19 @@ WRK_DEFINE(NET_APP) {
         uint16_t m_code;
         
         BinProto *m_pro;
+        WrkProc::key_t m_wrk;
     
     public:
+#define CONFIRM(cmd, ...)   if (!confirm(cmd, ##__VA_ARGS__)) WRK_RETURN_ERR("send confirm fail")
+        bool confirm(uint8_t cmd, uint8_t err = 0) {
+
+            struct __attribute__((__packed__)) {
+                uint8_t cmd;
+                uint8_t err;
+            } d = { cmd, err };
+            return m_pro->send(0x10, "CC", d);
+        }
+        
         state_t chktimeout() {
             if (m_timeout == 0)
                 WRK_RETURN_WAIT;
@@ -1029,6 +1134,39 @@ WRK_DEFINE(NET_APP) {
         }
         
         state_t every() {
+            if (m_wrk != WRKKEY_NONE) {
+                // Ожидание выполнения дочернего процесса
+                auto wrk = _wrkGet(m_wrk);
+                if (wrk == NULL) {
+                    CONSOLE("worker[key=%d] finished unexpectedly", m_wrk);
+                    m_wrk = WRKKEY_NONE;
+                    WRK_RETURN_RUN;
+                }
+                if (wrk->isrun())
+                    WRK_RETURN_WAIT;
+            
+                // Дочерний процесс завершился, проверяем его статус
+                bool isok = false;
+                uint8_t cmd = 0x00;
+                switch (m_wrk) {
+                    case WRKKEY_RECV_WIFIPASS:
+                        isok = isokWiFiPass(wrk);
+                        cmd = 0x41;
+                        CONSOLE("RECV_WIFIPASS finished isok: %d", isok);
+                        break;
+                    default:
+                        CONSOLE("Unknown worker[%d] finished", m_wrk);
+                }
+            
+                // Удаляем завершённый процесс
+                _wrkDel(m_wrk);
+                m_wrk = WRKKEY_NONE;
+                
+                // Подтверждение выполнения команды
+                if (cmd != 0x00)
+                    CONFIRM(cmd, isok ? 0 : 1);
+            }
+            
             m_pro->rcvprocess();
             switch (m_pro->rcvstate()) {
                 case BinProto::RCV_ERROR:
@@ -1043,7 +1181,8 @@ WRK_DEFINE(NET_APP) {
     WRK_CLASS(NET_APP)(NetSocket *sock, bool noremove = false) :
         m_timeout(0),
         m_code(0),
-        m_pro(new BinProto(sock))
+        m_pro(new BinProto(sock)),
+        m_wrk(WRKKEY_NONE)
     {
         if (noremove)
             optset(O_NOREMOVE);
@@ -1090,6 +1229,19 @@ WRK_DEFINE(NET_APP) {
                 posi_t posi = { 10, 10 };
                 RECV("NN", posi);
                 sendLogBook(m_pro, posi);
+                break;
+            }
+            case 0x37: { // wifilist
+                m_pro->rcvnext(); // нет данных
+                sendWiFiPass(m_pro);
+                break;
+            }
+            case 0x41: { // save wifilist
+                //m_pro->rcvnext(); // нет данных   // Приём данных этой команды делает сам воркер,
+                                                    // со временем, когда уберём wifisync, надо это поправить
+                m_wrk = recvWiFiPass(m_pro, true);
+                if (m_wrk == WRKKEY_NONE)
+                    CONFIRM(0x41, 2);
                 break;
             }
             case 0x51: { // trklist

@@ -2,6 +2,7 @@
 
 #include "netprocess.h"
 #include "devinfo.h"
+#include "wifiinfo.h"
 
 #include <QBluetoothDeviceDiscoveryAgent>
 #include <QBluetoothDeviceInfo>
@@ -18,6 +19,7 @@ AppHnd::AppHnd(QObject *parent)
     netProc = new NetProcess(this);
     connect(netProc, &NetProcess::waitChange,   this, &AppHnd::netWait);
     connect(netProc, &NetProcess::rcvAuth,      this, &AppHnd::netAuth);
+    connect(netProc, &NetProcess::rcvCmdConfirm,this, &AppHnd::netCmdConfirm);
     connect(netProc, &NetProcess::rcvData,      this, &AppHnd::netData);
     connect(netProc, &NetProcess::rcvLogBook,   this, &AppHnd::netLogBook);
     connect(netProc, &NetProcess::rcvTrack,     this, &AppHnd::netTrack);
@@ -71,6 +73,13 @@ const QString AppHnd::getState() const
         //case NetProcess::wtAuthReq:
         case NetProcess::wtAuth:
             return "Идентификация";
+
+        case NetProcess::wtWiFiBeg:
+        case NetProcess::wtWiFi:
+            return "Приём wifi-паролей";
+
+        case NetProcess::wtWiFiSend:
+            return "Сохранение wifi-паролей";
 
         case NetProcess::wtLogBookBeg:
         case NetProcess::wtLogBook:
@@ -127,6 +136,10 @@ void AppHnd::setPage(PageSelector page)
                 m_pagehistory.push_back(page);
                 emit pagePushed("qrc:/page/auth.qml");
                 break;
+            case PageWiFiPass:
+                m_pagehistory.push_back(page);
+                emit pagePushed("qrc:/page/wifipass.qml");
+                break;
             case PageJmpList:
                 m_pagehistory.push_back(page);
                 emit pagePushed("qrc:/page/jmplist.qml");
@@ -175,6 +188,7 @@ int AppHnd::getProgressMax() const
 
         default:
             switch (netProc->wait()) {
+                case NetProcess::wtWiFi:
                 case NetProcess::wtLogBook:
                 case NetProcess::wtTrack:
                     return netProc->rcvMax();
@@ -193,6 +207,7 @@ int AppHnd::getProgressVal() const
 
         default:
             switch (netProc->wait()) {
+                case NetProcess::wtWiFi:
                 case NetProcess::wtLogBook:
                 case NetProcess::wtTrack:
                     return netProc->rcvPos();
@@ -247,6 +262,10 @@ void AppHnd::clickReload()
             emit devListChanged();
             //btDAgent->start();
             wfDAgent->start();
+            break;
+
+        case PageWiFiPass:
+            netProc->requestWiFiPass();
             break;
 
         case PageJmpList:
@@ -315,6 +334,62 @@ void AppHnd::authEdit(const QString &str)
 
     netProc->requestAuth(code);
 
+}
+
+bool AppHnd::wifiPassLoad()
+{
+    clearErr();
+    return netProc->requestWiFiPass();
+}
+
+QVariant AppHnd::getWiFiList()
+{
+    return QVariant::fromValue(netProc->wifipass());
+}
+
+bool AppHnd::setWiFiSSID(qsizetype index, const QString ssid)
+{
+    if ((index < 0) || (index > netProc->wifipass().size()))
+        return false;
+
+    auto &winf = netProc->wifipass()[index];
+    winf->setSSID(ssid);
+
+    return true;
+}
+
+bool AppHnd::setWiFiPass(qsizetype index, const QString pass)
+{
+    if ((index < 0) || (index > netProc->wifipass().size()))
+        return false;
+
+    auto &winf = netProc->wifipass()[index];
+    winf->setPass(pass);
+
+    return true;
+}
+
+bool AppHnd::delWiFiPass(qsizetype index)
+{
+    if ((index < 0) || (index > netProc->wifipass().size()))
+        return false;
+
+    netProc->wifipass().removeAt(index);
+    emit wifiListChanged();
+
+    return true;
+}
+
+void AppHnd::addWiFiPass()
+{
+    netProc->wifipass().push_back(new WiFiInfo());
+    emit wifiListChanged();
+}
+
+bool AppHnd::wifiPassSave()
+{
+    clearErr();
+    return netProc->sendWiFiPass();
 }
 
 QVariant AppHnd::getJmpList() const
@@ -414,6 +489,21 @@ void AppHnd::netAuth(bool ok)
     setPage(PageJmpList);
 }
 
+void AppHnd::netCmdConfirm(uint8_t cmd, uint8_t err)
+{
+    switch (cmd) {
+        case 0x41:
+            emit cnfWiFiPass(err);
+            if (err == 0) {
+                if (m_page == PageWiFiPass)
+                    pageBack();
+            }
+            else
+                setErr("Ошибка сохранения");
+            break;
+    }
+}
+
 void AppHnd::netData(quint32 pos, quint32 max)
 {
     emit progressChanged();
@@ -421,6 +511,9 @@ void AppHnd::netData(quint32 pos, quint32 max)
     switch (netProc->wait()) {
         case NetProcess::wtLogBook:
             emit jmpListChanged();
+            break;
+        case NetProcess::wtWiFi:
+            emit wifiListChanged();
             break;
     }
 }

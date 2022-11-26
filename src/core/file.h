@@ -58,7 +58,9 @@ class FileMy {
         bool close();
         
         const char * name() const { return fh.name(); }
-        size_t available() { return fh.available(); };
+        size_t available()  { return fh.available(); };
+        size_t position()   { return fh.position(); };
+        size_t size()       { return fh.size(); };
         
         operator bool() { return fh && !fh.isDirectory(); }
     

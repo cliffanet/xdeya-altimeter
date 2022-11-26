@@ -29,13 +29,14 @@ class AppHnd : public QObject
     Q_PROPERTY(bool reloadVisibled READ getReloadVisibled NOTIFY stateChanged)
     Q_PROPERTY(bool reloadEnabled READ getReloadEnabled NOTIFY stateChanged)
     Q_PROPERTY(QVariant devlist READ getDevList NOTIFY devListChanged)
+    Q_PROPERTY(QVariant wifilist READ getWiFiList NOTIFY wifiListChanged)
     Q_PROPERTY(QVariant jmplist READ getJmpList NOTIFY jmpListChanged)
-    //Q_PROPERTY(JmpInfo jmpinfo READ getJmp NOTIFY jmpChanged)
 
 public:
     enum PageSelector {
         PageDevSrch = 0,
         PageAuth,
+        PageWiFiPass,
         PageJmpList,
         PageJmpInfo,
         PageTrkView
@@ -71,6 +72,14 @@ public:
 
     Q_INVOKABLE void authEdit(const QString &str);
 
+    Q_INVOKABLE bool wifiPassLoad();
+    QVariant getWiFiList();
+    Q_INVOKABLE bool setWiFiSSID(qsizetype index, const QString ssid);
+    Q_INVOKABLE bool setWiFiPass(qsizetype index, const QString pass);
+    Q_INVOKABLE bool delWiFiPass(qsizetype index);
+    Q_INVOKABLE void addWiFiPass();
+    Q_INVOKABLE bool wifiPassSave();
+
     QVariant getJmpList() const;
     JmpInfo * getJmp() { return &m_jmp; }
     Q_INVOKABLE void setJmpInfo(int index);
@@ -85,11 +94,14 @@ signals:
     void pageChanged();
     void progressChanged();
     void devListChanged();
+    void wifiListChanged();
     void jmpListChanged();
     void jmpChanged();
     void jmpSelected(int index);
     void trkHtmlLoad(QString html);
     void trkRunJS(QString code);
+
+    void cnfWiFiPass(uint8_t err);
 
 private slots:
     void btDiscovery(const QBluetoothDeviceInfo &dev);
@@ -101,6 +113,7 @@ private slots:
 
     void netWait();
     void netAuth(bool ok);
+    void netCmdConfirm(uint8_t cmd, uint8_t err);
     void netData(quint32 pos, quint32 max);
     void netLogBook();
     void netTrack();

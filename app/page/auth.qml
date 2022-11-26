@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import com.xdeya.app
 
-Flickable {
+Pane {
     Column {
         spacing: 40
         width: parent.width

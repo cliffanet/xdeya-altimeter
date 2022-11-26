@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>page/main.qml</file>
         <file>page/auth.qml</file>
+        <file>page/wifipass.qml</file>
         <file>page/jmplist.qml</file>
         <file>page/jmpinfo.qml</file>
         <file>page/trkview.qml</file>
@@ -24,6 +25,8 @@
         <file>icons/default/20x20@4/reload.png</file>
         <file>icons/default/index.theme</file>
         <file>icons/warning.png</file>
+        <file>icons/wifi.png</file>
+        <file>icons/track.png</file>
 
         <file alias="navi.html">res/navi.html</file>
     </qresource>

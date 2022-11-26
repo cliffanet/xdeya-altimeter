@@ -1,4 +1,5 @@
 #include "netprocess.h"
+#include "wifiinfo.h"
 #include "jmpinfo.h"
 #include "trackhnd.h"
 
@@ -71,12 +72,52 @@ bool NetProcess::requestAuth(uint16_t code)
     return true;
 }
 
+bool NetProcess::requestWiFiPass()
+{
+    if (m_wait != wtUnknown)
+        return false;
+
+    if (!m_pro.send(0x37))
+        return false;
+    setWait(wtWiFiBeg);
+
+    return true;
+}
+
+bool NetProcess::sendWiFiPass()
+{
+    if (m_wait != wtUnknown)
+        return false;
+
+    if (!m_pro.send(0x41))
+        return false;
+
+    for (const auto &winf: m_wifipass) {
+        struct __attribute__((__packed__)) {
+            char ssid[BINPROTO_STRSZ];
+            char pass[BINPROTO_STRSZ];
+        } data;
+        strncpy(data.ssid, winf->getSSID().toLocal8Bit().constData(), sizeof(data.ssid));
+        data.ssid[sizeof(data.ssid)-1] = '\0';
+        strncpy(data.pass, winf->getPass().toLocal8Bit().constData(), sizeof(data.pass));
+        data.ssid[sizeof(data.pass)-1] = '\0';
+        if (!m_pro.send(0x42, "ss", data))
+            return false;
+    }
+
+    if (!m_pro.send(0x43))
+        return false;
+
+    setWait(wtWiFiSend);
+    return true;
+}
+
 bool NetProcess::requestLogBook(uint32_t beg, uint32_t count)
 {
     if (m_wait != wtUnknown)
         return false;
 
-    struct {
+    struct __attribute__((__packed__)) {
         uint32_t beg;
         uint32_t count;
     } data = { beg, count };
@@ -203,6 +244,26 @@ void NetProcess::rcvProcess()
                 break;
             }
 
+            case 0x10: { // cmd confirm
+                struct __attribute__((__packed__)) {
+                    uint8_t cmd;
+                    uint8_t err;
+                } d;
+                m_pro.rcvdata("CC", d);
+                qDebug() << "Cmd confirm: " << QString::number(d.cmd, 16) << " err:" << d.err;
+
+                switch (d.cmd) {
+                    case 0x41: // wifipass update
+                        if (m_wait != wtWiFiSend)
+                            qDebug() << "Confirm WiFiSend on wait: " << m_wait;
+                        break;
+                }
+
+                setWait(wtUnknown);
+                emit rcvCmdConfirm(d.cmd, d.err);
+                break;
+            }
+
             case 0x31: { // logbook begin
                 if (m_wait != wtLogBookBeg)
                     return rcvWrong();
@@ -233,6 +294,51 @@ void NetProcess::rcvProcess()
                 m_pro.rcvnext(); // данные у команды есть, но нам они не нужны
                 setWait(wtUnknown);
                 emit rcvLogBook();
+                break;
+            }
+
+            case 0x37: { // wifi begin
+                if (m_wait != wtWiFiBeg)
+                    return rcvWrong();
+                uint32_t count;
+                m_pro.rcvdata("N", count);
+                qDebug() << "WiFi beg: " << count;
+                m_rcvpos = 0;
+                m_rcvcnt = count;
+                m_wifipass.clear();
+                setWait(wtWiFi);
+                break;
+            }
+
+            case 0x38: { // wifi item
+                if (m_wait != wtWiFi)
+                    return rcvWrong();
+                struct __attribute__((__packed__)) {
+                    char ssid[BINPROTO_STRSZ];
+                    char pass[BINPROTO_STRSZ];
+                    uint32_t pos = 0;
+                } d;
+                m_pro.rcvdata("ssN", d);
+                m_wifipass.push_back(new WiFiInfo(d.ssid, d.pass));
+                qDebug() << "WiFi item: " << d.ssid << " pos: " << d.pos;
+                m_rcvpos = d.pos;
+                emit rcvData(m_rcvpos, m_rcvcnt);
+                break;
+            }
+
+            case 0x39: { // wifi end
+                if (m_wait != wtWiFi)
+                    return rcvWrong();
+                m_pro.rcvnext(); // эта команда без данных
+                setWait(wtUnknown);
+                emit rcvWiFiPass();
+                break;
+            }
+
+            case 0x4a: { // wifi chksum on save
+                if (m_wait != wtWiFiSend)
+                    return rcvWrong();
+                m_pro.rcvnext(); // пока никак не обрабатываем
                 break;
             }
 
