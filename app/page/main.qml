@@ -145,7 +145,6 @@ ApplicationWindow {
     StackView {
         id: stack
         anchors.fill: parent
-
         initialItem: Pane {
             id: paneDevSrch
 

@@ -6,6 +6,7 @@ import com.xdeya.app
 
 Pane {
     anchors.fill: parent
+    padding: 0
 
     Connections {
         target: app
@@ -22,6 +23,7 @@ Pane {
     WebView {
         id: webView
         anchors.fill: parent
+
         onLoadingChanged: function(loadRequest) {
             if (loadRequest.errorString)
                 console.error(loadRequest.errorString);

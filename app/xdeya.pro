@@ -35,7 +35,11 @@ HEADERS += \
     wifidevicediscovery.h \
     wifiinfo.h
 
-ios: QMAKE_INFO_PLIST = Info/Info.ios.plist.app.in
+ios: {
+    QMAKE_INFO_PLIST = Info/Info.qmake.ios.plist
+    ios_icon.files = $$files($$PWD/icons/xdeya.icns)
+    QMAKE_BUNDLE_DATA += ios_icon
+}
 macos: QMAKE_INFO_PLIST = Info/Info.qmake.macos.plist
 
 # Default rules for deployment.
@@ -45,5 +49,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES +=
 
+ICON = icons/xdeya.icns
+RC_ICONS = icons/xdeya.ico
+RC_FILE = xdeya.rc
 RESOURCES += \
     xdeya.qrc

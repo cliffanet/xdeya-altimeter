@@ -2,6 +2,7 @@
 
 #include <QTimer>
 #include <QUdpSocket>
+#include <arpa/inet.h>
 
 WifiDeviceDiscovery::WifiDeviceDiscovery(QObject *parent)
     : QObject{parent},

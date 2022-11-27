@@ -27,7 +27,7 @@ public:
     explicit JmpInfo(const logbook_item_t &jmp, int index = -1);
 
     const logbook_item_t & jmp() const { return m_jmp; }
-    const int index() const { return m_index; }
+    int index() const { return m_index; }
 
     QString getNum() const;
     QString getDate() const;

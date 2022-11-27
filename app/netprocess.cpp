@@ -352,7 +352,7 @@ void NetProcess::rcvProcess()
                     return rcvWrong();
                 trklist_item_t d;
                 m_pro.rcvdata("NNNNTNC", d);
-                m_trklist.push_back(new TrkInfo(d));
+                m_trklist.push_front(new TrkInfo(d)); // список треков к нам приходит в обратном порядке
                 m_rcvpos ++;
                 emit rcvData(m_rcvpos, m_rcvcnt);
                 break;

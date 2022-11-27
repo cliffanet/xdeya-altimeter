@@ -1,5 +1,9 @@
 #include "devinfo.h"
+#ifdef Q_OS_MAC
 #include <QBluetoothUuid>
+#else
+#include <QBluetoothAddress>
+#endif
 
 DevInfo::DevInfo(const QBluetoothDeviceInfo &bt) :
     m_src(SRC_BLUETOOTH),

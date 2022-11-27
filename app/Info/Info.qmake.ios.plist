@@ -8,6 +8,18 @@
         <string>${EXECUTABLE_NAME}</string>
         <key>CFBundleIconFile</key>
         <string>${ASSETCATALOG_COMPILER_APPICON_NAME}</string>
+        <key>CFBundleIcons</key>
+        <dict>
+            <key>CFBundleIconName</key>
+            <string>xdeya.icns</string>
+            <key>CFBundlePrimaryIcon</key>
+            <dict>
+                <key>CFBundleIconFiles</key>
+                <array>
+                    <string>xdeya.icns</string>
+                </array>
+            </dict>
+        </dict>
         <key>CFBundleIdentifier</key>
         <string>${PRODUCT_BUNDLE_IDENTIFIER}</string>
         <key>CFBundleInfoDictionaryVersion</key>
