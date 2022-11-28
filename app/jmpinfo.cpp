@@ -27,6 +27,11 @@ JmpInfo::JmpInfo(const logbook_item_t &jmp, int index) :
 {
 }
 
+void JmpInfo::setindex(int index)
+{
+    m_index = index;
+}
+
 QString JmpInfo::getNum() const
 {
     return QString::number(m_jmp.num);
@@ -108,7 +113,7 @@ void JmpInfo::fetchTrkList(const QList<TrkInfo *> &trklist)
     for (auto &tinf: trklist) {
         if (tinf->trk().jmpnum != m_jmp.num)
             continue;
-        m_trklist.push_back(new TrkInfo(tinf->trk()));
+        m_trklist.push_back(new TrkInfo(tinf->trk(), tinf->index()));
     }
 
     emit trkListChanged();

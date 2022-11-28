@@ -30,7 +30,11 @@ AppHnd::AppHnd(QObject *parent)
     btDAgent->setLowEnergyDiscoveryTimeout(10000);
     qDebug() << btDAgent->supportedDiscoveryMethods();
     connect(btDAgent, &QBluetoothDeviceDiscoveryAgent::deviceDiscovered,    this, &AppHnd::btDiscovery);
+#if QT_VERSION >= 0x060000
     connect(btDAgent, &QBluetoothDeviceDiscoveryAgent::errorOccurred,       this, &AppHnd::btError);
+//#else
+//    connect(btDAgent, SIGNAL(error),               this, SLOT(btError));
+#endif
     connect(btDAgent, &QBluetoothDeviceDiscoveryAgent::finished,            this, &AppHnd::btDiscoverFinish);
 
     wfDAgent = new WifiDeviceDiscovery(this);
@@ -298,7 +302,7 @@ QVariant AppHnd::getDevList() const
     return QVariant::fromValue(m_devlist);
 }
 
-void AppHnd::devConnect(qsizetype i)
+void AppHnd::devConnect(int i)
 {
     if ((i < 0) || (i >= m_devlist.size()))
         return;
@@ -431,17 +435,15 @@ QVariant AppHnd::getTrkList() const
     return QVariant::fromValue(netProc->trklist());
 }
 
-void AppHnd::trkView(const trklist_item_t &trk)
+void AppHnd::trkView(int index)
 {
-    /*
-    #include <QDateTime>
-    QDateTime dt(QDate(trk.tmbeg.year, trk.tmbeg.mon, trk.tmbeg.day), QTime(trk.tmbeg.h, trk.tmbeg.m, trk.tmbeg.s));
-    qDebug() << "trk view: " << trk.jmpnum << " -- " << trk.jmpkey << " (" << dt.toString("d.MM.yyyy hh:mm:ss") << ")";
-    */
-
     clearErr();
+
     emit trkHtmlLoad("");
-    netProc->requestTrack(trk);
+    if ((index < 0) || (index >= netProc->trklist().size()))
+        return;
+
+    netProc->requestTrack(netProc->trklist()[index]->trk());
 }
 
 

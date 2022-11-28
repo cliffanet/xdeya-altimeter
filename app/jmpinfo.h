@@ -28,6 +28,7 @@ public:
 
     const logbook_item_t & jmp() const { return m_jmp; }
     int index() const { return m_index; }
+    void setindex(int index);
 
     QString getNum() const;
     QString getDate() const;

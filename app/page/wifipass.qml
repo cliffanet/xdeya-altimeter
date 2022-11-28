@@ -1,9 +1,9 @@
-import QtQuick
-import QtQuick.Layouts
-import QtQuick.Controls
-import com.xdeya.app
-import com.xdeya.jmpinfo
-import com.xdeya.trkinfo
+import QtQuick 2.15
+import QtQuick.Layouts 1.15
+import QtQuick.Controls 2.15
+import com.xdeya.app 1.0
+import com.xdeya.jmpinfo 1.0
+import com.xdeya.trkinfo 1.0
 
 Flickable {
     contentHeight: pane.implicitHeight

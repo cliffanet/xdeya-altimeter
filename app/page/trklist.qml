@@ -1,7 +1,8 @@
-import QtQuick
-import QtQuick.Layouts
-import QtQuick.Controls
-import com.xdeya.app
+import QtQuick 2.15
+import QtQuick.Layouts 1.15
+import QtQuick.Controls 2.15
+import com.xdeya.app 1.0
+import com.xdeya.trkinfo 1.0
 
 Pane {
 
@@ -45,7 +46,7 @@ Pane {
                         lvTrkList.currentIndex = index;
                         console.log('selected: ', index, '=', modelData.jmpnum);
                         app.page = AppHnd.PageTrkView;
-                        app.trkView(modelData.trk);
+                        app.trkView(modelData.index);
                     }
                 }
             }

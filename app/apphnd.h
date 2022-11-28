@@ -15,6 +15,7 @@ class QBluetoothDeviceDiscoveryAgent;
 class QBluetoothDeviceInfo;
 
 class DevInfo;
+class TrkInfo;
 
 class AppHnd : public QObject
 {
@@ -69,7 +70,7 @@ public:
     Q_INVOKABLE void clickReload();
 
     QVariant getDevList() const;
-    Q_INVOKABLE void devConnect(qsizetype i);
+    Q_INVOKABLE void devConnect(int i);
     Q_INVOKABLE void devDisconnect();
 
     Q_INVOKABLE void authEdit(const QString &str);
@@ -88,7 +89,7 @@ public:
     Q_INVOKABLE bool validJmpInfo(int index) const;
 
     QVariant getTrkList() const;
-    Q_INVOKABLE void trkView(const trklist_item_t &trk);
+    Q_INVOKABLE void trkView(int index);
 
 signals:
     void stateChanged();

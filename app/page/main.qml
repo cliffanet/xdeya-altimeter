@@ -1,9 +1,8 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
-import QtQuick.Controls
-//import QtWebView
-import QtQuick.Layouts
-import com.xdeya.app
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+import com.xdeya.app 1.0
 
 ApplicationWindow {
     id: main

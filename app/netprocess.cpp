@@ -286,6 +286,11 @@ void NetProcess::rcvProcess()
                 if (m_wait != wtLogBook)
                     return rcvWrong();
                 m_pro.rcvnext(); // данные у команды есть, но нам они не нужны
+                int i = 0;
+                for (auto &jinf : m_logbook) {
+                    jinf->setindex(i);
+                    i++;
+                }
                 setWait(wtUnknown);
                 emit rcvLogBook();
                 break;
@@ -362,6 +367,11 @@ void NetProcess::rcvProcess()
                 if (m_wait != wtTrkList)
                     return rcvWrong();
                 m_pro.rcvnext(); // данных у команды нет
+                int i = 0;
+                for (auto &tinf : m_trklist) {
+                    tinf->setindex(i);
+                    i++;
+                }
                 setWait(wtUnknown);
                 emit rcvTrkList();
                 break;
