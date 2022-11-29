@@ -43,16 +43,16 @@ size_t NetSocket::recv(size_t sz) {
  * ------------------------------------------------------------------------------------------- */
 template <typename T>
 static void _hton(uint8_t *buf, T src) {
-    for (size_t i = sizeof(T)-1; i >= 0; i--) {
-        buf[i] = src & 0xff;
+    for (uint8_t *b = buf+sizeof(T)-1; b >= buf; b--) {
+        *b = src & 0xff;
         src = src >> 8;
     }
 }
 template <typename T>
 static void _ntoh(T &dst, const uint8_t *buf) {
     dst = 0;
-    for (size_t i = 0; i < sizeof(T); i++)
-        dst = (dst << 8) | buf[i];
+    for (auto *b = buf, *end = buf+sizeof(T); b < end; b++)
+        dst = (dst << 8) | *b;
 }
 
 static void _fton(uint8_t *buf, float val) {
