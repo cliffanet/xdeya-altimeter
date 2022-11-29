@@ -43,7 +43,7 @@ size_t NetSocket::recv(size_t sz) {
  * ------------------------------------------------------------------------------------------- */
 template <typename T>
 static void _hton(uint8_t *buf, T src) {
-    for (int i = sizeof(T)-1; i >= 0; i--) {
+    for (size_t i = sizeof(T)-1; i >= 0; i--) {
         buf[i] = src & 0xff;
         src = src >> 8;
     }
@@ -51,7 +51,7 @@ static void _hton(uint8_t *buf, T src) {
 template <typename T>
 static void _ntoh(T &dst, const uint8_t *buf) {
     dst = 0;
-    for (int i = 0; i < sizeof(T); i++)
+    for (size_t i = 0; i < sizeof(T); i++)
         dst = (dst << 8) | buf[i];
 }
 
@@ -188,13 +188,13 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
                     // и в src и в dst д.б. N байт
                     // однако, позволительно как в src, так и в dst иметь меньше байт,
                     // если это конец соответствующих входных объектов памяти (srcsz/dstsz).
-                    int l = 0;
+                    size_t l = 0;
                     while ((pk[1] >= '0') && (pk[1] <= '9')) {
                         l = l*10 + (pk[1] - '0');
                         pk++;
                     }
-                    int ld = l <= dstsz ? l : dstsz;
-                    int ls = l <= srcsz ? l : srcsz;
+                    size_t ld = l <= dstsz ? l : dstsz;
+                    size_t ls = l <= srcsz ? l : srcsz;
                     if (ld <= ls)
                         memcpy(dst, src, ld);
                     else {
@@ -217,7 +217,7 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
                     // в этом месте находится char[N+1], где N - указанное число
                     // Предполагается, что тут строка, но копироваться будут все N байт
                     // Возможно, при отправке потребуется все байты после первого '\0' - так же обнулить
-                    int l = 0;
+                    size_t l = 0;
                     while ((pk[1] >= '0') && (pk[1] <= '9')) {
                         l = l*10 + (pk[1] - '0');
                         pk++;
@@ -357,13 +357,13 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
                     // и в src и в dst д.б. N байт,
                     // однако, позволительно как в src, так и в dst иметь меньше байт,
                     // если это конец соответствующих входных объектов памяти (srcsz/dstsz).
-                    int l = 0;
+                    size_t l = 0;
                     while ((pk[1] >= '0') && (pk[1] <= '9')) {
                         l = l*10 + (pk[1] - '0');
                         pk++;
                     }
-                    int ld = l <= dstsz ? l : dstsz;
-                    int ls = l <= srcsz ? l : srcsz;
+                    size_t ld = l <= dstsz ? l : dstsz;
+                    size_t ls = l <= srcsz ? l : srcsz;
                     if (ld <= ls)
                         memcpy(dst, src, ld);
                     else {
@@ -385,7 +385,7 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
                     // рассчитывает, что в локальной структуре данных (в dst)
                     // в этом месте находится char[N+1], где N - указанное число
                     // Предполагается, что тут строка, но копироваться будут все N байт
-                    int l = 0;
+                    size_t l = 0;
                     while ((pk[1] >= '0') && (pk[1] <= '9')) {
                         l = l*10 + (pk[1] - '0');
                         pk++;
@@ -406,7 +406,7 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
                 // этот модификатор рассчитывает, что в локальной структуре данных (в dst)
                 // в этом месте находится char[BINPROTO_STRSZ]
                 CHKSZ_(BINPROTO_STRSZ, 1)
-                int l = *src, l1 = *src;
+                size_t l = *src, l1 = *src;
                 if (l1 > 0) {
                     CHKSZ_(BINPROTO_STRSZ, l+1)
                     if (l1 >= BINPROTO_STRSZ)
@@ -488,7 +488,7 @@ bool BinProto::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, 
     
     uint8_t buf[1024], *b = buf;
     
-    int len;
+    size_t len;
         
     if (sz > 0) {
         if (pk_P == NULL)
@@ -499,9 +499,10 @@ bool BinProto::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, 
         strcpy_P(pk, pk_P);
 #endif
         
-        len = datapack(buf+hdrsz(), sizeof(buf)-hdrsz(), pk, data, sz);
-        if (len < 0)
+        auto l = datapack(buf+hdrsz(), sizeof(buf)-hdrsz(), pk, data, sz);
+        if (l < 0)
             return false;
+        len = l;
     }
     else
         len = 0;

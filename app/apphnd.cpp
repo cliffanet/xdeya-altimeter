@@ -161,6 +161,8 @@ void AppHnd::setPage(PageSelector page)
                 m_pagehistory.push_back(page);
                 emit pagePushed("qrc:/page/trkview.qml");
                 break;
+            default:
+                break;
         }
 
     emit pageChanged();
@@ -290,6 +292,9 @@ void AppHnd::clickReload()
 
         case PageTrkView:
             //ui->wvTrack->reload();
+            break;
+
+        default:
             break;
     }
 
@@ -525,6 +530,8 @@ void AppHnd::netCmdConfirm(uint8_t cmd, uint8_t err)
 
 void AppHnd::netData(quint32 pos, quint32 max)
 {
+    Q_UNUSED(pos);
+    Q_UNUSED(max);
     emit progressChanged();
 
     switch (netProc->wait()) {
@@ -536,6 +543,8 @@ void AppHnd::netData(quint32 pos, quint32 max)
             break;
         case NetProcess::wtTrkList:
             emit trkListChanged();
+            break;
+        default:
             break;
     }
 }

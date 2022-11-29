@@ -1,5 +1,8 @@
 #include "trackhnd.h"
 
+#include <stdio.h> // snprintf
+#include <string.h> // memset
+
 #include <QIODevice>
 #include <QByteArray>
 
@@ -40,6 +43,7 @@ void TrackHnd::clear()
 #define FMTWR(fmt, ...)  \
         do { \
             int len = FMT(s, fmt, ##__VA_ARGS__); \
+            Q_UNUSED(len); \
             WRT(len, s); \
         } while (0)
 

@@ -7,8 +7,6 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 
-static trklist_item_t tl_item_null = {};
-
 NetProcess::NetProcess(QObject *parent)
     : QObject{parent},
       m_err(errNoError),
@@ -276,7 +274,7 @@ void NetProcess::rcvProcess()
                     return rcvWrong();
                 logbook_item_t d;
                 m_pro.rcvdata("NNT" LOG_PK LOG_PK LOG_PK LOG_PK, d);
-                m_logbook.push_back(new JmpInfo(d, m_logbook.size()));
+                m_logbook.push_back(new JmpInfo(d));
                 m_rcvpos ++;
                 emit rcvData(m_rcvpos, m_rcvcnt);
                 break;

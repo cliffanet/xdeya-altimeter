@@ -1,4 +1,4 @@
-QT       += quick quickcontrols2 bluetooth webview
+QT       += core quick quickcontrols2 bluetooth webview
 
 #greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

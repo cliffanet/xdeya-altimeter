@@ -28,7 +28,7 @@ class BinProto {
         
         BinProto(NetSocket * nsock = NULL, char mgcsnd = '#', char mgcrcv = '#');
         
-        int hdrsz() const { return 4; }
+        size_t hdrsz() const { return 4; }
         void hdrpack(uint8_t *buf, const cmdkey_t &cmd, uint16_t sz);
         bool hdrunpack(const uint8_t *buf, cmdkey_t &cmd, uint16_t &sz);
         
