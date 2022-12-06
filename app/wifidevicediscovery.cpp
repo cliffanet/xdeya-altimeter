@@ -2,7 +2,12 @@
 
 #include <QTimer>
 #include <QUdpSocket>
+
+#if (defined (_WIN32) || defined (_WIN64))
+#include <winsock.h>
+#else
 #include <arpa/inet.h>
+#endif
 
 WifiDeviceDiscovery::WifiDeviceDiscovery(QObject *parent)
     : QObject{parent},

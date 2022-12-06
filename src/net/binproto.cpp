@@ -6,7 +6,12 @@
 
 #include <string.h>
 #include <math.h>
+
+#if (defined (_WIN32) || defined (_WIN64))
+#include <QThread>
+#else
 #include <sys/select.h>
+#endif
 
 //#include "../log.h" // временно для отладки
 
@@ -525,13 +530,17 @@ bool BinProto::send(const cmdkey_t &cmd, const char *pk_P, const uint8_t *data, 
                 return false;
             if (t < 1)
                 return false;
-            
+
+#if (defined (_WIN32) || defined (_WIN64))
+            QThread::usleep(50);
+#else
             struct timeval tv;
             tv.tv_sec = 0;
             tv.tv_usec = 50;
-            
+
             if (select(1, NULL, NULL, NULL, &tv) < 0)
                 return false;
+#endif
         }
         
         if (sz1 > len)

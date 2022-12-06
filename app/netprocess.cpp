@@ -137,7 +137,7 @@ bool NetProcess::requestTrackList()
     return true;
 }
 
-bool NetProcess::requestTrack(quint32 i)
+bool NetProcess::requestTrack(int i)
 {
     if (i >= m_trklist.size())
         return false;

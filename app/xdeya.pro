@@ -47,7 +47,8 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-DISTFILES +=
+DISTFILES += \
+    CMakeLists.txt
 
 ICON = icons/xdeya.icns
 RC_ICONS = icons/xdeya.ico

@@ -102,7 +102,7 @@ Flickable {
                 Button {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 200
-                    text: modelData.dtBeg != "" ? "Трэк: " + modelData.dtBeg : "Трэк (без даты)"
+                    text: modelData.dtBeg !== "" ? "Трэк: " + modelData.dtBeg : "Трэк (без даты)"
                     onClicked: {
                         app.page = AppHnd.PageTrkView;
                         app.trkView(modelData.index);

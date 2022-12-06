@@ -61,7 +61,7 @@ public:
     bool sendWiFiPass();
     bool requestLogBook(uint32_t beg = 50, uint32_t count = 50);
     bool requestTrackList();
-    bool requestTrack(quint32 i);
+    bool requestTrack(int i);
     bool requestTrack(const trklist_item_t &trk);
 
     QList<WiFiInfo *> & wifipass() { return m_wifipass; } // это можно редактировать снаружи

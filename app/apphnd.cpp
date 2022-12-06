@@ -13,7 +13,7 @@
 AppHnd::AppHnd(QObject *parent)
     : QObject{parent},
       m_page(PageDevSrch),
-      m_jmp({})
+      m_jmp({ 0 })
 {
     m_pagehistory.push_back(PageDevSrch);
 
