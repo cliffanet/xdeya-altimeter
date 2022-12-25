@@ -180,9 +180,11 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
                 break;
             
             case 'T':
+            case 't':
                 CHKSZ_(8, 8)
                 _hton(dst, SRC(uint16_t));
                 memcpy(dst+2, src+2, 6);
+                if (*pk == 'T') *(dst+7) = 0;
                 NXTSZ_(8, 8)
                 break;
             
@@ -349,9 +351,11 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
                 break;
             
             case 'T':
+            case 't':
                 CHKSZ_(8, 8)
                 _ntoh(DST(uint16_t), src);
                 memcpy(dst+2, src+2, 6);
+                if (*pk == 'T') *(dst+7) = 0;
                 NXTSZ_(8, 8)
                 break;
             

@@ -16,7 +16,8 @@ my $dir     = 'arch.fw';
 
 my @hwver   = 3 .. 5;
 
-my $fqbn    = 'esp32:esp32:esp32:PSRAM=disabled,PartitionScheme=default,CPUFreq=80,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=none';
+#my $fqbn    = 'esp32:esp32:esp32:PSRAM=disabled,PartitionScheme=default,CPUFreq=80,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,DebugLevel=none';
+my $fqbn    = 'esp32:esp32:esp32:PSRAM=disabled,PartitionScheme=large_spiffs_16MB,CPUFreq=80,FlashMode=qio,FlashFreq=80,FlashSize=16M,UploadSpeed=921600,DebugLevel=none';
 my @flags   = qw/
         ESP32
         CORE_DEBUG_LEVEL=0

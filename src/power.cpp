@@ -179,8 +179,8 @@ static power_mode_t pwrModeCalc() {
     if (menuIsFwSd())
         return PWR_ACTIVE;
 #endif // if HWVER >= 5
-    if (!wrkEmpty())
-        return PWR_ACTIVE;
+    //if (!wrkEmpty())
+    //    return PWR_ACTIVE;
     
     if (trkRunning())
         return PWR_PASSIVE;
