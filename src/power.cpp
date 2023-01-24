@@ -179,11 +179,16 @@ static power_mode_t pwrModeCalc() {
     if (menuIsFwSd())
         return PWR_ACTIVE;
 #endif // if HWVER >= 5
-    //if (!wrkEmpty())
-    //    return PWR_ACTIVE;
+    if (!wrkEmpty())
+        // Если есть какие-либо выполняемые процессы, надо чтобы они завершились.
+        // Иначе, они просто не будут выполняться.
+        // PWR_ACTIVE - паузы заполняются работой worker
+        // PWR_PASSIVE - паузу делает esp_light_sleep, а worker просто не будет выполняться
+        // Это надо: для записи трека (чтобы он продолжал писаться и мог завершиться)
+        // Но почему-то мы отсюда вырезали этот код совсем недавно,
+        // видимо в каком-то случае оно запрещает уходить в сон.
+        return PWR_ACTIVE;
     
-    if (trkRunning())
-        return PWR_PASSIVE;
     if (btnIdle() < PWR_SLEEP_TIMEOUT)
         return PWR_PASSIVE;
     

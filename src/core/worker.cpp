@@ -17,10 +17,6 @@ typedef std::map<WrkProc::key_t, WrkProc *> worker_list_t;
 
 static worker_list_t wrkall;
 
-bool wrkEmpty() {
-    return wrkall.size() == 0;
-}
-
 void _wrkAdd(WrkProc::key_t key, WrkProc *wrk) {
     _wrkDel(key);
     if (wrk != NULL)
@@ -91,13 +87,38 @@ WrkProc *_wrkGet(WrkProc::key_t key) {
     return it->second;
 }
 
-void wrkProcess(uint32_t tmmax) {
-    if (wrkall.size() == 0)
+////////////////////////////////////////////////////////////////////////////////
+
+typedef std::map<Wrk2::key_t, Wrk2::run_t> worker2_list_t;
+
+static worker2_list_t wrk2all;
+
+bool _wrk2Add(Wrk2::run_t ws) {
+    if (!ws || (ws.get() == 0))
+        return false;
+
+    wrk2all[ws.get()] = ws;
+    ws->optset(Wrk2::O_INLIST);
+    CONSOLE("Wrk(0x%08x) begin", ws.get());
+
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void wrkProcess(uint32_t tmmax)
+{
+    if ((wrkall.size() == 0) && (wrk2all.size() == 0))
         return;
     
     for (auto &it : wrkall)
         // сбрасываем флаг needwait
         it.second->optdel(WrkProc::O_NEEDWAIT);
+    
+    for (auto &it : wrk2all)
+        // сбрасываем флаг needwait
+        if (it.second->opt(Wrk2::O_NEEDWAIT))
+            it.second->optdel(Wrk2::O_NEEDWAIT);
     
     uint32_t beg = millis();
     bool run = true;
@@ -161,5 +182,43 @@ void wrkProcess(uint32_t tmmax) {
             if ((millis()-beg) >= tmmax)
                 return;
         }
+
+
+        for(auto it = wrk2all.begin(), itnxt = it; it != wrk2all.end(); it = itnxt) {
+            itnxt++; // такие сложности, чтобы проще было удалить текущий элемент
+            auto &ws = it->second;
+
+            if ( ws->opt(Wrk2::O_NEEDFINISH) ) {
+                if (!ws->opt(Wrk2::O_FINISHED))
+                    ws->end();
+
+                ws->optclr(Wrk2::O_FINISHED);
+                CONSOLE("Wrk(0x%08x) finished", it->first);
+                wrk2all.erase(it);
+            }
+            else
+            if ( ! ws->opt(Wrk2::O_NEEDWAIT) )
+                switch ( ws->run() ) {
+                    case Wrk2::WAIT:
+                        ws->optset(Wrk2::O_NEEDWAIT);
+                        break;
+
+                    case Wrk2::RUN:
+                        run = true;
+                        break;
+
+                    case Wrk2::END:
+                        ws->optset(Wrk2::O_NEEDFINISH);
+                        run = true;
+                        break;
+                }
+            
+            if ((millis()-beg) >= tmmax)
+                return;
+        }
     }
+}
+
+bool wrkEmpty() {
+    return wrkall.empty() && wrk2all.empty();
 }

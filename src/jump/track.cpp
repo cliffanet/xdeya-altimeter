@@ -166,6 +166,7 @@ bool file_rename(const char *fname1, const char *fname2, bool external);
 bool file_remove(const char *fname, bool external);
 
 #define WRK_RETURN_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); WRK_RETURN_END; } while (0)
+#define WPRC_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); return END; } while (0)
 
 WRK_DEFINE(TRK_ROTATE) {
     private:
@@ -239,33 +240,39 @@ WrkProc::key_t trkRotate(bool external, bool noremove) {
 /* ------------------------------------------------------------------------------------------- *
  *  Процесс трекинга
  * ------------------------------------------------------------------------------------------- */
+class trkWrk : public Wrk2 {
+    uint8_t m_by;
+    uint8_t m_cnt;
+    uint32_t tmoffset;
+    jmp_cur_t prelogcur;
+    bool useext;
+    FileTrack tr;
 
-WRK_DEFINE(TRK_SAVE) {
-    private:
-        uint8_t m_by;
-        uint8_t m_cnt;
-        uint32_t tmoffset;
-        jmp_cur_t prelogcur;
-        bool useext;
-        FileTrack tr;
-        
-    public:
-        WRK_CLASS(TRK_SAVE)(uint8_t by, uint16_t old = 0) : m_by(by), m_cnt(0) {
-            prelogcur = jmpPreCursor()-old;
-            tmoffset = 0;
-            if (old > 0)
-                // если мы начали не с текущего момента, то отнимем из offset первую запись,
-                // в этом случае лог будет красиво начинаться с tmoffset=0.
-                // Ну а когда мы начали с текущего момента, то мы не можем залезть в будущее и узнать,
-                // какой там будет tmoffset, поэтому в этом случае начинаться лог будет уже не с нуля.
-                // Но это и логично, т.к. первая запись в логе появится не сразу после запуска,
-                // а только с появлением её в prelog
-                tmoffset -= jmpPreLog(prelogcur+1).tmoffset;
-        }
-        void byadd(uint8_t by) { m_by |= by; }
-        void bydel(uint8_t by) { m_by &= ~by; }
+public:
+    trkWrk(uint8_t by, uint16_t old = 0) : m_by(by), m_cnt(0) {
+        CONSOLE("track(0x%08x) begin by:0x%02x", this, by);
+        prelogcur = jmpPreCursor()-old;
+        tmoffset = 0;
+        if (old > 0)
+            // если мы начали не с текущего момента, то отнимем из offset первую запись,
+            // в этом случае лог будет красиво начинаться с tmoffset=0.
+            // Ну а когда мы начали с текущего момента, то мы не можем залезть в будущее и узнать,
+            // какой там будет tmoffset, поэтому в этом случае начинаться лог будет уже не с нуля.
+            // Но это и логично, т.к. первая запись в логе появится не сразу после запуска,
+            // а только с появлением её в prelog
+            tmoffset -= jmpPreLog(prelogcur+1).tmoffset;
+    }
+    ~trkWrk() {
+        CONSOLE("track(0x%08x) destroy", this);
+    }
+
+    uint8_t by() const { return m_by; };
+    void byadd(uint8_t by) { m_by |= by; }
+    void bydel(uint8_t by) { m_by &= ~by; }
     
-    WRK_PROCESS
+    state_t run() {
+
+    WPROC
         if (cfg.d().navontrkrec)
             gpsOn(NAV_PWRBY_TRKREC);
 #ifdef USE_SDCARD
@@ -278,20 +285,22 @@ WRK_DEFINE(TRK_SAVE) {
         // rotate файлов
         trkRotate(useext, true);
         
-    WRK_BREAK_RUN
+    WPRC_RUN
         // Проверяем завершение выполнения rotate
         const auto wrk = wrkGet(TRK_ROTATE);
         if (wrk == NULL)
-            WRK_RETURN_ERR("Rotate die");
-        if (wrk->isrun())
-            WRK_RETURN_WAIT;
+            WPRC_ERR("Rotate die");
+        if (wrk->isrun()) {
+            CONSOLE("Wait rotate");
+            return WAIT;
+        }
         if (!wrk->isok())
-            WRK_RETURN_END;
+            WPRC_ERR("Rotate fail");
         
-    WRK_BREAK_RUN
-            
+    WPRC_RUN
+        
         if (m_by == 0)
-            WRK_RETURN_END;
+            return END;
         
         if (!tr) {
             // пишем заголовок - время старта и номер прыга
@@ -302,14 +311,16 @@ WRK_DEFINE(TRK_SAVE) {
                 th.jmpnum ++;          // за номер прыга считаем следующий
             th.jmpkey = jmp.key();
             th.tmbeg = tmNow(jmpPreInterval(prelogcur));
+
+            if (!tr.create(th))
+                WPRC_ERR("Track file create fail");
             
-            return
-               tr.create(th) ? STATE_RUN : STATE_END;
+            return RUN;
         }
         
         //CONSOLE("diff: %d", jmpPreCursor()-prelogcur);
         if (prelogcur == jmpPreCursor())
-            WRK_RETURN_WAIT;
+            return WAIT;
         
         prelogcur++;
         auto ti = jmpPreLog(prelogcur);
@@ -319,22 +330,17 @@ WRK_DEFINE(TRK_SAVE) {
 
         ti.msave = utm() / 1000;
 
-        if (!tr.add(ti)) {
-            CONSOLE("track save fail");
-            WRK_RETURN_END;
-        }
+        if (!tr.add(ti))
+            WPRC_ERR("track save fail");
         
         //CONSOLE("save[%d]: %d", *prelogcur, tmoffset);
         
-        if (useext)
-            WRK_RETURN_RUN;
+        if (!useext && (((m_cnt++) & 0b111) == 0) && !trkCheckAvail(false))
+            return END;
         
-        if ((((m_cnt++) & 0b111) == 0) && !trkCheckAvail(false))
-            WRK_RETURN_END;
-        
-        WRK_RETURN_RUN;
-    WRK_END
-        
+    WPRC(RUN)
+    }
+    
     void end() {
         tr.close();
 
@@ -342,7 +348,7 @@ WRK_DEFINE(TRK_SAVE) {
             gpsOff(NAV_PWRBY_TRKREC);
         if (useext)
             fileExtStop();
-        CONSOLE("track stopped");
+        CONSOLE("track(0x%08x) stopped", this);
     }
 };
 
@@ -350,36 +356,31 @@ WRK_DEFINE(TRK_SAVE) {
 /* ------------------------------------------------------------------------------------------- *
  *  Запуск трекинга
  * ------------------------------------------------------------------------------------------- */
+static Wrk2Proc<trkWrk> _trk;
+
 bool trkStart(uint8_t by, uint16_t old) {
     if (by == 0)
         return false;
-    
-    auto proc = wrkGet(TRK_SAVE);
-    if (proc != NULL) {
-        proc->byadd(by);
-        return true;
-    }
-    
-    wrkRun(TRK_SAVE, by, old);
-    
-    return true;
+
+    if (_trk)
+        _trk->byadd(by);
+    else
+        _trk = wrk2Run<trkWrk>(by, old);
+
+    return _trk;
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Остановка
  * ------------------------------------------------------------------------------------------- */
 void trkStop(uint8_t by) {
-    if (by == 0)
-        return;
-    
-    auto proc = wrkGet(TRK_SAVE);
-    if (proc != NULL)
-        proc->bydel(by);
+    if (_trk)
+        _trk->bydel(by);
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Текущее состояние
  * ------------------------------------------------------------------------------------------- */
 bool trkRunning(uint8_t by) {
-    return wrkExists(TRK_SAVE);
+    return _trk;
 }
