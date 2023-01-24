@@ -241,6 +241,18 @@ static void drawText(ARG_COMP_DEF) {
         sprintf_P(s, PSTR("%0.1f m/s"), NAV_CM_F(gps.gSpeed));
         u8g2.drawStr(u8g2.getDisplayWidth()-64, 95, s);
     }
+
+    // Качество
+    if (
+            (ac.state() > ACST_INIT) && 
+            (ac.direct() == ACDIR_DOWN) &&
+            NAV_VALID_SPEED(gps)
+        ) {
+        u8g2.setFont(u8g2_font_ImpactBits_tr);
+        auto k = NAV_CM_F(gps.gSpeed) / abs(ac.speedapp());
+        sprintf_P(s, PSTR("q: %0.1f"), k);
+        u8g2.drawTxt(85, u8g2.getDisplayHeight()-1, s);
+    }
 }
 
 #endif // if HWVER < 4
