@@ -12,7 +12,7 @@
 #define PTXT(s)             PSTR(TXT_ ## s)
 
 #ifndef HWVER
-#define HWVER               3
+#define HWVER               5
 #endif
 
 #if !defined(FWVER_NUM1) && !defined(FWVER_NUM2) && !defined(FWVER_NUM3)
