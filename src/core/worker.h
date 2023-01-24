@@ -146,6 +146,21 @@ class Wrk2 {
 };
 
 template <class T>
+class Wrk2Ret : public Wrk2 {
+    public:
+        const T &ret() const { return ret; }
+    private:
+        T m_ret;
+};
+
+class Wrk2Ok : public Wrk2 {
+    public:
+        bool isok() const { return m_isok; }
+    protected:
+        bool m_isok = false;
+};
+
+template <class T>
 class Wrk2Proc {
     public:
         Wrk2Proc() { }
@@ -153,6 +168,7 @@ class Wrk2Proc {
 
         Wrk2::key_t key()   const { return _w.get(); }
         bool        isrun() const { return _w && !_w->opt(Wrk2::O_FINISHED); }
+        bool        valid() const { return _w ? true : false; }
         operator    bool()  const { return isrun(); }
 
         bool        stop() {
@@ -217,6 +233,13 @@ inline Wrk2Proc<T> wrk2Run(_Args&&... __args) {
             \
             CONSOLE("Worker line fail: %d", __line); \
             return END;
+
+#define WPRC_OTHER(v, T, ...) \
+                v = wrk2Run<T>(__VA_ARGS__); \
+                WPRC_BREAK \
+                if (v.isrun()) return WAIT;
+
+
 
 
 // исполнение всех существующих воркеров в течение времени tmmax (мс)

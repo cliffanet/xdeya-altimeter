@@ -165,51 +165,46 @@ bool file_exists(const char *fname, bool external);
 bool file_rename(const char *fname1, const char *fname2, bool external);
 bool file_remove(const char *fname, bool external);
 
-#define WRK_RETURN_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); WRK_RETURN_END; } while (0)
 #define WPRC_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); return END; } while (0)
 
-WRK_DEFINE(TRK_ROTATE) {
-    private:
-        bool m_isok;
-        bool m_useext;
-        uint8_t m_fn;
-        const char *m_fname_P;
+class trkRotate : public Wrk2Ok {
+    bool m_useext;
+    uint8_t m_fn;
+    const char *m_fname_P;
     
-    public:
-        bool isok() const { return m_isok; }
-    
-    WRK_CLASS(TRK_ROTATE)(bool external, bool noremove = false) :
-        m_isok(false),
+public:
+    trkRotate(bool external) :
         m_useext(external),
         m_fn(1),
         m_fname_P(PSTR(TRK_FILE_NAME))
     {
-        if (noremove)
-            optset(O_NOREMOVE);
+        CONSOLE("track rotate(0x%08x) begin, useext: %d", this, m_useext);
+    }
+    ~trkRotate() {
+        CONSOLE("track rotate(0x%08x) destroy, isok: %d", this, m_isok);
     }
     
-    WRK_PROCESS
-        CONSOLE("track rotate begin, useext: %d", m_useext);
+    state_t run() {
     
-    WRK_BREAK
+    WPROC
         // ищем первый свободный слот
         char fname[37];
         fileName(fname, sizeof(fname), m_fname_P, m_fn);
         if (file_exists(fname, m_useext)) {
             if (m_fn < 99) {
                 m_fn++; // пока ещё не достигли максимального номера файла, продолжаем
-                WRK_RETURN_RUN;
+                return RUN;
             }
             
             // достигнут максимальный номер файла
             // его надо удалить и посчитать первым свободным слотом
             if (!file_remove(fname, m_useext))
-                WRK_RETURN_ERR("Can't remove file '%s'", fname);
+                WPRC_ERR("Can't remove file '%s'", fname);
             CONSOLE("file '%s' removed", fname);
         }
         CONSOLE("free fnum: %d", m_fn);
     
-    WRK_BREAK_RUN
+    WPRC_RUN
         // теперь переименовываем все по порядку
         if (m_fn > 1) {
             char src[37], dst[37];
@@ -217,25 +212,18 @@ WRK_DEFINE(TRK_ROTATE) {
             fileName(dst, sizeof(dst), m_fname_P, m_fn);
         
             if (!file_rename(src, dst, m_useext))
-                WRK_RETURN_ERR("Can't rename file '%s' to '%s'", src, dst);
+                WPRC_ERR("Can't rename file '%s' to '%s'", src, dst);
             CONSOLE("file '%s' renamed to '%s'", src, dst);
         
             m_fn--;
-            WRK_RETURN_RUN;
+            return RUN;
         }
 
         CONSOLE("track rotate finish");
         m_isok = true;
-    WRK_END
+    WPRC(END)
+    }
 };
-
-WrkProc::key_t trkRotate(bool external, bool noremove) {
-    if (!noremove)
-        return wrkRand(TRK_ROTATE, external, noremove);
-    
-    wrkRun(TRK_ROTATE, external, noremove);
-    return WRKKEY_TRK_ROTATE;
-}
 
 /* ------------------------------------------------------------------------------------------- *
  *  Процесс трекинга
@@ -247,6 +235,7 @@ class trkWrk : public Wrk2 {
     jmp_cur_t prelogcur;
     bool useext;
     FileTrack tr;
+    Wrk2Proc<trkRotate> m_rotate;
 
 public:
     trkWrk(uint8_t by, uint16_t old = 0) : m_by(by), m_cnt(0) {
@@ -282,20 +271,15 @@ public:
 #endif
         CONSOLE("track starting by: 0x%02x, useext: %d", m_by, useext);
         
-        // rotate файлов
-        trkRotate(useext, true);
-        
     WPRC_RUN
-        // Проверяем завершение выполнения rotate
-        const auto wrk = wrkGet(TRK_ROTATE);
-        if (wrk == NULL)
+
+        // Делаем rotate файлов
+    WPRC_OTHER(m_rotate, trkRotate, useext)
+        if (!m_rotate.valid())
             WPRC_ERR("Rotate die");
-        if (wrk->isrun()) {
-            CONSOLE("Wait rotate");
-            return WAIT;
-        }
-        if (!wrk->isok())
+        if (!m_rotate->isok())
             WPRC_ERR("Rotate fail");
+        m_rotate.reset();
         
     WPRC_RUN
         
