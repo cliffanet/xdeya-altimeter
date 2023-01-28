@@ -114,7 +114,7 @@ class Wrk2 {
     public:
         // статусы выхода из выполнения воркера
         typedef enum {
-            WAIT,         // в этом цикле больше не надо выполнять этот воркер
+            DLY,          // в этом цикле больше не надо выполнять этот воркер
             RUN,          // этот процесс надо выполнять и дальше, если ещё есть время на это
             END,          // завершить воркер
         } state_t;
@@ -225,7 +225,7 @@ inline Wrk2Proc<T> wrk2Run(_Args&&... __args) {
 
 #define WPRC_BREAK              __line = __LINE__; }                case __LINE__: {
 #define WPRC_RUN                __line = __LINE__; return RUN; }    case __LINE__: {
-#define WPRC_WAIT               __line = __LINE__; return WAIT; }   case __LINE__: {
+#define WPRC_DLY                __line = __LINE__; return DLY; }    case __LINE__: {
 #define WPRC(ret) \
                     return ret; \
                 } \
@@ -234,10 +234,10 @@ inline Wrk2Proc<T> wrk2Run(_Args&&... __args) {
             CONSOLE("Worker line fail: %d", __line); \
             return END;
 
-#define WPRC_OTHER(v, T, ...) \
+#define WPRC_AWAIT(v, T, ...) \
                 v = wrk2Run<T>(__VA_ARGS__); \
                 WPRC_BREAK \
-                if (v.isrun()) return WAIT;
+                if (v.isrun()) return DLY;
 
 
 

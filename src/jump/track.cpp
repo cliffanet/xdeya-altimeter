@@ -251,9 +251,11 @@ public:
             // а только с появлением её в prelog
             tmoffset -= jmpPreLog(prelogcur+1).tmoffset;
     }
+#ifdef FWVER_DEBUG
     ~trkWrk() {
         CONSOLE("track(0x%08x) destroy", this);
     }
+#endif
 
     uint8_t by() const { return m_by; };
     void byadd(uint8_t by) { m_by |= by; }
@@ -274,7 +276,7 @@ public:
     WPRC_RUN
 
         // Делаем rotate файлов
-    WPRC_OTHER(m_rotate, trkRotate, useext)
+    WPRC_AWAIT(m_rotate, trkRotate, useext)
         if (!m_rotate.valid())
             WPRC_ERR("Rotate die");
         if (!m_rotate->isok())
@@ -304,7 +306,7 @@ public:
         
         //CONSOLE("diff: %d", jmpPreCursor()-prelogcur);
         if (prelogcur == jmpPreCursor())
-            return WAIT;
+            return DLY;
         
         prelogcur++;
         auto ti = jmpPreLog(prelogcur);

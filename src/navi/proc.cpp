@@ -1,7 +1,7 @@
 
 #include "proc.h"
 #include "../log.h"
-#include "../core/workerloc.h"
+#include "../core/worker.h"
 #include "RTClib.h" // DateTime class
 #include "../cfg/main.h" // timezone
 
@@ -38,20 +38,22 @@ static struct {
  *  NAV-инициализация
  *  т.к. инициализация довольно долгая (около 500мс), то делаем её через Worker
  * ------------------------------------------------------------------------------------------- */
-WRK_DEFINE(NAVI_INIT) {
-    state_t every() {
-        if (gps.tick())
-            WRK_RETURN_RUN;
-        
-        CONSOLE("Wait cmd-confirm fail");
-        state = NAV_STATE_FAIL;
-        WRK_RETURN_END;
-    }
-        
+static void gpsRecvPosllh   (UbloxGpsProto &gps);
+static void gpsRecvVelned   (UbloxGpsProto &gps);
+static void gpsRecvTimeUtc  (UbloxGpsProto &gps);
+static void gpsRecvSol      (UbloxGpsProto &gps);
+static void gpsRecvPvt      (UbloxGpsProto &gps);
+
+#define gpsnd(cl, cmd, ...) do { \
+        if (!gps.send(cl, cmd, ##__VA_ARGS__)) \
+                return errsnd(); \
+    } while (0)
+
+class _naviInit : public Wrk2 {
     state_t errsnd() {
-        CONSOLE("NAV config-send (line: %d) fail", m_line);
+        CONSOLE("NAV config-send (line: %d) fail", __line);
         state = NAV_STATE_FAIL;
-        WRK_RETURN_END;
+        return END;
     }
 
     uint8_t m_cnfcnt = 0;
@@ -59,24 +61,49 @@ WRK_DEFINE(NAVI_INIT) {
         // всё ещё ждём
         m_cnfcnt ++;
         if (m_cnfcnt > 50) {
-            CONSOLE("Wait cmd-confirm (line: %d, cnfneed: %d) timeout", m_line, gps.cnfneed());
+            CONSOLE("Wait cmd-confirm (line: %d, cnfneed: %d) timeout", __line, gps.cnfneed());
             state = NAV_STATE_FAIL;
-            WRK_RETURN_END;
+            return END;
         }
         //CONSOLE("Wait cmd-confirm (op: %d, cnfneed: %d, cnfcnt: %d)", m_op, gps.cnfneed(), m_cnfcnt);
-        WRK_RETURN_WAIT;
+        return DLY;
     }
-    
-    WRK_PROCESS
+
+public:
+#ifdef FWVER_DEBUG
+    ~_naviInit() {
+        CONSOLE("_naviInit(0x%08x) destroy", this);
+    }
+#endif
+
+    state_t run() {
+        if (!gps.tick()) {
+            CONSOLE("Wait cmd-confirm fail");
+            state = NAV_STATE_FAIL;
+            return END;
+        }
+
+    WPROC
         CONSOLE("Navi init begin");
         state = NAV_STATE_INIT;
+    
+        // инициируем uart-порт NAV-приёмника
+        ss.begin(9600);
+        ss.setRxBufferSize(512); // По умолчанию = 256 и этого не хватает, чтобы принять сразу все присылаемые от Navi данные за один цикл
+        
+        gps.hndclear();
+        gps.hndadd(UBX_NAV,  UBX_NAV_POSLLH,     gpsRecvPosllh);
+        gps.hndadd(UBX_NAV,  UBX_NAV_VELNED,     gpsRecvVelned);
+        gps.hndadd(UBX_NAV,  UBX_NAV_TIMEUTC,    gpsRecvTimeUtc);
+        gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
+        gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
         // Пустое ожидание сразу после запуска процесса инициализации.
         // Необходимо, чтобы дождаться инициализации чипа навигации сразу после подачи питания
-    WRK_BREAK_WAIT
+    WPRC_DLY
         
         CONSOLE("Set UART(gps) default speed 9600");
         ss.updateBaudRate(9600);
-    WRK_BREAK_WAIT
+    WPRC_DLY
         
         const struct {
         	uint8_t  portID;       // Port identifier number
@@ -100,9 +127,8 @@ WRK_DEFINE(NAVI_INIT) {
     		.flags        = 0,      // Flags bit mask
     		.reserved5    = 0       // Reserved, set to 0
     	};
-        if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
-            return errsnd();
-    WRK_BREAK_WAIT
+        gpsnd(UBX_CFG, UBX_CFG_PRT, cfg_prt);
+    WPRC_DLY
         
         gps.cnfclear();
         gps.rcvclear();
@@ -111,7 +137,7 @@ WRK_DEFINE(NAVI_INIT) {
 
         CONSOLE("Set UART(gps) speed 57600");
         ss.updateBaudRate(57600);
-    WRK_BREAK_WAIT
+    WPRC_DLY
         
         const struct {
         	uint8_t  portID;       // Port identifier number
@@ -135,15 +161,14 @@ WRK_DEFINE(NAVI_INIT) {
     		.flags        = 0,      // Flags bit mask
     		.reserved5    = 0       // Reserved, set to 0
     	};
-        if (!gps.send(UBX_CFG, UBX_CFG_PRT, cfg_prt))
-            return errsnd();
-    WRK_BREAK_RUN
+        gpsnd(UBX_CFG, UBX_CFG_PRT, cfg_prt);
+    WPRC_RUN
         
         if (gps.cnfneed() > 0)
             return cnfwait();
         m_cnfcnt = 0;
         CONSOLE("Confirmed speed");
-    WRK_BREAK_RUN
+    WPRC_RUN
         
         const ubx_cfg_rate_t cfg_rate[] = {
     		{ UBX_NMEA, UBX_NMEA_GPGGA,     0 },
@@ -162,9 +187,8 @@ WRK_DEFINE(NAVI_INIT) {
         };
         
         for (auto &rate: cfg_rate)
-            if (!gps.send(UBX_CFG, UBX_CFG_MSG, rate))
-                return errsnd();
-    WRK_BREAK_RUN
+            gpsnd(UBX_CFG, UBX_CFG_MSG, rate);
+    WPRC_RUN
         
         const struct {
         	uint16_t measRate;  // Measurement rate             (ms)
@@ -177,9 +201,8 @@ WRK_DEFINE(NAVI_INIT) {
     		.navRate    = 1,        // Navigation rate (cycles)
     		.timeRef    = 0         // UTC time
     	};
-        if (!gps.send(UBX_CFG, UBX_CFG_RATE, cfg_mrate))
-            return errsnd();
-    WRK_BREAK_RUN
+        gpsnd(UBX_CFG, UBX_CFG_RATE, cfg_mrate);
+    WPRC_RUN
         
         const struct {
         	uint16_t mask;              // Only masked parameters will be applied
@@ -202,13 +225,12 @@ WRK_DEFINE(NAVI_INIT) {
     		.mask       = 0x0001,       // Apply dynamic model settings
     		.dynModel   = 7             // Airborne with < 1 g acceleration
     	};
-        if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5))
-            return errsnd();
-    WRK_BREAK_RUN
+        gpsnd(UBX_CFG, UBX_CFG_NAV5, cfg_nav5);
+    WPRC_RUN
         
         if (!gpsUpdateMode())
             return errsnd();
-    WRK_BREAK_RUN
+    WPRC_RUN
         
         if (gps.cnfneed() > 0)
             return cnfwait();
@@ -225,15 +247,23 @@ WRK_DEFINE(NAVI_INIT) {
         // команды приходит нестабильно, а в новых - специально убрали подтверждение
         // этой команды, т.к. всё равно, до перезагрузки устройства это подтверждение
         // не успевает отправиться
-        if (!gps.send(UBX_CFG, UBX_CFG_RST, cfg_rst))
-            return errsnd();
+        gpsnd(UBX_CFG, UBX_CFG_RST, cfg_rst);
         gps.cnfclear();
         
         state = NAV_STATE_OK;
         CONSOLE("NAV-UART config ok");
-    
-    WRK_END
+
+    WPRC(END)
+    }
 };
+
+#undef gpsnd
+
+static Wrk2Proc<_naviInit> _init;
+void naviInit() {
+    if (!_init.isrun())
+        _init = wrk2Run<_naviInit>();
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  NAV-получение данных
@@ -492,24 +522,6 @@ static void gpsRecvGnss(UbloxGpsProto &gps) {
 }
 #endif // FWVER_DEBUG
 
-void gpsInit() {
-    if (wrkExists(NAVI_INIT))
-        return;
-    
-    // инициируем uart-порт NAV-приёмника
-    ss.begin(9600);
-    ss.setRxBufferSize(512); // По умолчанию = 256 и этого не хватает, чтобы принять сразу все присылаемые от Navi данные за один цикл
-    
-    gps.hndclear();
-    gps.hndadd(UBX_NAV,  UBX_NAV_POSLLH,     gpsRecvPosllh);
-    gps.hndadd(UBX_NAV,  UBX_NAV_VELNED,     gpsRecvVelned);
-    gps.hndadd(UBX_NAV,  UBX_NAV_TIMEUTC,    gpsRecvTimeUtc);
-    gps.hndadd(UBX_NAV,  UBX_NAV_SOL,        gpsRecvSol);
-    gps.hndadd(UBX_NAV,  UBX_NAV_PVT,        gpsRecvPvt);
-                    
-    wrkRun(NAVI_INIT);
-}
-
 static void gpsDirectToSerial(uint8_t c) {
     Serial.write( c );
 }
@@ -540,13 +552,16 @@ void gpsProcess() {
     
     if (state >= NAV_STATE_NODATA)
         state = data.rcvok ? NAV_STATE_OK : NAV_STATE_NODATA;
+    
+    if (_init.valid() && !_init.isrun())
+        _init.reset();
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Жёсткая перезагрузка с очисткой списка спутников
  * ------------------------------------------------------------------------------------------- */
 bool gpsColdRestart() {
-    if (wrkExists(NAVI_INIT))
+    if (_init.isrun())
         return false;
     
     const struct {
@@ -564,7 +579,7 @@ bool gpsColdRestart() {
     
     delay(1000);
     
-    gpsInit();
+    naviInit();
     
     return true; 
 }
@@ -722,7 +737,7 @@ void gpsOn(uint8_t by) {
     
     state = NAV_STATE_OK;
     
-    gpsInit();
+    naviInit();
 }
 
 void gpsPwrDown() {

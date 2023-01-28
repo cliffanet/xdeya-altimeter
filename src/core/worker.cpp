@@ -199,7 +199,7 @@ void wrkProcess(uint32_t tmmax)
             else
             if ( ! ws->opt(Wrk2::O_NEEDWAIT) )
                 switch ( ws->run() ) {
-                    case Wrk2::WAIT:
+                    case Wrk2::DLY:
                         ws->optset(Wrk2::O_NEEDWAIT);
                         break;
 

@@ -74,6 +74,8 @@ typedef enum {
 
 class UbloxGpsProto;
 
+void naviInit();
+
 const gps_data_t &gpsInf();
 UbloxGpsProto * gpsProto();
 uint32_t gpsRecv();
@@ -81,7 +83,6 @@ uint32_t gpsRecvError();
 uint32_t gpsCmdUnknown();
 uint8_t gpsDataAge();
 gps_state_t gpsState();
-void gpsInit();
 void gpsProcess();
 
 bool gpsColdRestart();

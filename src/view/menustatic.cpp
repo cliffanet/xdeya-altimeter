@@ -1013,7 +1013,7 @@ static const menu_el_t menuhwtest[] {
         .name = PTXT(MENU_TEST_NAVINIT),
         .submenu = NULL,
         .enter = [] () {
-            gpsInit();
+            naviInit();
             menuFlashP(PTXT(MENU_TEST_NAVINITED), 10);
         },
     },
