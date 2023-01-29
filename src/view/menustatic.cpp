@@ -543,16 +543,18 @@ static const menu_el_t menugpson[] {
     {   // авто-включение сразу при включении питания
         .name       = PTXT(MENU_NAVON_POWERON),
         .submenu    = NULL,
-        .enter      = NULL,
+        .enter      = [] () {
+            cfg.set().navonpwron = !cfg.d().navonpwron;
+        },
         .showval    = [] (char *txt) { valYes(txt, cfg.d().navonpwron); },
-        .edit       = [] (int val) { cfg.set().navonpwron = !cfg.d().navonpwron; },
     },
     {   // автоматически включать при старте записи трека
         .name       = PTXT(MENU_NAVON_TRKREC),
         .submenu    = NULL,
-        .enter      = NULL,
+        .enter      = [] () {
+            cfg.set().navontrkrec = !cfg.d().navontrkrec;
+        },
         .showval    = [] (char *txt) { valYes(txt, cfg.d().navontrkrec); },
-        .edit       = [] (int val) { cfg.set().navontrkrec = !cfg.d().navontrkrec; },
     },
     {   // авто-включение в подъёме на заданной высоте
         .name       = PTXT(MENU_NAVON_TAKEOFF),
@@ -576,9 +578,10 @@ static const menu_el_t menugpson[] {
     {   // авто-отключать жпс всегда после приземления
         .name       = PTXT(MENU_NAVON_OFFLAND),
         .submenu    = NULL,
-        .enter      = NULL,
+        .enter      = [] () {
+            cfg.set().navoffland = !cfg.d().navoffland;
+        },
         .showval    = [] (char *txt) { valYes(txt, cfg.d().navoffland); },
-        .edit       = [] (int val) { cfg.set().navoffland = !cfg.d().navoffland; },
     },
     {   // Режим GPS/GLONASS
         .name       = PTXT(MENU_NAV_MODE),
@@ -808,9 +811,7 @@ static const menu_el_t menuoptions[] {
     {   // использовать компас
         .name       = PTXT(MENU_OPTION_COMPEN),
         .submenu    = NULL,
-        .enter      = NULL,
-        .showval    = [] (char *txt) { valYes(txt, (cfg.d().flagen & FLAGEN_COMPAS) > 0); },
-        .edit       = [] (int val) {
+        .enter      = [] () {
             if ((cfg.d().flagen & FLAGEN_COMPAS) == 0) {
                 cfg.set().flagen |= FLAGEN_COMPAS;
                 compInit();
@@ -820,18 +821,18 @@ static const menu_el_t menuoptions[] {
                 compStop();
             }
         },
+        .showval    = [] (char *txt) { valYes(txt, (cfg.d().flagen & FLAGEN_COMPAS) > 0); },
     },
     {   // Курс цифрами
         .name       = PTXT(MENU_OPTION_TXTCOURSE),
         .submenu    = NULL,
-        .enter      = NULL,
-        .showval    = [] (char *txt) { valYes(txt, (cfg.d().flagen & FLAGEN_TXTCOURSE) > 0); },
-        .edit       = [] (int val) {
+        .enter      = [] () {
             if ((cfg.d().flagen & FLAGEN_TXTCOURSE) == 0)
                 cfg.set().flagen |= FLAGEN_TXTCOURSE;
             else
                 cfg.set().flagen &= ~FLAGEN_TXTCOURSE;
         },
+        .showval    = [] (char *txt) { valYes(txt, (cfg.d().flagen & FLAGEN_TXTCOURSE) > 0); },
     },
     {
         .name       = PTXT(MENU_OPTION_BTNDO),
