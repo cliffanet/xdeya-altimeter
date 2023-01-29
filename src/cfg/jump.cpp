@@ -97,7 +97,7 @@ bool ConfigJump::beg(uint16_t old) {
     data.last.cnp = data.last.beg;
     data.last.end = data.last.beg;
     
-    return save(true);
+    return true;//save(true);
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -118,7 +118,7 @@ bool ConfigJump::cnp(uint16_t old) {
     data.last.cnp.msave = utm() / 1000;
     data.last.end = data.last.cnp;
     
-    return save(true);
+    return true;//save(true);
 }
 
 /* ------------------------------------------------------------------------------------------- *
