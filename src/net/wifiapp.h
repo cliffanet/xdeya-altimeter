@@ -10,6 +10,6 @@
 #include <stddef.h>
 
 void wifiCliBegin(const char *ssid, const char *pass = NULL);
-void wifiCliNet(char *ssid);
+bool wifiCliNet(char *ssid);
 
 #endif // _net_wifiapp_H

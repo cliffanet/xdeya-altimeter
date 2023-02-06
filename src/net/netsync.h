@@ -53,6 +53,6 @@ WrkProc::key_t recvFirmware(BinProto *pro, bool noremove = false);
 bool isokFirmware(const WrkProc *_wrk = NULL);
 cmpl_t cmplFirmware(const WrkProc *_wrk = NULL);
 
-WrkProc::key_t netApp(NetSocket *sock, bool noremove = false);
+void netApp(NetSocket *sock);
 
 #endif // _net_sync_H

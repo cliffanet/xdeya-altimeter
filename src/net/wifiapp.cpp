@@ -19,21 +19,16 @@
 
 #include "esp_system.h" // esp_random
 
+#define ERR(s)                  END
 
-//#define ERR(s)                  err(err ## s)
-#define ERR(s)
-//#define RETURN_ERR(s)           return ERR(s)
-#define RETURN_ERR(s)           WRK_RETURN_FINISH 
-
-WRK_DEFINE(WIFI_CLI) {
-    public:
+class _wifiApp : public Wrk2 {
         bool        m_cancel, m_wifi;
         uint16_t    m_timeout;
         const char  *m_ssid, *m_pass;
         int         m_bcast, m_srvsock;
         uint16_t    m_srvport;
-        
-        WRK_CLASS(WIFI_CLI)(const char *ssid, const char *pass) :
+    public:
+        _wifiApp(const char *ssid, const char *pass) :
             m_cancel(false),
             m_wifi(false),
             m_timeout(0),
@@ -47,6 +42,7 @@ WRK_DEFINE(WIFI_CLI) {
             // но эти процессы не быстрые, лучше их оставить воркеру.
             m_ssid = strdup(ssid);
             m_pass = pass != NULL ? strdup(pass) : NULL;
+            CONSOLE("begin: %s", m_ssid);
             //optset(O_NOREMOVE); потребуется, если будем использовать код ошибки выполнения
             
             // Для m_srvsock можно было бы использовать WiFiServer,
@@ -56,47 +52,50 @@ WRK_DEFINE(WIFI_CLI) {
             // тем более, там просто, а WiFiServer перезаморочен на варианты применения
             // available/accept/hasClient
         }
+
+        const char *ssid() const { return m_ssid; }
         
         /*
         state_t err(st_t st) {
             m_st = st;
             CONSOLE("err: %d", st);
-            WRK_RETURN_FINISH;
+            return END;
         }
         state_t chktimeout() {
             if (m_timeout == 0)
-                WRK_RETURN_WAIT;
+                return DLY;
             
             m_timeout--;
             if (m_timeout > 0)
-                WRK_RETURN_WAIT;
+                return DLY;
             
-            RETURN_ERR(Timeout);
+            return ERR(Timeout);
         }
         */
         
         void cancel() {
-            if (isrun()) {
+            if (!m_cancel) {
                 //m_st = stUserCancel;
                 m_cancel = true;
                 m_timeout = 0;
             }
         }
     
-    WRK_PROCESS
+    state_t run() {
+    WPROC
         if (!wifiStart())
-            RETURN_ERR(WiFiInit);
+            return ERR(WiFiInit);
     
-    WRK_BREAK_RUN
+    WPRC_RUN
         CONSOLE("wifi to: %s; pass: %s", m_ssid, m_pass == NULL ? "-no-" : m_pass);
         if (!wifiConnect(m_ssid, m_pass))
-            RETURN_ERR(WiFiConnect);
+            return ERR(WiFiConnect);
         m_timeout = 300;
     
-    WRK_BREAK_RUN
+    WPRC_RUN
         // отмена работы по wifi
         if (m_cancel)
-            WRK_RETURN_FINISH;
+            return END;
         // ожидаем соединения по вифи и проверяем состояние
         auto wst = wifiStatus();
         if (wst == WIFI_STA_CONNECTED) {
@@ -129,11 +128,11 @@ WRK_DEFINE(WIFI_CLI) {
             if (m_timeout == 0) {
                 CONSOLE("wifi connect timeout: %d", wst);
                 if (!wifiConnect(m_ssid, m_pass))
-                    RETURN_ERR(WiFiConnect);
+                    return ERR(WiFiConnect);
                 m_timeout = 300;
             }
             
-            WRK_RETURN_WAIT;
+            return DLY;
         }
         
         // Широковещательный сокет для DeviceDiscovery
@@ -141,7 +140,7 @@ WRK_DEFINE(WIFI_CLI) {
             m_bcast = socket(AF_INET, SOCK_DGRAM, 0);
             int opt=1;
             if (setsockopt(m_bcast, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt)) < 0)
-                RETURN_ERR(SockOpt);
+                return ERR(SockOpt);
             CONSOLE("bcast created (fd: %d)", m_bcast);
         }
         
@@ -158,7 +157,7 @@ WRK_DEFINE(WIFI_CLI) {
             uint16_t port = htons(m_srvport);
             memcpy(mess, &port, sizeof(port));
             if(sendto(m_bcast, mess, sizeof(mess)-1, 0, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0)
-                RETURN_ERR(SockSend);
+                return ERR(SockSend);
             CONSOLE("send to bcast (port: %d)", m_srvport);
             m_timeout = 50;
         }
@@ -176,9 +175,9 @@ WRK_DEFINE(WIFI_CLI) {
             srv.sin_addr.s_addr = htonl(INADDR_ANY);
             srv.sin_port = htons(m_srvport);
             if (bind(m_srvsock, (struct sockaddr *)&srv, sizeof(srv)) < 0)
-                RETURN_ERR(SockSrvBind);
+                return ERR(SockSrvBind);
             if (listen(m_srvsock, 4) < 0)
-                RETURN_ERR(SockSrvListen);
+                return ERR(SockSrvListen);
             fcntl(m_srvsock, F_SETFL, O_NONBLOCK);
             CONSOLE("server socket listen (port: %d)", m_srvport);
         }
@@ -195,13 +194,12 @@ WRK_DEFINE(WIFI_CLI) {
                 uint8_t ip[4];
                 memcpy(ip, &addr.sin_addr, sizeof(ip));
                 CONSOLE("request connection from: %d.%d.%d.%d : %d", ip[0], ip[1], ip[2], ip[3], ntohs(addr.sin_port));
-                auto nsock = new NetSocketClient<WiFiClient>(WiFiClient(sock));
-                netApp(nsock);
+                netApp(new NetSocketClient<WiFiClient>(WiFiClient(sock)));
             }
         }
         
-        WRK_RETURN_WAIT;
-    WRK_FINISH
+    WPRC(DLY);
+    }
         
     void end() {
         if (m_bcast>0) {
@@ -232,19 +230,19 @@ WRK_DEFINE(WIFI_CLI) {
 /* ------------------------------------------------------------------------------------------- *
  *  Инициализация
  * ------------------------------------------------------------------------------------------- */
+static Wrk2Proc<_wifiApp> _app;
 void wifiCliBegin(const char *ssid, const char *pass) {
-    if (wrkExists(WIFI_CLI))
-        return;
-    wrkRun(WIFI_CLI, ssid, pass);
-    CONSOLE("begin");
+    if (!_app.isrun())
+        _app = wrk2Run<_wifiApp>(ssid, pass);
 }
 
-void wifiCliNet(char *ssid) {
-    auto wrk = wrkGet(WIFI_CLI);  
-    if ((wrk == NULL) || !wrk->isrun() || (wrk->m_ssid == NULL))
-        *ssid = '\0';
-    else {
-        strncpy(ssid, wrk->m_ssid, MENUSZ_VAL);
+bool wifiCliNet(char *ssid) {
+    if (_app.isrun()) {
+        strncpy(ssid, _app->ssid(), MENUSZ_VAL);
         ssid[MENUSZ_VAL-1] = '\0';
     }
+    else
+        *ssid = '\0';
+    
+    return _app.isrun();
 }

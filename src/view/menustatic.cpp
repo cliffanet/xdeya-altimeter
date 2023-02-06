@@ -1164,7 +1164,7 @@ static const menu_el_t menunetsync[] {
         .name       = PTXT(MENU_NET_WIFICLI),
         .submenu    = menuWifi2Cli(),
         .enter      = NULL,
-        .showval    = wifiCliNet,
+        .showval    = [] (char *txt) { wifiCliNet(txt); },
     },
     
 #ifdef USE_BLUETOOTH
