@@ -115,10 +115,13 @@ void wrkProcess(uint32_t tmmax)
         // сбрасываем флаг needwait
         it.second->optdel(WrkProc::O_NEEDWAIT);
     
-    for (auto &it : wrk2all)
+    for (auto &it : wrk2all) {
         // сбрасываем флаг needwait
         if (it.second->opt(Wrk2::O_NEEDWAIT))
             it.second->optdel(Wrk2::O_NEEDWAIT);
+        // timer
+        it.second->timer();
+    }
     
     uint32_t beg = millis();
     bool run = true;

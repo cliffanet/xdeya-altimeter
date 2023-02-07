@@ -2,6 +2,7 @@ import 'dart:ffi';
 
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'binproto.dart';
@@ -48,6 +49,8 @@ class NetProc {
 
     NetError? _err;
     NetError? get error => _err;
+
+    Timer? _kalive;
 
     final Set<NetRecvElem> _rcvelm = {};
     Set<NetRecvElem> get rcvElem => _rcvelm;
@@ -104,6 +107,8 @@ class NetProc {
                 _confirmer.clear();
                 _rcvelm.clear();
                 _err ??= NetError.disconnected;
+                _kalive?.cancel();
+                _kalive = null;
                 doNotifyInf();
                 developer.log('net disconnected');
             }
@@ -130,6 +135,14 @@ class NetProc {
             return false;
         }
 
+        _kalive = Timer.periodic(
+            const Duration(seconds: 20),
+            (timer) { 
+                send(0x05);
+                developer.log('send keep-alive');
+            }
+        );
+
         return true;
     }
 
@@ -147,6 +160,11 @@ class NetProc {
         }
 
         while (_pro.rcvState == BinProtoRecv.complete) {
+            if (_pro.rcvCmd == 0x05) {
+                _pro.rcvNext();
+                developer.log("recv keep-alive");
+            }
+            else
             if (_pro.rcvCmd == 0x10) {
                 _recvConfirm();
             }

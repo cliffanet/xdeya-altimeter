@@ -1113,6 +1113,7 @@ cmpl_t cmplFirmware(const WrkProc *_wrk) {
  *  Взаимодействие с приложением
  * ------------------------------------------------------------------------------------------- */
 class _netApp : public Wrk2 {
+        uint16_t m_kalive;
         uint16_t m_timeout;
         uint16_t m_code;
         
@@ -1121,6 +1122,7 @@ class _netApp : public Wrk2 {
     
 public:
     _netApp(NetSocket *sock) :
+        m_kalive(0),
         m_timeout(200),
         m_code(0),
         m_pro(new BinProto(sock)),
@@ -1148,6 +1150,8 @@ public:
             
             WPRC_ERR("Wait timeout");
         }
+
+        void timer() { m_kalive ++; }
        
     state_t run() {
             if (m_wrk != WRKKEY_NONE) {
@@ -1182,6 +1186,11 @@ public:
                 if (cmd != 0x00)
                     CONFIRM(cmd, isok ? 0 : 1);
             }
+
+            if (m_kalive >= 200) {
+                m_kalive = 0;
+                SND(0x05);
+            }
             
             m_pro->rcvprocess();
             switch (m_pro->rcvstate()) {
@@ -1210,6 +1219,12 @@ public:
             WPRC_ERR("Recv auth fail: canceled");
         
         CHK_RCV
+        // keep-alive
+        if (m_pro->rcvcmd() == 0x05) {
+            RCVNEXT();
+            CONSOLE("keep-alive before auth");
+            return RUN;
+        }
         // auth
         if (m_pro->rcvcmd() != 0x03)
             WPRC_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
@@ -1227,6 +1242,11 @@ public:
     WPRC_RCV
         
         switch (m_pro->rcvcmd()) {
+            case 0x05: { // keep-alive
+                RCVNEXT();
+                CONSOLE("keep-alive");
+                break;
+            }
             case 0x31: { // logbook
                 posi_t posi = { 10, 10 };
                 RCV("NN", posi);

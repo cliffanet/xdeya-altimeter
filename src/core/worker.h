@@ -121,7 +121,8 @@ class Wrk2 {
 
         typedef void * key_t;
         typedef std::shared_ptr<Wrk2> run_t;
-    
+
+        virtual void timer() {}
         virtual state_t run() = 0;
         virtual void end() {};
 
