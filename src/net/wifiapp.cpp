@@ -246,3 +246,7 @@ bool wifiCliNet(char *ssid) {
     
     return _app.isrun();
 }
+
+bool wifiCliIsRun() {
+    return _app.isrun();
+}

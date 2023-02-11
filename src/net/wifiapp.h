@@ -11,5 +11,6 @@
 
 void wifiCliBegin(const char *ssid, const char *pass = NULL);
 bool wifiCliNet(char *ssid);
+bool wifiCliIsRun();
 
 #endif // _net_wifiapp_H

@@ -40,6 +40,14 @@ typedef struct {
 class ViewMenuStatic : public ViewMenu {
     public:
         ViewMenuStatic(const menu_el_t *m, int16_t sz, bool autoupdate = false) : ViewMenu(sz), menu(m), aupd(autoupdate) {};
+
+        void opensub(ViewMenu &_menu, const char *_title = NULL) {
+            if (_title == NULL)
+                _title = menu[sel()].name;
+            
+            viewSet(_menu);
+            _menu.open(this, _title);
+        }
         
         void getStr(menu_dspl_el_t &str, int16_t i) {
             //CONSOLE("ViewMenuStatic::getStr: %d", i);
@@ -1181,7 +1189,7 @@ static const menu_el_t menunetsync[] {
                 bluetoothStop();
             }
         },
-        .showval    = [] (char *txt) { valYes(txt, cfg.d().bt == 1); },
+        .showval    = [] (char *txt) { valYes(txt, (cfg.d().net & 0x1) > 0); },
     },
 #endif // #ifdef USE_BLUETOOTH
     
@@ -1191,6 +1199,7 @@ static const menu_el_t menunetsync[] {
     },
 };
 static ViewMenuStatic vMenuNetSync(menunetsync, sizeof(menunetsync)/sizeof(menu_el_t));
+static ViewMenuStatic *getMenuNetSync() { return &vMenuNetSync; }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Главное меню конфига, тут в основном только подразделы
