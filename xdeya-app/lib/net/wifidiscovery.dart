@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:udp/udp.dart';
 import 'dart:developer' as developer;
 
+import '../pager.dart';
+
 final wifi = WiFiDiscovery();
 
 class WiFiDevice {
@@ -94,7 +96,7 @@ class WiFiDiscovery {
             }
         });
 
-        await Future.delayed(const Duration(seconds:20));
+        await Future.delayed(const Duration(seconds:10));
         
         developer.log('search finish');
 
@@ -106,5 +108,21 @@ class WiFiDiscovery {
         if (onState != null) onState(false);
 
         return true;
+    }
+
+    Future<void> _autosrch(bool state) async {
+        if (state || !Pager.isEmpty) {
+            return;
+        }
+
+        await Future.delayed(const Duration(seconds:2));
+
+        if (!isActive) {
+            search(onState: _autosrch);
+        }
+    }
+
+    void autosrch() {
+        if (!isActive) search(onState: _autosrch);
     }
 }

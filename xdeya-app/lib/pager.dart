@@ -8,6 +8,7 @@ import 'page/tracklist.dart';
 import 'page/trackview.dart';
 import 'page/wifipass.dart';
 import 'page/wifiedit.dart';
+import '../net/wifidiscovery.dart';
 import '../net/proc.dart';
 
 enum PageCode { discovery, logbook, jumpinfo, tracklist, trackview, wifipass, wifiedit }
@@ -48,6 +49,7 @@ class Pager extends StatelessWidget {
 
     static final List<PageCode> _stack = [];
     static PageCode? get top => _stack.isNotEmpty ? _stack[ _stack.length-1 ] : null;
+    static bool get isEmpty => _stack.isEmpty;
     static push(BuildContext context, PageCode page, [int ?index]) {
         PageFunc ?w = _pageMap[page];
         if (w == null) {
@@ -66,6 +68,7 @@ class Pager extends StatelessWidget {
         _stack.removeLast();
         if (_stack.isEmpty) {
             net.stop();
+            wifi.autosrch();
         }
         net.doNotifyInf();
     }

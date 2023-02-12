@@ -159,7 +159,7 @@ class _wifiApp : public Wrk2 {
             if(sendto(m_bcast, mess, sizeof(mess)-1, 0, (struct sockaddr *)&s, sizeof(struct sockaddr_in)) < 0)
                 return ERR(SockSend);
             CONSOLE("send to bcast (port: %d)", m_srvport);
-            m_timeout = 50;
+            m_timeout = 45;
         }
         
         // Сервер

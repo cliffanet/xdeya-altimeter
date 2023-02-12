@@ -4,7 +4,10 @@ import 'pager.dart';
 import 'net/wifidiscovery.dart';
 import 'net/proc.dart';
 
+
 Widget getTitleBarDiscovery() {
+    wifi.autosrch();
+
     return ValueListenableBuilder(
         valueListenable: wifi.notifyActive,
         builder: (BuildContext context, isActive, Widget? child) {
@@ -22,7 +25,7 @@ Widget getTitleBarDiscovery() {
                     IconButton(
                         icon: const Icon(Icons.refresh),
                         tooltip: 'Обновить',
-                        onPressed: isActive ? null : wifi.search
+                        onPressed: isActive ? null : wifi.autosrch
                     ),
                 ],
             );
