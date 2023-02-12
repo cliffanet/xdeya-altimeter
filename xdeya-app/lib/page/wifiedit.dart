@@ -9,6 +9,11 @@ class PageWiFiEdit extends StatelessWidget {
     final int _index;
     final bool _ismod;
     String _ssid = '', _pass = '';
+    String _orig_ssid = '', _orig_pass = '';
+    final ValueNotifier<int> _chg = ValueNotifier(0);
+
+    bool _isChanged() => (_ssid != _orig_ssid) || (_pass != _orig_pass);
+    bool _isValid() => _ssid.isNotEmpty && _pass.isNotEmpty;
 
     PageWiFiEdit({ super.key, required int index }) : 
         _index = index,
@@ -16,7 +21,9 @@ class PageWiFiEdit extends StatelessWidget {
     {
         if (_ismod) {
             _ssid = net.wifipass[_index].ssid;
+            _orig_ssid = _ssid;
             _pass = net.wifipass[_index].pass;
+            _orig_pass = _pass;
         }
     }
     
@@ -40,7 +47,7 @@ class PageWiFiEdit extends StatelessWidget {
                                 labelText: 'SSID (название сети)',
                             ),
                             autofocus: _index < 0,
-                            onChanged: (v) => _ssid = v,
+                            onChanged: (v) { _ssid = v; _chg.value = _chg.value + 1; },
                         ),
                     ),
                     Padding(
@@ -53,7 +60,7 @@ class PageWiFiEdit extends StatelessWidget {
                                 labelText: 'Пароль',
                             ),
                             autofocus: _index >= 0,
-                            onChanged: (v) => _pass = v,
+                            onChanged: (v) { _pass = v; _chg.value = _chg.value + 1; },
                         ),
                     ),
                     Row(children: [
@@ -69,18 +76,25 @@ class PageWiFiEdit extends StatelessWidget {
                             ) :
                             Container(),
                         const Spacer(),
-                        FloatingActionButton(
-                            child: const Icon(Icons.check),
-                            onPressed: () {
-                                developer.log('ssid: $_ssid, pass: $_pass');
-                                if ((_ssid == '') || (_pass == '')) return;
-                                if (_ismod) {
-                                    net.setWiFiPass(_index, _ssid, _pass);
-                                }
-                                else {
-                                    net.addWiFiPass(_ssid, _pass);
-                                }
-                                Pager.pop(context);
+                        ValueListenableBuilder(
+                            valueListenable: _chg,
+                            builder: (BuildContext context, val, Widget? child) {
+                                return FloatingActionButton(
+                                    child: const Icon(Icons.check),
+                                    onPressed: _isChanged() && _isValid() ?
+                                        () {
+                                            developer.log('ssid: $_ssid, pass: $_pass');
+                                            if ((_ssid == '') || (_pass == '')) return;
+                                            if (_ismod) {
+                                                net.setWiFiPass(_index, _ssid, _pass);
+                                            }
+                                            else {
+                                                net.addWiFiPass(_ssid, _pass);
+                                            }
+                                            Pager.pop(context);
+                                        } :
+                                        null
+                                );
                             }
                         ),
                     ])

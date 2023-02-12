@@ -688,7 +688,7 @@ class NetProc {
         if ((index < 0) || (index >= _wifipass.length)) {
             return;
         }
-        _wifipass[index] = WiFiPass(ssid: ssid, pass: pass);
+        _wifipass[index] = WiFiPass.edited(ssid, pass, _wifipass[index]);
         _wifipasssz.value = 0;
         _wifipasssz.value = _wifipass.length;
     }
@@ -698,6 +698,12 @@ class NetProc {
         }
         _wifipass.removeAt(index);
         _wifipasssz.value = _wifipass.length;
+    }
+    bool get wifiChanged {
+        for (final w in _wifipass) {
+            if (w.isChanged) return true;
+        }
+        return false;
     }
 
     bool saveWiFiPass({ Function() ?onDone }) {

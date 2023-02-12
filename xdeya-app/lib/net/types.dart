@@ -154,15 +154,28 @@ class TrkInfo {
 class WiFiPass {
     final String ssid;
     final String pass;
+    final String _orig_ssid;
+    final String _orig_pass;
 
     WiFiPass({
         required this.ssid,
         required this.pass,
-    });
+    }) : _orig_ssid = '', _orig_pass = '';
 
     WiFiPass.byvars(List<dynamic> vars) :
-        this(
-            ssid:   (vars.isNotEmpty) && (vars[0]) is String ? vars[0] : '',
-            pass:   (vars.length > 1) && (vars[1]) is String ? vars[1] : '',
-        );
+        ssid        = (vars.isNotEmpty) && (vars[0]) is String ? vars[0] : '',
+        _orig_ssid  = (vars.isNotEmpty) && (vars[0]) is String ? vars[0] : '',
+        pass        =  (vars.length > 1) && (vars[1]) is String ? vars[1] : '',
+        _orig_pass  =  (vars.length > 1) && (vars[1]) is String ? vars[1] : '';
+    
+    WiFiPass.edited(this.ssid, this.pass, WiFiPass orig) :
+        _orig_ssid  = orig._orig_ssid,
+        _orig_pass  = orig._orig_pass;
+    
+    bool get isChanged {
+        return
+            (_orig_ssid != ssid) ||
+            (_orig_pass != pass);
+    }
+    bool get isValid => ssid.isNotEmpty;
 }

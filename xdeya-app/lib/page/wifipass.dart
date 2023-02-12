@@ -30,7 +30,7 @@ class PageWiFiPass extends StatelessWidget {
                 return ValueListenableBuilder(
                     valueListenable: net.notifyWiFiList,
                     builder: (BuildContext context, count, Widget? child) {
-                        if (net.logbook.isEmpty) {
+                        if (net.wifipass.isEmpty) {
                             return const Center(
                                 child: Text(
                                     'Не найдено', 
@@ -59,11 +59,13 @@ class PageWiFiPass extends StatelessWidget {
                                                 const SizedBox(width: 20, height: 20),
                                                 FloatingActionButton(
                                                     heroTag: 'btnSave',
+                                                    onPressed: net.wifiChanged ? 
+                                                        () {
+                                                            net.saveWiFiPass();
+                                                            Pager.pop(context);
+                                                        } :
+                                                        null,
                                                     child: const Text('Save'),
-                                                    onPressed: () {
-                                                        net.saveWiFiPass();
-                                                        Pager.pop(context);
-                                                    }
                                                 ),
                                             ]
                                         )
