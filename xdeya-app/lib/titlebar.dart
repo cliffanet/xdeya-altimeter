@@ -141,6 +141,16 @@ Widget getTitleBarClient(PageCode page) {
                     ));
                 }
             }
+            else
+            if (Pager.title.isNotEmpty) {
+                final title = Pager.title;
+                row.add(Expanded(
+                    child: Text(
+                        title,
+                        textAlign: TextAlign.center,
+                    )
+                ));
+            }
             
             return AppBar(
                 leading: Navigator.canPop(context) ?

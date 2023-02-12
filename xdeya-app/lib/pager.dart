@@ -70,6 +70,24 @@ class Pager extends StatelessWidget {
         net.doNotifyInf();
     }
 
+    static String get title {
+        if (_stack.isEmpty) {
+            return "";
+        }
+
+        switch (_stack.last) {
+            case PageCode.logbook:  return "Прыжки";
+            case PageCode.jumpinfo: return "Инфо о прыжке";
+            case PageCode.tracklist:return "Треки";
+            case PageCode.trackview:return "Трек на карте";
+            case PageCode.wifipass: return "WiFi-пароли";
+            //case PageCode.wifiedit: return "Изменение сети";
+            default:
+        }
+
+        return "";
+    }
+
     static Function()? get refreshPressed {
         if (_stack.isEmpty || net.isLoading) {
             return null;
