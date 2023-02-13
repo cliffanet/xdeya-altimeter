@@ -61,6 +61,7 @@ class Pager extends StatelessWidget {
             MaterialPageRoute(builder: (context) => Pager(page: page, index: index)),
         );
         _stack.add(page);
+        net.errClear();
         net.doNotifyInf();
     }
     static pop(BuildContext context) {
@@ -70,6 +71,7 @@ class Pager extends StatelessWidget {
             net.stop();
             wifi.autosrch();
         }
+        net.errClear();
         net.doNotifyInf();
     }
 

@@ -1112,6 +1112,8 @@ cmpl_t cmplFirmware(const WrkProc *_wrk) {
 /* ------------------------------------------------------------------------------------------- *
  *  Взаимодействие с приложением
  * ------------------------------------------------------------------------------------------- */
+static RTC_DATA_ATTR uint16_t _autokey = 0;
+
 class _netApp : public Wrk2 {
         uint16_t m_kalive;
         uint16_t m_timeout;
@@ -1206,37 +1208,66 @@ public:
         // hello/init
         if (m_pro->rcvcmd() != 0x02)
             WPRC_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
-        RCVNEXT();  // Эта команда без данных,
-        SND(0x02); // init ok
-        m_code = static_cast<uint16_t>(esp_random());
-        CONSOLE("Auth code: 0x%04x", m_code);
-        setViewNetAuth(m_code);
+        uint16_t autokey = 0;
+        RCV("n", autokey);  // Эта команда без данных,
+
+        if ((autokey == 0) || (autokey != _autokey)) {
+            // классическая авторизация
+            if (autokey > 0)
+                CONSOLE("auth by autokey fail: 0x%04x - 0x%04x", autokey, _autokey);
+            SND(0x02); // init ok
+            m_code = static_cast<uint16_t>(esp_random());
+            CONSOLE("Auth code: 0x%04x", m_code);
+            setViewNetAuth(m_code);
+        }
+        else {
+            // успешно проведённая повторная авто-авторизация
+            m_code = 0;
+            CONSOLE("auth ok by autokey: 0x%04x", autokey);
+        }
         
         m_timeout = 0;
     WPRC_RUN
-        // wait auth code
-        if (!viewIsNetAuth())
-            WPRC_ERR("Recv auth fail: canceled");
-        
-        CHK_RCV
-        // keep-alive
-        if (m_pro->rcvcmd() == 0x05) {
-            RCVNEXT();
-            CONSOLE("keep-alive before auth");
-            return RUN;
+        if (m_code > 0) {
+            // Ожидание обычной авторизации
+
+            // wait auth code
+            if (!viewIsNetAuth())
+                WPRC_ERR("Recv auth fail: canceled");
+            
+            CHK_RCV
+            // keep-alive
+            if (m_pro->rcvcmd() == 0x05) {
+                RCVNEXT();
+                CONSOLE("keep-alive before auth");
+                return RUN;
+            }
+            // auth
+            if (m_pro->rcvcmd() != 0x03)
+                WPRC_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
+            uint16_t code = 0;
+            RCV("n", code);
+            if (code != m_code) {
+                uint8_t err = 1;
+                SND(0x03, "C", err);
+                WPRC_ERR("Recv auth fail: wrong code 0x%04x != 0x%04x", code, m_code);
+            }
+
+            CONSOLE("Recv code: 0x%04x = auth ok", code);
+            m_code = 0;
+            setViewMain();
         }
-        // auth
-        if (m_pro->rcvcmd() != 0x03)
-            WPRC_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
-        uint16_t code = 0;
-        RCV("n", code);
-        uint8_t err = code == m_code ? 0 : 1;
-        SND(0x03, "C", err);
-        if (code != m_code)
-            WPRC_ERR("Recv auth fail: wrong code 0x%04x != 0x%04x", code, m_code);
-        CONSOLE("Recv code: 0x%04x = auth ok", code);
-        m_code = 0;
-        setViewMain();
+        
+        // Если любая (классическая или авто) авторизация прошли успешно,
+        // генерируем новый ключ для авто-авторизации и отравляем его с сообщением
+        // об успешной авторизации
+        _autokey = static_cast<uint16_t>(esp_random());
+        struct __attribute__((__packed__)) {
+            uint8_t err;
+            uint16_t autokey;
+        } authrep = { 0, _autokey };
+        SND(0x03, "Cn", authrep);
+        CONSOLE("new autokey: 0x%04x", _autokey);
         
         m_timeout = 0;
     WPRC_RCV

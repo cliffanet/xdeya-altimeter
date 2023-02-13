@@ -49,6 +49,10 @@ class NetProc {
 
     NetError? _err;
     NetError? get error => _err;
+    void errClear() {
+        _err = null;
+        doNotifyInf();
+    }
 
     Timer? _kalive;
 
@@ -63,6 +67,22 @@ class NetProc {
     final ValueNotifier<int> _notify = ValueNotifier(0);
     ValueNotifier<int> get notifyInf => _notify;
     void doNotifyInf() => _notify.value++;
+
+    int _autokey = 0;
+    InternetAddress ?_autoip;
+    int ?_autoport;
+    Future<bool> _autochk() async {
+        if (_sock != null) {
+            return true;
+        }
+        if ((_autokey == 0) ||
+            (_autoip == null) ||
+            (_autoport == null)) {
+            return false;
+        }
+
+        return await start(_autoip!, _autoport!);
+    }
 
     // start / stop
 
@@ -123,6 +143,9 @@ class NetProc {
                 recieverDel(0x02);
                 _pro.rcvNext();
                 _state = NetState.waitauth;
+                _autokey = 0;
+                _autoip = null;
+                _autoport = null;
                 doNotifyInf();
                 developer.log('rcv hello');
             }))
@@ -131,8 +154,19 @@ class NetProc {
             return false;
         }
 
-        if (!send(0x02)) {
-            return false;
+        if (_autokey > 0) {
+            if (!recieverAdd(0x03, _auth_recv)) {
+                _errstop(NetError.cmddup);
+                return false;
+            }
+            if (!send(0x02, 'n', [_autokey])) {
+                return false;
+            }
+        }
+        else {
+            if (!send(0x02)) {
+                return false;
+            }
         }
 
         _kalive = Timer.periodic(
@@ -212,7 +246,7 @@ class NetProc {
     }
 
     bool send(int cmd, [String? pk, List<dynamic>? vars]) {
-        if (_sock == null) {
+        if (_sock == null)  {
             _err = NetError.disconnected;
             doNotifyInf();
             return false;
@@ -235,6 +269,12 @@ class NetProc {
     bool get isLoading => _reciever.isNotEmpty || _confirmer.isNotEmpty;
 
     bool recieverAdd(int cmd, void Function() hnd) {
+        if (_sock == null)  {
+            _err = NetError.disconnected;
+            doNotifyInf();
+            return false;
+        }
+
         if (_reciever[cmd] != null) {
             return false;
         }
@@ -297,6 +337,29 @@ class NetProc {
      * 
      *//////////////////////////////////////
 
+    bool _auth_recv() {
+        recieverDel(0x02);
+        recieverDel(0x03);
+        List<dynamic> ?v = _pro.rcvData('Cn');
+        if ((v == null) || v.isEmpty || (v[0] > 0)) {
+            _errstop(NetError.auth);
+            return false;
+        }
+        if ((v != null) && (v.length >= 2) && (v[1] > 0)) {
+            _autokey    = v[1];
+            _autoip     = _sock?.remoteAddress;
+            _autoport   = _sock?.remotePort;
+        }
+        else {
+            _autokey    = 0;
+            _autoip     = null;
+            _autoport   = null;
+        }
+        developer.log('auth ok');
+        _state = NetState.online;
+        doNotifyInf();
+        return true;
+    }
     bool requestAuth(String codehex, { Function() ?onReplyOk, Function() ?onReplyErr }) {
         int code = int.parse(codehex, radix: 16);
         if (code == 0) {
@@ -304,17 +367,8 @@ class NetProc {
         }
 
         bool ok = recieverAdd(0x03, () {
-                recieverDel(0x03);
-                List<dynamic> ?v = _pro.rcvData('C');
-                if ((v == null) || v.isEmpty || (v[0] > 0)) {
-                    _errstop(NetError.auth);
-                    if (onReplyErr != null) onReplyErr();
-                    return;
-                }
-                developer.log('auth ok');
-                _state = NetState.online;
-                doNotifyInf();
-                if (onReplyOk != null) onReplyOk();
+                final on = _auth_recv() ? onReplyOk : onReplyErr;
+                if (on != null) on();
             });
         if (!ok) return false;
         doNotifyInf();
@@ -333,7 +387,9 @@ class NetProc {
     final List<LogBook> _logbook = [];
     List<LogBook> get logbook => _logbook;
 
-    bool requestLogBook({ int beg = 50, int count = 50, Function() ?onLoad }) {
+    Future<bool> requestLogBook({ int beg = 50, int count = 50, Function() ?onLoad }) async {
+        if (!await _autochk()) return false;
+
         if (_rcvelm.contains(NetRecvElem.logbook)) {
             return false;
         }
@@ -384,7 +440,7 @@ class NetProc {
         return true;
     }
 
-    bool requestLogBookDefault() {
+    Future<bool> requestLogBookDefault() {
         return requestLogBook(
             onLoad: () => requestTrkList()
         );
@@ -404,7 +460,9 @@ class NetProc {
         return _trklist.where((trk) => trk.jmpnum == jmp.num).toList();
     }
 
-    bool requestTrkList({ Function() ?onLoad }) {
+    Future<bool> requestTrkList({ Function() ?onLoad }) async {
+        if (!await _autochk()) return false;
+
         if (_rcvelm.contains(NetRecvElem.tracklist)) {
             return false;
         }
@@ -466,14 +524,16 @@ class NetProc {
     Struct ? get trkCenter => _trkcenter.value;
     ValueNotifier<Struct ?> get notifyTrkCenter => _trkcenter;
 
-    bool Function() ?_reloadTrkData;
-    bool reloadTrkData() {
+    Future<bool> Function() ?_reloadTrkData;
+    Future<bool> reloadTrkData() async {
         return
             _reloadTrkData != null ?
-                _reloadTrkData!() :
+                await _reloadTrkData!() :
                 false;
     }
-    bool requestTrkData(TrkItem trk, { Function() ?onLoad, Function(Struct) ?onCenter }) {
+    Future<bool> requestTrkData(TrkItem trk, { Function() ?onLoad, Function(Struct) ?onCenter }) async {
+        if (!await _autochk()) return false;
+
         if (_rcvelm.contains(NetRecvElem.trackdata)) {
             _reloadTrkData = null;
             return false;
@@ -629,7 +689,9 @@ class NetProc {
     final List<WiFiPass> _wifipass = [];
     List<WiFiPass> get wifipass => _wifipass;
 
-    bool requestWiFiPass({ Function() ?onLoad }) {
+   Future<bool> requestWiFiPass({ Function() ?onLoad }) async {
+        if (!await _autochk()) return false;
+
         if (_rcvelm.contains(NetRecvElem.wifipass)) {
             return false;
         }
@@ -706,7 +768,9 @@ class NetProc {
         return false;
     }
 
-    bool saveWiFiPass({ Function() ?onDone }) {
+    Future<bool> saveWiFiPass({ Function() ?onDone }) async {
+        if (!await _autochk()) return false;
+
         if (_rcvelm.contains(NetRecvElem.wifisave)) {
             return false;
         }
