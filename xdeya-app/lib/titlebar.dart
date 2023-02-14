@@ -33,33 +33,14 @@ Widget getTitleBarDiscovery() {
     );
 }
 
+
+enum MenuCode { Refresh, WiFiPass, TrackList, SaveGpx }
+
 Widget getTitleBarClient(PageCode page) {
     return ValueListenableBuilder(
         valueListenable: net.notifyInf,
         builder: (BuildContext context, inf, Widget? child) {
             List<Widget> row = [];
-
-            if (net.state == NetState.online) {
-                if ((Pager.top != PageCode.wifipass) && (Pager.top != PageCode.wifiedit)) {
-                    row.add(
-                        IconButton(
-                            icon: const Icon(Icons.wifi),
-                            onPressed: () {
-                                net.requestWiFiPass();
-                                Pager.push(context, PageCode.wifipass);
-                            }
-                        )
-                    );
-                }
-                if ((Pager.top != PageCode.tracklist) && (Pager.top != PageCode.trackview)) {
-                    row.add(
-                        IconButton(
-                            icon: const Icon(Icons.polyline),
-                            onPressed: () => Pager.push(context, PageCode.tracklist),
-                        )
-                    );
-                }
-            }
 
             if (net.isProgress) {
                 row.add(
@@ -154,6 +135,85 @@ Widget getTitleBarClient(PageCode page) {
                     )
                 ));
             }
+
+
+            List<PopupMenuEntry<MenuCode>> menu = [];
+            if (Pager.refreshVisible) {
+                menu.add(
+                    PopupMenuItem(
+                        value: MenuCode.Refresh,
+                        child: Row(
+                            children: const [
+                                Icon(Icons.refresh, color: Colors.black),
+                                SizedBox(width: 8),
+                                Text('Обновить'),
+                            ]
+                        ),
+                    ),
+                );
+                menu.add(
+                    PopupMenuDivider(),
+                );
+            }
+            if ((Pager.top != PageCode.wifipass) && (Pager.top != PageCode.wifiedit)) {
+                menu.add(
+                    PopupMenuItem(
+                        value: MenuCode.WiFiPass,
+                        child: Row(
+                            children: const [
+                                Icon(Icons.wifi, color: Colors.black),
+                                SizedBox(width: 8),
+                                Text('WiFi-пароли'),
+                            ]
+                        ),
+                    ),
+                );
+            }
+            if ((Pager.top != PageCode.tracklist) && (Pager.top != PageCode.trackview)) {
+                menu.add(
+                    PopupMenuItem(
+                        value: MenuCode.TrackList,
+                        child: Row(
+                            children: const [
+                                Icon(Icons.polyline, color: Colors.black),
+                                SizedBox(width: 8),
+                                Text('Все треки'),
+                            ]
+                        ),
+                    ),
+                );
+            }
+            if (false) {
+                menu.add(
+                    PopupMenuItem(
+                        value: MenuCode.SaveGpx,
+                        child: Row(
+                            children: const [
+                                Icon(Icons.save, color: Colors.black),
+                                SizedBox(width: 8),
+                                Text('Сохранить в GPX'),
+                            ]
+                        ),
+                    ),
+                );
+            }
+
+            void onSelect(MenuCode mitem) async {
+                switch (mitem) {
+                    case MenuCode.Refresh:
+                        Pager.refreshPressed!();
+                        break;
+                    case MenuCode.WiFiPass:
+                        net.requestWiFiPass();
+                        Pager.push(context, PageCode.wifipass);
+                        break;
+                    case MenuCode.TrackList:
+                        Pager.push(context, PageCode.tracklist);
+                        break;
+                    case MenuCode.SaveGpx:
+                        break;
+                }
+            };
             
             return AppBar(
                 leading: Navigator.canPop(context) ?
@@ -162,14 +222,13 @@ Widget getTitleBarClient(PageCode page) {
                         onPressed: () => Pager.pop(context),
                     ) : null,
                 title: Row(children: row),
-                actions:  Pager.refreshVisible ?
-                    <Widget>[
-                        IconButton(
-                            icon: const Icon(Icons.refresh),
-                            tooltip: 'Обновить',
-                            onPressed: Pager.refreshPressed
-                        ),
-                    ] : [],
+                actions:  [
+                    PopupMenuButton<MenuCode>(
+                        tooltip: "Меню",
+                        onSelected: onSelect,  
+                        itemBuilder: (context) => menu
+                    ),
+                ],
             );
         }
     );
