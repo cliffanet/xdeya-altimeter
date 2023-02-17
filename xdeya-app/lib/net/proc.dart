@@ -519,6 +519,7 @@ class NetProc {
     ValueNotifier<int> get notifyTrkData => _trkdatasz;
     final List<Struct> _trkdata = [];
     List<Struct> get trkdata => _trkdata;
+    bool trkSatValid(int i) => ((_trkdata[i]['flags'] ?? 0) & 0x0001) > 0;
     // trkCenter
     final ValueNotifier<Struct ?> _trkcenter = ValueNotifier(null);
     Struct ? get trkCenter => _trkcenter.value;
@@ -601,7 +602,7 @@ class NetProc {
         while (i < _trkdata.length) {
             while ( // пропустим все точки без спутников
                     (i < _trkdata.length) &&
-                    (((_trkdata[i]['flags'] ?? 0) & 0x0001) == 0)
+                    !trkSatValid(i)
                 ) {
                 i++;
             }
@@ -622,7 +623,7 @@ class NetProc {
                     (i < _trkdata.length) &&
                     (n < 5) &&
                     (_trkdata[i]['state'] == pstate) &&
-                    (((_trkdata[i]['flags'] ?? 0) & 0x0001) > 0)
+                    trkSatValid(i)
                 ) {
                 double lat = _trkdata[i]['lat'] / 10000000;
                 double lon = _trkdata[i]['lon'] / 10000000;
@@ -676,6 +677,91 @@ class NetProc {
         }
 
         return '{ "type": "FeatureCollection", "features": [ $features ] }';
+    }
+
+    String get trkGPX {
+        List<String> data = [];
+        int i = 0;
+        int seg = 0;
+
+        data.add(
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<gpx version="1.1" creator="XdeYa altimeter" xmlns="http://www.topografix.com/GPX/1/1">'
+                '<metadata>'
+                    '<name><![CDATA[Без названия]]></name>'
+                    '<desc/>'
+                    '<time>2017-10-18T12:19:23.353Z</time>'
+                '</metadata>'
+                '<trk>'
+                    '<name>трек</name>'
+        );
+
+        String pstate = '';
+
+        while (i < _trkdata.length) {
+            if ((seg > 0) && (
+                    !trkSatValid(i) ||
+                    (pstate != _trkdata[i]['state'])
+                )) {
+                data.add('</trkseg>');
+                seg = 0;
+            }
+            while ( // пропустим все точки без спутников
+                    (i < _trkdata.length) &&
+                    !trkSatValid(i)
+                ) {
+                i++;
+            }
+            if (i >= _trkdata.length) {
+                break;
+            }
+
+            if (seg == 0) {
+                data.add('<trkseg>');
+            }
+
+            Struct p = _trkdata[i];
+            i++;
+            seg++;
+            pstate = p['state'];
+
+            double lat = p['lat'] / 10000000;
+            double lon = p['lon'] / 10000000;
+
+            int sec = (p['tmoffset'] ?? 0) ~/ 1000;
+            int min = sec ~/ 60;
+            sec -= min*60;
+            final String time = '$min:${sec.toString().padLeft(2,'0')}';
+
+            final String vert = '${p['alt']} m (${ (p['altspeed']/100).toStringAsFixed(1) } m/s)';
+            final String horz = '${p['heading']}гр (${ (p['hspeed']/100).toStringAsFixed(1) } m/s)';
+
+            final String kach =
+                p['altspeed'] < -10 ?
+                    ' [кач: ${ (-1.0 * p['hspeed'] / p['altspeed']).toStringAsFixed(1) }]' :
+                    '';
+
+            data.add(
+                '<trkpt lon="$lon" lat="$lat">'
+                    '<name>$time, $vert</name>'
+                    '<desc>Горизонт: $horz$kach</desc>'
+                    '<ele>${p['alt']}</ele>'
+                    '<magvar>${p['heading']}</magvar>'
+                    '<sat>${p['sat']}</sat>'
+                '</trkpt>'
+            );
+        }
+
+        if (seg > 0) {
+            data.add('</trkseg>');
+        }
+
+        data.add(
+                '</trk>'
+            '</gpx>'
+        );
+
+        return data.join();
     }
 
     /*//////////////////////////////////////

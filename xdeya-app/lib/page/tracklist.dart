@@ -30,7 +30,7 @@ class PageTrackList extends StatelessWidget {
                 return ValueListenableBuilder(
                     valueListenable: net.notifyTrkList,
                     builder: (BuildContext context, count, Widget? child) {
-                        if (net.logbook.isEmpty) {
+                        if (net.trklist.isEmpty) {
                             return const Center(
                                 child: Text(
                                     'Не найдено', 

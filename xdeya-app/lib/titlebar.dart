@@ -3,6 +3,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'pager.dart';
 import 'net/wifidiscovery.dart';
 import 'net/proc.dart';
+import 'data/track.dart';
 
 
 Widget getTitleBarDiscovery() {
@@ -183,7 +184,7 @@ Widget getTitleBarClient(PageCode page) {
                     ),
                 );
             }
-            if (false) {
+            if (Pager.top == PageCode.trackview) {
                 menu.add(
                     PopupMenuItem(
                         value: MenuCode.SaveGpx,
@@ -211,6 +212,11 @@ Widget getTitleBarClient(PageCode page) {
                         Pager.push(context, PageCode.tracklist);
                         break;
                     case MenuCode.SaveGpx:
+                        final dt = net.trkinfo.dtBeg.replaceAll(' ', '_').replaceAll(':', '.');
+                        trackSaveGpx(
+                            filename: 'track_${dt}_jmp-${net.trkinfo.jmpnum}.gpx',
+                            data: net.trkGPX
+                        );
                         break;
                 }
             };

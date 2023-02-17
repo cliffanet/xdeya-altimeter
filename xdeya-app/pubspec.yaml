@@ -45,6 +45,8 @@ dependencies:
   udp: ^5.0.3
   flutter_launcher_icons: ^0.11.0
   masked_text: ^1.1.2
+  flutter_file_dialog: ^3.0.0
+  file_picker: ^5.2.5
 
 dev_dependencies:
   flutter_test:
