@@ -27,14 +27,14 @@
 
 using namespace wSync;
 
-class _wifiSync : public Wrk2 {
+class _wifiSync : public Wrk {
     public:
         st_t        m_st;
         uint16_t    m_timeout;
         const char  *m_ssid, *m_pass;
         NetSocket   *m_sock;
         BinProto    m_pro;
-        Wrk2Proc<Wrk2Net> m_wrk;
+        WrkProc<WrkNet> m_wrk;
 
         uint32_t    m_joinnum;
         struct __attribute__((__packed__)) {
@@ -102,7 +102,7 @@ class _wifiSync : public Wrk2 {
             m_timeout = 0;
         }
         
-        Wrk2Net::cmpl_t complete() const {
+        WrkNet::cmpl_t complete() const {
             if (!m_wrk.valid())
                 return { 0, 0 };
             
@@ -367,12 +367,12 @@ class _wifiSync : public Wrk2 {
 /* ------------------------------------------------------------------------------------------- *
  *  Инициализация
  * ------------------------------------------------------------------------------------------- */
-static Wrk2Proc<_wifiSync> _wfs;
+static WrkProc<_wifiSync> _wfs;
 
 void wifiSyncBegin(const char *ssid, const char *pass) {
     if (_wfs.isrun())
         return;
-    _wfs = wrk2Run<_wifiSync>(ssid, pass);
+    _wfs = wrkRun<_wifiSync>(ssid, pass);
     CONSOLE("begin");
 }
 

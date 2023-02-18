@@ -19,15 +19,6 @@
 #include <Update.h>         // Обновление прошивки
 #include "esp_system.h" // esp_random
 
-#define WRK_RETURN_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); WRK_RETURN_END; } while (0)
-#define SEND(cmd, ...)          if (!m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) WRK_RETURN_ERR("send fail")
-#define RECV(pk, ...)           if (!m_pro || !m_pro->rcvdata(PSTR(pk), ##__VA_ARGS__)) WRK_RETURN_ERR("recv data fail")
-#define RECVRAW(data)           m_pro ? m_pro->rcvraw(data, sizeof(data)) : -1
-#define RECVNEXT()              if (!m_pro || !m_pro->rcvnext()) WRK_RETURN_ERR("recv data fail")
-#define CHK_RECV                if (!m_pro || !m_pro->rcvvalid()) WRK_RETURN_ERR("recv not valid"); \
-                                if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
-#define WRK_BREAK_RECV          WRK_BREAK CHK_RECV
-
 #define WPRC_ERR(s, ...)    do { CONSOLE(s, ##__VA_ARGS__); return END; } while (0)
 #define SND(cmd, ...)       if (!m_pro || !m_pro->send(cmd, ##__VA_ARGS__)) WPRC_ERR("send fail")
 #define RCV(pk, ...)        if (!m_pro || !m_pro->rcvdata(PSTR(pk), ##__VA_ARGS__)) WPRC_ERR("recv data fail")
@@ -126,7 +117,7 @@ bool sendPoint(BinProto *pro) {
  *  Для wifisync это необязательно, а вот при синхре из приложения, эту будет ответ запрос,
  *  на который надо обязательно ответить
  * ------------------------------------------------------------------------------------------- */
-class _sendLogBook : public Wrk2Net {
+class _sendLogBook : public WrkNet {
         int m_fn;
         bool m_begsnd;
         FileLogBook m_lb;
@@ -139,7 +130,7 @@ class _sendLogBook : public Wrk2Net {
     
 public:
     _sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos) :
-        Wrk2Net(pro, netSendLogBook),
+        WrkNet(pro, netSendLogBook),
         m_begsnd(false),
         m_cks(cks),
         m_beg(pos),
@@ -151,7 +142,7 @@ public:
     
     _sendLogBook(BinProto *pro, const posi_t &posi) :
         // struct в аргументах, чтобы вычленить нужный метод по аргументам, иначе они такие же
-        Wrk2Net(pro, netSendLogBook),
+        WrkNet(pro, netSendLogBook),
         m_fn(0),
         m_begsnd(false),
         m_cks(0),
@@ -294,11 +285,11 @@ public:
     }
 };
 
-Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos) {
-    return wrk2Run<_sendLogBook, Wrk2Net>(pro, cks, pos);
+WrkProc<WrkNet> sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos) {
+    return wrkRun<_sendLogBook, WrkNet>(pro, cks, pos);
 }
-Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, const posi_t &posi) {
-    return wrk2Run<_sendLogBook, Wrk2Net>(pro, posi);
+WrkProc<WrkNet> sendLogBook(BinProto *pro, const posi_t &posi) {
+    return wrkRun<_sendLogBook, WrkNet>(pro, posi);
 }
 
 
@@ -353,13 +344,13 @@ bool sendDataFin(BinProto *pro) {
 /* ------------------------------------------------------------------------------------------- *
  *  Треки: Отправка wifi-паролей
  * ------------------------------------------------------------------------------------------- */
-class _sendWiFiPass : public Wrk2Net {
+class _sendWiFiPass : public WrkNet {
         FileTxt fh;
         const char *m_fname;
     
 public:
     _sendWiFiPass(BinProto *pro) :
-        Wrk2Net(pro, netSendWiFiPass),
+        WrkNet(pro, netSendWiFiPass),
         m_fname(PSTR(WIFIPASS_FILE))
     {
     }
@@ -423,21 +414,21 @@ public:
     }
 };
 
-Wrk2Proc<Wrk2Net> sendWiFiPass(BinProto *pro) {
-    return wrk2Run<_sendWiFiPass, Wrk2Net>(pro);
+WrkProc<WrkNet> sendWiFiPass(BinProto *pro) {
+    return wrkRun<_sendWiFiPass, WrkNet>(pro);
 }
 
 
 /* ------------------------------------------------------------------------------------------- *
  *  Треки: Отправка списка треков (новый формат пересылки треков)
  * ------------------------------------------------------------------------------------------- */
-class _sendTrackList : public Wrk2Net {
+class _sendTrackList : public WrkNet {
         uint8_t m_fn;
         bool m_useext;
     
 public:
     _sendTrackList(BinProto *pro) :
-        Wrk2Net(pro, netSendTrackList),
+        WrkNet(pro, netSendTrackList),
         m_fn(0)
     {
     }
@@ -507,12 +498,12 @@ public:
     }
 };
 
-Wrk2Proc<Wrk2Net> sendTrackList(BinProto *pro) {
-    return wrk2Run<_sendTrackList, Wrk2Net>(pro);
+WrkProc<WrkNet> sendTrackList(BinProto *pro) {
+    return wrkRun<_sendTrackList, WrkNet>(pro);
 }
 
 
-class _sendTrack : public Wrk2Net {
+class _sendTrack : public WrkNet {
         bool m_useext;
         trksrch_t m_srch;
         bool m_sndbeg;
@@ -520,7 +511,7 @@ class _sendTrack : public Wrk2Net {
     
 public:
     _sendTrack(BinProto *pro, const trksrch_t &srch) :
-        Wrk2Net(pro, netSendTrack),
+        WrkNet(pro, netSendTrack),
         m_srch(srch),
         m_sndbeg(false)
     {
@@ -618,8 +609,8 @@ public:
     }
 };
 
-Wrk2Proc<Wrk2Net> sendTrack(BinProto *pro, const trksrch_t &srch) {
-    return wrk2Run<_sendTrack, Wrk2Net>(pro, srch);
+WrkProc<WrkNet> sendTrack(BinProto *pro, const trksrch_t &srch) {
+    return wrkRun<_sendTrack, WrkNet>(pro, srch);
 }
 
 /* =========================================================================================== */
@@ -627,7 +618,7 @@ Wrk2Proc<Wrk2Net> sendTrack(BinProto *pro, const trksrch_t &srch) {
 /* =========================================================================================== */
 
 
-class Wrk2Recv : public Wrk2Net {
+class WrkRecv : public WrkNet {
     protected:
         uint16_t m_timeout;
         state_t chktimeout() {
@@ -637,8 +628,8 @@ class Wrk2Recv : public Wrk2Net {
             return DLY;
         }
     public:
-        Wrk2Recv(BinProto *_pro, uint16_t _id = 0) :
-            Wrk2Net(_pro, _id),
+        WrkRecv(BinProto *_pro, uint16_t _id = 0) :
+            WrkNet(_pro, _id),
             m_timeout(0)
         {}
         void timer() {
@@ -650,13 +641,13 @@ class Wrk2Recv : public Wrk2Net {
 /* ------------------------------------------------------------------------------------------- *
  *  Приём wifi-паролей
  * ------------------------------------------------------------------------------------------- */
-class _recvWiFiPass : public Wrk2Recv {
+class _recvWiFiPass : public WrkRecv {
         FileTxt fh;
         const char *m_fname;
     
 public:
     _recvWiFiPass(BinProto *pro) :
-        Wrk2Recv(pro, netRecvWiFiPass),
+        WrkRecv(pro, netRecvWiFiPass),
         m_fname(PSTR(WIFIPASS_FILE))
     {
     }
@@ -726,20 +717,20 @@ public:
     }
 };
 
-Wrk2Proc<Wrk2Net> recvWiFiPass(BinProto *pro) {
-    return wrk2Run<_recvWiFiPass, Wrk2Net>(pro);
+WrkProc<WrkNet> recvWiFiPass(BinProto *pro) {
+    return wrkRun<_recvWiFiPass, WrkNet>(pro);
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Приём veravail - доступных версий прошивки
  * ------------------------------------------------------------------------------------------- */
-class _recvVerAvail : public Wrk2Recv {
+class _recvVerAvail : public WrkRecv {
         FileTxt fh;
         const char *m_fname;
     
 public:
     _recvVerAvail(BinProto *pro) :
-        Wrk2Recv(pro, netRecvVerAvail),
+        WrkRecv(pro, netRecvVerAvail),
         m_fname(PSTR(VERAVAIL_FILE))
     {
     }
@@ -805,17 +796,17 @@ public:
     }
 };
 
-Wrk2Proc<Wrk2Net> recvVerAvail(BinProto *pro) {
-    return wrk2Run<_recvVerAvail, Wrk2Net>(pro);
+WrkProc<WrkNet> recvVerAvail(BinProto *pro) {
+    return wrkRun<_recvVerAvail, WrkNet>(pro);
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Обновление прошивки по сети
  * ------------------------------------------------------------------------------------------- */
-class _recvFirmware : public Wrk2Recv {
+class _recvFirmware : public WrkRecv {
 public:
     _recvFirmware(BinProto *pro) :
-        Wrk2Recv(pro, netRecvFirmware)
+        WrkRecv(pro, netRecvFirmware)
     {
     }
 #ifdef FWVER_DEBUG
@@ -900,8 +891,8 @@ public:
     }
 };
 
-Wrk2Proc<Wrk2Net> recvFirmware(BinProto *pro) {
-    return wrk2Run<_recvFirmware, Wrk2Net>(pro);
+WrkProc<WrkNet> recvFirmware(BinProto *pro) {
+    return wrkRun<_recvFirmware, WrkNet>(pro);
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -909,13 +900,13 @@ Wrk2Proc<Wrk2Net> recvFirmware(BinProto *pro) {
  * ------------------------------------------------------------------------------------------- */
 static RTC_DATA_ATTR uint16_t _autokey = 0;
 
-class _netApp : public Wrk2 {
+class _netApp : public Wrk {
         uint16_t m_kalive;
         uint16_t m_timeout;
         uint16_t m_code;
         
         BinProto *m_pro;
-        Wrk2Proc<Wrk2Net> m_wrk;
+        WrkProc<WrkNet> m_wrk;
     
 public:
     _netApp(NetSocket *sock) :
@@ -1100,5 +1091,5 @@ public:
 };
 
 void netApp(NetSocket *sock) {
-    wrk2Run<_netApp>(sock);
+    wrkRun<_netApp>(sock);
 }

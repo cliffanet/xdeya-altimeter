@@ -30,13 +30,13 @@ enum {
 };
 
 
-class Wrk2Net : public Wrk2Ok {
+class WrkNet : public WrkOk {
     public:
         typedef struct {
             uint32_t val, sz;
         } cmpl_t;
 
-        Wrk2Net(BinProto *_pro, uint16_t _id = 0) :
+        WrkNet(BinProto *_pro, uint16_t _id = 0) :
             m_id(_id),
             m_pro(_pro),
             m_cmpl({ 0, 0 })
@@ -55,11 +55,11 @@ class Wrk2Net : public Wrk2Ok {
 bool sendCfgMain(BinProto *pro);
 bool sendJmpCount(BinProto *pro);
 bool sendPoint(BinProto *pro);
-Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos);
-Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, const posi_t &posi);
+WrkProc<WrkNet> sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos);
+WrkProc<WrkNet> sendLogBook(BinProto *pro, const posi_t &posi);
 bool sendDataFin(BinProto *pro);
-Wrk2Proc<Wrk2Net> sendWiFiPass(BinProto *pro);
-Wrk2Proc<Wrk2Net> sendTrackList(BinProto *pro);
+WrkProc<WrkNet> sendWiFiPass(BinProto *pro);
+WrkProc<WrkNet> sendTrackList(BinProto *pro);
 
 typedef struct __attribute__((__packed__)) {
     uint32_t id;
@@ -68,11 +68,11 @@ typedef struct __attribute__((__packed__)) {
     tm_t     tmbeg;
     uint8_t  fnum;
 } trksrch_t;
-Wrk2Proc<Wrk2Net> sendTrack(BinProto *pro, const trksrch_t &srch);
+WrkProc<WrkNet> sendTrack(BinProto *pro, const trksrch_t &srch);
 
-Wrk2Proc<Wrk2Net> recvWiFiPass(BinProto *pro);
-Wrk2Proc<Wrk2Net> recvVerAvail(BinProto *pro);
-Wrk2Proc<Wrk2Net> recvFirmware(BinProto *pro);
+WrkProc<WrkNet> recvWiFiPass(BinProto *pro);
+WrkProc<WrkNet> recvVerAvail(BinProto *pro);
+WrkProc<WrkNet> recvFirmware(BinProto *pro);
 
 void netApp(NetSocket *sock);
 

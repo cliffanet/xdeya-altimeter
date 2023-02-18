@@ -167,7 +167,7 @@ bool file_remove(const char *fname, bool external);
 
 #define WPRC_ERR(s, ...)  do { CONSOLE(s, ##__VA_ARGS__); return END; } while (0)
 
-class trkRotate : public Wrk2Ok {
+class trkRotate : public WrkOk {
     bool m_useext;
     uint8_t m_fn;
     const char *m_fname_P;
@@ -228,14 +228,14 @@ public:
 /* ------------------------------------------------------------------------------------------- *
  *  Процесс трекинга
  * ------------------------------------------------------------------------------------------- */
-class trkWrk : public Wrk2 {
+class trkWrk : public Wrk {
     uint8_t m_by;
     uint8_t m_cnt;
     uint32_t tmoffset;
     jmp_cur_t prelogcur;
     bool useext;
     FileTrack tr;
-    Wrk2Proc<trkRotate> m_rotate;
+    WrkProc<trkRotate> m_rotate;
 
 public:
     trkWrk(uint8_t by, uint16_t old = 0) : m_by(by), m_cnt(0) {
@@ -342,7 +342,7 @@ public:
 /* ------------------------------------------------------------------------------------------- *
  *  Запуск трекинга
  * ------------------------------------------------------------------------------------------- */
-static Wrk2Proc<trkWrk> _trk;
+static WrkProc<trkWrk> _trk;
 
 bool trkStart(uint8_t by, uint16_t old) {
     if (by == 0)
@@ -351,7 +351,7 @@ bool trkStart(uint8_t by, uint16_t old) {
     if (_trk)
         _trk->byadd(by);
     else
-        _trk = wrk2Run<trkWrk>(by, old);
+        _trk = wrkRun<trkWrk>(by, old);
 
     return _trk;
 }

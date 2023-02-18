@@ -49,7 +49,7 @@ static void gpsRecvPvt      (UbloxGpsProto &gps);
                 return errsnd(); \
     } while (0)
 
-class _naviInit : public Wrk2 {
+class _naviInit : public Wrk {
     state_t errsnd() {
         CONSOLE("NAV config-send (line: %d) fail", __line);
         state = NAV_STATE_FAIL;
@@ -259,10 +259,10 @@ public:
 
 #undef gpsnd
 
-static Wrk2Proc<_naviInit> _init;
+static WrkProc<_naviInit> _init;
 void naviInit() {
     if (!_init.isrun())
-        _init = wrk2Run<_naviInit>();
+        _init = wrkRun<_naviInit>();
 }
 
 /* ------------------------------------------------------------------------------------------- *

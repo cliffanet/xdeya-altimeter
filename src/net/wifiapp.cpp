@@ -21,7 +21,7 @@
 
 #define ERR(s)                  END
 
-class _wifiApp : public Wrk2 {
+class _wifiApp : public Wrk {
         bool        m_cancel, m_wifi;
         uint16_t    m_timeout;
         const char  *m_ssid, *m_pass;
@@ -230,10 +230,10 @@ class _wifiApp : public Wrk2 {
 /* ------------------------------------------------------------------------------------------- *
  *  Инициализация
  * ------------------------------------------------------------------------------------------- */
-static Wrk2Proc<_wifiApp> _app;
+static WrkProc<_wifiApp> _app;
 void wifiCliBegin(const char *ssid, const char *pass) {
     if (!_app.isrun())
-        _app = wrk2Run<_wifiApp>(ssid, pass);
+        _app = wrkRun<_wifiApp>(ssid, pass);
 }
 
 bool wifiCliNet(char *ssid) {
