@@ -22,15 +22,31 @@ typedef struct {
     uint32_t beg, count;
 } posi_t;
 
+enum {
+    netUnknown,
+    netSendLogBook,
+    netSendWiFiPass,
+    netSendTrackList,
+    netSendTrack,
+    netRecvWiFiPass,
+    netRecvVerAvail,
+    netRecvFirmware
+};
 
 
 class Wrk2Net : public Wrk2Ok {
     public:
-        Wrk2Net(BinProto *pro) : m_pro(pro) {}
-        inline bool isnetok() { return __pro != NULL; }
+        typedef struct {
+            uint32_t val, sz;
+        } cmpl_t;
+
+        Wrk2Net(BinProto *pro) : m_pro(pro), m_cmpl({ 0, 0 }) {}
+        bool isnetok() const { return m_pro != NULL; }
+        const cmpl_t& cmpl() const { return m_cmpl; };
 
     protected:
         BinProto *m_pro;
+        cmpl_t m_cmpl;
 };
 
 bool sendCfgMain(BinProto *pro);
@@ -39,10 +55,8 @@ bool sendPoint(BinProto *pro);
 Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos);
 Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, const posi_t &posi);
 bool sendDataFin(BinProto *pro);
-WrkProc::key_t sendWiFiPass(BinProto *pro, bool noremove = false);
-bool isokSendWiFiPass(const WrkProc *_wrk = NULL);
-WrkProc::key_t sendTrackList(BinProto *pro, bool noremove = false);
-bool isokTrackList(const WrkProc *_wrk = NULL);
+Wrk2Proc<Wrk2Net> sendWiFiPass(BinProto *pro);
+Wrk2Proc<Wrk2Net> sendTrackList(BinProto *pro);
 
 typedef struct __attribute__((__packed__)) {
     uint32_t id;
@@ -51,9 +65,7 @@ typedef struct __attribute__((__packed__)) {
     tm_t     tmbeg;
     uint8_t  fnum;
 } trksrch_t;
-WrkProc::key_t sendTrack(BinProto *pro, const trksrch_t &srch, bool noremove = false);
-bool isokTrack(const WrkProc *_wrk = NULL);
-cmpl_t cmplTrack(const WrkProc *_wrk = NULL);
+Wrk2Proc<Wrk2Net> sendTrack(BinProto *pro, const trksrch_t &srch);
 
 WrkProc::key_t recvWiFiPass(BinProto *pro, bool noremove = false);
 bool isokWiFiPass(const WrkProc *_wrk = NULL);

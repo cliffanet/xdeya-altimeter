@@ -147,6 +147,7 @@ public:
         m_pos(0),
         m_meth(byCks)
     {
+        id(netSendLogBook);
     }
     
     _sendLogBook(BinProto *pro, const posi_t &posi) :
@@ -235,6 +236,7 @@ public:
         
         if (m_fn == 0)
             m_isok = true;
+        m_cmpl.sz = m_cnt;
         
     WPRC_RUN
         if (m_fn > 0) {
@@ -247,6 +249,7 @@ public:
                     WPRC_ERR("Can't get item jump");
                 
                 SND(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp);
+                m_cmpl.val++;
                 if (m_cnt > 0) {
                     m_cnt--;
                     if (m_cnt == 0) {
@@ -351,46 +354,45 @@ bool sendDataFin(BinProto *pro) {
 /* ------------------------------------------------------------------------------------------- *
  *  Треки: Отправка wifi-паролей
  * ------------------------------------------------------------------------------------------- */
-WRK_DEFINE(SEND_WIFIPASS) {
-    private:
-        bool m_isok;
-        BinProto *m_pro;
+class _sendWiFiPass : public Wrk2Net {
         FileTxt fh;
-        
         const char *m_fname;
     
-    public:
-        bool isok() const { return m_isok; }
-    
-    WRK_CLASS(SEND_WIFIPASS)(BinProto *pro, bool noremove = false) :
-        m_isok(false),
-        m_pro(pro),
+public:
+    _sendWiFiPass(BinProto *pro) :
+        Wrk2Net(pro),
         m_fname(PSTR(WIFIPASS_FILE))
     {
-        if (noremove)
-            optset(O_NOREMOVE);
+        id(netSendWiFiPass);
     }
+#ifdef FWVER_DEBUG
+    ~_sendWiFiPass() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
     
-    WRK_PROCESS
-        if (m_pro == NULL)
-            WRK_RETURN_ERR("pro is NULL");
-        
-        uint32_t sz = 0;
+    state_t run() {
+    WPROC
+        if (!isnetok())
+            WPRC_ERR("pro is NULL");
+    
+    WPRC_RUN
         if (fileExists(m_fname)) {
             if (!fh.open_P(m_fname))
-                WRK_RETURN_ERR("Can't open wifi-file for read");
-            sz = fh.size();
+                WPRC_ERR("Can't open wifi-file for read");
+            m_cmpl.sz = fh.size();
         }
-        SEND(0x37, "N", sz);
-        m_isok = true;
-    
-    WRK_BREAK_RUN
+        
+        SND(0x37, "N", m_cmpl.sz);
+        
         if (!fh)
-            WRK_RETURN_END;
-        if ((fh.available() <= 0) || !fh.find_param(PSTR("ssid"))) {
-            fh.close();
-            WRK_RETURN_END;
-        }
+            return ok();
+    
+    WPRC_RUN
+        if (!fh)
+            WPRC_ERR("FileHandle closed");
+        if (!fh.find_param(PSTR("ssid")))
+            return ok();
         
         struct __attribute__((__packed__)) {
             char ssid[BINPROTO_STRSZ];
@@ -398,11 +400,11 @@ WRK_DEFINE(SEND_WIFIPASS) {
             uint32_t pos;
         } d;
         if (!fh.read_line(d.ssid, sizeof(d.ssid)))
-            WRK_RETURN_ERR("Can't wifi-file read");
+            WPRC_ERR("Can't wifi-file read");
         
         char param[30];
         if (!fh.read_param(param, sizeof(param)))
-            WRK_RETURN_ERR("Can't wifi-file read");
+            WPRC_ERR("Can't wifi-file read");
         if (strcmp_P(param, PSTR("pass")) == 0)
             fh.read_line(d.pass, sizeof(d.pass));
         else
@@ -410,87 +412,72 @@ WRK_DEFINE(SEND_WIFIPASS) {
         
         d.pos = fh.position();
         
-        SEND(0x38, "ssN", d);
-        WRK_RETURN_RUN;
-        
-    WRK_END
+        SND(0x38, "ssN", d);
+        m_cmpl.val = fh.position();
+    WPRC(RUN)
+    }
         
     void end() {
+        if (fh)
+            fh.close();
         if (m_pro)
             m_pro->send(0x39);
     }
 };
 
-WrkProc::key_t sendWiFiPass(BinProto *pro, bool noremove) {
-    if (pro == NULL)
-        return WRKKEY_NONE;
-    
-    if (!noremove)
-        return wrkRand(SEND_WIFIPASS, pro, noremove);
-    
-    wrkRun(SEND_WIFIPASS, pro, noremove);
-    return WRKKEY_SEND_WIFIPASS;
-}
-
-bool isokSendWiFiPass(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(SEND_WIFIPASS) :
-            reinterpret_cast<const WRK_CLASS(SEND_WIFIPASS) *>(_wrk);
-    
-    return (wrk != NULL) && (wrk->isok());
+Wrk2Proc<Wrk2Net> sendWiFiPass(BinProto *pro) {
+    return wrk2Run<_sendWiFiPass, Wrk2Net>(pro);
 }
 
 
 /* ------------------------------------------------------------------------------------------- *
  *  Треки: Отправка списка треков (новый формат пересылки треков)
  * ------------------------------------------------------------------------------------------- */
-WRK_DEFINE(SEND_TRACKLIST) {
-    private:
+class _sendTrackList : public Wrk2Net {
         uint8_t m_fn;
-        bool m_isok;
         bool m_useext;
-        
-        BinProto *m_pro;
     
-    public:
-        bool isok() const { return m_isok; }
-    
-    WRK_CLASS(SEND_TRACKLIST)(BinProto *pro, bool noremove = false) :
-        m_isok(false),
-        m_fn(0),
-        m_pro(pro)
+public:
+    _sendTrackList(BinProto *pro) :
+        Wrk2Net(pro),
+        m_fn(0)
     {
-        if (noremove)
-            optset(O_NOREMOVE);
+        id(netSendTrackList);
     }
+#ifdef FWVER_DEBUG
+    ~_sendTrackList() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
     
-    WRK_PROCESS
-        if (m_pro == NULL)
-            WRK_RETURN_ERR("pro is NULL");
+    state_t run() {
+    WPROC
+        if (!isnetok())
+            WPRC_ERR("pro is NULL");
+    
+    WPRC_RUN
 #ifdef USE_SDCARD
         m_useext = fileExtInit();
 #else
         m_useext = false;
 #endif
         CONSOLE("useext: %d", m_useext);
-        SEND(0x51);
+        SND(0x51);
     
-    WRK_BREAK_RUN
+    WPRC_RUN
         m_fn++;
         FileTrack tr;
         if ((m_fn > 99) || !tr.exists(m_fn)) {
             CONSOLE("files: %d, terminate", m_fn-1);
-            m_isok = true;
-            WRK_RETURN_END;
+            return ok();
         }
 
         if (!tr.open(m_fn))
-            WRK_RETURN_ERR("Can't open num: %d", m_fn);
+            WPRC_ERR("Can't open num: %d", m_fn);
         
         FileTrack::head_t th;
         if (!tr.get(th))
-            WRK_RETURN_ERR("Can't get head num: %d", m_fn);
+            WPRC_ERR("Can't get head num: %d", m_fn);
 
         struct __attribute__((__packed__)) {
             uint32_t id;
@@ -509,11 +496,10 @@ WRK_DEFINE(SEND_TRACKLIST) {
             .fsize      = tr.sizebin(),
             .fnum       = m_fn
         };
-        SEND(0x52, "NNNNTNC", h);
+        SND(0x52, "NNNNTNC", h);
         tr.close();
-        
-        WRK_RETURN_RUN;
-    WRK_END
+    WPRC(RUN)
+    }
         
     void end() {
         if (m_pro)
@@ -524,57 +510,38 @@ WRK_DEFINE(SEND_TRACKLIST) {
     }
 };
 
-WrkProc::key_t sendTrackList(BinProto *pro, bool noremove) {
-    if (pro == NULL)
-        return WRKKEY_NONE;
-    
-    if (!noremove)
-        return wrkRand(SEND_TRACKLIST, pro, noremove);
-    
-    wrkRun(SEND_TRACKLIST, pro, noremove);
-    return WRKKEY_SEND_TRACKLIST;
-}
-
-bool isokTrackList(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(SEND_TRACKLIST) :
-            reinterpret_cast<const WRK_CLASS(SEND_TRACKLIST) *>(_wrk);
-    
-    return (wrk != NULL) && (wrk->isok());
+Wrk2Proc<Wrk2Net> sendTrackList(BinProto *pro) {
+    return wrk2Run<_sendTrackList, Wrk2Net>(pro);
 }
 
 
-WRK_DEFINE(SEND_TRACK) {
-    private:
-        bool m_isok;
+class _sendTrack : public Wrk2Net {
         bool m_useext;
         trksrch_t m_srch;
         bool m_sndbeg;
         FileTrack m_tr;
-        
-        BinProto *m_pro;
     
-    public:
-        uint32_t    m_sz, m_snd;
-        bool isok() const { return m_isok; }
-    
-    WRK_CLASS(SEND_TRACK)(BinProto *pro, const trksrch_t &srch, bool noremove = false) :
+public:
+    _sendTrack(BinProto *pro, const trksrch_t &srch) :
+        Wrk2Net(pro),
         m_srch(srch),
-        m_isok(false),
-        m_sndbeg(false),
-        m_pro(pro),
-        m_sz(0),
-        m_snd(0)
+        m_sndbeg(false)
     {
+        id(netSendTrack);
         CONSOLE("Requested fnum: %d", m_srch.fnum);
-        if (noremove)
-            optset(O_NOREMOVE);
     }
+#ifdef FWVER_DEBUG
+    ~_sendTrack() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
     
-    WRK_PROCESS
-        if (m_pro == NULL)
-            WRK_RETURN_ERR("pro is NULL");
+    state_t run() {
+    WPROC
+        if (!isnetok())
+            WPRC_ERR("pro is NULL");
+    
+    WPRC_RUN
 #ifdef USE_SDCARD
         m_useext = fileExtInit();
 #else
@@ -585,15 +552,15 @@ WRK_DEFINE(SEND_TRACK) {
         // Сначала попытаемся найти нужный трек.
         // Начнём с номера, присланного в srch
         if ((m_srch.fnum < 1) || (m_srch.fnum > 99))
-            WRK_RETURN_ERR("fnum not valid: %d", m_srch.fnum);
+            WPRC_ERR("fnum not valid: %d", m_srch.fnum);
     
-    WRK_BREAK_RUN
+    WPRC_RUN
         if (!m_tr.open(m_srch.fnum))
-            WRK_RETURN_ERR("Can't open track fnum=%d", m_srch.fnum);
+            WPRC_ERR("Can't open track fnum=%d", m_srch.fnum);
         
         FileTrack::head_t th;
         if (!m_tr.get(th))
-            WRK_RETURN_ERR("Can't get head num: %d", m_srch.fnum);
+            WPRC_ERR("Can't get head num: %d", m_srch.fnum);
         
         if ((th.id      != m_srch.id) ||
             (th.jmpnum  != m_srch.jmpnum) ||
@@ -604,14 +571,14 @@ WRK_DEFINE(SEND_TRACK) {
             // Возможно, файл уже перенумерован дальше, надо тоже проверить
             m_srch.fnum++;
             if (m_srch.fnum > 99)
-                WRK_RETURN_ERR("track not found");
+                WPRC_ERR("track not found");
             
-            WRK_RETURN_RUN;
+            return RUN;
         }
         
-        m_sz = m_tr.sizebin();
+        m_cmpl.sz = m_tr.sizebin();
     
-    // WRK_BREAK_RUN тут нельзя прерывать, т.к. теряется область видимости для th
+    // WPRC_RUN тут нельзя прерывать, т.к. теряется область видимости для th
         struct __attribute__((__packed__)) {
             uint32_t id;
             uint32_t flags;
@@ -629,23 +596,21 @@ WRK_DEFINE(SEND_TRACK) {
             .fsize      = m_tr.sizebin(),
             .chksum     = m_tr.chksum()
         };
-        SEND(0x54, "NNNNTNH", h);
+        SND(0x54, "NNNNTNH", h);
         m_sndbeg = true;
     
-    WRK_BREAK_RUN
-        if (m_tr.available() >= m_tr.sizeitem()) {
-            FileTrack::item_t ti;
-            if (!m_tr.get(ti))
-                CONSOLE("Can't get track data fnum=%d", m_srch.fnum);
-            SEND(0x55, LOG_PK, ti);
-            
-            m_snd += m_tr.sizeitem();
-            
-            WRK_RETURN_RUN;
-        }
+    WPRC_RUN
+        if (m_tr.available() < m_tr.sizeitem())
+            return ok();
         
-        m_isok = true;
-    WRK_END
+        FileTrack::item_t ti;
+        if (!m_tr.get(ti))
+            CONSOLE("Can't get track data fnum=%d", m_srch.fnum);
+        SND(0x55, LOG_PK, ti);
+        
+        m_cmpl.val += m_tr.sizeitem();
+    WPRC(RUN)
+    }
         
     void end() {
         m_tr.close();
@@ -657,35 +622,8 @@ WRK_DEFINE(SEND_TRACK) {
     }
 };
 
-WrkProc::key_t sendTrack(BinProto *pro, const trksrch_t &srch, bool noremove) {
-    if (pro == NULL)
-        return WRKKEY_NONE;
-    
-    if (!noremove)
-        return wrkRand(SEND_TRACK, pro, srch, noremove);
-    
-    wrkRun(SEND_TRACK, pro, srch, noremove);
-    return WRKKEY_SEND_TRACK;
-}
-
-bool isokTrack(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(SEND_TRACK) :
-            reinterpret_cast<const WRK_CLASS(SEND_TRACK) *>(_wrk);
-    
-    return (wrk != NULL) && (wrk->isok());
-}
-
-cmpl_t cmplTrack(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(SEND_TRACK) :
-            reinterpret_cast<const WRK_CLASS(SEND_TRACK) *>(_wrk);
-    
-    if (wrk == NULL)
-        return { 0, 0 };
-    return { wrk->m_snd, wrk->m_sz };
+Wrk2Proc<Wrk2Net> sendTrack(BinProto *pro, const trksrch_t &srch) {
+    return wrk2Run<_sendTrack, Wrk2Net>(pro, srch);
 }
 
 /* =========================================================================================== */

@@ -107,10 +107,8 @@ class _wifiSync : public Wrk2 {
         cmpl_t complete() {
             if (m_wrk == WRKKEY_RECV_FIRMWARE)
                 return cmplFirmware();
-            if (m_wrk == WRKKEY_SEND_TRACK) {
-                auto c = cmplTrack();
-                return { m_trksnd + c.val, m_trklist.fsize };
-            }
+            if (m_wrk2.valid() && (m_wrk2->id() == netSendTrack))
+                return { m_trksnd + m_wrk2->cmpl().val, m_trklist.fsize };
             
             return { 0, 0 };
         }
@@ -129,10 +127,6 @@ class _wifiSync : public Wrk2 {
             
             // Дочерний процесс завершился, проверяем его статус
             bool isok =
-                m_wrk == WRKKEY_SEND_TRACKLIST ?
-                    isokTrackList(wrk) :
-                m_wrk == WRKKEY_SEND_TRACK ?
-                    isokTrack(wrk) :
                 m_wrk == WRKKEY_RECV_WIFIPASS ?
                     isokWiFiPass(wrk) :
                 m_wrk == WRKKEY_RECV_VERAVAIL ?
@@ -141,12 +135,6 @@ class _wifiSync : public Wrk2 {
                     isokFirmware(wrk) :
                     false;
             CONSOLE("worker[key=%d] finished isok: %d", m_wrk, isok);
-            
-            if (m_wrk == WRKKEY_SEND_TRACK) {
-                // обновляем m_trksnd - суммарный размер уже полностью отправленных треков
-                auto c = cmplTrack();
-                m_trksnd += c.val;
-            }
             
             // Удаляем завершённый процесс
             _wrkDel(m_wrk);
@@ -172,6 +160,10 @@ class _wifiSync : public Wrk2 {
             CONSOLE("wrk(%08x) finished isok: %d", m_wrk2.key(), m_wrk2->isok());
             if (!m_wrk2->isok())
                 return ERR(Worker);
+            
+            if (m_wrk2->id() == netSendTrack)
+                // обновляем m_trksnd - суммарный размер уже полностью отправленных треков
+                m_trksnd += m_wrk2->cmpl().val;
             
             m_wrk2.reset();
 
@@ -319,9 +311,7 @@ class _wifiSync : public Wrk2 {
         m_wrk2 = sendLogBook(&m_pro, m_accept.ckslog, m_accept.poslog);
     
     WPRC_TIMEOUT(SendTrackList, 0)
-        m_wrk = sendTrackList(&m_pro, true);
-        if (m_wrk == WRKKEY_NONE)
-            return ERR(SendData);
+        m_wrk2 = sendTrackList(&m_pro);
         
     WPRC_RUN // Надо запомнить точку и выйти, но не менять m_st
         TIMEOUT(SendDataFin, 300);
@@ -372,10 +362,8 @@ class _wifiSync : public Wrk2 {
                 trksrch_t srch;
                 RECV("NNNTC", srch);
 
-                m_wrk = sendTrack(&m_pro, srch, true);
-                if (m_wrk == WRKKEY_NONE)
-                    return ERR(RecvData);
-                return RUN;
+                m_wrk2 = sendTrack(&m_pro, srch);
+                return DLY;
             }
             
             case 0x0f: // bye
