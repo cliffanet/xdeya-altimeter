@@ -15,10 +15,6 @@ class BinProto;
 class NetSocket;
 
 typedef struct {
-    uint32_t val, sz;
-} cmpl_t;
-
-typedef struct {
     uint32_t beg, count;
 } posi_t;
 
@@ -40,11 +36,18 @@ class Wrk2Net : public Wrk2Ok {
             uint32_t val, sz;
         } cmpl_t;
 
-        Wrk2Net(BinProto *pro) : m_pro(pro), m_cmpl({ 0, 0 }) {}
+        Wrk2Net(BinProto *_pro, uint16_t _id = 0) :
+            m_id(_id),
+            m_pro(_pro),
+            m_cmpl({ 0, 0 })
+            {}
+
+        uint16_t id() const { return m_id; };
         bool isnetok() const { return m_pro != NULL; }
         const cmpl_t& cmpl() const { return m_cmpl; };
 
     protected:
+        uint16_t m_id = 0;
         BinProto *m_pro;
         cmpl_t m_cmpl;
 };
@@ -67,13 +70,9 @@ typedef struct __attribute__((__packed__)) {
 } trksrch_t;
 Wrk2Proc<Wrk2Net> sendTrack(BinProto *pro, const trksrch_t &srch);
 
-WrkProc::key_t recvWiFiPass(BinProto *pro, bool noremove = false);
-bool isokWiFiPass(const WrkProc *_wrk = NULL);
-WrkProc::key_t recvVerAvail(BinProto *pro, bool noremove = false);
-bool isokVerAvail(const WrkProc *_wrk = NULL);
-WrkProc::key_t recvFirmware(BinProto *pro, bool noremove = false);
-bool isokFirmware(const WrkProc *_wrk = NULL);
-cmpl_t cmplFirmware(const WrkProc *_wrk = NULL);
+Wrk2Proc<Wrk2Net> recvWiFiPass(BinProto *pro);
+Wrk2Proc<Wrk2Net> recvVerAvail(BinProto *pro);
+Wrk2Proc<Wrk2Net> recvFirmware(BinProto *pro);
 
 void netApp(NetSocket *sock);
 

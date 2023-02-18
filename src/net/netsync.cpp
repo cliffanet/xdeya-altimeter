@@ -35,7 +35,7 @@
 #define RCVNEXT()           if (!m_pro || !m_pro->rcvnext()) WPRC_ERR("recv data fail")
 #define CHK_RCV             if (!m_pro || !m_pro->rcvvalid()) WPRC_ERR("recv not valid"); \
                             if (m_pro->rcvstate() < BinProto::RCV_COMPLETE) return chktimeout();
-#define WPRC_RCV            WPRC_BREAK CHK_RCV
+#define WPRC_RCV(timeout)   m_timeout = timeout; WPRC_BREAK CHK_RCV
 
 /* ------------------------------------------------------------------------------------------- *
  *  Основной конфиг
@@ -139,7 +139,7 @@ class _sendLogBook : public Wrk2Net {
     
 public:
     _sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos) :
-        Wrk2Net(pro),
+        Wrk2Net(pro, netSendLogBook),
         m_begsnd(false),
         m_cks(cks),
         m_beg(pos),
@@ -147,12 +147,11 @@ public:
         m_pos(0),
         m_meth(byCks)
     {
-        id(netSendLogBook);
     }
     
     _sendLogBook(BinProto *pro, const posi_t &posi) :
         // struct в аргументах, чтобы вычленить нужный метод по аргументам, иначе они такие же
-        Wrk2Net(pro),
+        Wrk2Net(pro, netSendLogBook),
         m_fn(0),
         m_begsnd(false),
         m_cks(0),
@@ -360,10 +359,9 @@ class _sendWiFiPass : public Wrk2Net {
     
 public:
     _sendWiFiPass(BinProto *pro) :
-        Wrk2Net(pro),
+        Wrk2Net(pro, netSendWiFiPass),
         m_fname(PSTR(WIFIPASS_FILE))
     {
-        id(netSendWiFiPass);
     }
 #ifdef FWVER_DEBUG
     ~_sendWiFiPass() {
@@ -439,10 +437,9 @@ class _sendTrackList : public Wrk2Net {
     
 public:
     _sendTrackList(BinProto *pro) :
-        Wrk2Net(pro),
+        Wrk2Net(pro, netSendTrackList),
         m_fn(0)
     {
-        id(netSendTrackList);
     }
 #ifdef FWVER_DEBUG
     ~_sendTrackList() {
@@ -523,11 +520,10 @@ class _sendTrack : public Wrk2Net {
     
 public:
     _sendTrack(BinProto *pro, const trksrch_t &srch) :
-        Wrk2Net(pro),
+        Wrk2Net(pro, netSendTrack),
         m_srch(srch),
         m_sndbeg(false)
     {
-        id(netSendTrack);
         CONSOLE("Requested fnum: %d", m_srch.fnum);
     }
 #ifdef FWVER_DEBUG
@@ -631,307 +627,223 @@ Wrk2Proc<Wrk2Net> sendTrack(BinProto *pro, const trksrch_t &srch) {
 /* =========================================================================================== */
 
 
+class Wrk2Recv : public Wrk2Net {
+    protected:
+        uint16_t m_timeout;
+        state_t chktimeout() {
+            if (m_timeout == 1)
+                WPRC_ERR("Wait timeout");
+            
+            return DLY;
+        }
+    public:
+        Wrk2Recv(BinProto *_pro, uint16_t _id = 0) :
+            Wrk2Net(_pro, _id),
+            m_timeout(0)
+        {}
+        void timer() {
+            if (m_timeout > 1)
+                m_timeout--;
+        }
+};
 
 /* ------------------------------------------------------------------------------------------- *
  *  Приём wifi-паролей
  * ------------------------------------------------------------------------------------------- */
-WRK_DEFINE(RECV_WIFIPASS) {
-    private:
-        bool        m_isok;
-        uint16_t    m_timeout;
-        
-        BinProto *m_pro;
+class _recvWiFiPass : public Wrk2Recv {
         FileTxt fh;
-        
         const char *m_fname;
     
-    public:
-        bool isok() const { return m_isok; }
-
-        state_t chktimeout() {
-            if (m_timeout == 0)
-                WRK_RETURN_WAIT;
-            
-            m_timeout--;
-            if (m_timeout > 0)
-                WRK_RETURN_WAIT;
-            
-            WRK_RETURN_ERR("Wait timeout");
-        }
-    
-    WRK_CLASS(RECV_WIFIPASS)(BinProto *pro, bool noremove = false) :
-        m_isok(false),
-        m_timeout(0),
-        m_pro(pro),
+public:
+    _recvWiFiPass(BinProto *pro) :
+        Wrk2Recv(pro, netRecvWiFiPass),
         m_fname(PSTR(WIFIPASS_FILE))
     {
-        if (noremove)
-            optset(O_NOREMOVE);
     }
-
-    state_t every() {
+#ifdef FWVER_DEBUG
+    ~_recvWiFiPass() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
+    
+    state_t run() {
         m_pro->rcvprocess();
         if (!m_pro->rcvvalid())
-            WRK_RETURN_ERR("recv data fail");
-        
-        WRK_RETURN_RUN;
-    }
+            WPRC_ERR("recv data fail");
     
-    WRK_PROCESS
+    WPROC
         if ( fileExists(m_fname) &&
             !fileRemove(m_fname))
-            WRK_RETURN_ERR("Can't remove prev wifi-file");
+            WPRC_ERR("Can't remove prev wifi-file");
     
-    WRK_BREAK_RUN
+    WPRC_RUN
         if (!fh.open_P(m_fname, FileMy::MODE_APPEND))
-            WRK_RETURN_ERR("Can't open wifi-file for write");
+            WPRC_ERR("Can't open wifi-file for write");
         
-        m_timeout = 200;
-    WRK_BREAK_RECV
+    WPRC_RCV(200)
         if (m_pro->rcvcmd() != 0x41)
-            WRK_RETURN_ERR("Recv wrong cmd=0x%02x", m_pro->rcvcmd());
-        RECVNEXT();  // Эта команда без данных,
+            WPRC_ERR("Recv wrong cmd=0x%02x", m_pro->rcvcmd());
+        RCVNEXT();  // Эта команда без данных,
                             // нам надо перейти к приёму следующей команды
     
-        m_timeout = 200;
-    WRK_BREAK_RECV
+    WPRC_RCV(200)
         switch (m_pro->rcvcmd()) {
             case 0x42: { // wifi net
                 struct __attribute__((__packed__)) {
                     char ssid[BINPROTO_STRSZ];
                     char pass[BINPROTO_STRSZ];
                 } d;
-                RECV("ss", d);
+                RCV("ss", d);
                 
                 CONSOLE("add wifi: {%s}, {%s}", d.ssid, d.pass);
                 if (
                         !fh.print_param(PSTR("ssid"), d.ssid) ||
                         !fh.print_param(PSTR("pass"), d.pass)
                     )
-                    WRK_RETURN_ERR("Fail write ssid/pass");
+                    WPRC_ERR("Fail write ssid/pass");
                 m_timeout = 200;
-                WRK_RETURN_RUN;
+                return RUN;
             }
 
             case 0x43: { // wifi end
-                RECVNEXT();  // Эта команда без данных
+                RCVNEXT();  // Эта команда без данных
                 
                 fh.close(); // надо переоткрыть файл, иначе из него нельзя прочитать
                 if (!fh.open_P(m_fname))
-                    WRK_RETURN_ERR("Can't open wifi-file for chksum");
+                    WPRC_ERR("Can't open wifi-file for chksum");
                 uint32_t cks = fh.chksum();
                 fh.close();
                 
-                SEND(0x4a, "N", cks); // wifiok
+                SND(0x4a, "N", cks); // wifiok
                 m_isok = true;
                 break;
             }
 
-            default: WRK_RETURN_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
+            default: WPRC_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
         }
-    
-    WRK_END
+        
+    WPRC(END)
+    }
 };
 
-WrkProc::key_t recvWiFiPass(BinProto *pro, bool noremove) {
-    if (pro == NULL)
-        return WRKKEY_NONE;
-    
-    if (!noremove)
-        return wrkRand(RECV_WIFIPASS, pro, noremove);
-    
-    wrkRun(RECV_WIFIPASS, pro, noremove);
-    return WRKKEY_RECV_WIFIPASS;
-}
-
-bool isokWiFiPass(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(RECV_WIFIPASS) :
-            reinterpret_cast<const WRK_CLASS(RECV_WIFIPASS) *>(_wrk);
-    
-    return (wrk != NULL) && (wrk->isok());
+Wrk2Proc<Wrk2Net> recvWiFiPass(BinProto *pro) {
+    return wrk2Run<_recvWiFiPass, Wrk2Net>(pro);
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Приём veravail - доступных версий прошивки
  * ------------------------------------------------------------------------------------------- */
-WRK_DEFINE(RECV_VERAVAIL) {
-    private:
-        bool        m_isok;
-        uint16_t    m_timeout;
-        
-        BinProto *m_pro;
+class _recvVerAvail : public Wrk2Recv {
         FileTxt fh;
-        
         const char *m_fname;
     
-    public:
-        bool isok() const { return m_isok; }
-
-        state_t chktimeout() {
-            if (m_timeout == 0)
-                WRK_RETURN_WAIT;
-            
-            m_timeout--;
-            if (m_timeout > 0)
-                WRK_RETURN_WAIT;
-            
-            WRK_RETURN_ERR("Wait timeout");
-        }
-    
-    WRK_CLASS(RECV_VERAVAIL)(BinProto *pro, bool noremove = false) :
-        m_isok(false),
-        m_timeout(0),
-        m_pro(pro),
+public:
+    _recvVerAvail(BinProto *pro) :
+        Wrk2Recv(pro, netRecvVerAvail),
         m_fname(PSTR(VERAVAIL_FILE))
     {
-        if (noremove)
-            optset(O_NOREMOVE);
     }
-
-    state_t every() {
+#ifdef FWVER_DEBUG
+    ~_recvVerAvail() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
+    
+    state_t run() {
         m_pro->rcvprocess();
         if (!m_pro->rcvvalid())
-            WRK_RETURN_ERR("recv data fail");
-        
-        WRK_RETURN_RUN;
-    }
+            WPRC_ERR("recv data fail");
     
-    WRK_PROCESS
+    WPROC
         if ( fileExists(m_fname) &&
             !fileRemove(m_fname))
-            WRK_RETURN_ERR("Can't remove prev veravail-file");
+            WPRC_ERR("Can't remove prev veravail-file");
     
-    WRK_BREAK_RUN
+    WPRC_RUN
         if (!fh.open_P(m_fname, FileMy::MODE_APPEND))
-            WRK_RETURN_ERR("Can't open veravail-file for write");
+            WPRC_ERR("Can't open veravail-file for write");
         
-        m_timeout = 200;
-    WRK_BREAK_RECV
+    WPRC_RCV(200)
         if (m_pro->rcvcmd() != 0x44)
-            WRK_RETURN_ERR("Recv wrong cmd=0x%02x", m_pro->rcvcmd());
-        RECVNEXT();  // Эта команда без данных,
+            WPRC_ERR("Recv wrong cmd=0x%02x", m_pro->rcvcmd());
+        RCVNEXT();  // Эта команда без данных,
                             // нам надо перейти к приёму следующей команды
     
-        m_timeout = 200;
-    WRK_BREAK_RECV
+    WPRC_RCV(200)
         switch (m_pro->rcvcmd()) {
             case 0x45: { // veravail item
                 char ver[BINPROTO_STRSZ];
                 // тут нужен вызов через два аргумента (ссылка на данные и sizeof()),
                 // чтобы верно передалась ссылка и размер выделенной памяти
-                RECV("s", ver, sizeof(ver));
+                RCV("s", ver, sizeof(ver));
                 
                 CONSOLE("add veravail: {%s}", ver);
                 if ( !fh.print_line(ver) )
-                    WRK_RETURN_ERR("Fail write version");
+                    WPRC_ERR("Fail write version");
                 m_timeout = 200;
-                WRK_RETURN_RUN;
+                return RUN;
             }
 
             case 0x46: { // veravail end
-                RECVNEXT();  // Эта команда без данных
+                RCVNEXT();  // Эта команда без данных
                 
                 fh.close(); // надо переоткрыть файл, иначе из него нельзя прочитать
                 if (!fh.open_P(m_fname))
-                    WRK_RETURN_ERR("Can't open veravail-file for chksum");
+                    WPRC_ERR("Can't open veravail-file for chksum");
                 uint32_t cks = fh.chksum();
                 fh.close();
                 
-                SEND(0x4b, "N", cks); // veravail ok
+                SND(0x4b, "N", cks); // veravail ok
                 m_isok = true;
                 break;
             }
 
-            default: WRK_RETURN_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
+            default: WPRC_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
         }
-    
-    WRK_END
+        
+    WPRC(END)
+    }
 };
 
-WrkProc::key_t recvVerAvail(BinProto *pro, bool noremove) {
-    if (pro == NULL)
-        return WRKKEY_NONE;
-    
-    if (!noremove)
-        return wrkRand(RECV_VERAVAIL, pro, noremove);
-    
-    wrkRun(RECV_VERAVAIL, pro, noremove);
-    return WRKKEY_RECV_VERAVAIL;
-}
-
-bool isokVerAvail(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(RECV_VERAVAIL) :
-            reinterpret_cast<const WRK_CLASS(RECV_VERAVAIL) *>(_wrk);
-    
-    return (wrk != NULL) && (wrk->isok());
+Wrk2Proc<Wrk2Net> recvVerAvail(BinProto *pro) {
+    return wrk2Run<_recvVerAvail, Wrk2Net>(pro);
 }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Обновление прошивки по сети
  * ------------------------------------------------------------------------------------------- */
-WRK_DEFINE(RECV_FIRMWARE) {
-    private:
-        bool        m_isok;
-        uint16_t    m_timeout;
-        
-        BinProto *m_pro;
-    
-    public:
-        uint32_t    m_sz, m_rcv;
-        bool isok() const { return m_isok; }
-
-        state_t chktimeout() {
-            if (m_timeout == 0)
-                WRK_RETURN_WAIT;
-            
-            m_timeout--;
-            if (m_timeout > 0)
-                WRK_RETURN_WAIT;
-            
-            WRK_RETURN_ERR("Wait timeout");
-        }
-    
-    WRK_CLASS(RECV_FIRMWARE)(BinProto *pro, bool noremove = false) :
-        m_isok(false),
-        m_timeout(0),
-        m_pro(pro),
-        m_sz(0),
-        m_rcv(0)
+class _recvFirmware : public Wrk2Recv {
+public:
+    _recvFirmware(BinProto *pro) :
+        Wrk2Recv(pro, netRecvFirmware)
     {
-        if (noremove)
-            optset(O_NOREMOVE);
     }
-
-    state_t every() {
+#ifdef FWVER_DEBUG
+    ~_recvFirmware() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
+    
+    state_t run() {
         m_pro->rcvprocess();
         if (!m_pro->rcvvalid())
-            WRK_RETURN_ERR("recv data fail");
-        
-        WRK_RETURN_RUN;
-    }
+            WPRC_ERR("recv data fail");
     
-    WRK_PROCESS
-        
-        m_timeout = 200;
-    WRK_BREAK_RECV
+    WPROC
+    WPRC_RCV(200)
         if (m_pro->rcvcmd() != 0x47)
-            WRK_RETURN_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
-        RECVNEXT();  // Эта команда без данных,
+            WPRC_ERR("Recv wrong cmd=0x%02x begin", m_pro->rcvcmd());
+        RCVNEXT();  // Эта команда без данных,
         
-        m_timeout = 200;
-    WRK_BREAK_RECV
+    WPRC_RCV(200)
         if (m_pro->rcvcmd() != 0x48)
-            WRK_RETURN_ERR("Recv wrong cmd=0x%02x info", m_pro->rcvcmd());
+            WPRC_ERR("Recv wrong cmd=0x%02x info", m_pro->rcvcmd());
         
         struct __attribute__((__packed__)) {
             uint32_t    size;
             char        md5[37];
         } info;
-        RECV("Na36", info);
+        RCV("Na36", info);
         CONSOLE("recv fw info: size: %lu; md5: %s", info.size, info.md5);
         
         uint32_t freesz = ESP.getFreeSketchSpace();
@@ -939,84 +851,57 @@ WRK_DEFINE(RECV_FIRMWARE) {
         CONSOLE("current fw size: %lu, avail size for new fw: %lu", cursz, freesz);
         
         if (info.size > freesz)
-            WRK_RETURN_ERR("FW size too big: %lu > %lu", info.size, freesz);
+            WPRC_ERR("FW size too big: %lu > %lu", info.size, freesz);
 
         // start burn
         if (!Update.begin(info.size, U_FLASH) || !Update.setMD5(info.md5))
-            WRK_RETURN_ERR("Upd begin fail: errno=%d", Update.getError());
+            WPRC_ERR("Upd begin fail: errno=%d", Update.getError());
         
-        m_sz = info.size;
+        m_cmpl.sz = info.size;
     
-        m_timeout = 200;
-    WRK_BREAK_RECV
+    WPRC_RCV(200)
         switch (m_pro->rcvcmd()) {
             case 0x49: { // fwupd data
                 struct __attribute__((__packed__)) {
                     uint16_t    sz;
                     uint8_t     buf[1000];
                 } d;
-                RECV("nB1000", d);
+                RCV("nB1000", d);
                 
                 auto sz = Update.write(d.buf, d.sz);
                 if ((sz == 0) || (sz != d.sz))
-                    WRK_RETURN_ERR("Burn sz wrong: %d <-> %u", sz, d.sz);
+                    WPRC_ERR("Burn sz wrong: %d <-> %u", sz, d.sz);
                 
-                m_rcv += sz;
+                m_cmpl.val += sz;
                 
                 m_timeout = 200;
-                WRK_RETURN_RUN;
+                return RUN;
             }
 
             case 0x4a: { // fwupd end
-                RECVNEXT();  // Эта команда без данных
+                RCVNEXT();  // Эта команда без данных
                 if (!Update.end())
-                    WRK_RETURN_ERR("Finalize fail: errno=%d", Update.getError());
+                    WPRC_ERR("Finalize fail: errno=%d", Update.getError());
                 
                 cfg.set().fwupdind = 0;
                 if (!cfg.save())
-                    WRK_RETURN_ERR("Config save fail");
+                    WPRC_ERR("Config save fail");
                 
-                SEND(0x4c); // fwupd ok
+                SND(0x4c); // fwupd ok
                 
                 m_isok = true;
                 break;
             }
 
-            default: WRK_RETURN_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
+            default: WPRC_ERR("Recv unknown cmd=0x%02x", m_pro->rcvcmd());
         }
-    
-    WRK_END
+        
+    WPRC(END)
+    }
 };
 
-WrkProc::key_t recvFirmware(BinProto *pro, bool noremove) {
-    if (pro == NULL)
-        return WRKKEY_NONE;
-    
-    if (!noremove)
-        return wrkRand(RECV_FIRMWARE, pro, noremove);
-    
-    wrkRun(RECV_FIRMWARE, pro, noremove);
-    return WRKKEY_RECV_FIRMWARE;
-}
-
-bool isokFirmware(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(RECV_FIRMWARE) :
-            reinterpret_cast<const WRK_CLASS(RECV_FIRMWARE) *>(_wrk);
-    
-    return (wrk != NULL) && (wrk->isok());
-}
-
-cmpl_t cmplFirmware(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(RECV_FIRMWARE) :
-            reinterpret_cast<const WRK_CLASS(RECV_FIRMWARE) *>(_wrk);
-    
-    if (wrk == NULL)
-        return { 0, 0 };
-    return { wrk->m_rcv, wrk->m_sz };
+Wrk2Proc<Wrk2Net> recvFirmware(BinProto *pro) {
+    return wrk2Run<_recvFirmware, Wrk2Net>(pro);
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -1030,15 +915,14 @@ class _netApp : public Wrk2 {
         uint16_t m_code;
         
         BinProto *m_pro;
-        WrkProc::key_t m_wrk;
+        Wrk2Proc<Wrk2Net> m_wrk;
     
 public:
     _netApp(NetSocket *sock) :
         m_kalive(0),
         m_timeout(200),
         m_code(0),
-        m_pro(new BinProto(sock)),
-        m_wrk(WRKKEY_NONE)
+        m_pro(new BinProto(sock))
     {
     }
 
@@ -1053,50 +937,29 @@ public:
         }
         
         state_t chktimeout() {
-            if (m_timeout == 0)
-                return DLY;
+            if (m_timeout == 1)
+                WPRC_ERR("Wait timeout");
             
-            m_timeout--;
-            if (m_timeout > 0)
-                return DLY;
-            
-            WPRC_ERR("Wait timeout");
+            return DLY;
         }
 
-        void timer() { m_kalive ++; }
+        void timer() {
+            m_kalive ++;
+
+            if (m_timeout > 1)
+                m_timeout--;
+        }
        
     state_t run() {
-            if (m_wrk != WRKKEY_NONE) {
-                // Ожидание выполнения дочернего процесса
-                auto wrk = _wrkGet(m_wrk);
-                if (wrk == NULL) {
-                    CONSOLE("worker[key=%d] finished unexpectedly", m_wrk);
-                    m_wrk = WRKKEY_NONE;
-                    return RUN;
-                }
-                if (wrk->isrun())
-                    return DLY;
-            
-                // Дочерний процесс завершился, проверяем его статус
-                bool isok = false;
-                uint8_t cmd = 0x00;
-                switch (m_wrk) {
-                    case WRKKEY_RECV_WIFIPASS:
-                        isok = isokWiFiPass(wrk);
-                        cmd = 0x41;
-                        CONSOLE("RECV_WIFIPASS finished isok: %d", isok);
-                        break;
-                    default:
-                        CONSOLE("Unknown worker[%d] finished", m_wrk);
-                }
+            // Ожидание выполнения дочернего процесса
+            if (m_wrk.isrun())
+                return DLY;
+            if (m_wrk.valid()) {
+                if (m_wrk->id() == netRecvWiFiPass)
+                    CONFIRM(0x41, m_wrk->isok() ? 0 : 1);
             
                 // Удаляем завершённый процесс
-                _wrkDel(m_wrk);
-                m_wrk = WRKKEY_NONE;
-                
-                // Подтверждение выполнения команды
-                if (cmd != 0x00)
-                    CONFIRM(cmd, isok ? 0 : 1);
+                m_wrk.reset();
             }
 
             if (m_kalive >= 200) {
@@ -1179,8 +1042,7 @@ public:
         SND(0x03, "Cn", authrep);
         CONSOLE("new autokey: 0x%04x", _autokey);
         
-        m_timeout = 0;
-    WPRC_RCV
+    WPRC_RCV(0)
         
         switch (m_pro->rcvcmd()) {
             case 0x05: { // keep-alive
@@ -1202,9 +1064,7 @@ public:
             case 0x41: { // save wifilist
                 //m_pro->rcvnext(); // нет данных   // Приём данных этой команды делает сам воркер,
                                                     // со временем, когда уберём wifisync, надо это поправить
-                m_wrk = recvWiFiPass(m_pro, true);
-                if (m_wrk == WRKKEY_NONE)
-                    CONFIRM(0x41, 2);
+                m_wrk = recvWiFiPass(m_pro);
                 break;
             }
             case 0x51: { // trklist

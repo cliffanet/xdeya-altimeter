@@ -34,8 +34,7 @@ class _wifiSync : public Wrk2 {
         const char  *m_ssid, *m_pass;
         NetSocket   *m_sock;
         BinProto    m_pro;
-        WrkProc::key_t m_wrk;
-        Wrk2Proc<Wrk2Net> m_wrk2;
+        Wrk2Proc<Wrk2Net> m_wrk;
 
         uint32_t    m_joinnum;
         struct __attribute__((__packed__)) {
@@ -59,7 +58,6 @@ class _wifiSync : public Wrk2 {
             m_timeout(0),
             m_sock(NULL),
             m_pro(NULL, '%', '#'),
-            m_wrk(WRKKEY_NONE),
             m_joinnum(0),
             m_accept({ 0 }),
             m_fwupd(0),
@@ -104,68 +102,38 @@ class _wifiSync : public Wrk2 {
             m_timeout = 0;
         }
         
-        cmpl_t complete() {
-            if (m_wrk == WRKKEY_RECV_FIRMWARE)
-                return cmplFirmware();
-            if (m_wrk2.valid() && (m_wrk2->id() == netSendTrack))
-                return { m_trksnd + m_wrk2->cmpl().val, m_trklist.fsize };
+        Wrk2Net::cmpl_t complete() const {
+            if (!m_wrk.valid())
+                return { 0, 0 };
             
+            switch (m_wrk->id()) {
+                case netSendTrack:
+                    return { m_trksnd + m_wrk->cmpl().val, m_trklist.fsize };
+                case netRecvFirmware:
+                    return m_wrk->cmpl();
+            }
+
             return { 0, 0 };
         }
     
     state_t run() {
-    // Это выполняем всегда перед входом в process
-        if (m_wrk != WRKKEY_NONE) {
-            // Ожидание выполнения дочернего процесса
-            auto wrk = _wrkGet(m_wrk);
-            if (wrk == NULL) {
-                CONSOLE("worker[key=%d] finished unexpectedly", m_wrk);
-                return ERR(Worker);
-            }
-            if (wrk->isrun())
-                return DLY;
-            
-            // Дочерний процесс завершился, проверяем его статус
-            bool isok =
-                m_wrk == WRKKEY_RECV_WIFIPASS ?
-                    isokWiFiPass(wrk) :
-                m_wrk == WRKKEY_RECV_VERAVAIL ?
-                    isokVerAvail(wrk) :
-                m_wrk == WRKKEY_RECV_FIRMWARE ?
-                    isokFirmware(wrk) :
-                    false;
-            CONSOLE("worker[key=%d] finished isok: %d", m_wrk, isok);
-            
-            // Удаляем завершённый процесс
-            _wrkDel(m_wrk);
-            m_wrk = WRKKEY_NONE;
-            
-            if (!isok) // Если процесс завершился с ошибкой, завершаем и себя тоже с ошибкой
-                return ERR(Worker);
-            
-            // Обновляем таймаут после завершения процесса на случай, если это был приём данных
-            // и следующим циклом ожидается приём уже в основной процесс
-            if (m_timeout == 0)
-                m_timeout = 200;
-        }
-        
         if (m_st == stUserCancel)
             return END;
         
         // Ожидание выполнения дочернего процесса
-        if (m_wrk2.isrun())
+        if (m_wrk.isrun())
             return DLY;
         else
-        if (m_wrk2.valid()) {
-            CONSOLE("wrk(%08x) finished isok: %d", m_wrk2.key(), m_wrk2->isok());
-            if (!m_wrk2->isok())
+        if (m_wrk.valid()) {
+            CONSOLE("wrk(%08x) finished isok: %d", m_wrk.key(), m_wrk->isok());
+            if (!m_wrk->isok())
                 return ERR(Worker);
             
-            if (m_wrk2->id() == netSendTrack)
+            if (m_wrk->id() == netSendTrack)
                 // обновляем m_trksnd - суммарный размер уже полностью отправленных треков
-                m_trksnd += m_wrk2->cmpl().val;
+                m_trksnd += m_wrk->cmpl().val;
             
-            m_wrk2.reset();
+            m_wrk.reset();
 
             // Обновляем таймаут после завершения процесса на случай, если это был приём данных
             // и следующим циклом ожидается приём уже в основной процесс
@@ -308,10 +276,10 @@ class _wifiSync : public Wrk2 {
                 return ERR(SendData);
     
     WPRC_TIMEOUT(SendLogBook, 0)
-        m_wrk2 = sendLogBook(&m_pro, m_accept.ckslog, m_accept.poslog);
+        m_wrk = sendLogBook(&m_pro, m_accept.ckslog, m_accept.poslog);
     
     WPRC_TIMEOUT(SendTrackList, 0)
-        m_wrk2 = sendTrackList(&m_pro);
+        m_wrk = sendTrackList(&m_pro);
         
     WPRC_RUN // Надо запомнить точку и выйти, но не менять m_st
         TIMEOUT(SendDataFin, 300);
@@ -324,23 +292,17 @@ class _wifiSync : public Wrk2 {
         switch (m_pro.rcvcmd()) {
             case 0x41: // wifi beg
                 TIMEOUT(RecvWiFiPass, 0);
-                m_wrk = recvWiFiPass(&m_pro, true);
-                if (m_wrk == WRKKEY_NONE)
-                    return ERR(RecvData);
+                m_wrk = recvWiFiPass(&m_pro);
                 return RUN;
             
             case 0x44: // veravail beg
                 TIMEOUT(RecvVerAvail, 0);
-                m_wrk = recvVerAvail(&m_pro, true);
-                if (m_wrk == WRKKEY_NONE)
-                    return ERR(RecvData);
+                m_wrk = recvVerAvail(&m_pro);
                 return RUN;
             
             case 0x47: // firmware update beg
                 TIMEOUT(RecvFirmware, 0);
-                m_wrk = recvFirmware(&m_pro, true);
-                if (m_wrk == WRKKEY_NONE)
-                    return ERR(RecvData);
+                m_wrk = recvFirmware(&m_pro);
                 m_fwupd = 1;
                 return RUN;
             
@@ -362,7 +324,7 @@ class _wifiSync : public Wrk2 {
                 trksrch_t srch;
                 RECV("NNNTC", srch);
 
-                m_wrk2 = sendTrack(&m_pro, srch);
+                m_wrk = sendTrack(&m_pro, srch);
                 return DLY;
             }
             
@@ -375,15 +337,10 @@ class _wifiSync : public Wrk2 {
     }
         
     void end() {
-        if (m_wrk != WRKKEY_NONE) {
-            _wrkDel(m_wrk);
-            m_wrk = WRKKEY_NONE;
-        }
-
-        if (m_wrk2.isrun())
-            m_wrk2.stop();
-        if (m_wrk2.valid())
-            m_wrk2.reset();
+        if (m_wrk.isrun())
+            m_wrk.stop();
+        if (m_wrk.valid())
+            m_wrk.reset();
         
         m_pro.sock_clear();
         
@@ -425,9 +382,8 @@ wSync::st_t wifiSyncState(wSync::info_t &inf) {
     
     inf.joinnum = _wfs->m_joinnum;
     inf.timeout = _wfs->m_timeout;
-    auto cmpl   = _wfs->complete();
-    inf.cmplval = cmpl.val;
-    inf.cmplsz  = cmpl.sz;
+    inf.cmplval = _wfs->complete().val;
+    inf.cmplsz  = _wfs->complete().sz;
     
     return _wfs->m_st;
 }

@@ -126,8 +126,6 @@ class Wrk2 {
         virtual state_t run() = 0;
         virtual void end() {};
 
-        uint16_t id() const { return __id; };
-
         typedef enum {
             O_INLIST = 0,       // процесс находится в списке воркеров
             O_NEEDWAIT,         // не выполнять это воркер в текущем цикле обработки wrkProcess() - воркер что-то ждёт
@@ -144,10 +142,8 @@ class Wrk2 {
     
     protected:
         uint32_t __line = 0;
-        void id(uint16_t _id) { __id = _id; }
     private:
         uint16_t __opts = 0;
-        uint16_t __id = 0;
 };
 
 template <class T>
