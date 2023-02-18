@@ -93,7 +93,7 @@ class ViewNetSync : public ViewBase {
             wSync::info_t inf;
             auto st = wifiSyncState(inf);
             
-            if (st == wSync::stNotRun) {
+            if (st == wSync::stNotValid) {
                 setViewMain();
                 return;
             }

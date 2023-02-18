@@ -48,9 +48,9 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	    <key>NSBluetoothAlwaysUsageDescription</key>  
-	    <string>Need BLE permission</string>  
+	    <string>Need Bluetooth permission</string>  
 	    <key>NSBluetoothPeripheralUsageDescription</key>  
-	    <string>Need BLE permission</string>
+	    <string>Need Bluetooth permission</string>
         <key>UISupportsDocumentBrowser</key>
         <false/>
         <key>LSSupportsOpeningDocumentsInPlace</key>

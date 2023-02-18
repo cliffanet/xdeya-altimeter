@@ -126,58 +126,54 @@ bool sendPoint(BinProto *pro) {
  *  Для wifisync это необязательно, а вот при синхре из приложения, эту будет ответ запрос,
  *  на который надо обязательно ответить
  * ------------------------------------------------------------------------------------------- */
-WRK_DEFINE(SEND_LOGBOOK) {
-    private:
+class _sendLogBook : public Wrk2Net {
         int m_fn;
-        bool m_isok, m_begsnd;
+        bool m_begsnd;
         FileLogBook m_lb;
         
-        BinProto *m_pro;
         uint32_t m_cks, m_beg, m_cnt, m_pos;
         enum {
             byCks,
             byBeg
         } m_meth;
     
-    public:
-        bool isok() const { return m_isok; }
-    
-    WRK_CLASS(SEND_LOGBOOK)(BinProto *pro, uint32_t cks, uint32_t pos, bool noremove = false) :
-        m_isok(false),
+public:
+    _sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos) :
+        Wrk2Net(pro),
         m_begsnd(false),
-        m_pro(pro),
         m_cks(cks),
         m_beg(pos),
         m_cnt(0),
         m_pos(0),
         m_meth(byCks)
     {
-        if (noremove)
-            optset(O_NOREMOVE);
     }
     
-    WRK_CLASS(SEND_LOGBOOK)(BinProto *pro, const posi_t &posi, bool noremove = false) :
+    _sendLogBook(BinProto *pro, const posi_t &posi) :
         // struct в аргументах, чтобы вычленить нужный метод по аргументам, иначе они такие же
+        Wrk2Net(pro),
         m_fn(0),
-        m_isok(false),
         m_begsnd(false),
-        m_pro(pro),
         m_cks(0),
         m_beg(posi.beg),
         m_cnt(posi.count),
         m_pos(0),
         m_meth(byBeg)
     {
-        if (noremove)
-            optset(O_NOREMOVE);
     }
+#ifdef FWVER_DEBUG
+    ~_sendLogBook() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
     
-    WRK_PROCESS
+    state_t run() {
+    WPROC
         CONSOLE("sendLogBook: chksum: %08x, beg: %lu, count: %lu", m_cks, m_beg, m_cnt);
-        if (m_pro == NULL)
-            WRK_RETURN_ERR("pro is NULL");
+        if (!isnetok())
+            WPRC_ERR("pro is NULL");
     
-    WRK_BREAK_RUN
+    WPRC_RUN
         // Ищем файл логбука, с которого начнём
         if (m_meth == byCks) {
             m_fn =
@@ -192,15 +188,15 @@ WRK_DEFINE(SEND_LOGBOOK) {
             if (m_fn > 0) {// среди файлов найден какой-то по chksum, будем в нём стартовать с _pos
                 CONSOLE("sendLogBook: by chksum finded num: %d; start by pos: %lu", m_fn, m_beg);
                 if (!m_lb.open(m_fn))
-                    WRK_RETURN_ERR("Can't open logbook num=%d", m_fn);
+                    WPRC_ERR("Can't open logbook num=%d", m_fn);
                 if (!m_lb.seekto(m_beg))
-                    WRK_RETURN_ERR("Can't logbook num=%d seek to pos=%lu", m_fn, m_beg);
+                    WPRC_ERR("Can't logbook num=%d seek to pos=%lu", m_fn, m_beg);
             }
             else
                 m_fn = m_lb.count();
         
             if (m_fn < 0)       // ошибка поиска
-                WRK_RETURN_ERR("Fail find file by cks=%08x", m_cks);
+                WPRC_ERR("Fail find file by cks=%08x", m_cks);
         }
         else
         if (m_meth == byBeg) {
@@ -209,17 +205,17 @@ WRK_DEFINE(SEND_LOGBOOK) {
                 if (m_lb)
                     m_lb.close();
                 if (!m_lb.open(m_fn))
-                    WRK_RETURN_ERR("Can't open logbook num=%d", m_fn);
+                    WPRC_ERR("Can't open logbook num=%d", m_fn);
                 auto cnt = m_lb.sizefile();
                 if (cnt < 1)
-                    WRK_RETURN_ERR("Empty logbook file num=%d", m_fn);
+                    WPRC_ERR("Empty logbook file num=%d", m_fn);
                 CONSOLE("logbook file num=%d; all rec count=%d", m_fn, cnt);
                 m_pos += cnt;
                 if (m_pos < m_beg) // ещё не нашли нужной позиции, пойдём к следующему файлу
-                     WRK_RETURN_RUN;
+                     return RUN;
                 m_beg = m_pos-m_beg;
                 if ((m_beg > 0) && !m_lb.seekto(m_beg))
-                    WRK_RETURN_ERR("Can't logbook num=%d seek to pos=%lu", m_fn, m_beg);
+                    WPRC_ERR("Can't logbook num=%d seek to pos=%lu", m_fn, m_beg);
                 m_pos -= m_beg;
             }
             else
@@ -228,36 +224,35 @@ WRK_DEFINE(SEND_LOGBOOK) {
             CONSOLE("Begin send from num=%d; start by pos: %lu", m_fn, m_beg);
         }
         else
-            WRK_RETURN_ERR("Unknown meth: %d", m_meth);
+            WPRC_ERR("Unknown meth: %d", m_meth);
         
-    WRK_BREAK_RUN
+    WPRC_RUN
         struct {
             uint32_t beg, count;
         } d = { m_pos, m_cnt };
-        SEND(0x31, "NN", d);
+        SND(0x31, "NN", d);
         m_begsnd = true;
         
         if (m_fn == 0)
             m_isok = true;
         
-    WRK_BREAK_RUN
+    WPRC_RUN
         if (m_fn > 0) {
             if (!m_lb && !m_lb.open(m_fn))
-                WRK_RETURN_ERR("Can't open logbook num=%d", m_fn);
+                WPRC_ERR("Can't open logbook num=%d", m_fn);
             CONSOLE("logbook num=%d, pos=%d, avail=%d", m_fn, m_lb.pos(), m_lb.avail());
             if (m_lb.avail() > 0) {
                 FileLogBook::item_t jmp;
                 if (!m_lb.get(jmp))
-                    WRK_RETURN_ERR("Can't get item jump");
+                    WPRC_ERR("Can't get item jump");
                 
-                SEND(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp);
+                SND(0x32, "NNT" LOG_PK LOG_PK LOG_PK LOG_PK, jmp);
                 if (m_cnt > 0) {
                     m_cnt--;
                     if (m_cnt == 0) {
                         // отправили нужное количество
-                        m_isok = true;
                         CONSOLE("logbook need count finished");
-                        WRK_RETURN_END;
+                        return ok();
                     }
                 }
             }
@@ -268,15 +263,15 @@ WRK_DEFINE(SEND_LOGBOOK) {
                     CONSOLE("logbook closed num=%d", m_fn);
                 }
                 else {// Завершился процесс
-                    m_isok = true;
                     CONSOLE("logbook finished");
-                    WRK_RETURN_END;
+                    return ok();
                 }
                 m_fn--;
             }
-            WRK_RETURN_RUN;
+            return RUN;
         }
-    WRK_END
+    WPRC(END)
+    }
         
     void end() {
         CONSOLE("lb isopen: %d", m_lb ? 1 : 0);
@@ -297,34 +292,11 @@ WRK_DEFINE(SEND_LOGBOOK) {
     }
 };
 
-WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos, bool noremove) {
-    if (pro == NULL)
-        return WRKKEY_NONE;
-    
-    if (!noremove)
-        return wrkRand(SEND_LOGBOOK, pro, cks, pos, noremove);
-    
-    wrkRun(SEND_LOGBOOK, pro, cks, pos, noremove);
-    return WRKKEY_SEND_LOGBOOK;
+Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos) {
+    return wrk2Run<_sendLogBook, Wrk2Net>(pro, cks, pos);
 }
-WrkProc::key_t sendLogBook(BinProto *pro, const posi_t &posi, bool noremove) {
-    if (pro == NULL)
-        return WRKKEY_NONE;
-    
-    if (!noremove)
-        return wrkRand(SEND_LOGBOOK, pro, posi, noremove);
-    
-    wrkRun(SEND_LOGBOOK, pro, posi, noremove);
-    return WRKKEY_SEND_LOGBOOK;
-}
-
-bool isokLogBook(const WrkProc *_wrk) {
-    const auto wrk = 
-        _wrk == NULL ?
-            wrkGet(SEND_LOGBOOK) :
-            reinterpret_cast<const WRK_CLASS(SEND_LOGBOOK) *>(_wrk);
-    
-    return (wrk != NULL) && (wrk->isok());
+Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, const posi_t &posi) {
+    return wrk2Run<_sendLogBook, Wrk2Net>(pro, posi);
 }
 
 

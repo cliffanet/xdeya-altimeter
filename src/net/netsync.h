@@ -22,12 +22,22 @@ typedef struct {
     uint32_t beg, count;
 } posi_t;
 
+
+
+class Wrk2Net : public Wrk2Ok {
+    public:
+        Wrk2Net(BinProto *pro) : m_pro(pro) {}
+        inline bool isnetok() { return __pro != NULL; }
+
+    protected:
+        BinProto *m_pro;
+};
+
 bool sendCfgMain(BinProto *pro);
 bool sendJmpCount(BinProto *pro);
 bool sendPoint(BinProto *pro);
-WrkProc::key_t sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos, bool noremove = false);
-WrkProc::key_t sendLogBook(BinProto *pro, const posi_t &posi, bool noremove = false);
-bool isokLogBook(const WrkProc *_wrk = NULL);
+Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, uint32_t cks, uint32_t pos);
+Wrk2Proc<Wrk2Net> sendLogBook(BinProto *pro, const posi_t &posi);
 bool sendDataFin(BinProto *pro);
 WrkProc::key_t sendWiFiPass(BinProto *pro, bool noremove = false);
 bool isokSendWiFiPass(const WrkProc *_wrk = NULL);

@@ -158,6 +158,14 @@ class Wrk2Ok : public Wrk2 {
     public:
         bool isok() const { return m_isok; }
     protected:
+        state_t ok() {
+            m_isok=true;
+            return END;
+        }
+        state_t err() {
+            m_isok=false;
+            return END;
+        }
         bool m_isok = false;
 };
 
@@ -213,11 +221,22 @@ class Wrk2Proc {
 
 bool _wrk2Add(Wrk2::run_t ws);
 
+// Кастомный wrk2Run, когда нам надо запустить воркер
+// определённого класса, но вернуть контроллер Wrk2Proc<T>,
+// который обернёт класс родителя этого воркера.
+// Это может быть полезным, чтобы
+// обобщить в один контроллер разные процессы одного базового класса
+template<typename Twrk, typename Tret, typename... _Args>
+inline Wrk2Proc<Tret> wrk2Run(_Args&&... __args) {
+    std::shared_ptr<Twrk> ws = std::make_shared<Twrk>(__args...);
+    _wrk2Add(ws);
+    return Wrk2Proc<Tret>(ws);
+}
+
+// Классическая обертка воркера в контроллер Wrk2Proc<T>
 template<typename T, typename... _Args>
 inline Wrk2Proc<T> wrk2Run(_Args&&... __args) {
-    std::shared_ptr<T> ws = std::make_shared<T>(__args...);
-    _wrk2Add(ws);
-    return Wrk2Proc<T>(ws);
+    return wrk2Run<T, T>(__args...);
 }
 
 #define WPROC \
