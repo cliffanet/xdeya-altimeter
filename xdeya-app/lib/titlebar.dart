@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:file_picker/file_picker.dart';
 import 'pager.dart';
 import 'net/wifidiscovery.dart';
 import 'net/proc.dart';
@@ -35,7 +36,7 @@ Widget getTitleBarDiscovery() {
 }
 
 
-enum MenuCode { Refresh, WiFiPass, TrackList, SaveGpx }
+enum MenuCode { Refresh, WiFiPass, TrackList, SaveGpx, FilesBackup, saveFiles }
 
 Widget getTitleBarClient(PageCode page) {
     return ValueListenableBuilder(
@@ -199,6 +200,25 @@ Widget getTitleBarClient(PageCode page) {
                 );
             }
 
+            // files
+            menu.add(
+                PopupMenuDivider(),
+            );
+            if (Pager.top != PageCode.filesbackup) {
+                menu.add(
+                    PopupMenuItem(
+                        value: MenuCode.FilesBackup,
+                        child: Row(
+                            children: const [
+                                Icon(Icons.outbox, color: Colors.black),
+                                SizedBox(width: 8),
+                                Text('Скачать все данные'),
+                            ]
+                        ),
+                    ),
+                );
+            }
+
             void onSelect(MenuCode mitem) async {
                 switch (mitem) {
                     case MenuCode.Refresh:
@@ -217,6 +237,15 @@ Widget getTitleBarClient(PageCode page) {
                             filename: 'track_${dt}_jmp-${net.trkinfo.jmpnum}.gpx',
                             data: net.trkGPX
                         );
+                        break;
+                    case MenuCode.FilesBackup:
+                        String? dir = await FilePicker.platform.getDirectoryPath();
+                        if (dir == null) {
+                            return;
+                        }
+                        net.requestFiles(dir: dir);
+                        //if (!context.mounted) return;
+                        Pager.push(context, PageCode.filesbackup);
                         break;
                 }
             };

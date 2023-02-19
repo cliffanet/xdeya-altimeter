@@ -26,6 +26,7 @@
  *  Обрабатывает прибор:
  *  0x02 - [приложение] принимает hello от клиента, может содержать autokey, приложение отвечает 0x02
  *  0x03 - [приложение] авторизация приложения в приборе, должна содержать authnum
+ *  0x0a - [приложение] запрос данных приложением, содержит код требуемых данных
  *  0x10 - [wifisync стадия подтверждения привязки] - требуется rejoin, нет привязки, присылает код на экран
  *  0x13 - [wifisync стадия ожидания rejoin] - сервер присылает новый authid (uid и secnum)
  *  0x20 - [wifisync стадия подтверждения привязки] - прибор опознан сервером, можно начинать передачу,
@@ -40,12 +41,18 @@
  *  0x48 - сохранение в приборе: recvFirmware(размер прошивки и md5-сумма)
  *  0x49 - сохранение в приборе: recvFirmware(блок данных)
  *  0x4a - сохранение в приборе: recvFirmware(окончание данных)
+ *  0x5a - сохранение в приборе: recvFiles(начало списка)
+ *  0x5b - сохранение в приборе: recvFiles(начало файла)
+ *  0x5c - сохранение в приборе: recvFiles(блок данных файла)
+ *  0x5d - сохранение в приборе: recvFiles(конец файла)
+ *  0x5e - сохранение в приборе: recvFiles(конец списка)
  *  
  *  Обрабатывает приложение или сервер:
  *  0x01 - [wifisync] передача на сервер authid, по которому привязывается прибор к аккаунту
  *          В ответ сервер отправит прибору: 0x10 или 0x20
  *  0x02 - [приложение] ответ прибора на hello, если требуется авторизация
  *  0x03 - [приложение] прибор отвечает на авторизацию, содержит код ошибки или 0 и autokey для следующей авторизации
+ *  0x10 - [приложение] прибор подтверждает завершение приёма данных, содержит код данных и статус
  *  0x12 - [wifisync] idle - прибор отправляет периодически на сервер,
  *          пока ожидается привязка к аккаунту, чтобы не сработал таймаут подключения на сервере
  *  0x21 - прибор отправляет: sendCfgMain
@@ -65,6 +72,11 @@
  *  0x51 - прибор отправляет: sendTrackList(начало списка), тут трудно узнать кол-во, поэтому оно не передаётся
  *  0x52 - прибор отправляет: sendTrackList(данные о треке)
  *  0x53 - прибор отправляет: sendTrackList(конец списка)
+ *  0x5a - прибор отправляет: sendFiles(начало списка)
+ *  0x5b - прибор отправляет: sendFiles(начало файла)
+ *  0x5c - прибор отправляет: sendFiles(блок данных файла)
+ *  0x5d - прибор отправляет: sendFiles(конец файла)
+ *  0x5e - прибор отправляет: sendFiles(конец списка)
  * ------------------------------------------------------------------------------------------- */
 
 #define WPRC_ERR(s, ...)    do { CONSOLE(s, ##__VA_ARGS__); return END; } while (0)
@@ -661,6 +673,108 @@ WrkProc<WrkNet> sendTrack(BinProto *pro, const trksrch_t &srch) {
     return wrkRun<_sendTrack, WrkNet>(pro, srch);
 }
 
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Отправка всех файлов на SPIFFS
+ * ------------------------------------------------------------------------------------------- */
+class _sendFiles : public WrkNet {
+    File m_dh;
+    File m_fh;
+    uint16_t m_cnt;
+public:
+    _sendFiles(BinProto *pro) :
+        WrkNet(pro, netSendTrackList),
+        m_cnt(0)
+    {
+    }
+#ifdef FWVER_DEBUG
+    ~_sendFiles() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
+    
+    state_t run() {
+    WPROC
+        if (!isnetok())
+            WPRC_ERR("pro is NULL");
+        
+        m_dh = dirIntOpen();
+        if (!m_dh)
+            WPRC_ERR("Can't open root of SPIFFS");
+        if (!m_dh.isDirectory())
+            WPRC_ERR("SPIFFS[\"%s\"] is not directory", m_dh.name());
+        
+    WPRC_RUN
+        File file = m_dh.openNextFile();
+        if (file) {
+            if (!file.isDirectory()) {
+                CONSOLE("file[%s]\t= %d bytes", file.name(), file.size());
+                m_cmpl.sz += file.size();
+                m_cnt ++;
+            }
+            return RUN;
+        }
+        CONSOLE("size: %d, count: %d", m_cmpl.sz, m_cnt);
+
+    WPRC_RUN
+        m_dh = dirIntOpen();
+        struct __attribute__((__packed__)) {
+            uint16_t cnt;
+            uint32_t sz;
+        } h = { m_cnt, m_cmpl.sz };
+        SND(0x5a, "nN", h);
+
+    WPRC_RUN
+        if (!m_fh) {
+            m_fh = m_dh.openNextFile();
+            if (!m_fh) {
+                return ok();
+            }
+            if (m_fh.isDirectory()) {
+                m_fh.close();
+                return RUN;
+            }
+
+            struct __attribute__((__packed__)) {
+                uint32_t sz;
+                char name[BINPROTO_STRSZ];
+            } h = { m_fh.size() };
+            strncpy(h.name, m_fh.name(), sizeof(h.name));
+            SND(0x5b, "Ns", h);
+            CONSOLE("file beg: %s (%d bytes)", h.name, h.sz);
+            
+            return RUN;
+        }
+
+        if (m_fh.available() <= 0) {
+            SND(0x5d);
+            CONSOLE("file end");
+            m_fh.close();
+            return RUN;
+        }
+
+        struct __attribute__((__packed__)) {
+            uint16_t sz;
+            uint8_t buf[256];
+        } d;
+        size_t sz = m_fh.read(d.buf, sizeof(d.buf));
+        if (sz <= 0)
+            WPRC_ERR("file(%s) read err on pos: %d", m_fh.name(), m_fh.position());
+        d.sz = sz;
+        SND(0x5c, "B256", d);
+        CONSOLE("file data: %d bytes", d.sz);
+
+    WPRC(RUN)
+    }
+        
+    void end() {
+        if (m_pro)
+            m_pro->send(0x5e);
+        CONSOLE("file finish");
+    }
+};
+
+
 /* =========================================================================================== */
 /* =========================================================================================== */
 /* =========================================================================================== */
@@ -905,7 +1019,7 @@ public:
                     uint16_t    sz;
                     uint8_t     buf[1000];
                 } d;
-                RCV("nB1000", d);
+                RCV("B1000", d);
                 
                 auto sz = Update.write(d.buf, d.sz);
                 if ((sz == 0) || (sz != d.sz))
@@ -1089,6 +1203,33 @@ public:
                 CONSOLE("keep-alive");
                 break;
             }
+            case 0x0a: { // request data
+                // тут только данные без параметров, хотя можно попробовать
+                // рискнуть принимать union по шаблону "NN..."
+                struct __attribute__((__packed__)) {
+                    uint8_t code;
+                    union {
+                        posi_t posi;
+                        trksrch_t trk;
+                    };
+                } d = { 0 };
+                RCV("CNNNTC", d);
+                CONSOLE("request data: 0x%02x", d.code);
+                switch (d.code) {
+                    case 0x31:
+                        if ((d.posi.beg == 0) || (d.posi.count == 0)) {
+                            d.posi.beg = 10;
+                            d.posi.count = 10;
+                        }
+                        sendLogBook(m_pro, d.posi);
+                        break;
+                    case 0x37: sendWiFiPass(m_pro);         break;
+                    case 0x51: sendTrackList(m_pro);        break;
+                    case 0x54: sendTrack(m_pro, d.trk);     break;
+                    case 0x5a: wrkRun<_sendFiles>(m_pro);   break;
+                }
+                break;
+            }
             case 0x31: { // logbook
                 posi_t posi = { 10, 10 };
                 RCV("NN", posi);
@@ -1118,6 +1259,9 @@ public:
                 sendTrack(m_pro, srch);
                 break;
             }
+            default:
+                CONSOLE("Unknown request: 0x%02x", m_pro->rcvcmd());
+                RCVNEXT();
         }
         
     WPRC(DLY)

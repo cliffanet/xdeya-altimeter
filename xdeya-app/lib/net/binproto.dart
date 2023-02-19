@@ -270,6 +270,25 @@ class BinProto {
                     );
                     di += len + 1;
                     break;
+                
+                case 'B':
+                case 'Z':
+                    int len;
+                    if (pk[pi] == 'B') {
+                        len = bdata.getUint16(di, Endian.big);
+                        di += 2;
+                    }
+                    else {
+                        len = bdata.getUint32(di, Endian.big);
+                        di += 4;
+                    }
+                    final int len1 = data.length - di;
+                    if (len > len1) len = len1;
+                    vars.add(
+                        data.sublist(di, di+len)
+                    );
+                    di += len;
+                    break;
             }
 
             pi++;
@@ -445,6 +464,23 @@ class BinProto {
                     }
                     data.add(len);
                     data.addAll( d );
+                    break;
+                
+                case 'B':
+                case 'Z':
+                    ByteData d = 
+                        v is ByteData ? v :
+                        v is Uint8List ? v.buffer.asByteData() :
+                        ByteData(0);
+                    ByteData sz = ByteData(pk[pi] == 'B' ? 2 : 4);
+                    if (pk[pi] == 'B') {
+                        d.setUint16(0, d.lengthInBytes, Endian.big);
+                    }
+                    else {
+                        d.setUint32(0, d.lengthInBytes, Endian.big);
+                    }
+                    data.addAll( sz.buffer.asInt8List() );
+                    data.addAll( d.buffer.asInt8List() );
                     break;
             }
 

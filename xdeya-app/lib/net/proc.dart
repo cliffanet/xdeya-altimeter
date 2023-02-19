@@ -29,7 +29,8 @@ enum NetRecvElem {
     tracklist,
     trackdata,
     wifipass,
-    wifisave
+    wifisave,
+    files
 }
 
 final net = NetProc();
@@ -896,6 +897,104 @@ class NetProc {
             confirmerDel(0x41);
             return false;
         }
+
+        return true;
+    }
+
+    /*//////////////////////////////////////
+     *
+     *  Backup Files
+     * 
+     *//////////////////////////////////////
+    final ValueNotifier<int> notifyFilesList = ValueNotifier(0);
+    final List<FileItem> files = [];
+    void _filesClear() {
+        files.clear();
+        notifyFilesList.value = 0;
+    }
+
+    Future<bool> requestFiles({ required String dir, Function() ?onLoad }) async {
+        if (!await _autochk()) return false;
+
+        if (_rcvelm.contains(NetRecvElem.files)) {
+            return false;
+        }
+        _filesClear();
+
+        bool ok = recieverAdd(0x5a, () {
+                recieverDel(0x5a);
+                List<dynamic> ?v = _pro.rcvData('nN');
+                if ((v == null) || v.isEmpty) {
+                    return;
+                }
+                _filesClear();
+                _datamax = v[1];
+                _datacnt = 0;
+                doNotifyInf();
+
+                void recvfin() {
+                    recieverDel(0x5b);
+                    recieverDel(0x5e);
+                    _pro.rcvNext();
+                    developer.log('requestFiles finish');
+                    _rcvelm.remove(NetRecvElem.files);
+                    if (onLoad != null) onLoad();
+                    _datamax = 0;
+                    _datacnt = 0;
+                    doNotifyInf();
+                }
+                recieverAdd(0x5e, recvfin);
+
+                developer.log('requestFiles beg proc ${v[0]} / ${v[1]} bytes');
+                void recvfile() async {
+                    recieverDel(0x5b);
+                    recieverDel(0x5e);
+                    List<dynamic> ?v = _pro.rcvData('Ns');
+                    if ((v == null) || (v.length < 2)) {
+                        return;
+                    }
+                    developer.log('requestFiles beg file: ${v[1]} (${v[0]} bytes)');
+                    files.add(FileItem.byvars(v));
+                    notifyFilesList.value = files.length;
+                    doNotifyInf();
+
+                    final file = File(dir + '/' + v[1]);
+                    if (file.existsSync()) {
+                        file.deleteSync();
+                    }
+                    final fh = file.openSync(mode: FileMode.writeOnly);
+
+                    recieverAdd(0x5c, () {
+                        List<dynamic> ?v = _pro.rcvData('B');
+                        if ((v == null) || v.isEmpty || (v[0] is! Uint8List)) {
+                            return;
+                        }
+                        final data = v[0] as Uint8List;
+                        developer.log('requestFiles data size=${data.length}');
+                        _datacnt += data.length;
+                        fh.writeFromSync(data.toList());
+                        doNotifyInf();
+                    });
+                    recieverAdd(0x5d, () {
+                        recieverDel(0x5c);
+                        recieverDel(0x5d);
+                        _pro.rcvNext();
+                        fh.close();
+                        developer.log('requestFiles end file');
+                        recieverAdd(0x5b, recvfile);
+                        recieverAdd(0x5e, recvfin);
+                        doNotifyInf();
+                    });
+                }
+                recieverAdd(0x5b, recvfile);
+            });
+        if (!ok) return false;
+        if (!send(0x0a, "C", [0x5a])) {
+            recieverDel(0x5a);
+            return false;
+        }
+        _rcvelm.add(NetRecvElem.files);
+        doNotifyInf();
 
         return true;
     }

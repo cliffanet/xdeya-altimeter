@@ -189,7 +189,12 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
                 break;
             
             case 'B':
+            case 'Z':
+                // это блок бинарных данных, хранится идентично и в src, и в dst,
+                // где первые 2/4 байта - это размер (в src: host-order, в dst: net-order),
+                // а остальное - это данные (размер: src=текстом в pk, dst=в предыдущих 2/4 байт)
                 if ((pk[1] >= '0') && (pk[1] <= '9')) {
+                    const char p = *pk;
                     // этот модификатор означает наличие буфера размером в N байт,
                     // который будем передавать как есть:
                     // и в src и в dst д.б. N байт
@@ -200,17 +205,33 @@ int BinProto::datapack(uint8_t *dst, size_t dstsz, const char *pk, const uint8_t
                         l = l*10 + (pk[1] - '0');
                         pk++;
                     }
-                    size_t ld = l <= dstsz ? l : dstsz;
                     size_t ls = l <= srcsz ? l : srcsz;
-                    if (ld <= ls)
-                        memcpy(dst, src, ld);
-                    else {
-                        memcpy(dst, src, ls);
-                        // заполнение остатка нулями пока выключено,
-                        // непонятна необходимость, а время может занимать
-                        // заполнять нулями можно и снаружи при инициализации переменной *dst
-                        //bzero(dst+ls, ld-ls);
+                    // реальный же размер данных будет храниться в первых 2/4 байтах в src.
+                    // в dst-буфере должны быть те же 2/4 байта, в которые мы
+                    // скопируем этот размер, сделав hton()
+                    size_t ld;
+                    if (p == 'B') {
+                        CHKSZ(2, uint16_t)
+                        _hton(dst, SRC(uint16_t));
+                        ld = SRC(uint16_t);
+                        if ((ld > dstsz) || (ld > srcsz))
+                            // размер данных не соответствует размерам буферов
+                            return false;
+                        NXTSZ(2, uint16_t)
                     }
+                    else
+                    if (p == 'Z') {
+                        CHKSZ(4, uint32_t)
+                        _hton(dst, SRC(uint32_t));
+                        ld = SRC(uint16_t);
+                        if ((ld > dstsz) || (ld > srcsz))
+                            // размер данных не соответствует размерам буферов
+                            return false;
+                        NXTSZ(4, uint32_t)
+                    }
+                    else
+                        ls = 0;
+                    memcpy(dst, src, ld);
                     NXTSZ_(ld, ls)
                     break;
                 }
@@ -360,7 +381,12 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
                 break;
             
             case 'B':
+            case 'Z':
+                // это блок бинарных данных, хранится идентично и в src, и в dst,
+                // где первые 2/4 байта - это размер (в src: net-order, в dst: host-order),
+                // а остальное - это данные (размер: src=в предыдущих 2/4 байт, dst=текстом в pk)
                 if ((pk[1] >= '0') && (pk[1] <= '9')) {
+                    const char p = *pk;
                     // этот модификатор означает наличие буфера размером в N байт,
                     // который будем передавать как есть:
                     // и в src и в dst д.б. N байт,
@@ -372,16 +398,35 @@ bool BinProto::dataunpack(uint8_t *dst, size_t dstsz, const char *pk, const uint
                         pk++;
                     }
                     size_t ld = l <= dstsz ? l : dstsz;
-                    size_t ls = l <= srcsz ? l : srcsz;
-                    if (ld <= ls)
-                        memcpy(dst, src, ld);
-                    else {
-                        memcpy(dst, src, ls);
-                        // заполнение остатка нулями пока выключено,
-                        // непонятна необходимость, а время может занимать
-                        // заполнять нулями можно и снаружи при инициализации переменной *dst
-                        //bzero(dst+ls, ld-ls);
+                    // реальный же размер данных будет храниться в первых 2/4 байтах в src.
+                    // в dst-буфере должны быть те же 2/4 байта, в которые мы
+                    // скопируем этот размер, сделав ntoh()
+                    size_t ls;
+                    if (p == 'B') {
+                        CHKSZ(uint16_t, 2)
+                        _ntoh(DST(uint16_t), src);
+                        ls = DST(uint16_t);
+                        if (ls > srcsz) {
+                            ls = srcsz;
+                            DST(uint16_t) = ls;
+                        }
+                        NXTSZ(uint16_t, 2)
                     }
+                    else
+                    if (p == 'Z') {
+                        CHKSZ(uint32_t, 4)
+                        _ntoh(DST(uint32_t), src);
+                        ls = DST(uint32_t);
+                        if (ls > srcsz) {
+                            ls = srcsz;
+                            DST(uint32_t) = ls;
+                        }
+                        NXTSZ(uint32_t, 4)
+                    }
+                    else
+                        ls = 0;
+
+                    memcpy(dst, src, ld < ls ? ld : ls);
                     NXTSZ_(ld, ls)
                     break;
                 }

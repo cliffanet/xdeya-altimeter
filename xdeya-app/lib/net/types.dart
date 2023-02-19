@@ -179,3 +179,17 @@ class WiFiPass {
     }
     bool get isValid => ssid.isNotEmpty;
 }
+
+class FileItem {
+    final String name;
+    final int size;
+
+    FileItem({
+        required this.name,
+        required this.size,
+    });
+
+    FileItem.byvars(List<dynamic> vars) :
+        size = (vars.isNotEmpty) && (vars[0]) is int ? vars[0] : '',
+        name = (vars.length > 1) && (vars[1]) is String ? vars[1] : '';
+}

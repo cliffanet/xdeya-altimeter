@@ -15,6 +15,12 @@
  * ------------------------------------------------------------------------------------------- */
 static uint8_t initok = 0;
 
+File dirIntOpen() {
+    char fname[10];
+    fileName(fname, sizeof(fname), PSTR(""));
+    return SPIFFS.open(fname);
+}
+
 #ifdef USE_SDCARD
 bool fileExtInit() {
     if (!SD.begin(PIN_SDCARD)) {
