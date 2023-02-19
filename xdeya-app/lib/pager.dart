@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:xdeya/page/filesbackup.dart';
 import 'titlebar.dart';
 
 import 'page/discovery.dart';
@@ -10,12 +9,13 @@ import 'page/trackview.dart';
 import 'page/wifipass.dart';
 import 'page/wifiedit.dart';
 import 'page/filesbackup.dart';
+import 'page/filesrestore.dart';
 import '../net/wifidiscovery.dart';
 import '../net/proc.dart';
 
 enum PageCode {
     discovery, logbook, jumpinfo, tracklist, trackview, wifipass, wifiedit,
-    filesbackup
+    filesbackup, filesrestore
 }
 
 typedef PageFunc = Widget ? Function([int ?index]);
@@ -29,6 +29,7 @@ final Map<PageCode, PageFunc> _pageMap = {
     PageCode.wifipass:  ([int ?i]) { return PageWiFiPass(); },
     PageCode.wifiedit:  ([int ?index]) { return index != null ? PageWiFiEdit(index: index) : null; },
     PageCode.filesbackup:([int ?i]) { return PageFilesBackup(); },
+    PageCode.filesrestore:([int ?i]) { return PageFilesRestore(); },
 };
 
 class Pager extends StatelessWidget {
@@ -94,6 +95,7 @@ class Pager extends StatelessWidget {
             case PageCode.wifipass: return "WiFi-пароли";
             //case PageCode.wifiedit: return "Изменение сети";
             case PageCode.filesbackup:return "Файлы";
+            case PageCode.filesrestore:return "Восстановление";
             default:
         }
 

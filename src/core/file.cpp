@@ -96,7 +96,7 @@ bool file_rename(const char *fname1, const char *fname2, bool external) {
     return false;
 }
 
-static File file_open(const char *fname, FileMy::mode_t mode, bool external) {
+File file_open(const char *fname, FileMy::mode_t mode, bool external) {
     CONSOLE("fname: %c(%d) / %s", external ? 'e' : 'i', initok, fname);
 
 #ifdef USE_SDCARD

@@ -30,7 +30,8 @@ enum NetRecvElem {
     trackdata,
     wifipass,
     wifisave,
-    files
+    files,
+    filessave
 }
 
 final net = NetProc();
@@ -72,8 +73,17 @@ class NetProc {
     int _autokey = 0;
     InternetAddress ?_autoip;
     int ?_autoport;
+    bool _sockchk() {
+        if (_sock == null) {
+            return false;
+        }
+        //if (_sock.) { // тут нужна проверка на валидность
+        //  
+        //}
+        return true;
+    }
     Future<bool> _autochk() async {
-        if (_sock != null) {
+        if (_sockchk()) {
             return true;
         }
         if ((_autokey == 0) ||
@@ -95,6 +105,20 @@ class NetProc {
         _err = err;
         doNotifyInf();
         stop();
+    }
+
+    void _onclose() {
+        _state = NetState.offline;
+        _sock!.close();
+        _sock = null;
+        _pro.rcvClear();
+        _reciever.clear();
+        _confirmer.clear();
+        _rcvelm.clear();
+        _err ??= NetError.disconnected;
+        _kalive?.cancel();
+        _kalive = null;
+        doNotifyInf();
     }
 
     Future<bool> start(InternetAddress ip, int port) async {
@@ -120,17 +144,7 @@ class NetProc {
         _sock?.listen(
             recv,
             onDone: () {
-                _state = NetState.offline;
-                _sock!.close();
-                _sock = null;
-                _pro.rcvClear();
-                _reciever.clear();
-                _confirmer.clear();
-                _rcvelm.clear();
-                _err ??= NetError.disconnected;
-                _kalive?.cancel();
-                _kalive = null;
-                doNotifyInf();
+                _onclose();
                 developer.log('net disconnected');
             }
         );
@@ -996,6 +1010,60 @@ class NetProc {
         _rcvelm.add(NetRecvElem.files);
         doNotifyInf();
 
+        return true;
+    }
+
+    Future<bool> saveFiles({ required List<FileItem> files, Function() ?onDone }) async {
+        if (!await _autochk()) return false;
+
+        if (_rcvelm.contains(NetRecvElem.filessave)) {
+            return false;
+        }
+        if (files.isEmpty) {
+            return false;
+        }
+        bool ok = confirmerAdd(0x5a, (err) {
+            _rcvelm.remove(NetRecvElem.filessave);
+            doNotifyInf();
+            if ((err == null) && (onDone != null)) onDone();
+        });
+        if (!ok) {
+            return false;
+        }
+
+        if (!send(0x5a)) {
+            confirmerDel(0x5a);
+            return false;
+        }
+        _rcvelm.add(NetRecvElem.filessave);
+        doNotifyInf();
+
+        for (var f in files) {
+            if ((f.path == null) || f.path!.isEmpty) continue;
+            final fh = await File(f.path ?? '').open();
+            if (!send(0x5b, 'Ns', [fh.lengthSync(), f.name])) {
+                confirmerDel(0x5a);
+                return false;
+            }
+
+            while (fh.positionSync() < fh.lengthSync()) {
+                if (!send(0x5c, 'B', [await fh.read(256)])) {
+                    confirmerDel(0x5a);
+                    return false;
+                }
+            }
+
+            fh.close();
+            if (!send(0x5d)) {
+                confirmerDel(0x5a);
+                return false;
+            }
+        }
+
+        if (!send(0x5e)) {
+            confirmerDel(0x5a);
+            return false;
+        }
         return true;
     }
 }

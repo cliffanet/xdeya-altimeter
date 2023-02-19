@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:file_picker/file_picker.dart';
 import 'pager.dart';
+import 'page/filesrestore.dart';
 import 'net/wifidiscovery.dart';
 import 'net/proc.dart';
 import 'data/track.dart';
@@ -36,7 +37,7 @@ Widget getTitleBarDiscovery() {
 }
 
 
-enum MenuCode { Refresh, WiFiPass, TrackList, SaveGpx, FilesBackup, saveFiles }
+enum MenuCode { Refresh, WiFiPass, TrackList, SaveGpx, FilesBackup, FilesRestore }
 
 Widget getTitleBarClient(PageCode page) {
     return ValueListenableBuilder(
@@ -212,7 +213,21 @@ Widget getTitleBarClient(PageCode page) {
                             children: const [
                                 Icon(Icons.outbox, color: Colors.black),
                                 SizedBox(width: 8),
-                                Text('Скачать все данные'),
+                                Text('Скачать все настройки'),
+                            ]
+                        ),
+                    ),
+                );
+            }
+            if (Pager.top != PageCode.filesrestore) {
+                menu.add(
+                    PopupMenuItem(
+                        value: MenuCode.FilesRestore,
+                        child: Row(
+                            children: const [
+                                Icon(Icons.outbox, color: Colors.black),
+                                SizedBox(width: 8),
+                                Text('Восстановить настройки'),
                             ]
                         ),
                     ),
@@ -246,6 +261,15 @@ Widget getTitleBarClient(PageCode page) {
                         net.requestFiles(dir: dir);
                         //if (!context.mounted) return;
                         Pager.push(context, PageCode.filesbackup);
+                        break;
+                    case MenuCode.FilesRestore:
+                        PageFilesRestore.clearlist();
+                        Pager.push(context, PageCode.filesrestore);
+                        String? dir = await FilePicker.platform.getDirectoryPath();
+                        if (dir == null) {
+                            return;
+                        }
+                        PageFilesRestore.opendir(dir);
                         break;
                 }
             };

@@ -683,7 +683,7 @@ class _sendFiles : public WrkNet {
     uint16_t m_cnt;
 public:
     _sendFiles(BinProto *pro) :
-        WrkNet(pro, netSendTrackList),
+        WrkNet(pro, netSendFiles),
         m_cnt(0)
     {
     }
@@ -1058,6 +1058,99 @@ WrkProc<WrkNet> recvFirmware(BinProto *pro) {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Приём файлов
+ * ------------------------------------------------------------------------------------------- */
+bool file_exists(const char *fname, bool external = false);
+bool file_remove(const char *fname, bool external = false);
+File file_open(const char *fname, FileMy::mode_t mode, bool external = false);
+class _recvFiles : public WrkRecv {
+        File m_fh;
+    
+public:
+    _recvFiles(BinProto *pro) :
+        WrkRecv(pro, netRecvFiles)
+    {
+    }
+#ifdef FWVER_DEBUG
+    ~_recvFiles() {
+        CONSOLE("wrk(0x%08x) destroy", this);
+    }
+#endif
+    
+    state_t run() {
+        m_pro->rcvprocess();
+        if (!m_pro->rcvvalid())
+            WPRC_ERR("recv data fail");
+        if (!m_pro->rcvcmpl())
+            return chktimeout();
+    
+    WPROC
+        if (m_pro->rcvcmd() != 0x5a) // file list begin
+            WPRC_ERR("Recv wrong cmd=0x%02x", m_pro->rcvcmd());
+        RCVNEXT();  // Эта команда без данных
+
+    WPRC_RUN
+        if (!m_fh) {
+            switch (m_pro->rcvcmd()) {
+                case 0x5b: { // file begin
+                    struct __attribute__((__packed__)) {
+                        uint32_t sz;
+                        char name[BINPROTO_STRSZ];
+                    } h;
+                    RCV("Ns", h);
+
+                    char name[BINPROTO_STRSZ] = { '/' };
+                    strncpy(name+1, h.name, BINPROTO_STRSZ-2);
+                    name[BINPROTO_STRSZ-1] = '\0';
+                    CONSOLE("file beg: %s (%d bytes)", name, h.sz);
+
+                    if ( file_exists(name) &&
+                        !file_remove(name))
+                        WPRC_ERR("Can't remove file: %s", name);
+                    m_fh = file_open(name, FileMy::MODE_WRITE);
+                    if (!m_fh || m_fh.isDirectory())
+                        WPRC_ERR("Can't open for write: %s", name);
+                    CONSOLE("file opened");
+                    return RUN;
+                }
+                case 0x5e: // file list finish
+                    RCVNEXT();
+                    CONSOLE("file list finish");
+                    return ok();
+            }
+        }
+        else {
+            switch (m_pro->rcvcmd()) {
+                case 0x5c: { // file data
+                    struct __attribute__((__packed__)) {
+                        uint16_t sz;
+                        uint8_t buf[256];
+                    } d;
+                    RCV("B256", d);
+                    CONSOLE("file data: %d bytes", d.sz);
+                    size_t sz = m_fh.write(d.buf, d.sz);
+                    if (sz <= 0)
+                        WPRC_ERR("file(%s) write err on pos: %d, sz: %d", m_fh.name(), m_fh.position(), d.sz);
+                    return RUN;
+                }
+                case 0x5d: // file end
+                    RCVNEXT();
+                    m_fh.close();
+                    CONSOLE("file end");
+                    return RUN;
+            }
+        }
+        
+    WPRC(RUN)
+    }
+
+    void end() {
+        if (m_fh)
+            m_fh.close();
+    }
+};
+
+/* ------------------------------------------------------------------------------------------- *
  *  Взаимодействие с приложением
  * ------------------------------------------------------------------------------------------- */
 static RTC_DATA_ATTR uint16_t _autokey = 0;
@@ -1108,8 +1201,14 @@ public:
             if (m_wrk.isrun())
                 return DLY;
             if (m_wrk.valid()) {
-                if (m_wrk->id() == netRecvWiFiPass)
-                    CONFIRM(0x41, m_wrk->isok() ? 0 : 1);
+                switch (m_wrk->id()) {
+                    case netRecvWiFiPass:
+                        CONFIRM(0x41, m_wrk->isok() ? 0 : 1);
+                        break;
+                    case netRecvFiles:
+                        CONFIRM(0x5a, m_wrk->isok() ? 0 : 1);
+                        break;
+                }
             
                 // Удаляем завершённый процесс
                 m_wrk.reset();
@@ -1257,6 +1356,12 @@ public:
                 RCV("NNNTC", srch);
 
                 sendTrack(m_pro, srch);
+                break;
+            }
+            case 0x5a: { // save files
+                //m_pro->rcvnext(); // нет данных   // Приём данных этой команды делает сам воркер,
+                                                    // со временем, когда уберём wifisync, надо это поправить
+                m_wrk = wrkRun<_recvFiles, WrkNet>(m_pro);
                 break;
             }
             default:

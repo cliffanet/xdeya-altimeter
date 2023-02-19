@@ -24,9 +24,11 @@ enum {
     netSendWiFiPass,
     netSendTrackList,
     netSendTrack,
+    netSendFiles,
     netRecvWiFiPass,
     netRecvVerAvail,
-    netRecvFirmware
+    netRecvFirmware,
+    netRecvFiles
 };
 
 

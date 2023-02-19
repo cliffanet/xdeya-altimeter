@@ -474,10 +474,10 @@ class BinProto {
                         ByteData(0);
                     ByteData sz = ByteData(pk[pi] == 'B' ? 2 : 4);
                     if (pk[pi] == 'B') {
-                        d.setUint16(0, d.lengthInBytes, Endian.big);
+                        sz.setUint16(0, d.lengthInBytes, Endian.big);
                     }
                     else {
-                        d.setUint32(0, d.lengthInBytes, Endian.big);
+                        sz.setUint32(0, d.lengthInBytes, Endian.big);
                     }
                     data.addAll( sz.buffer.asInt8List() );
                     data.addAll( d.buffer.asInt8List() );

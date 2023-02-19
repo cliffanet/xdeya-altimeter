@@ -60,6 +60,7 @@ class BinProto {
         rcvst_t rcvstate()  const { return m_rcvstate; }
         // то же, что и rcvstate, но ограничивается определением, в рабочей ли фазе находимся или зафиксирована проблема
         bool    rcvvalid()  const { return m_rcvstate > RCV_DISCONNECTED; }
+        bool    rcvcmpl()   const { return m_rcvstate == RCV_COMPLETE; }
         // текущая принятая команда
         cmdkey_t rcvcmd()   const { return m_rcvcmd; }
         cmdkey_t rcvsz()    const { return m_rcvsz; }
