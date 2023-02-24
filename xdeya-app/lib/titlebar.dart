@@ -77,6 +77,10 @@ Widget getTitleBarClient(PageCode page) {
                     case NetError.disconnected:
                         txt = 'Соединение разорвано';
                         break;
+
+                    case NetError.canceled:
+                        txt = 'Соединение отменено';
+                        break;
                         
                     case NetError.proto:
                         txt = 'Ошибка протокола передачи';

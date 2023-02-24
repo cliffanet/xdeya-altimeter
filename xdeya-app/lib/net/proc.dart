@@ -19,6 +19,7 @@ enum NetState {
 enum NetError {
     connect,
     disconnected,
+    canceled,
     proto,
     cmddup,
     auth
@@ -38,6 +39,8 @@ final net = NetProc();
 
 class NetProc {
     Socket ?_sock;
+    StreamSubscription<Uint8List> ?_socklisten;
+    Future<bool> ?_sockproc;
 
     /*//////////////////////////////////////
      *
@@ -98,31 +101,55 @@ class NetProc {
     // start / stop
 
     void stop() {
-        _sock?.close();
+        _errstop(NetError.canceled);
     }
 
     void _errstop(NetError ?err) {
+        _clear();
         _err = err;
         doNotifyInf();
-        stop();
+        developer.log('net stop by: $err');
     }
 
-    void _onclose() {
-        _state = NetState.offline;
-        _sock!.close();
-        _sock = null;
+    void _clear() {
+        if (_socklisten != null) {
+            _socklisten!.cancel();
+            _socklisten = null;
+            developer.log('net subscription canceled');
+        }
+        if (_sockproc != null) {
+            _sockproc!.ignore();
+            _sockproc = null;
+            developer.log('net await ignored');
+        }
+        if (_sock != null) {
+            _sock!.close();
+            _sock = null;
+            developer.log('net sock closed');
+        }
+
         _pro.rcvClear();
         _reciever.clear();
         _confirmer.clear();
         _rcvelm.clear();
-        _err ??= NetError.disconnected;
-        _kalive?.cancel();
+        if (_kalive != null) {
+            _kalive!.cancel();
+        }
         _kalive = null;
-        doNotifyInf();
+        _datamax = 0;
+        _datacnt = 0;
+
+        _state = NetState.offline;
+        developer.log('net cleared');
     }
 
-    Future<bool> start(InternetAddress ip, int port) async {
-        _sock?.close();
+    Future<bool> start(InternetAddress ip, int port) {
+        return _sockproc = _process(ip, port);
+    }
+
+    Future<bool> _process(InternetAddress ip, int port) async {
+        stop();
+        //_sock!.close();
         //await Future.doWhile(() => isActive);
 
         developer.log('net connecting to: $ip:$port');
@@ -134,19 +161,19 @@ class NetProc {
             _sock = await Socket.connect(ip, port);
         }
         catch (err) {
-            _sock = null;
-            _state = NetState.offline;
-            _err = NetError.connect;
-            doNotifyInf();
+            developer.log('net connect error: $err');
+            _errstop(NetError.connect);
             return false;
         }
 
-        _sock?.listen(
+        if (_sock == null) {
+            _errstop(NetError.connect);
+            return false;
+        }
+
+        _socklisten = _sock!.listen(
             recv,
-            onDone: () {
-                _onclose();
-                developer.log('net disconnected');
-            }
+            onDone: ()  => _errstop(NetError.disconnected)
         );
         developer.log('net connected');
 
@@ -156,6 +183,9 @@ class NetProc {
         // запрос hello
         if (!recieverAdd(0x02, () {
                 recieverDel(0x02);
+                // 0x03 (authreply) вы добавляем, если у нас есть
+                // autokey с предыдущей авторизации, но он может не пройти
+                recieverDel(0x03);
                 _pro.rcvNext();
                 _state = NetState.waitauth;
                 _autokey = 0;
@@ -268,7 +298,9 @@ class NetProc {
         }
         
         var data = _pro.pack(cmd, pk, vars);
-        _sock?.add(data);
+        if (_sock != null) {
+            _sock!.add(data);
+        }
         developer.log('send cmd=$cmd, size=${ data.length }');
 
         return true;
@@ -360,10 +392,10 @@ class NetProc {
             _errstop(NetError.auth);
             return false;
         }
-        if ((v != null) && (v.length >= 2) && (v[1] > 0)) {
+        if ((v != null) && (v.length >= 2) && (v[1] > 0) && (_sock != null)) {
             _autokey    = v[1];
-            _autoip     = _sock?.remoteAddress;
-            _autoport   = _sock?.remotePort;
+            _autoip     = _sock!.remoteAddress;
+            _autoport   = _sock!.remotePort;
         }
         else {
             _autokey    = 0;
