@@ -1,17 +1,3 @@
----
-title: "Хде-Йа - Самое краткое руководство"
-author: Cliff
-geometry: margin=1.5cm
-mainfont: Arial
-monofont: PT Mono
-toc-title: Оглавление
-colorlinks:
-    urlcolor: NavyBlue
-    toccolor: Red
-subparagraph: true
-lang: ru-RU
----
-
 # Знакомство
 
 Вы никогда не задавались вопросом:
@@ -108,6 +94,8 @@ lang: ru-RU
 
 
 # Подсветка
+
+Меню: `Параметры` -> `Дисплей` -> `Подсветка`
 
 Для ночных прыжочков:
 

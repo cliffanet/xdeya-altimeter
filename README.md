@@ -37,7 +37,7 @@
 
 * [Руководство пользователя](doc/userman/README.md) \[[PDF](doc/userman.pdf)|[Word](doc/userman.docx)\]
 
-    * [Самое краткое руководство](doc/userman/simple.md) \[[PDF](doc/userman/xdeya-simple.pdf)|[Word](doc/userman/xdeya-simple.docx)\]
+    * [Самое краткое руководство](doc/userman/simple/README.md) \[[PDF](doc/userman/xdeya-simple.pdf)|[Word](doc/userman/xdeya-simple.docx)\]
     * [Руководство пользователя: Меню](doc/userman/menu/README.md) \[[PDF](doc/userman/xdeya-menu.pdf)|[Word](doc/userman/xdeya-menu.docx)\]
 
 * [Модификации](doc/models/README.md) - подробное описание аппаратных вариантов и их особенностей с фото.
