@@ -39,12 +39,10 @@
 
     * [Самое краткое руководство](doc/userman/simple/README.md) \[[PDF](doc/userman/xdeya-simple.pdf)|[Word](doc/userman/xdeya-simple.docx)\]
     * [Руководство пользователя: Меню](doc/userman/menu/README.md) \[[PDF](doc/userman/xdeya-menu.pdf)|[Word](doc/userman/xdeya-menu.docx)\]
+    * [Технические особенности и разъяснения](doc/userman/tech/README.md) \[[PDF](doc/userman/xdeya-tech.pdf)|[Word](doc/userman/xdeya-tech.docx)\]
 
 * [Модификации](doc/models/README.md) - подробное описание аппаратных вариантов и их особенностей с фото.
-* [Текущие возможности и проблемы](doc/build/README.md)
 * [Используемые комплектующие](doc/build/hardware.md)
-* [Планы в развитии](doc/build/future.md)
-* [Экспериментальные наработки](doc/test/README.md)
 * [Сколько стоит и где купить](doc/build/price.md)
 * [Исходники](doc/code/README.md) - где, что лежит, права на использование, помощь при компиляции.
 
