@@ -35,11 +35,10 @@
 ***
 ## Документация
 
-* [Руководство пользователя](doc/userman/README.md) \[[PDF](doc/userman.pdf)|[Word](doc/userman.docx)\]
-
-    * [Самое краткое руководство](doc/userman/simple/README.md) \[[PDF](doc/userman/xdeya-simple.pdf)|[Word](doc/userman/xdeya-simple.docx)\]
-    * [Руководство пользователя: Меню](doc/userman/menu/README.md) \[[PDF](doc/userman/xdeya-menu.pdf)|[Word](doc/userman/xdeya-menu.docx)\]
-    * [Технические особенности и разъяснения](doc/userman/tech/README.md) \[[PDF](doc/userman/xdeya-tech.pdf)|[Word](doc/userman/xdeya-tech.docx)\]
+* [Самое краткое руководство](doc/userman/simple/README.md) \[[PDF](doc/userman/xdeya-simple.pdf)|[Word](doc/userman/xdeya-simple.docx)\]
+* [Как это сделать?](doc/userman/howdo/README.md) \[[PDF](doc/userman/xdeya-howdo.pdf)|[Word](doc/userman/xdeya-howdo.docx)\]
+* [Описание Меню прибора](doc/userman/menu/README.md) \[[PDF](doc/userman/xdeya-menu.pdf)|[Word](doc/userman/xdeya-menu.docx)\]
+* [Технические особенности и разъяснения](doc/userman/tech/README.md) \[[PDF](doc/userman/xdeya-tech.pdf)|[Word](doc/userman/xdeya-tech.docx)\]
 
 * [Модификации](doc/models/README.md) - подробное описание аппаратных вариантов и их особенностей с фото.
 * [Используемые комплектующие](doc/build/hardware.md)
