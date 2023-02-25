@@ -25,15 +25,21 @@
 
 В данном устройстве используется навигационный чип [u-blox M8N](https://www.u-blox.com/en/product/neo-m8-series). Чип настроен на приём GPS и GLONASS сигналов.
 
+![](img/chip.navi.png "u-blox M8N")
+
 
 ## Барометр
 
 Для определения высоты применён барометрический чип [BMP280](https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/), зарекомендовавший себя при разработке высотомеров у многих проектировщиков таких устройств.
 
+![](img/chip.bmp280.jpg "BMP280")
+
 
 ## Компас
 
 Используемый чип: LSM303DLH (именно с такими буквами, в корпусе LGA-28L).
+
+![](img/chip.compas.jpg "LSM303DLH")
 
 В его составе:
 
