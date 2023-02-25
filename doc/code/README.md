@@ -70,7 +70,7 @@
 Теперь устройство готово к загрузке на него прошивки.
 
 
-### Подключение к компьютеру (версия v.0.4)
+### Подключение к компьютеру (версия v.0.4 и более поздние)
 
 У этой модификации на борту уже есть переходник USB-to-UART, поэтому для подключения к компьютеру достаточно подключить его кабелем через разъём MicroUSB на устройстве.
 
@@ -82,7 +82,11 @@
 
 * Берём [готовый файл](https://github.com/cliffanet/xdeya-altimeter/releases) прошивки (один нужной версии)
 
-* [Дополнительные файлы прошивки](https://github.com/cliffanet/xdeya-altimeter/raw/master/boot.zip)
+* Дополнительные файлы прошивки
+
+    для Flash 4MByte: [boot.zip](https://github.com/cliffanet/xdeya-altimeter/raw/master/boot.zip)
+
+    для расширенной Flash 16Mbyte: [boot.v6.zip](https://github.com/cliffanet/xdeya-altimeter/raw/master/boot.v6.zip)
 
 * Скачиваем и запускаем [Flash Download Tools](https://www.espressif.com/en/support/download/other-tools)
 
