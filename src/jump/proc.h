@@ -78,7 +78,7 @@ typedef struct __attribute__((__aligned__(64), __packed__)) {
 #define LI_FLAG_BTN_SEL     0x4000
 #define LI_FLAG_BTN_DOWN    0x8000
 
-#define LOG_PK              "NnaaiiNNNiiNNCCnNNNNNN"
+#define LOG_PK              "NnaaiiIIIiiINCCnNNNNNN"
 
 // Один прыг в простом логбуке, где запоминаются только данные на начало, середину и самое окончание прыга
 typedef struct __attribute__((__packed__)) {

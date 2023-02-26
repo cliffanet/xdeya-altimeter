@@ -48,7 +48,7 @@ static void jmpPreLogAdd(uint16_t interval) {
         lon         : gps.lon,
         lat         : gps.lat,
         hspeed      : gps.gSpeed,
-        heading     : static_cast<int16_t>(NAV_DEG(gps.heading)),
+        heading     : static_cast<int16_t>(gps.headDegI()),
         gpsalt      : static_cast<int16_t>(NAV_MM(gps.hMSL)),
         vspeed      : gps.speed,
         gpsdage     : gpsDataAge(), // тут вместо millis уже используется только 1 байт для хранения, можно пересмотреть формат
@@ -67,17 +67,17 @@ static void jmpPreLogAdd(uint16_t interval) {
         millis      : static_cast<uint32_t>(utm() / 1000),
     };
     
-    if (NAV_VALID(gps))
+    if (gps.valid())
         li.flags |= LI_FLAG_NAV_VALID;
-    if (NAV_VALID_LOCATION(gps))
+    if (gps.validLocation())
         li.flags |= LI_FLAG_NAV_VLOC;
-    if (NAV_VALID_VERTICAL(gps))
+    if (gps.validVertical())
         li.flags |= LI_FLAG_NAV_VVERT;
-    if (NAV_VALID_SPEED(gps))
+    if (gps.validSpeed())
         li.flags |= LI_FLAG_NAV_VSPEED;
-    if (NAV_VALID_HEAD(gps))
+    if (gps.validHead())
         li.flags |= LI_FLAG_NAV_VHEAD;
-    if (NAV_VALID_TIME(gps))
+    if (gps.validTime())
         li.flags |= LI_FLAG_NAV_VTIME;
     
     if (btnPushed(BTN_UP))

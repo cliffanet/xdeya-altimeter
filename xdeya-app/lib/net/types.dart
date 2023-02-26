@@ -1,6 +1,7 @@
 import 'binproto.dart';
 
-const String pkLogItem = 'NnaaiiNNNiiNNC nNNNNNN';
+const String pkLogItem = 'NnaaiiIIIiiINC nNNNNNN';
+                         
 const List<String> fldLogItem = [
     'tmoffset',     // время от начала измерений        (ms)
     'flags',        // флаги: валидность

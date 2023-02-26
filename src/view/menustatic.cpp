@@ -249,14 +249,14 @@ static const menu_el_t menugpsupoint[] {
             }
             
             auto &gps = gpsInf();
-            if (!NAV_VALID_LOCATION(gps)) {
+            if (!gps.validLocation()) {
                 // Или к моменту срабатывания длинного нажатия может не быть валидных координат (потеряны спутники)
                 menuFlashP(PTXT(MENU_POINT_NONAV));
                 return;
             }
             
             // Сохраняем
-            pnt.locSet(NAV_LATLON(gps.lat), NAV_LATLON(gps.lon));
+            pnt.locSet(gps.getLat(), gps.getLon());
             if (!pnt.save()) {
                 menuFlashP(PTXT(MENU_POINT_EEPROMFAIL));
                 return;

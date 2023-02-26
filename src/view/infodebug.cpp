@@ -133,12 +133,12 @@ class ViewInfoDebug : public ViewInfo {
                 
                 case 16:
                     PRNL("NAVI lon");
-                    PRNR("%f", NAV_LATLON(gpsInf().lon));
+                    PRNR("%f", gpsInf().getLon());
                     break;
                 
                 case 17:
                     PRNL("NAVI lat");
-                    PRNR("%f", NAV_LATLON(gpsInf().lat));
+                    PRNR("%f", gpsInf().getLat());
                     break;
                 
                 case 18:
@@ -214,7 +214,7 @@ class ViewInfoDebug : public ViewInfo {
                 
                 case 31:
                     PRNL("NAVI heading");
-                    PRNR("%.1f deg", NAV_DEG_F(gpsInf().heading));
+                    PRNR("%.1f deg", gpsInf().headDegF());
                     break;
                 
                 case 32:
@@ -224,7 +224,7 @@ class ViewInfoDebug : public ViewInfo {
                 
                 case 33:
                     PRNL("NAVI cAcc");
-                    PRNR("%.1f deg", NAV_DEG_F(gpsInf().cAcc));
+                    PRNR("%.1f deg", gpsInf().headAcc());
                     break;
                 
                 case 34:

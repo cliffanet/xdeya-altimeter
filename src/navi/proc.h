@@ -22,22 +22,10 @@
 #define NAV_KOEF_MM     1000L
 #define NAV_KOEF_CM     100L
 
-#define NAV_LATLON(x)   (static_cast<double>(x) / NAV_KOEF_LATLON)
-#define NAV_DEG(x)      ((x) / NAV_KOEF_DEG)
-#define NAV_DEG_F(x)    NAV_DEG(static_cast<double>(x))
-#define NAV_RAD(x)      ((x) / NAV_KOEF_DEG * DEG_TO_RAD)
-#define NAV_RAD_F(x)    NAV_RAD(static_cast<double>(x))
 #define NAV_MM(x)       ((x) / NAV_KOEF_MM)
 #define NAV_MM_F(x)     NAV_MM(static_cast<double>(x))
 #define NAV_CM(x)       ((x) / NAV_KOEF_CM)
 #define NAV_CM_F(x)     NAV_CM(static_cast<double>(x))
-
-#define NAV_VALID(gps)              (gps.rcvok && (gps.numSV > 0) && (gps.gpsFix == 3))
-#define NAV_VALID_LOCATION(gps)     (NAV_VALID(gps) && (gps.hAcc < 30000))
-#define NAV_VALID_VERTICAL(gps)     (NAV_VALID(gps) && (gps.vAcc < 30000))
-#define NAV_VALID_SPEED(gps)        (NAV_VALID_LOCATION(gps) && (gps.sAcc < 1000))
-#define NAV_VALID_HEAD(gps)         (NAV_VALID_LOCATION(gps) && (gps.cAcc < 5000000))
-#define NAV_VALID_TIME(gps)         (NAV_VALID(gps) && (gps.tm.year > 2000))
 
 #define NAV_TICK_INTERVAL       200
 
@@ -62,6 +50,33 @@ typedef struct {
     
     tm_t tm;
     bool rcvok;
+
+    inline
+    bool valid()            const { return rcvok && (numSV > 0) && (gpsFix == 3); }
+    inline
+    bool validLocation()    const { return valid() && (hAcc < 30000); }
+    inline
+    bool validVertical()    const { return valid() && (vAcc < 30000); }
+    inline
+    bool validSpeed()       const { return validLocation() && (sAcc < 1000); }
+    inline
+    bool validHead()        const { return validLocation() && (cAcc < 5000000); }
+    inline
+    bool validTime()        const { return valid() && (tm.year > 2000); }
+
+    inline
+    double getLon()     const { return static_cast<double>(lon) / NAV_KOEF_LATLON; }
+    inline
+    double getLat()     const { return static_cast<double>(lat) / NAV_KOEF_LATLON; }
+
+    inline
+    double headDegF()   const { return static_cast<double>(heading) / NAV_KOEF_DEG; }
+    inline
+    int    headDegI()   const { return heading / NAV_KOEF_DEG; }
+    inline
+    double headRad()    const { return headDegF() * DEG_TO_RAD; }
+    inline
+    double headAcc()    const { return static_cast<double>(cAcc) / NAV_KOEF_DEG; }
 } gps_data_t;
 
 typedef enum {
