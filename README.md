@@ -58,3 +58,4 @@
 * Telegram канал с информацией: [@xdeya](https://t.me/xdeya)
 * Telegram: [Cliff](https://t.me/cliffa_net)
 * cliff_mail@mail.ru
+* Cайт проекта: [xdeya.ru](http://xdeya.ru)
