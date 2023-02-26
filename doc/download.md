@@ -2,8 +2,8 @@
 
 Стабильная версия прошивки (только для [`v.0.5`](models/03.v.0.5.md)):
 
-* RU: [xdeya-altimeter.v0.7.3.hw5.ru.bin](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya-altimeter.v0.7.3.hw5.dev.ru.bin)
-* EN: [xdeya-altimeter.v0.7.3.hw5.en.bin](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya-altimeter.v0.7.3.hw5.dev.en.bin)
+* RU: [xdeya-altimeter.v0.7.3.hw5.ru.bin](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya-altimeter.v0.7.3.hw5.ru.bin)
+* EN: [xdeya-altimeter.v0.7.3.hw5.en.bin](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya-altimeter.v0.7.3.hw5.en.bin)
 
 ## Как обновить прошивку
 
