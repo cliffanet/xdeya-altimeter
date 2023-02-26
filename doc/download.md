@@ -16,12 +16,15 @@
 ## Приложение
 
 - Windows
+
     [xdeya.v0.7.3.zip](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya.v0.7.3.zip)
 
 - MacOS
+
     [xdeya.v0.7.3.dmg](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya.v0.7.3.dmg)
 
 - Android
+
     [xdeya.v0.7.3.apk](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya.v0.7.3.apk)
 
 ## Как подключиться из приложения
