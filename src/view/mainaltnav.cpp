@@ -135,7 +135,7 @@ static void drawText(ARG_COMP_DEF) {
 
     // навигация
     auto &gps = gpsInf();
-    if (gps.validLocation() && pnt.numValid() && pnt.cur().used) {
+    if (gps.validLocation() && gps.validPoint() && pnt.numValid() && pnt.cur().used) {
         double dist = 
             gpsDistance(
                 gps.getLat(),
@@ -215,7 +215,7 @@ static void drawText(ARG_COMP_DEF) {
 
     // навигация
     auto &gps = gpsInf();
-    if (gps.validLocation() && pnt.numValid() && pnt.cur().used) {
+    if (gps.validLocation() && gps.validPoint() && pnt.numValid() && pnt.cur().used) {
         double dist = 
             gpsDistance(
                 gps.getLat(),
@@ -389,6 +389,12 @@ static void drawNavi(ARG_COMP_DEF, double head = 0) {
     if (!gps.valid()) {
         u8g2.setFont(u8g2_font_open_iconic_www_4x_t);
         u8g2.drawGlyph(cx-16,cy+16, 'J');
+        return;
+    }
+
+    if (!gps.validPoint()) {
+        u8g2.setFont(u8g2_font_open_iconic_www_4x_t);
+        u8g2.drawGlyph(cx-16,cy+16, 'R');
         return;
     }
     

@@ -54,6 +54,8 @@ typedef struct {
     inline
     bool valid()            const { return rcvok && (numSV > 0) && (gpsFix == 3); }
     inline
+    bool validPoint()       const { return rcvok && ((lon < -2000) || (lon > 2000)) && ((lat < -2000) || (lat > 2000)); }
+    inline
     bool validLocation()    const { return valid() && (hAcc < 30000); }
     inline
     bool validVertical()    const { return valid() && (vAcc < 30000); }
