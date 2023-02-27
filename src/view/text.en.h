@@ -109,6 +109,13 @@
 #define TXT_MENU_FW_NOUPD           "-no-"
 #define TXT_MENU_FW_SDCARD          "Update from SD-Card"
 
+#define TXT_MENU_SYSNAV_SERIAL      "Direct serial"
+#define TXT_MENU_SYSNAV_SATINFO     "Sat-info"
+#define TXT_MENU_SYSNAV_VERINFO     "HW version"
+#define TXT_MENU_SYSNAV_COLDRST     "Cold restart"
+#define TXT_MENU_SYSNAV_RSTFAIL     "Restart fail"
+#define TXT_MENU_SYSNAV_RSTOK       "Restart OK"
+
 #define TXT_MENU_TEST_CLOCK         "Clock"
 #define TXT_MENU_TEST_BATTERY       "Battery"
 #define TXT_MENU_TEST_BATTCHARGE    "Batt charge"
@@ -132,12 +139,8 @@
 #define TXT_MENU_SYSTEM_EEPROMFAIL  "EEPROM fail"
 #define TXT_MENU_SYSTEM_CFGRESETED  "Config reseted"
 #define TXT_MENU_SYSTEM_FWUPDATE    "FirmWare update"
+#define TXT_MENU_SYSTEM_NAVIGATION  "Navigation chip"
 #define TXT_MENU_SYSTEM_FILES       "Files"
-#define TXT_MENU_SYSTEM_NAVSERIAL   "Nav serial"
-#define TXT_MENU_SYSTEM_NAVSATINFO  "Nav sat-info"
-#define TXT_MENU_SYSTEM_NAVCOLDRST  "Nav Cold restart"
-#define TXT_MENU_SYSTEM_NAVRSTFAIL  "Restart fail"
-#define TXT_MENU_SYSTEM_NAVRSTOK    "Restart OK"
 #define TXT_MENU_SYSTEM_HWTEST      "Hardware test"
 #define TXT_MENU_SYSTEM_MAGCALIB    "Mag calibrate"
 

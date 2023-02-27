@@ -33,6 +33,9 @@
 #define UBX_NAV_TIMEUTC     0x21
 #define UBX_NAV_SAT         0x35
 
+#define UBX_MON             0x0a
+#define UBX_MON_VER         0x04
+
 #define UBX_NMEA            0xf0
 #define UBX_NMEA_GPGGA      0x00
 #define UBX_NMEA_GPGLL      0x01
@@ -59,10 +62,11 @@ typedef struct {
     uint8_t         cl;
     uint8_t         id;
     bool            istmp;
+    bool            ckfail;
     ubloxgps_hnd_t  hnd;
 } ubloxgps_hnditem_t;
 
-#define UBX_HND_SIZE    10
+#define UBX_HND_SIZE    15
 #define UBX_CONFIRM_TIMEOUT 1000
 
 typedef struct {
@@ -108,13 +112,13 @@ class UbloxGpsProto
             return send(cl, id, reinterpret_cast<const uint8_t *>(&data), sizeof(T));
         }
         
-        bool get(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd);
+        bool get(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd, bool ckfail = false);
         
-        bool hndadd(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd, bool istmp = false);
+        bool hndadd(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd, bool istmp = false, bool ckfail = false);
         bool hnddel(uint8_t cl, uint8_t id, ubloxgps_hnd_t hnd);
         void hndclear();
         void hndzero(ubloxgps_hnditem_t &h);
-        uint8_t hndcall(uint8_t cl, uint8_t id);
+        uint8_t hndcall(uint8_t cl, uint8_t id, uint8_t ckok = 3);
         
         uint32_t cntRecv() const { return cntrecv; }
         uint32_t cntRecvErr() const { return cntrecverr; }
@@ -123,7 +127,7 @@ class UbloxGpsProto
     private:
         Stream *_uart;
         ubloxgps_bytewait_t rcv_bytewait;
-        uint8_t rcv_class, rcv_ident, rcv_cka, rcv_ckb;
+        uint8_t rcv_class, rcv_ident, rcv_cka, rcv_ckb, rcv_ckok;
         uint16_t rcv_plen, bufi, bufsz;
         uint8_t *buf = NULL;
         uint16_t sndcnt;

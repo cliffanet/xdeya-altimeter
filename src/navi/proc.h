@@ -29,6 +29,8 @@
 
 #define NAV_TICK_INTERVAL       200
 
+#define DEGRAD 0.017453292519943295769236907684886
+
 typedef struct {
 	int32_t  lon;      // Longitude                    (deg * 10^7)
 	int32_t  lat;      // Latitude                     (deg * 10^7)
@@ -76,7 +78,7 @@ typedef struct {
     inline
     int    headDegI()   const { return heading / NAV_KOEF_DEG; }
     inline
-    double headRad()    const { return headDegF() * DEG_TO_RAD; }
+    double headRad()    const { return headDegF() * DEGRAD; }
     inline
     double headAcc()    const { return static_cast<double>(cAcc) / NAV_KOEF_DEG; }
 } gps_data_t;

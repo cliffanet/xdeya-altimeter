@@ -928,6 +928,44 @@ static const menu_el_t menufirmware[] {
 static ViewMenuStatic vMenuFirmWare(menufirmware, sizeof(menufirmware)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Меню работы с навигацией
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menunavigation[] {
+    {
+        .name = PTXT(MENU_SYSNAV_SERIAL),
+        .submenu = NULL,
+        .enter = gpsDirectTgl,
+        .showval = [] (char *txt) { valOn(txt, gpsDirect()); },
+    },
+    {
+        .name = PTXT(MENU_SYSNAV_SATINFO),
+        .submenu = NULL,
+        .enter = setViewInfoSat,
+    },
+    {
+        .name = PTXT(MENU_SYSNAV_VERINFO),
+        .submenu = NULL,
+        .enter = setViewNavVerInfo,
+    },
+    {   // Холодный перезапуск навигации
+        .name       = PTXT(MENU_SYSNAV_COLDRST),
+        .submenu    = NULL,
+        .enter      = menuFlashHold,
+        .showval    = NULL,
+        .edit       = NULL,
+        .hold       =  [] () {
+            if (!gpsColdRestart()) {
+                menuFlashP(PTXT(MENU_SYSNAV_RSTFAIL));
+                return;
+            }
+            
+            menuFlashP(PTXT(MENU_SYSNAV_RSTOK));
+        },
+    },
+};
+static ViewMenuStatic vMenuNavigation(menunavigation, sizeof(menunavigation)/sizeof(menu_el_t));
+
+/* ------------------------------------------------------------------------------------------- *
  *  Меню тестирования оборудования
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menuhwtest[] {
@@ -1123,34 +1161,12 @@ static const menu_el_t menusystem[] {
         .submenu    = &vMenuFirmWare,
     },
     {
+        .name       = PTXT(MENU_SYSTEM_NAVIGATION),
+        .submenu    = &vMenuNavigation,
+    },
+    {
         .name       = PTXT(MENU_SYSTEM_FILES),
         .submenu    = menuFile(),
-    },
-    {
-        .name = PTXT(MENU_SYSTEM_NAVSERIAL),
-        .submenu = NULL,
-        .enter = gpsDirectTgl,
-        .showval = [] (char *txt) { valOn(txt, gpsDirect()); },
-    },
-    {
-        .name = PTXT(MENU_SYSTEM_NAVSATINFO),
-        .submenu = NULL,
-        .enter = setViewInfoSat,
-    },
-    {   // Холодный перезапуск навигации
-        .name       = PTXT(MENU_SYSTEM_NAVCOLDRST),
-        .submenu    = NULL,
-        .enter      = menuFlashHold,
-        .showval    = NULL,
-        .edit       = NULL,
-        .hold       =  [] () {
-            if (!gpsColdRestart()) {
-                menuFlashP(PTXT(MENU_SYSTEM_NAVRSTFAIL));
-                return;
-            }
-            
-            menuFlashP(PTXT(MENU_SYSTEM_NAVRSTOK));
-        },
     },
     {
         .name       = PTXT(MENU_SYSTEM_HWTEST),

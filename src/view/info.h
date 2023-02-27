@@ -52,5 +52,6 @@ void setViewInfoDebug();
 #endif
 
 void setViewInfoSat();
+void setViewNavVerInfo();
 
 #endif // _view_info_H

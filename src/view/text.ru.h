@@ -115,6 +115,13 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_FW_NOUPD           "-нет-"
 #define TXT_MENU_FW_SDCARD          "Обновить c SD карты"
 
+#define TXT_MENU_SYSNAV_SERIAL      "Direct serial"
+#define TXT_MENU_SYSNAV_SATINFO     "Cпутники"
+#define TXT_MENU_SYSNAV_VERINFO     "Версия ПО"
+#define TXT_MENU_SYSNAV_COLDRST     "Холодный перезапуск"
+#define TXT_MENU_SYSNAV_RSTFAIL     "Ошибка перезапуска"
+#define TXT_MENU_SYSNAV_RSTOK       "Перезапущено"
+
 #define TXT_MENU_TEST_CLOCK         "Часы"
 #define TXT_MENU_TEST_BATTERY       "Батарея"
 #define TXT_MENU_TEST_BATTCHARGE    "Подкл. зарядка"
@@ -138,12 +145,8 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_SYSTEM_EEPROMFAIL  "Ошибка EEPROM"
 #define TXT_MENU_SYSTEM_CFGRESETED  "Настройки сброшены"
 #define TXT_MENU_SYSTEM_FWUPDATE    "Обновление прошивки"
+#define TXT_MENU_SYSTEM_NAVIGATION  "Чип навигации"
 #define TXT_MENU_SYSTEM_FILES       "Файлы"
-#define TXT_MENU_SYSTEM_NAVSERIAL   "Нав: serial"
-#define TXT_MENU_SYSTEM_NAVSATINFO  "Нав: спутники"
-#define TXT_MENU_SYSTEM_NAVCOLDRST  "Нав: Холодный перезапуск"
-#define TXT_MENU_SYSTEM_NAVRSTFAIL  "Ошибка перезапуска"
-#define TXT_MENU_SYSTEM_NAVRSTOK    "Перезапущено"
 #define TXT_MENU_SYSTEM_HWTEST      "Тестирование аппарат."
 #define TXT_MENU_SYSTEM_MAGCALIB    "Калибровка магнетом."
 
