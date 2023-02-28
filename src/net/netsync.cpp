@@ -4,7 +4,7 @@
 
 #include "netsync.h"
 #include "../log.h"
-#include "../core/workerloc.h"
+#include "../core/worker.h"
 #include "binproto.h"
 #include "../view/text.h"
 #include "../cfg/main.h"
@@ -1154,6 +1154,7 @@ public:
  *  Взаимодействие с приложением
  * ------------------------------------------------------------------------------------------- */
 static RTC_DATA_ATTR uint16_t _autokey = 0;
+static uint16_t _appcnt = 0;
 
 class _netApp : public Wrk {
         uint16_t m_kalive;
@@ -1170,6 +1171,10 @@ public:
         m_code(0),
         m_pro(new BinProto(sock))
     {
+        _appcnt++;
+    }
+    ~_netApp() {
+        _appcnt--;
     }
 
 #define CONFIRM(cmd, ...)   if (!confirm(cmd, ##__VA_ARGS__)) WPRC_ERR("send confirm fail")
@@ -1390,3 +1395,5 @@ public:
 void netApp(NetSocket *sock) {
     wrkRun<_netApp>(sock);
 }
+
+uint16_t netAppCount() { return _appcnt; }

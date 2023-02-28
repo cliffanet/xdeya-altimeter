@@ -144,6 +144,12 @@
 #define TXT_MENU_SYSTEM_HWTEST      "Hardware test"
 #define TXT_MENU_SYSTEM_MAGCALIB    "Mag calibrate"
 
+#define TXT_MENU_WIFICLI_NET        "Net"
+#define TXT_MENU_WIFICLI_CONNECTED  "Connected"
+#define TXT_MENU_WIFICLI_USED       "Used"
+#define TXT_MENU_WIFICLI_STOP       "Stop"
+#define TXT_MENU_WIFICLI_STOPPED    "Stopped"
+
 #define TXT_MENU_NET_BLUETOOTH      "Bluetooth"
 #define TXT_MENU_NET_WIFICLI        "App whith WiFi"
 #define TXT_MENU_NET_WIFISERVER     "To server whith WiFi"

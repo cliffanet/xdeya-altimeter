@@ -4,7 +4,6 @@
 
 #include "wifiapp.h"
 #include "../log.h"
-#include "../core/workerloc.h"
 #include "../core/worker.h"
 #include "wifi.h"
 #include "netsync.h"
@@ -249,4 +248,11 @@ bool wifiCliNet(char *ssid) {
 
 bool wifiCliIsRun() {
     return _app.isrun();
+}
+
+bool wifiCliStop() {
+    if (!_app.isrun())
+        return false;
+    _app.term();
+    return true;
 }

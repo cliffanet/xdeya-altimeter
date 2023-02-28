@@ -14,7 +14,9 @@
 #include "../jump/track.h"
 #include "../core/filetxt.h"
 #include "../net/bt.h"
+#include "../net/wifi.h"
 #include "../net/wifiapp.h"
+#include "../net/netsync.h"
 #include "../../def.h" // time/pwr
 
 #if HWVER >= 5
@@ -1181,14 +1183,74 @@ static const menu_el_t menusystem[] {
 static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
+ *  Меню синхронизации по сети: приложение через wifi (информация о подключенной сети)
+ * ------------------------------------------------------------------------------------------- */
+static const menu_el_t menunetappwifi[] {
+    {
+        .name       = PTXT(MENU_WIFICLI_NET),
+        .submenu    = menuWifi2Cli(),
+        .enter      = NULL,
+        .showval    = [] (char *txt) { wifiCliNet(txt); },
+    },
+    {
+        .name       = PTXT(MENU_WIFICLI_CONNECTED),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) { valYes(txt, wifiStatus() == WIFI_STA_CONNECTED); },
+    },
+    {
+        .name       = PTXT(MENU_WIFICLI_USED),
+        .submenu    = NULL,
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            auto cnt = netAppCount();
+            valYes(txt, cnt > 0);
+            if (cnt > 0)
+                sprintf_P(txt+strlen(txt), PSTR("(%d)"), cnt);
+        },
+    },
+    {
+        .name       = PTXT(MENU_WIFICLI_STOP),
+        .submenu    = NULL,
+        .enter      = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
+        .showval    = NULL,
+        .edit       = NULL,
+        .hold       = [] () {
+            //wifiStop();
+            wifiCliStop();
+            menuFlashP(PTXT(MENU_WIFICLI_STOPPED));
+        },
+    },
+};
+static ViewMenuStatic vMenuAppWiFi(menunetappwifi, sizeof(menunetappwifi)/sizeof(menu_el_t), true);
+
+class ViewMenuSyncApp : public ViewMenu {
+    /*
+        Эта прослойка нужна из-за недоработки ViewMenuStatic, которая после
+        выполнения .enter делает ещё и updStr(), которые мешает и его нельзя исключить.
+        А вот использование .submenu даёт возможность выполнить ему open, но не делает updStr().
+        Это костыль, но вполне рабочий, пока не пришла идея, как доработать ViewMenuStatic,
+        чтобы всё работало прямее.
+    */
+    void open(ViewMenu *_mprev, const char *_title) {
+        auto *s =
+            wifiStatus() == WIFI_STA_NULL ?
+                menuWifi2Cli() :
+                &vMenuAppWiFi;
+        viewSet(*s);
+        s->open(_mprev, _title);
+    }
+};
+static ViewMenuSyncApp vMenuSyncApp;
+
+
+/* ------------------------------------------------------------------------------------------- *
  *  Меню синхронизации по сети
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menunetsync[] {
     {
         .name       = PTXT(MENU_NET_WIFICLI),
-        .submenu    = menuWifi2Cli(),
-        .enter      = NULL,
-        .showval    = [] (char *txt) { wifiCliNet(txt); },
+        .submenu    = &vMenuSyncApp,
     },
     
 #ifdef USE_BLUETOOTH

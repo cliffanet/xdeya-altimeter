@@ -1,7 +1,7 @@
 
 #include "track.h"
 #include "proc.h"
-#include "../core/workerloc.h"
+#include "../core/worker.h"
 #include "../navi/proc.h"
 #include "../log.h"
 #include "../clock.h"

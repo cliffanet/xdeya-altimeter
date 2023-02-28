@@ -4,7 +4,6 @@
 
 #include "wifisync.h"
 #include "../log.h"
-#include "../core/workerloc.h"
 #include "../core/worker.h"
 #include "../jump/track.h"
 #include "wifi.h"

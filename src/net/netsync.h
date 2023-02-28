@@ -77,5 +77,6 @@ WrkProc<WrkNet> recvVerAvail(BinProto *pro);
 WrkProc<WrkNet> recvFirmware(BinProto *pro);
 
 void netApp(NetSocket *sock);
+uint16_t netAppCount();
 
 #endif // _net_sync_H
