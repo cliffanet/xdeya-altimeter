@@ -23,9 +23,17 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Need Bluetooth permission</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Need Bluetooth permission</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Need PhotoLibrary permission</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -45,15 +53,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UISupportsDocumentBrowser</key>
+	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	    <key>NSBluetoothAlwaysUsageDescription</key>  
-	    <string>Need Bluetooth permission</string>  
-	    <key>NSBluetoothPeripheralUsageDescription</key>  
-	    <string>Need Bluetooth permission</string>
-        <key>UISupportsDocumentBrowser</key>
-        <false/>
-        <key>LSSupportsOpeningDocumentsInPlace</key>
-        <true/>
 </dict>
 </plist>
