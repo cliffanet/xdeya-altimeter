@@ -143,22 +143,22 @@ class NetProc {
         developer.log('net cleared');
     }
 
-    Future<bool> start(InternetAddress ip, int port) {
-        return _sockproc = _process(ip, port);
+    Future<bool> start(host, int port) {
+        return _sockproc = _process(host, port);
     }
 
-    Future<bool> _process(InternetAddress ip, int port) async {
+    Future<bool> _process(host, int port) async {
         stop();
         //_sock!.close();
         //await Future.doWhile(() => isActive);
 
-        developer.log('net connecting to: $ip:$port');
+        developer.log('net connecting to: $host:$port');
         _state = NetState.connecting;
         _err = null;
         doNotifyInf();
 
         try {
-            _sock = await Socket.connect(ip, port);
+            _sock = await Socket.connect(host, port);
         }
         catch (err) {
             developer.log('net connect error: $err');
@@ -199,11 +199,14 @@ class NetProc {
             return false;
         }
 
+        if (!recieverAdd(0x03, _auth_recv)) {
+            // чтобы можно было сделать тестовый вход без авторизации,
+            // добавляем обработчик всегда, даже если нет _autokey
+            _errstop(NetError.cmddup);
+            return false;
+        }
+
         if (_autokey > 0) {
-            if (!recieverAdd(0x03, _auth_recv)) {
-                _errstop(NetError.cmddup);
-                return false;
-            }
             if (!send(0x02, 'n', [_autokey])) {
                 return false;
             }
@@ -405,6 +408,9 @@ class NetProc {
         developer.log('auth ok');
         _state = NetState.online;
         doNotifyInf();
+
+        net.requestLogBookDefault();
+        
         return true;
     }
     bool requestAuth(String codehex, { Function() ?onReplyOk, Function() ?onReplyErr }) {

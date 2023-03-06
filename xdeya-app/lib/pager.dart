@@ -50,7 +50,11 @@ class Pager extends StatelessWidget {
                         getTitleBarDiscovery() :
                         getTitleBarClient(page)
             ),
-            body: widget ?? Container()
+            body: widget ?? Container(),
+            bottomSheet: 
+                    page == PageCode.discovery ?
+                        TestRefBar() :
+                        null
         );
     }
 

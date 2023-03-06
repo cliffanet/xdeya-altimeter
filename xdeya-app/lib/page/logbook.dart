@@ -24,10 +24,7 @@ Widget _pageAuth() {
                                 if (v.length != 4) {
                                     return;
                                 }
-                                net.requestAuth(
-                                    v,
-                                    onReplyOk: () => net.requestLogBookDefault()
-                                );
+                                net.requestAuth( v );
                             },
                             decoration: const InputDecoration(
                                 labelText: 'Введите код с экрана',

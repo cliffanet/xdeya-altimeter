@@ -43,3 +43,21 @@ class PageDiscovery extends StatelessWidget {
         );
     }
 }
+
+
+class TestRefBar extends StatelessWidget {
+    const TestRefBar({ super.key });
+
+    @override
+    Widget build(BuildContext context) {
+        return ListTile(
+            onTap: () {
+                developer.log('tap on test ref');
+                net.start('test.xdeya.ru', 65321);
+                Pager.push(context, PageCode.logbook);
+            },
+            trailing: const SizedBox.shrink(),
+            title: Text("тестовый вход"),
+        );
+    }
+}
