@@ -32,24 +32,17 @@ typedef void (*menu_val_t)(char *txt);
 // Элемент меню
 typedef struct {
     const char  *name;      // Текстовое название пункта
-    ViewMenu    *submenu;   // вложенное подменю
     menu_hnd_t  enter;      // Обраотка нажатия на среднюю кнопку
     menu_val_t  showval;    // как отображать значение, если требуется
     menu_edit_t edit;       // в режиме редактирования меняет значения на величину val (функция должна описывать, что и как менять)
     menu_hnd_t  hold;       // Обработка действия при длинном нажатии на среднюю кнопку
 } menu_el_t;
 
+#define subMenu(m)      [] { menuOpen(m); }
+
 class ViewMenuStatic : public ViewMenu {
     public:
         ViewMenuStatic(const menu_el_t *m, int16_t sz) : ViewMenu(sz), menu(m) {};
-
-        void opensub(ViewMenu &_menu, const char *_title = NULL) {
-            if (_title == NULL)
-                _title = menu[sel()].name;
-            
-            viewSet(_menu);
-            _menu.open(this, _title);
-        }
         
         void getStr(line_t &str, int16_t i) {
             auto &m = menu[i];
@@ -61,6 +54,10 @@ class ViewMenuStatic : public ViewMenu {
                 str.val[0] = '\0';
             else
                 m.showval(str.val);
+        }
+        const char * getSelName() {
+            auto &m = menu[sel()];
+            return m.name;
         }
         bool valFlash() { return isedit; }
         
@@ -108,11 +105,6 @@ class ViewMenuStatic : public ViewMenu {
                 return;
             }
             
-            if (m.submenu != NULL) {
-                viewSet(*(m.submenu));
-                m.submenu->open(this, m.name);
-            }
-            else
             if (m.enter != NULL)
                 m.enter();
         }
@@ -205,7 +197,6 @@ static void valDsplAuto(char *txt, int8_t val) {
 static const menu_el_t menugpsupoint[] {
     {   // Выбор текущей точки
         .name = PTXT(MENU_POINT_CURRENT),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             if (pnt.numValid()) {
@@ -226,7 +217,6 @@ static const menu_el_t menugpsupoint[] {
     },
     {   // Сохранение текущих координат в выбранной точке
         .name = PTXT(MENU_POINT_SAVE),
-        .submenu = NULL,
         .enter = menuFlashHold, // Сохранение только по длинному нажатию, чтобы случайно не затереть точку
         .showval = NULL,
         .edit = NULL,
@@ -255,7 +245,6 @@ static const menu_el_t menugpsupoint[] {
     },
     {   // Стирание координат у выбранной точки
         .name = PTXT(MENU_POINT_CLEAR),
-        .submenu = NULL,
         .enter = menuFlashHold,  // Стирание только по длинному нажатию, чтобы случайно не затереть точку
         .showval = NULL,
         .edit = NULL,
@@ -284,13 +273,11 @@ static ViewMenuStatic vMenuGpsPoint(menugpsupoint, sizeof(menugpsupoint)/sizeof(
 static const menu_el_t menudisplay[] {
     {   // Включение / выключение подсветки
         .name = PTXT(MENU_DISPLAY_LIGHT),
-        .submenu = NULL,
         .enter = displayLightTgl,           // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) { valOn(txt, displayLight()); },
     },
     {   // Уровень контраста
         .name = PTXT(MENU_DISPLAY_CONTRAST),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, cfg.d().contrast); },
         .edit = [] (int val) {
@@ -304,7 +291,6 @@ static const menu_el_t menudisplay[] {
     },
     {   // Переворот на 180
         .name = PTXT(MENU_DISPLAY_FLIPP180),
-        .submenu = NULL,
         .enter = [] () {
             cfg.set().flipp180 = !cfg.d().flipp180;
             displayFlipp180(cfg.d().flipp180);
@@ -321,7 +307,6 @@ static ViewMenuStatic vMenuDisplay(menudisplay, sizeof(menudisplay)/sizeof(menu_
 static const menu_el_t menugnd[] {
     {   // принудительная калибровка (On Ground)
         .name = PTXT(MENU_GND_MANUALSET),
-        .submenu = NULL,
         .enter = menuFlashHold,  // Сброс только по длинному нажатию
         .showval = NULL,
         .edit = NULL,
@@ -338,7 +323,6 @@ static const menu_el_t menugnd[] {
     },
     {   // разрешение принудительной калибровки: нет, "на земле", всегда
         .name = PTXT(MENU_GND_MANUALALLOW),
-        .submenu = NULL,
         .enter = [] () {
             cfg.set().gndmanual = !cfg.d().gndmanual;
         },
@@ -346,7 +330,6 @@ static const menu_el_t menugnd[] {
     },
     {   // выбор автоматической калибровки: нет, автоматически на земле
         .name = PTXT(MENU_GND_AUTOCORRECT),
-        .submenu = NULL,
         .enter = [] () {
             cfg.set().gndauto = !cfg.d().gndauto;
         },
@@ -354,7 +337,6 @@ static const menu_el_t menugnd[] {
     },
     {   // превышение площадки приземления
         .name       = PTXT(MENU_GND_ALTCORRECT),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().altcorrect == 0)
@@ -380,7 +362,6 @@ static ViewMenuStatic vMenuGnd(menugnd, sizeof(menugnd)/sizeof(menu_el_t));
 static const menu_el_t menuinfo[] {
     {   // переключать ли экран в падении автоматически в отображение только высоты
         .name = PTXT(MENU_AUTOMAIN_FF),
-        .submenu = NULL,
         .enter = [] () {
             cfg.set().dsplautoff = !cfg.d().dsplautoff;
         },
@@ -388,7 +369,6 @@ static const menu_el_t menuinfo[] {
     },
     {   // куда переключать экран под куполом: не переключать, жпс, часы, жпс+высота (по умолч)
         .name = PTXT(MENU_AUTOMAIN_CNP),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplcnp); },
         .edit = [] (int val) {
@@ -409,7 +389,6 @@ static const menu_el_t menuinfo[] {
     },
     {   // куда переключать экран после приземления: не переключать, жпс (по умолч), часы, жпс+высота
         .name = PTXT(MENU_AUTOMAIN_LAND),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplland); },
         .edit = [] (int val) {
@@ -430,7 +409,6 @@ static const menu_el_t menuinfo[] {
     },
     {   // куда переключать экран при длительном бездействии на земле
         .name = PTXT(MENU_AUTOMAIN_ONGND),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplgnd); },
         .edit = [] (int val) {
@@ -451,7 +429,6 @@ static const menu_el_t menuinfo[] {
     },
     {   // куда переключать экран при включении: запоминать после выключения, все варианты экрана
         .name = PTXT(MENU_AUTOMAIN_POWERON),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valDsplAuto(txt, cfg.d().dsplpwron); },
         .edit = [] (int val) {
@@ -479,7 +456,6 @@ static ViewMenuStatic vMenuInfo(menuinfo, sizeof(menuinfo)/sizeof(menu_el_t));
 static const menu_el_t menupoweroff[] {
     {
         .name = PTXT(MENU_POWEROFF_FORCE),
-        .submenu = NULL,
         .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
         .showval = NULL,
         .edit = NULL,
@@ -487,7 +463,6 @@ static const menu_el_t menupoweroff[] {
     },
     {   // отключаться через N часов отсутствия взлётов
         .name       = PTXT(MENU_POWEROFF_NOFLY),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().hrpwrnofly > 0)
@@ -506,7 +481,6 @@ static const menu_el_t menupoweroff[] {
     },
     {   // отключаться через N часов после включения
         .name       = PTXT(MENU_POWEROFF_AFTON),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().hrpwrafton > 0)
@@ -532,13 +506,11 @@ static ViewMenuStatic vMenuPowerOff(menupoweroff, sizeof(menupoweroff)/sizeof(me
 static const menu_el_t menugpson[] {
     {   // Включение / выключение питания NAVI вручную
         .name = PTXT(MENU_NAVON_CURRENT),
-        .submenu = NULL,
         .enter = gpsPwrTgl,                 // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) { valOn(txt, gpsPwr()); },
     },
     {   // авто-включение сразу при включении питания
         .name       = PTXT(MENU_NAVON_POWERON),
-        .submenu    = NULL,
         .enter      = [] () {
             cfg.set().navonpwron = !cfg.d().navonpwron;
         },
@@ -546,7 +518,6 @@ static const menu_el_t menugpson[] {
     },
     {   // автоматически включать при старте записи трека
         .name       = PTXT(MENU_NAVON_TRKREC),
-        .submenu    = NULL,
         .enter      = [] () {
             cfg.set().navontrkrec = !cfg.d().navontrkrec;
         },
@@ -554,7 +525,6 @@ static const menu_el_t menugpson[] {
     },
     {   // авто-включение в подъёме на заданной высоте
         .name       = PTXT(MENU_NAVON_TAKEOFF),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().navonalt > 0)
@@ -573,7 +543,6 @@ static const menu_el_t menugpson[] {
     },
     {   // авто-отключать жпс всегда после приземления
         .name       = PTXT(MENU_NAVON_OFFLAND),
-        .submenu    = NULL,
         .enter      = [] () {
             cfg.set().navoffland = !cfg.d().navoffland;
         },
@@ -581,7 +550,6 @@ static const menu_el_t menugpson[] {
     },
     {   // Режим GPS/GLONASS
         .name       = PTXT(MENU_NAV_MODE),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             switch (cfg.d().navmode) {
@@ -639,7 +607,6 @@ static void valBtnDo(char *txt, uint8_t op) {
 static const menu_el_t menubtndo[] {
     {   // действие по кнопке "вверх"
         .name       = PTXT(MENU_BTNDO_UP),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valBtnDo(txt, cfg.d().btndo_up); },
         .edit       = [] (int val) {
@@ -656,7 +623,6 @@ static const menu_el_t menubtndo[] {
     },
     {   // действие по кнопке "вниз"
         .name       = PTXT(MENU_BTNDO_DOWN),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valBtnDo(txt, cfg.d().btndo_down); },
         .edit       = [] (int val) {
@@ -680,7 +646,6 @@ static ViewMenuStatic vMenuBtnDo(menubtndo, sizeof(menubtndo)/sizeof(menu_el_t))
 static const menu_el_t menutrack[] {
     {   // Текущий режим записи трэка
         .name = PTXT(MENU_TRACK_RECORDING),
-        .submenu = NULL,
         .enter = menuFlashHold,           // Переключаем в один клик без режима редактирования
         .showval = [] (char *txt) {
             if (trkRunning(TRK_RUNBY_HAND))
@@ -701,7 +666,6 @@ static const menu_el_t menutrack[] {
     },
     {   // автоматически включать трек на заданной высоте в подъёме
         .name       = PTXT(MENU_TRACK_BYALT),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().trkonalt > 0)
@@ -720,13 +684,11 @@ static const menu_el_t menutrack[] {
     },
     {   // Количество записей
         .name = PTXT(MENU_TRACK_COUNT),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valInt(txt, FileTrack().count()); },
     },
     {   // Сколько времени доступно
         .name = PTXT(MENU_TRACK_AVAIL),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             // сколько записей ещё влезет
@@ -746,7 +708,6 @@ static ViewMenuStatic vMenuTrack(menutrack, sizeof(menutrack)/sizeof(menu_el_t))
 static const menu_el_t menutime[] {
     {   // Выбор временной зоны, чтобы корректно синхронизироваться с службами времени
         .name = PTXT(MENU_TIME_ZONE),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             if (cfg.d().timezone == 0) {                // cfg.timezone хранит количество минут в + или - от UTC
@@ -786,27 +747,26 @@ static ViewMenuStatic vMenuTime(menutime, sizeof(menutime)/sizeof(menu_el_t));
 static const menu_el_t menuoptions[] {
     {
         .name       = PTXT(MENU_OPTION_DISPLAY),
-        .submenu    = &vMenuDisplay,
+        .enter      = subMenu(vMenuDisplay),
     },
     {
         .name       = PTXT(MENU_OPTION_GNDCORRECT),
-        .submenu    = &vMenuGnd,
+        .enter      = subMenu(vMenuGnd),
     },
     {
         .name       = PTXT(MENU_OPTION_AUTOSCREEN),
-        .submenu    = &vMenuInfo,
+        .enter      = subMenu(vMenuInfo),
     },
     {
         .name       = PTXT(MENU_OPTION_AUTOPOWER),
-        .submenu    = &vMenuPowerOff,
+        .enter      = subMenu(vMenuPowerOff),
     },
     {
         .name       = PTXT(MENU_OPTION_AUTONAV),
-        .submenu    = &vMenuGpsOn,
+        .enter      = subMenu(vMenuGpsOn),
     },
     {   // использовать компас
         .name       = PTXT(MENU_OPTION_COMPEN),
-        .submenu    = NULL,
         .enter      = [] () {
             if ((cfg.d().flagen & FLAGEN_COMPAS) == 0) {
                 cfg.set().flagen |= FLAGEN_COMPAS;
@@ -821,7 +781,6 @@ static const menu_el_t menuoptions[] {
     },
     {   // Курс цифрами
         .name       = PTXT(MENU_OPTION_TXTCOURSE),
-        .submenu    = NULL,
         .enter      = [] () {
             if ((cfg.d().flagen & FLAGEN_TXTCOURSE) == 0)
                 cfg.set().flagen |= FLAGEN_TXTCOURSE;
@@ -832,15 +791,15 @@ static const menu_el_t menuoptions[] {
     },
     {
         .name       = PTXT(MENU_OPTION_BTNDO),
-        .submenu    = &vMenuBtnDo,
+        .enter      = subMenu(vMenuBtnDo),
     },
     {
         .name       = PTXT(MENU_OPTION_TRACK),
-        .submenu    = &vMenuTrack,
+        .enter      = subMenu(vMenuTrack),
     },
     {
         .name       = PTXT(MENU_OPTION_TIME),
-        .submenu    = &vMenuTime,
+        .enter      = subMenu(vMenuTime),
     },
 };
 static ViewMenuStatic vMenuOptions(menuoptions, sizeof(menuoptions)/sizeof(menu_el_t));
@@ -851,7 +810,6 @@ static ViewMenuStatic vMenuOptions(menuoptions, sizeof(menuoptions)/sizeof(menu_
 static const menu_el_t menufirmware[] {
     {
         .name = PTXT(MENU_FW_VERSION),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             strcpy_P(txt, PSTR(TOSTRING(FWVER_NUM)));
@@ -859,7 +817,6 @@ static const menu_el_t menufirmware[] {
     },
     {
         .name = PTXT(MENU_FW_TYPE),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             strcpy_P(txt, PSTR(FWVER_TYPE_DSPL));
@@ -867,7 +824,6 @@ static const menu_el_t menufirmware[] {
     },
     {
         .name = PTXT(MENU_FW_HWREV),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             strcpy_P(txt, PSTR(TOSTRING(v0.HWVER)));
@@ -875,7 +831,6 @@ static const menu_el_t menufirmware[] {
     },
     {
         .name = PTXT(MENU_FW_UPDATETO),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             if (cfg.d().fwupdind <= 0)
@@ -909,7 +864,7 @@ static const menu_el_t menufirmware[] {
 #if HWVER >= 5
     {
         .name       = PTXT(MENU_FW_SDCARD),
-        .submenu    = menuFwSdCard(),
+        .enter      = subMenu((*menuFwSdCard())),
     },
 #endif // HWVER >= 5
 };
@@ -921,23 +876,19 @@ static ViewMenuStatic vMenuFirmWare(menufirmware, sizeof(menufirmware)/sizeof(me
 static const menu_el_t menunavigation[] {
     {
         .name = PTXT(MENU_SYSNAV_SERIAL),
-        .submenu = NULL,
         .enter = gpsDirectTgl,
         .showval = [] (char *txt) { valOn(txt, gpsDirect()); },
     },
     {
         .name = PTXT(MENU_SYSNAV_SATINFO),
-        .submenu = NULL,
         .enter = setViewInfoSat,
     },
     {
         .name = PTXT(MENU_SYSNAV_VERINFO),
-        .submenu = NULL,
         .enter = setViewNavVerInfo,
     },
     {   // Холодный перезапуск навигации
         .name       = PTXT(MENU_SYSNAV_COLDRST),
-        .submenu    = NULL,
         .enter      = menuFlashHold,
         .showval    = NULL,
         .edit       = NULL,
@@ -959,7 +910,6 @@ static ViewMenuStatic vMenuNavigation(menunavigation, sizeof(menunavigation)/siz
 static const menu_el_t menuhwtest[] {
     {
         .name = PTXT(MENU_TEST_CLOCK),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             sprintf_P(txt, PSTR("%d:%02d:%02d"), tmNow().h, tmNow().m, tmNow().s);
@@ -968,7 +918,6 @@ static const menu_el_t menuhwtest[] {
 #if HWVER > 1
     {
         .name = PTXT(MENU_TEST_BATTERY),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             char ok[15];
@@ -981,14 +930,12 @@ static const menu_el_t menuhwtest[] {
 #if HWVER >= 3
     {
         .name = PTXT(MENU_TEST_BATTCHARGE),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) { valYes(txt, pwrBattCharge()); },
     },
 #endif
     {
         .name = PTXT(MENU_TEST_PRESSURE),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             char ok[15];
@@ -1000,7 +947,6 @@ static const menu_el_t menuhwtest[] {
     },
     {
         .name = PTXT(MENU_TEST_LIGHT),
-        .submenu = NULL,
         .enter = [] () {
             displayLightTgl();
             delay(2000);
@@ -1010,7 +956,6 @@ static const menu_el_t menuhwtest[] {
     },
     {
         .name = PTXT(MENU_TEST_COMPASS),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             char ok[15];
@@ -1021,7 +966,6 @@ static const menu_el_t menuhwtest[] {
     },
     {
         .name = PTXT(MENU_TEST_NAVDATA),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             char ok[15];
@@ -1037,7 +981,6 @@ static const menu_el_t menuhwtest[] {
 #if HWVER > 1
     {
         .name = PTXT(MENU_TEST_NAVRESTART),
-        .submenu = NULL,
         .enter = [] () {
             gpsRestart();
             menuFlashP(PTXT(MENU_TEST_NAVRESTARTED), 10);
@@ -1046,7 +989,6 @@ static const menu_el_t menuhwtest[] {
 #endif
     {
         .name = PTXT(MENU_TEST_NAVINIT),
-        .submenu = NULL,
         .enter = [] () {
             naviInit();
             menuFlashP(PTXT(MENU_TEST_NAVINITED), 10);
@@ -1055,7 +997,6 @@ static const menu_el_t menuhwtest[] {
 #if HWVER >= 5
     {
         .name = PTXT(MENU_TEST_SDCART),
-        .submenu = NULL,
         .enter = NULL,
         .showval = [] (char *txt) {
             CONSOLE("sdcard test beg");
@@ -1109,7 +1050,6 @@ ViewMenu *menuFile();
 static const menu_el_t menusystem[] {
     {
         .name = PTXT(MENU_POWEROFF_FORCE),
-        .submenu = NULL,
         .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
         .showval = NULL,
         .edit = NULL,
@@ -1117,7 +1057,6 @@ static const menu_el_t menusystem[] {
     },
     {
         .name = PTXT(MENU_SYSTEM_RESTART),
-        .submenu = NULL,
         .enter = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
         .showval = NULL,
         .edit = NULL,
@@ -1125,7 +1064,6 @@ static const menu_el_t menusystem[] {
     },
     {
         .name = PTXT(MENU_SYSTEM_FACTORYRES),
-        .submenu = NULL,
         .enter = menuFlashHold,     // Сброс настроек только по длинному нажатию
         .showval = NULL,
         .edit = NULL,
@@ -1146,23 +1084,22 @@ static const menu_el_t menusystem[] {
     },
     {
         .name       = PTXT(MENU_SYSTEM_FWUPDATE),
-        .submenu    = &vMenuFirmWare,
+        .enter      = subMenu(vMenuFirmWare),
     },
     {
         .name       = PTXT(MENU_SYSTEM_NAVIGATION),
-        .submenu    = &vMenuNavigation,
+        .enter      = subMenu(vMenuNavigation),
     },
     {
         .name       = PTXT(MENU_SYSTEM_FILES),
-        .submenu    = menuFile(),
+        .enter      = subMenu((*menuFile())),
     },
     {
         .name       = PTXT(MENU_SYSTEM_HWTEST),
-        .submenu    = &vMenuHwTest,
+        .enter      = subMenu(vMenuHwTest),
     },
     {
         .name       = PTXT(MENU_SYSTEM_MAGCALIB),
-        .submenu    = NULL,
         .enter      = setViewMagCalib,
     },
 };
@@ -1174,19 +1111,16 @@ static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_
 static const menu_el_t menunetappwifi[] {
     {
         .name       = PTXT(MENU_WIFICLI_NET),
-        .submenu    = menuWifi2Cli(),
-        .enter      = NULL,
+        .enter      = subMenu((*menuWifi2Cli())),
         .showval    = [] (char *txt) { wifiCliNet(txt); },
     },
     {
         .name       = PTXT(MENU_WIFICLI_CONNECTED),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valYes(txt, wifiStatus() == WIFI_STA_CONNECTED); },
     },
     {
         .name       = PTXT(MENU_WIFICLI_USED),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) {
             auto cnt = netAppCount();
@@ -1197,7 +1131,6 @@ static const menu_el_t menunetappwifi[] {
     },
     {
         .name       = PTXT(MENU_WIFICLI_STOP),
-        .submenu    = NULL,
         .enter      = menuFlashHold,     // Отключение питания только по длинному нажатию, чтобы не выключить случайно
         .showval    = NULL,
         .edit       = NULL,
@@ -1210,39 +1143,24 @@ static const menu_el_t menunetappwifi[] {
 };
 static ViewMenuStatic vMenuAppWiFi(menunetappwifi, sizeof(menunetappwifi)/sizeof(menu_el_t));
 
-class ViewMenuSyncApp : public ViewMenu {
-    /*
-        Эта прослойка нужна из-за недоработки ViewMenuStatic, которая после
-        выполнения .enter делает ещё и updStr(), которые мешает и его нельзя исключить.
-        А вот использование .submenu даёт возможность выполнить ему open, но не делает updStr().
-        Это костыль, но вполне рабочий, пока не пришла идея, как доработать ViewMenuStatic,
-        чтобы всё работало прямее.
-    */
-    void open(ViewMenu *_mprev, const char *_title) {
-        auto *s =
-            wifiStatus() == WIFI_STA_NULL ?
-                menuWifi2Cli() :
-                &vMenuAppWiFi;
-        viewSet(*s);
-        s->open(_mprev, _title);
-    }
-};
-static ViewMenuSyncApp vMenuSyncApp;
-
-
 /* ------------------------------------------------------------------------------------------- *
  *  Меню синхронизации по сети
  * ------------------------------------------------------------------------------------------- */
 static const menu_el_t menunetsync[] {
     {
         .name       = PTXT(MENU_NET_WIFICLI),
-        .submenu    = &vMenuSyncApp,
+        .enter      = [] {
+            auto &m =
+                wifiStatus() == WIFI_STA_NULL ?
+                    *menuWifi2Cli() :
+                    vMenuAppWiFi;
+            menuOpen(m);
+        },
     },
     
 #ifdef USE_BLUETOOTH
     {
         .name       = PTXT(MENU_NET_BLUETOOTH),
-        .submenu    = NULL,
         .enter      = [] () {
             if ((cfg.d().net & 0x1) == 0) {
                 cfg.set().net |= 0x1;
@@ -1259,7 +1177,7 @@ static const menu_el_t menunetsync[] {
     
     {
         .name       = PTXT(MENU_NET_WIFISERVER),
-        .submenu    = menuWifi2Server(),
+        .enter      = subMenu((*menuWifi2Server())),
     },
 };
 static ViewMenuStatic vMenuNetSync(menunetsync, sizeof(menunetsync)/sizeof(menu_el_t));
@@ -1271,11 +1189,10 @@ static ViewMenuStatic *getMenuNetSync() { return &vMenuNetSync; }
 static const menu_el_t menumain[] {
     {
         .name       = PTXT(MENU_ROOT_NAVPOINT),
-        .submenu    = &vMenuGpsPoint,
+        .enter      = subMenu(vMenuGpsPoint),
     },
     {
         .name       = PTXT(MENU_ROOT_JUMPCOUNT),
-        .submenu    = NULL,
         .enter      = NULL,
         .showval    = [] (char *txt) { valInt(txt, jmp.d().count); },
         .edit       = [] (int val) {
@@ -1287,23 +1204,22 @@ static const menu_el_t menumain[] {
     },
     {
         .name       = PTXT(MENU_ROOT_LOGBOOK),
-        .submenu    = menuLogBook(),
+        .enter      = subMenu((*menuLogBook())),
     },
     {
         .name       = PTXT(MENU_ROOT_OPTIONS),
-        .submenu    = &vMenuOptions,
+        .enter      = subMenu(vMenuOptions),
     },
     {
         .name       = PTXT(MENU_ROOT_SYSTEM),
-        .submenu    = &vMenuSystem,
+        .enter      = subMenu(vMenuSystem),
     },
     {
         .name       = PTXT(MENU_ROOT_NETSYNC),
-        .submenu    = &vMenuNetSync,
+        .enter      = subMenu(vMenuNetSync),
     },
 };
 static ViewMenuStatic vMenuMain(menumain, sizeof(menumain)/sizeof(menu_el_t));
 void setViewMenu() {
-    viewSet(vMenuMain);
-    vMenuMain.open(NULL, PTXT(MENU_ROOT));
+    menuOpen(vMenuMain);
 }

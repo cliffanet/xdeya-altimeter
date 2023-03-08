@@ -3,6 +3,8 @@
 #include "main.h"
 #include "../log.h"
 
+#include <vector>
+
 // редактируется ли текущий пункт меню
 // Сообщение моргающим текстом - будет выводится на селекторе меню (в этот момент сам выделенный пункт меню скрывается)
 static char flashstr[MENUSZ_NAME] = { '\0' };
@@ -29,8 +31,7 @@ void ViewMenu::setSize(uint16_t _sz) {
         isel = sz-1;
 }
 
-void ViewMenu::open(ViewMenu *_mprev, const char *_title) {
-    mprev = _mprev;
+void ViewMenu::open(const char *_title) {
     titlep = _title;
     itop = 0;
     isel = 0;
@@ -91,12 +92,7 @@ void ViewMenu::btnSmpl(btn_code_t btn) {
             
         case BTN_SEL:
             // выход в предыдущее меню
-            if (mprev == NULL)
-                setViewMain();
-            else {
-                viewSet(*mprev);
-                mprev->restore();
-            }
+            menuPrev();
             break;
     }
 }
@@ -173,6 +169,34 @@ void ViewMenu::draw(U8G2 &u8g2) {
 /* ------------------------------------------------------------------------------------------- *
  *  Функции мигания сообщением на выбранном пункте меню
  * ------------------------------------------------------------------------------------------- */
+static std::vector<ViewMenu *> menuall;
+void menuOpen(ViewMenu &menu) {
+    viewSet(menu);
+    menu.open(menuall.size() > 0 ? menuall.back()->getSelName() : PTXT(MENU_ROOT));
+    menuall.push_back(&menu);
+    CONSOLE("size: %d", menuall.size());
+}
+void menuPrev() {
+    // выход в предыдущее меню
+    menuall.pop_back();
+    if (menuall.size() > 0) {
+        auto prev = menuall.back();
+        viewSet(*prev);
+        prev->restore();
+    }
+    else
+        setViewMain();
+    CONSOLE("size: %d", menuall.size());
+}
+void menuClear() {
+    if (menuall.size() == 0)
+        return;
+    
+    menuall.clear();
+    setViewMain();
+    CONSOLE("cleared");
+}
+
 void menuFlashP(const char *txt, int16_t count) {  // Запоминаем текст сообщения и сколько тактов отображения показывать
     strncpy_P(flashstr, txt, sizeof(flashstr));
     flashstr[sizeof(flashstr)] = '\0';

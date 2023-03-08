@@ -111,6 +111,8 @@ void ViewMain::drawClock(U8G2 &u8g2) {
 }
 
 void setViewMain(int8_t m, bool save) {
+    menuClear();
+    
     if (m <= MODE_MAIN_NONE)
         return;
     

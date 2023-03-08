@@ -42,7 +42,7 @@ class ViewMenu : public View {
         
         void setSize(uint16_t _sz);
         virtual
-        void open(ViewMenu *_mprev = NULL, const char *_title = NULL);
+        void open(const char *_title = NULL);
         virtual
         void restore() {}
         
@@ -51,6 +51,8 @@ class ViewMenu : public View {
 
         virtual     // этот метод обновляет строку в потомке
         void getStr(line_t &str, int16_t i) { };
+        virtual     // Возвращает PSTR текущего выделенного пункта меню, чтобы его использовать как title для подменю
+        const char * getSelName() { return NULL; };
         virtual     // указывает, надо ли моргать текущему значению (режим редактирования)
         bool valFlash() { return false; }
         
@@ -67,9 +69,12 @@ class ViewMenu : public View {
     protected:
         int16_t itop = 0, isel = 0, sz = 0;
         exit_t elexit;
-        ViewMenu *mprev = NULL;
         const char *titlep = NULL;
 };
+
+void menuOpen(ViewMenu &menu);
+void menuPrev();
+void menuClear();
         
 // Запоминаем текст сообщения и сколько тактов отображения показывать
 void menuFlashP(const char *txt, int16_t count = 20);
