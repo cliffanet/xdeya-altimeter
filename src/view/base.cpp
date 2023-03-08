@@ -10,9 +10,13 @@
  *  Текущий View
  * ------------------------------------------------------------------------------------------- */
 static View *vCur = NULL;
+static bool vdyn = false;
 
-void viewSet(View &v) {
+void viewSet(View &v, bool dyn) {
+    if (vdyn && (vCur != NULL))
+        delete vCur;
     vCur = &v;
+    vdyn = dyn;
 }
 
 bool viewIs(View &v) {

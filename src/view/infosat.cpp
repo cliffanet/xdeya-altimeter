@@ -81,25 +81,46 @@ clasCorrUsed 1 = CLAS corrections have been used for a signal in the subset spec
 static std::vector<sat_item_t> satall;
 static size_t recv_plen = 0, recv_cnt = 0;
 
-static void gpsRecvSat(UbloxGpsProto &gps);
+static void gpsRecvSat(UbloxGpsProto &gps) {
+    struct {
+    	uint32_t iTOW;      // NAVI time of week             (ms)
+    	uint8_t  version;   // Message version (0x01 for this version)
+    	uint8_t  numSvs;    // Number of satellites
+    	uint8_t  _[2];      // Reserved
+    } hdr;
+    
+    recv_cnt++;
+    recv_plen = gps.plen();
+    
+    if (!gps.bufcopy(hdr))
+        return;
+    
+    satall.resize(hdr.numSvs);
+    
+    uint8_t n = 0;
+    for (auto &s: satall) {
+        gps.bufcopy(reinterpret_cast<uint8_t *>(&s), sizeof(s), sizeof(hdr)+(n*sizeof(s)));
+        n++;
+    }
+}
 
 class ViewInfoSat : public ViewInfo {
     public:
-        ViewInfoSat() : ViewInfo(1) {}
-        
-        void start() {
+        ViewInfoSat() : ViewInfo(1) {
+            CONSOLE("begin");
             const auto &gps = gpsProto();
             gps->hndadd(UBX_NAV, UBX_NAV_SAT, gpsRecvSat);
             ubx_cfg_rate_t r = { UBX_NAV, UBX_NAV_SAT, 10 };
             gps->send(UBX_CFG, UBX_CFG_MSG, r);
         }
         
-        void stop() {
+        ~ViewInfoSat() {
             const auto &gps = gpsProto();
             gps->hnddel(UBX_NAV, UBX_NAV_SAT, gpsRecvSat);
             ubx_cfg_rate_t r = { UBX_NAV, UBX_NAV_SAT, 0 };
             gps->send(UBX_CFG, UBX_CFG_MSG, r);
             satall.clear();
+            CONSOLE("end");
         }
         
         void btnSmpl(btn_code_t btn) {
@@ -108,7 +129,6 @@ class ViewInfoSat : public ViewInfo {
                 return;
             }
             
-            stop();
             setViewMain();
         }
         
@@ -150,37 +170,14 @@ class ViewInfoSat : public ViewInfo {
             if (s.cno)
                 PRNR("%u dB", s.cno);
         }
+
+        void draw(U8G2 &u8g2) {
+            setSize(satall.size() + 1);
+            ViewInfo::draw(u8g2);
+        }
 };
-static ViewInfoSat vInfSat;
+
 void setViewInfoSat() {
     menuClear();
-    viewSet(vInfSat);
-    vInfSat.start();
-}
-
-
-
-static void gpsRecvSat(UbloxGpsProto &gps) {
-    struct {
-    	uint32_t iTOW;      // NAVI time of week             (ms)
-    	uint8_t  version;   // Message version (0x01 for this version)
-    	uint8_t  numSvs;    // Number of satellites
-    	uint8_t  _[2];      // Reserved
-    } hdr;
-    
-    recv_cnt++;
-    recv_plen = gps.plen();
-    
-    if (!gps.bufcopy(hdr))
-        return;
-    
-    satall.resize(hdr.numSvs);
-    
-    vInfSat.setSize(hdr.numSvs + 1);
-    
-    uint8_t n = 0;
-    for (auto &s: satall) {
-        gps.bufcopy(reinterpret_cast<uint8_t *>(&s), sizeof(s), sizeof(hdr)+(n*sizeof(s)));
-        n++;
-    }
+    viewOpen<ViewInfoSat>();
 }

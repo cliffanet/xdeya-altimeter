@@ -342,7 +342,6 @@ class ViewInfoDebug : public ViewInfo {
             }
         }
 };
-static ViewInfoDebug vInfDebug;
-void setViewInfoDebug() { viewSet(vInfDebug); }
+void setViewInfoDebug() { viewOpen<ViewInfoDebug>(); }
 
 #endif // FWVER_DEBUG

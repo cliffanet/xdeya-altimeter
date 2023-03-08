@@ -73,14 +73,17 @@ class ViewMenu : public View {
 };
 
 void _menuAdd(ViewMenu *menu);
+
 template<typename T, typename... _Args>
 T* menuOpen(_Args&&... __args) {
     auto m = new T(__args...);
     _menuAdd(m);
     return m;
 }
-ViewMenu *menuPrev();
-ViewMenu *menuRestore();
+
+ViewMenu *menuTop();        // просто возвращает текущее меню
+ViewMenu *menuPrev();       // переключает на предыдущее меню, текущее уничтожается
+ViewMenu *menuRestore();    // перевключает текущее меню (если в нём было сделано viewSet() без menuClear())
 void menuClear();
         
 // Запоминаем текст сообщения и сколько тактов отображения показывать

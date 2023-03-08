@@ -119,6 +119,7 @@ typedef struct { int x, y; } pnt_t;
 
 class View {
     public:
+        virtual ~View() {}; // чтобы верно работали динамически-создаваемые view
         virtual void btnSmpl(btn_code_t btn) { }
         virtual void btnLong(btn_code_t btn) { }
         virtual bool useLong(btn_code_t btn) { return false; }
@@ -132,7 +133,15 @@ class View {
         static bool isblink();
 };
 
-void viewSet(View &v);
+void viewSet(View &v, bool dyn = false);
+
+template<typename T, typename... _Args>
+T* viewOpen(_Args&&... __args) {
+    auto v = new T(__args...);
+    viewSet(*v, true);
+    return v;
+}
+
 bool viewIs(View &v);
 bool viewActive();
 

@@ -12,10 +12,17 @@
 
 class ViewMenuLogBookInfo : public View {
     public:
-        void open(size_t _isel, size_t _sz) {
-            isel = _isel;
-            sz   = _sz;
+        ViewMenuLogBookInfo(size_t _isel, size_t _sz) :
+            isel(_isel),
+            sz(_sz)
+        {
             read();
+        }
+
+        ~ViewMenuLogBookInfo() {
+            auto p = menuTop();
+            if (p != NULL)
+                p->setSel(isel+1);
         }
         
         void read() {
@@ -31,11 +38,8 @@ class ViewMenuLogBookInfo : public View {
                     read();
                     break;
                     
-                case BTN_SEL: {
-                        auto p = menuRestore();
-                        if (p != NULL)
-                            p->setSel(isel+1);
-                    }
+                case BTN_SEL:
+                    menuRestore();
                     break;
                     
                 case BTN_DOWN:
@@ -109,12 +113,10 @@ class ViewMenuLogBookInfo : public View {
         }
         
     private:
-        size_t isel=0, sz=0;
+        size_t isel, sz;
         FileLogBook::item_t jmp;
         bool readok = false;
 };
-
-static ViewMenuLogBookInfo vLogBookInfo;
 
 // список
 
@@ -169,8 +171,7 @@ class ViewMenuLogBook : public ViewMenu {
                 return;
             }
             
-            viewSet(vLogBookInfo);
-            vLogBookInfo.open(sel(), size());
+            viewOpen<ViewMenuLogBookInfo>(sel(), size());
         }
         
         void process() {

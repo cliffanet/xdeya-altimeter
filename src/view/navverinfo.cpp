@@ -10,31 +10,38 @@
 #include "../log.h"
 
 static void gpsRecvVer(UbloxGpsProto &gps);
+class ViewNavVerInfo;
+static ViewNavVerInfo *v = NULL;
 
 class ViewNavVerInfo : public ViewInfo {
     std::vector<char *> strall;
 
     public:
-        ViewNavVerInfo() : ViewInfo(0) {}
-
-        void addstr(const char *str) {
-            char *s = strdup(str);
-            if (s != NULL)
-                strall.push_back(s);
-            setSize(strall.size());
-        }
-        
-        void start() {
+        ViewNavVerInfo() : ViewInfo(0) {
+            if (v == NULL)
+                v = this;
             // Почему-то у этой команды в ответе проблемы с ck-sum,
             // поэтому отдельно задаём флаг "игнорировать cksum"
             bool ok = gpsProto()->get(UBX_MON, UBX_MON_VER, gpsRecvVer, true);
             CONSOLE("get: %d", ok);
         }
-
-        void stop() {
+        ~ViewNavVerInfo() {
             for (auto *s: strall)
                 free(s);
             strall.clear();
+            if (v == this)
+                v = NULL;
+            CONSOLE("end");
+        }
+
+        static void addstr(const char *str) {
+            if (v == NULL)
+                return;
+            
+            char *s = strdup(str);
+            if (s != NULL)
+                v->strall.push_back(s);
+            v->setSize(v->strall.size());
         }
         
         void btnSmpl(btn_code_t btn) {
@@ -43,7 +50,6 @@ class ViewNavVerInfo : public ViewInfo {
                 return;
             }
             
-            stop();
             menuRestore();
         }
         
@@ -53,11 +59,8 @@ class ViewNavVerInfo : public ViewInfo {
             prnstr(strall[i]);
         }
 };
-static ViewNavVerInfo vNavVerInfo;
-void setViewNavVerInfo() {
-    viewSet(vNavVerInfo);
-    vNavVerInfo.start();
-}
+
+void setViewNavVerInfo() { viewOpen<ViewNavVerInfo>(); }
 
 static bool gpsStr(UbloxGpsProto &gps, uint16_t &i, uint8_t len) {
     char s[len+1];
@@ -71,7 +74,7 @@ static bool gpsStr(UbloxGpsProto &gps, uint16_t &i, uint8_t len) {
     CONSOLE("str: %s", s);
     i += len;
 
-    vNavVerInfo.addstr(s);
+    ViewNavVerInfo::addstr(s);
     return true;
 }
 

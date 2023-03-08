@@ -82,6 +82,4 @@ void ViewLogo::process() {
     setViewMain(cfg.d().dsplpwron);
 }
 
-
-static ViewLogo vLogo;
-void setViewLogo() { viewSet(vLogo); }
+void setViewLogo() { viewOpen<ViewLogo>(); }

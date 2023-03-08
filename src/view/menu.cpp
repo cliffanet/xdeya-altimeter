@@ -178,14 +178,22 @@ void _menuAdd(ViewMenu *menu) {
     menuall.push_back(menu);
     CONSOLE("size: %d", menuall.size());
 }
+ViewMenu *menuTop() {
+    return
+        menuall.size() > 0 ?
+            menuall.back() :
+            NULL;
+}
 ViewMenu *menuPrev() {
     // выход в предыдущее меню
     if (menuall.size() == 0)
         return NULL;
     
-    delete menuall.back();
+    auto *m = menuall.back();
     menuall.pop_back();
     CONSOLE("size: %d", menuall.size());
+    delete m;
+    
     if (menuall.size() > 0) {
         auto prev = menuall.back();
         viewSet(*prev);
