@@ -3,7 +3,6 @@
 #include "main.h"
 
 #include "../log.h"
-#include "../core/filetxt.h"
 #include "../cfg/webjoin.h"
 #include "../cfg/point.h"
 #include "../cfg/jump.h"
@@ -11,53 +10,7 @@
 #include "../net/wifisync.h"
 #include "../net/wifiapp.h"
 
-#include <vector>
-
-
-
-/* ------------------------------------------------------------------------------------------- *
- *  Поиск пароля по имени wifi-сети
- * ------------------------------------------------------------------------------------------- */
-static bool wifiPassFind(const char *ssid, char *pass = NULL) {
-    size_t len = strlen(ssid);
-    char ssid1[len+1];
-    FileTxt f(PSTR(WIFIPASS_FILE));
-    
-    CONSOLE("need ssid: %s (avail: %d)", ssid, f.available());
-    
-    if (!f)
-        return false;
-    
-    while (f.available() > 0) {
-        if (!f.find_param(PSTR("ssid")))
-            break;
-        f.read_line(ssid1, sizeof(ssid1));
-        if (strcmp(ssid1, ssid) != 0)
-            continue;
-        
-        char param[30];
-        f.read_param(param, sizeof(param));
-        if (strcmp_P(param, PSTR("pass")) == 0)
-            f.read_line(pass, 33);
-        else
-        if (pass != NULL)
-            *pass = 0;
-        if (pass != NULL)
-            CONSOLE("found pass: %s", pass);
-        else
-            CONSOLE("founded");
-        f.close();
-        return true;
-    }
-    
-    CONSOLE("EOF");
-
-    f.close();
-    return false;
-}
-
-
-class ViewNetSync : public ViewBase {
+class ViewNetSync : public View {
     public:
         void btnSmpl(btn_code_t btn) {
             // короткое нажатие на любую кнопку ускоряет выход,
@@ -216,12 +169,6 @@ ViewNetSync vNetSync;
  *  ViewMenuWifiNet - список wifi-сетей
  *  вызываем doafter, чтобы выбрать нужную
  * ------------------------------------------------------------------------------------------- */
-typedef struct {
-    char name[33];
-    char txt[40];
-    bool isopen;
-} wifi_t;
-
 class ViewMenuWifiNet : public ViewMenu {
     public:
         void restore() {
@@ -229,7 +176,6 @@ class ViewMenuWifiNet : public ViewMenu {
             // Сначала прорисуем на экране, что мы начали сканировать
             _isinit = true;
             setSize(2);
-            ViewMenu::restore();
             displayUpdate();
             
             // А теперь начнём сканировать
@@ -245,9 +191,6 @@ class ViewMenuWifiNet : public ViewMenu {
             wifiStop();
 
             _isinit = false;
-            
-            // И снова обновим список отображаемых пунктов
-            ViewMenu::restore();
         }
         
         void close() {
@@ -255,7 +198,7 @@ class ViewMenuWifiNet : public ViewMenu {
             wifiScanClean();
         }
         
-        void getStr(menu_dspl_el_t &str, int16_t i) {
+        void getStr(line_t &str, int16_t i) {
             if (_isinit) {
                 switch (i) {
                     case 0:
@@ -271,7 +214,6 @@ class ViewMenuWifiNet : public ViewMenu {
                 return;
             }
             
-            CONSOLE("ViewMenuWifiSync::getStr: %d (sz=%d)", i, wifiall.size());
             auto n = wifiScanInfo(i);
             if (n == NULL) {
                 str.name[0] = '\0';
@@ -281,15 +223,12 @@ class ViewMenuWifiNet : public ViewMenu {
             
             snprintf_P(
                 str.name, sizeof(str.name), 
-                PSTR("%s (%d) %c"), n->ssid, n->rssi, n->isopen ? ' ':'*'
+                PSTR("%s (%d) %c"), n->ssid, n->rssi, n->sec == WIFI_OPEN ? ' ':'*'
             );
             
-            if (n->isopen) {
-                str.val[0] = '\0';
-            }
-            else {
-                str.val[0] = wifiPassFind(n->ssid) ? '+' : 'x';
-            }
+            str.val[0] =
+                n->sec == WIFI_OPEN         ? '\0' :
+                n->sec == WIFI_PASSFOUND    ? '+' : 'x';
             str.val[1] = '\0';
         }
         
@@ -306,7 +245,7 @@ class ViewMenuWifiNet : public ViewMenu {
             if (n == NULL)
                 return;
             
-            if (n->isopen) {
+            if (n->sec == WIFI_OPEN) {
                 netopen(n->ssid);
             }
             else {
@@ -328,7 +267,6 @@ class ViewMenuWifiNet : public ViewMenu {
         }
         
     private:
-        std::vector<wifi_t> wifiall;
         bool _isinit = true;
         
         virtual void netopen(const char *ssid, const char *pass = NULL) = 0;

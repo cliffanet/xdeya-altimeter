@@ -13,25 +13,26 @@
 #define INFO_STR_COUNT  10
 #endif
 
-typedef enum {
-    TXT_NONE,
-    TXT_LEFT,
-    TXT_RIGHT,
-    TXT_CENTER
-} viewinfo_txtdir_t;
-
 #define PRNL(txt, ...) prnl(PSTR(txt), ##__VA_ARGS__)
 #define PRNR(txt, ...) prnr(PSTR(txt), ##__VA_ARGS__)
 #define PRNC(txt, ...) prnc(PSTR(txt), ##__VA_ARGS__)
 
-class ViewInfo : public ViewBase {
+class ViewInfo : public View {
     public:
+        typedef enum {
+            TXT_NONE,
+            TXT_LEFT,
+            TXT_RIGHT,
+            TXT_CENTER
+        } txtalgn_t;
+
         ViewInfo(uint16_t _sz, const char *_title = NULL) : sz(_sz), title(_title) {}
         void setSize(uint16_t _sz) { sz = _sz;};
         
         virtual
         void updStr(uint16_t i) {}
-        void vprn(viewinfo_txtdir_t dir, const char *s, va_list ap);
+        void prnstr(const char *s, txtalgn_t algn = TXT_LEFT);
+        void vprn(txtalgn_t algn, const char *s, va_list ap);
         void prnl(const char *s, ...);
         void prnr(const char *s, ...);
         void prnc(const char *s, ...);

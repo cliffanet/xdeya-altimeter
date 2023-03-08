@@ -41,7 +41,7 @@ typedef struct {
 
 class ViewMenuStatic : public ViewMenu {
     public:
-        ViewMenuStatic(const menu_el_t *m, int16_t sz, bool autoupdate = false) : ViewMenu(sz), menu(m), aupd(autoupdate) {};
+        ViewMenuStatic(const menu_el_t *m, int16_t sz) : ViewMenu(sz), menu(m) {};
 
         void opensub(ViewMenu &_menu, const char *_title = NULL) {
             if (_title == NULL)
@@ -51,8 +51,7 @@ class ViewMenuStatic : public ViewMenu {
             _menu.open(this, _title);
         }
         
-        void getStr(menu_dspl_el_t &str, int16_t i) {
-            //CONSOLE("ViewMenuStatic::getStr: %d", i);
+        void getStr(line_t &str, int16_t i) {
             auto &m = menu[i];
     
             strncpy_P(str.name, m.name, sizeof(str.name));
@@ -87,7 +86,6 @@ class ViewMenuStatic : public ViewMenu {
                         ehnd(-1);
                         break;
                 }
-                updStrSel();
                 return;
             }
             
@@ -107,20 +105,16 @@ class ViewMenuStatic : public ViewMenu {
             
             if (m.edit != NULL) {
                 isedit = true;
-                updStrSel();
                 return;
             }
             
             if (m.submenu != NULL) {
                 viewSet(*(m.submenu));
                 m.submenu->open(this, m.name);
-                return;
             }
-            
+            else
             if (m.enter != NULL)
                 m.enter();
-            
-            updStr(); // полностью обновляем экран после клика
         }
         
         bool useLong(btn_code_t btn) {
@@ -139,7 +133,6 @@ class ViewMenuStatic : public ViewMenu {
             auto &m = menu[sel()];
             if (m.hold != NULL)
                 m.hold();
-            updStr(); // полностью обновляем экран после клика
         }
         
         void process() {
@@ -156,25 +149,18 @@ class ViewMenuStatic : public ViewMenu {
                 auto ehnd = isExit(isel) ?
                     NULL : menu[sel()].edit;
                 if ((sign != 0) && (ehnd != NULL)) {
-                    if (t > 3000) {
+                    if (t > 3000)
                         ehnd(sign * 100);
-                        updStrSel();
-                    }
                     else
-                    if (t > 1000) {
+                    if (t > 1000)
                         ehnd(sign * 10);
-                        updStrSel();
-                    }
                 }
             }
-            
-            if (aupd)
-                updStr();
         }
     
     private:
         const menu_el_t *menu;
-        bool isedit = false, aupd = false;
+        bool isedit = false;
 };
 
 /* ------------------------------------------------------------------------------------------- *
@@ -1113,7 +1099,7 @@ static const menu_el_t menuhwtest[] {
     },
 #endif
 };
-static ViewMenuStatic vMenuHwTest(menuhwtest, sizeof(menuhwtest)/sizeof(menu_el_t), true);
+static ViewMenuStatic vMenuHwTest(menuhwtest, sizeof(menuhwtest)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления остальными системными настройками
@@ -1222,7 +1208,7 @@ static const menu_el_t menunetappwifi[] {
         },
     },
 };
-static ViewMenuStatic vMenuAppWiFi(menunetappwifi, sizeof(menunetappwifi)/sizeof(menu_el_t), true);
+static ViewMenuStatic vMenuAppWiFi(menunetappwifi, sizeof(menunetappwifi)/sizeof(menu_el_t));
 
 class ViewMenuSyncApp : public ViewMenu {
     /*

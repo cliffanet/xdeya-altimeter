@@ -6,6 +6,7 @@
 #include "../log.h"
 #include "../clock.h"
 #include "binproto.h"
+#include "../core/filetxt.h"
 #include "../view/text.h"
 
 #include <WiFiClient.h>
@@ -30,6 +31,47 @@ static EventGroupHandle_t sta_status = NULL;
 static esp_netif_t *sta_netif = NULL;
 static esp_event_handler_instance_t instance_any_id = NULL;
 static esp_event_handler_instance_t instance_any_ip = NULL;
+
+/* ------------------------------------------------------------------------------------------- *
+ *  Поиск пароля по имени wifi-сети
+ * ------------------------------------------------------------------------------------------- */
+bool wifiPassFind(const char *ssid, char *pass) {
+    size_t len = strlen(ssid);
+    char ssid1[len+1];
+    FileTxt f(PSTR(WIFIPASS_FILE));
+    
+    CONSOLE("need ssid: %s (avail: %d)", ssid, f.available());
+    
+    if (!f)
+        return false;
+    
+    while (f.available() > 0) {
+        if (!f.find_param(PSTR("ssid")))
+            break;
+        f.read_line(ssid1, sizeof(ssid1));
+        if (strcmp(ssid1, ssid) != 0)
+            continue;
+        
+        char param[30];
+        f.read_param(param, sizeof(param));
+        if (strcmp_P(param, PSTR("pass")) == 0)
+            f.read_line(pass, 33);
+        else
+        if (pass != NULL)
+            *pass = 0;
+        if (pass != NULL)
+            CONSOLE("found pass: %s", pass);
+        else
+            CONSOLE("founded");
+        f.close();
+        return true;
+    }
+    
+    CONSOLE("EOF");
+
+    f.close();
+    return false;
+}
 
 /* ------------------------------------------------------------------------------------------- *
  *  События
@@ -301,7 +343,13 @@ uint16_t wifiScan(bool show_hidden, bool passive, uint32_t max_ms_per_chan, uint
             wifi_net_t n;
             strcpy(n.ssid, reinterpret_cast<const char*>(r.ssid));
             n.rssi = r.rssi;
-            n.isopen = r.authmode == WIFI_AUTH_OPEN;
+            n.sec =
+                r.authmode == WIFI_AUTH_OPEN ?
+                    WIFI_OPEN :
+                wifiPassFind(n.ssid) ?
+                    WIFI_PASSFOUND :
+                    WIFI_PASSUNKNOWN;
+            
             wifiall.push_back(n);
             CONSOLE("found: %s (rssi: %d, open: %d)", n.ssid, r.rssi, r.authmode);
         }

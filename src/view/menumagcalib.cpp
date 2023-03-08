@@ -9,10 +9,10 @@
  *  ViewMagCalib - процесс калибровки магнетометра
  * ------------------------------------------------------------------------------------------- */
 
-class ViewMagCalib : public ViewBase {
+class ViewMagCalib : public View {
     public:
         ViewMagCalib() :
-            ViewBase()
+            View()
         {
             init();
         }

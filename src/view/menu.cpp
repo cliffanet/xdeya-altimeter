@@ -3,12 +3,7 @@
 #include "main.h"
 #include "../log.h"
 
-// заголовок меню
-static char title[MENUSZ_NAME] = { '\0' };
-static menu_dspl_el_t str[MENU_STR_COUNT];
-
 // редактируется ли текущий пункт меню
-static uint8_t valflash = 0; // В режиме редактирования помогает мигать отображению значения
 // Сообщение моргающим текстом - будет выводится на селекторе меню (в этот момент сам выделенный пункт меню скрывается)
 static char flashstr[MENUSZ_NAME] = { '\0' };
 static int16_t flashcnt = 0; // счётчик мигания - это и таймер мигания, и помогает мигать
@@ -16,18 +11,18 @@ static int16_t flashcnt = 0; // счётчик мигания - это и тай
 /* ------------------------------------------------------------------------------------------- *
  *  инициализация меню
  * ------------------------------------------------------------------------------------------- */
-ViewMenu::ViewMenu(uint16_t _sz, menu_exit_t _exit) :
+ViewMenu::ViewMenu(uint16_t _sz, exit_t _exit) :
     sz(_sz),
     elexit(_exit)
 {
-    if (_exit != MENUEXIT_NONE)
+    if (_exit != EXIT_NONE)
         sz++;
 }
 
 void ViewMenu::setSize(uint16_t _sz) {
     sz = _sz;
     
-    if (elexit != MENUEXIT_NONE)
+    if (elexit != EXIT_NONE)
         sz++;
     
     if (isel >= sz)
@@ -42,55 +37,8 @@ void ViewMenu::open(ViewMenu *_mprev, const char *_title) {
     restore();
 }
 
-void ViewMenu::restore() {
-    if (titlep == NULL)
-        title[0] = '\0';
-    else {
-        strncpy_P(title, titlep, sizeof(title));
-        title[sizeof(title)-1]='\0';
-    }
-        
-    updStr();
-}
-
-
-/* ------------------------------------------------------------------------------------------- *
- *  обновление списка видимых строк
- * ------------------------------------------------------------------------------------------- */
-void ViewMenu::updStr() {
-    for (int16_t i=itop, n=0; n<MENU_STR_COUNT; i++, n++)
-        if (i<sz)
-            updStr(i);
-        else {
-            str[n].name[0] = '\0';
-            str[n].val[0] = '\0';
-        }
-    
-    updValFlash();
-}
-
-void ViewMenu::updStr(int16_t i) {
-    int16_t n = i-itop;
-    if ((n < 0) || (n >= MENU_STR_COUNT))
-        return;
-    
-    if (isExit(i)) {
-        strcpy_P(str[n].name, PTXT(MENU_EXIT));
-        str[n].val[0] = '\0';
-    }
-    else {
-        if (elexit == MENUEXIT_TOP)
-            i--;
-        auto &s = str[n];
-        getStr(s, i);
-        s.name[sizeof(s.name)-1] = '\0';
-        s.val[sizeof(s.val)-1] = '\0';
-    }
-    //CONSOLE("ViewMenu::updStr: [%d] %d: %s", i, n, str[n].name);
-}
 void ViewMenu::setTop(int16_t _itop) {
     itop = _itop;
-    updStr();
 }
 
 void ViewMenu::setSel(int16_t i) {
@@ -106,10 +54,6 @@ void ViewMenu::setSel(int16_t i) {
     // поднимаем список выше, чтобы отобразился выделенный пункт
     if ((isel > itop) && ((isel-itop) >= MENU_STR_COUNT))
         setTop(isel-MENU_STR_COUNT+1);
-}
-
-void ViewMenu::updValFlash() {
-    valflash = valFlash() ? 1 : 0;
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -128,8 +72,6 @@ void ViewMenu::btnSmpl(btn_code_t btn) {
                 if (sz > MENU_STR_COUNT)
                     setTop(sz-MENU_STR_COUNT);
             }
-    
-            CONSOLE("selUp: %d (%d) => %s / %s", isel, sz, str[isel-itop].name, str[isel-itop].val);
             break;
             
         case BTN_DOWN:
@@ -145,8 +87,6 @@ void ViewMenu::btnSmpl(btn_code_t btn) {
                 if (sz > MENU_STR_COUNT)
                     setTop(0);
             }
-    
-            CONSOLE("selDn: %d (%d) => %s / %s", isel, sz, str[isel-itop].name, str[isel-itop].val);
             break;
             
         case BTN_SEL:
@@ -168,6 +108,13 @@ void ViewMenu::draw(U8G2 &u8g2) {
     u8g2.setFont(menuFont);
     
     // Заголовок
+    char title[MENUSZ_NAME];
+    if (titlep == NULL)
+        title[0] = '\0';
+    else {
+        strncpy_P(title, titlep, sizeof(title));
+        title[sizeof(title)-1]='\0';
+    }
     u8g2.drawBox(0,0,u8g2.getDisplayWidth(),12);
     u8g2.setDrawColor(0);
     u8g2.drawTxt((u8g2.getDisplayWidth()-u8g2.getTxtWidth(title))/2, 10, title);
@@ -195,10 +142,27 @@ void ViewMenu::draw(U8G2 &u8g2) {
             continue;
         }
         
-        const auto &m = str[n];
+        // Получение текстовых данных текущей строки
+        // Раньше мы эти строчки кешировали в массиве, обновляя
+        // этот массив каждый раз при смещении меню, но
+        // в итоге от этого кеширования отказались, т.к. часто
+        // данные требуют оперативного обновления, а затраты на
+        // их получение минимальны, при этом очень много гемора,
+        // связанного с обновлением кеша
+        line_t m;
+        if (isExit(i)) {
+            strcpy_P(m.name, PTXT(MENU_EXIT));
+            m.val[0] = '\0';
+        }
+        else {
+            getStr(m, elexit == EXIT_TOP ? i-1 : i);
+            m.name[sizeof(m.name)-1] = '\0';
+            m.val[sizeof(m.val)-1] = '\0';
+        }
+
         u8g2.drawTxt(2, y, m.name);
         if ((m.val[0] != '\0') &&      // вывод значения
-            ((valflash == 0) || (i != isel) || ((valflash++) % 8 <= 4))) // мерцание редактируемого значения
+            ((i != isel) || !valFlash() || isblink())) // мерцание редактируемого значения
             // выводим значение, если есть обработчик
             // в режиме редактирования - мигаем, и только выбранным пунктом меню
             u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getTxtWidth(m.val)-2, y, m.val);

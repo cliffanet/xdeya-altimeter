@@ -61,8 +61,6 @@ class ViewMenuFile : public ViewMenu {
             setSize(fileall.size()+2);
     
             CONSOLE("fileall: %d", fileall.size());
-            
-            ViewMenu::restore();
         }
         
         void close() {
@@ -70,8 +68,7 @@ class ViewMenuFile : public ViewMenu {
             setSize(0);
         }
         
-        void getStr(menu_dspl_el_t &str, int16_t i) {
-            CONSOLE("ViewMenuFile::getStr: %d (sz=%d)", i, fileall.size());
+        void getStr(line_t &str, int16_t i) {
             switch (i) {
                 case 0:
                     strncpy_P(str.name, PSTR("LogBook ReNum"), sizeof(str.name));
@@ -170,7 +167,6 @@ class ViewMenuFile : public ViewMenu {
                         menuFlashP(PSTR("ReNum OK"));
                     else
                         menuFlashP(PSTR("ReNum fail"));
-                    updStr();
                     return;
                 case 1:
                     menuFlashP(PSTR("ReNum begin..."));
@@ -179,7 +175,6 @@ class ViewMenuFile : public ViewMenu {
                         menuFlashP(PSTR("ReNum OK"));
                     else
                         menuFlashP(PSTR("ReNum fail"));
-                    updStr();
                     return;
             }
     
@@ -194,7 +189,6 @@ class ViewMenuFile : public ViewMenu {
             setSize(fileall.size()+2);
     
             menuFlashP(PSTR("Remove OK"));
-            updStr();
         }
         
         void process() {

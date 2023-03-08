@@ -23,53 +23,50 @@
 
 #define MENU_TIMEOUT    15000
 
-typedef struct {
-    char name[MENUSZ_NAME] = { '\0' };
-    char val[MENUSZ_VAL] = { '\0' };
-} menu_dspl_el_t;
 
-typedef enum {
-    MENUEXIT_NONE,
-    MENUEXIT_TOP,
-    MENUEXIT_BOTTOM,
-} menu_exit_t;
-
-class ViewMenu : public ViewBase {
+class ViewMenu : public View {
     public:
-        ViewMenu(uint16_t _sz, menu_exit_t _exit = MENUEXIT_TOP);
-        ViewMenu(menu_exit_t _exit = MENUEXIT_TOP) : ViewMenu(0, _exit) {};
+        typedef struct {
+            char name[MENUSZ_NAME] = { '\0' };
+            char val[MENUSZ_VAL] = { '\0' };
+        } line_t;
+
+        typedef enum {
+            EXIT_NONE,
+            EXIT_TOP,
+            EXIT_BOTTOM,
+        } exit_t;
+
+        ViewMenu(uint16_t _sz, exit_t _exit = EXIT_TOP);
+        ViewMenu(exit_t _exit = EXIT_TOP) : ViewMenu(0, _exit) {};
         
         void setSize(uint16_t _sz);
         virtual
         void open(ViewMenu *_mprev = NULL, const char *_title = NULL);
         virtual
-        void restore();
+        void restore() {}
         
         // детектор, является ли указанный пункт меню "выходом"
-        bool isExit(int16_t i) { return ((elexit == MENUEXIT_TOP) && (i == 0)) || ((elexit == MENUEXIT_BOTTOM) && (i+1 >= sz)); }
+        bool isExit(int16_t i) { return ((elexit == EXIT_TOP) && (i == 0)) || ((elexit == EXIT_BOTTOM) && (i+1 >= sz)); }
 
         virtual     // этот метод обновляет строку в потомке
-        void getStr(menu_dspl_el_t &str, int16_t i) { };
+        void getStr(line_t &str, int16_t i) { };
         virtual     // указывает, надо ли моргать текущему значению (режим редактирования)
         bool valFlash() { return false; }
-                    // все остальные - это обвязка по обновлению строк меню на экране в базовом классе
-        void updStr();
-        void updStr(int16_t i);
-        void updStrSel() { updStr(isel); updValFlash(); }
+        
         void setTop(int16_t i);  // установка индекса самого верхнего элемента (когда переместились курсором за пределы экрана)
         void setSel(int16_t i); // установка выбранного элемента
-        void updValFlash();
         
         void btnSmpl(btn_code_t btn);
         
         void draw(U8G2 &u8g2);
         
-        int16_t sel() const { return elexit == MENUEXIT_TOP ? isel-1 : isel; }
-        int16_t size() const { return (elexit == MENUEXIT_NONE) || (sz <= 0) ? sz : sz-1; }
+        int16_t sel() const { return elexit == EXIT_TOP ? isel-1 : isel; }
+        int16_t size() const { return (elexit == EXIT_NONE) || (sz <= 0) ? sz : sz-1; }
     
     protected:
         int16_t itop = 0, isel = 0, sz = 0;
-        menu_exit_t elexit;
+        exit_t elexit;
         ViewMenu *mprev = NULL;
         const char *titlep = NULL;
 };

@@ -7,6 +7,7 @@
 
 #include "../../def.h"
 #include <stdint.h>
+#include <stddef.h>
 
 /*
  *  Использование WiFi.h не позволяет включить модуль так,
@@ -23,10 +24,18 @@
  *  Поэтому вместо использования WiFi.h придётся работать напрямую с esp32-sdk
  */
 
+bool wifiPassFind(const char *ssid, char *pass = NULL);
+
+typedef enum {
+    WIFI_OPEN = 0,
+    WIFI_PASSFOUND,
+    WIFI_PASSUNKNOWN
+} wifi_sec_t;
+
 typedef struct {
     char ssid[33];
     int8_t rssi;
-    bool isopen;
+    wifi_sec_t sec;
 } wifi_net_t;
 
 bool wifiStart();

@@ -1,7 +1,8 @@
 
-#if HWVER >= 5
 
 #include "menu.h"
+
+#if HWVER >= 5
 #include "main.h"
 
 #include "../log.h"
@@ -16,7 +17,7 @@
 
 #define ERR(s)              fin(PSTR(TXT_FWSD_ERR_ ## s))
 
-class ViewFwUpd : public ViewBase {
+class ViewFwUpd : public View {
     public:
         // старт процедуры синхронизации
         void begin(const char *fname) {
@@ -273,8 +274,6 @@ class ViewMenuFwSdCard : public ViewMenu {
             setSize(fileall.size());
     
             CONSOLE("fileall: %d", fileall.size());
-            
-            ViewMenu::restore();
         }
         
         void close() {
@@ -283,9 +282,7 @@ class ViewMenuFwSdCard : public ViewMenu {
             setSize(0);
         }
         
-        void getStr(menu_dspl_el_t &str, int16_t i) {
-            CONSOLE("ViewMenuFwSdCard::getStr: %d (sz=%d)", i, fileall.size());
-    
+        void getStr(line_t &str, int16_t i) {
             auto const &f = fileall[i];
             const size_t sz = sizeof(str.name) < 30 ? sizeof(str.name) : 30;
             snprintf(str.name, sz, PSTR("%c %s"), f.md5 ? '*' : ' ', f.name);

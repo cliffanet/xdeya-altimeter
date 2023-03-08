@@ -9,16 +9,21 @@
 /* ------------------------------------------------------------------------------------------- *
  *  Текущий View
  * ------------------------------------------------------------------------------------------- */
-static ViewBase *vCur = NULL;
+static View *vCur = NULL;
+static View::id_t vId = View::idUnknown;
 
-void viewSet(ViewBase &v) {
+void viewSet(View &v, View::id_t id) {
     vCur = &v;
+    vId = id;
 }
-bool viewIs(ViewBase &v) {
+
+bool viewIs(View::id_t id) {
+    return vId == id;
+}
+
+bool viewIs(View &v) {
     return vCur == &v;
 }
-
-
 
 /* ------------------------------------------------------------------------------------------- *
  *  Дисплей
@@ -203,6 +208,33 @@ void btnInit() {
 }
 
 /* ------------------------------------------------------------------------------------------- *
+ *  прерывания иногда могут вызывать panic при операциях чтения/записи
+ * ------------------------------------------------------------------------------------------- */
+static void btnIntDis() {
+    detachInterrupt(digitalPinToInterrupt(btnall[0].pin));
+    detachInterrupt(digitalPinToInterrupt(btnall[1].pin));
+    detachInterrupt(digitalPinToInterrupt(btnall[2].pin));
+}
+
+static void btnIntEn() {
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[0].pin),
+        btnChkState0,
+        CHANGE
+    );
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[1].pin),
+        btnChkState1,
+        CHANGE
+    );
+    attachInterrupt(
+        digitalPinToInterrupt(btnall[2].pin),
+        btnChkState2,
+        CHANGE
+    );
+}
+
+/* ------------------------------------------------------------------------------------------- *
  *  время ненажатия ни на одну кнопку
  * ------------------------------------------------------------------------------------------- */
 uint32_t btnIdle() { // используется только для выхода из меню
@@ -258,11 +290,11 @@ void btnFlipp180(bool flipp) {
     if ((btnall[0].pin == pinu) && (btnall[2].pin == pind))
         return;
     
-    viewIntDis();
+    btnIntDis();
     btnall[0].pin = pinu;
     btnall[2].pin = pind;
     btnInit();
-    viewIntEn();
+    btnIntEn();
 }
 
 
@@ -279,35 +311,8 @@ bool btn4Pushed() {
  *  метод для обеспечения моргания на экране
  * ------------------------------------------------------------------------------------------- */
 uint8_t blinkcnt = 0;
-bool ViewBase::isblink() {
+bool View::isblink() {
     return (blinkcnt & 0x04) == 0;
-}
-
-/* ------------------------------------------------------------------------------------------- *
- *  прерывания иногда могут вызывать panic при операциях чтения/записи
- * ------------------------------------------------------------------------------------------- */
-void viewIntDis() {
-    detachInterrupt(digitalPinToInterrupt(btnall[0].pin));
-    detachInterrupt(digitalPinToInterrupt(btnall[1].pin));
-    detachInterrupt(digitalPinToInterrupt(btnall[2].pin));
-}
-
-void viewIntEn() {
-    attachInterrupt(
-        digitalPinToInterrupt(btnall[0].pin),
-        btnChkState0,
-        CHANGE
-    );
-    attachInterrupt(
-        digitalPinToInterrupt(btnall[1].pin),
-        btnChkState1,
-        CHANGE
-    );
-    attachInterrupt(
-        digitalPinToInterrupt(btnall[2].pin),
-        btnChkState2,
-        CHANGE
-    );
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -341,7 +346,7 @@ void viewInit() {
     _btnstate = 0;
     _btnstatelast = utick();
     
-    viewIntEn();
+    btnIntEn();
 
 #ifdef USE4BUTTON
     pinMode(BUTTON_PIN_4, INPUT_PULLUP);

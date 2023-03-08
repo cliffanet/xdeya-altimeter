@@ -117,8 +117,16 @@ bool btn4Pushed();
 
 typedef struct { int x, y; } pnt_t;
 
-class ViewBase {
+class View {
     public:
+        // идентификатор view в числовом представлении.
+        // необязательно обозначать все, достоточно только
+        // те, что требуется идентифизировать
+        typedef enum {
+            idUnknown = 0,
+
+        } id_t;
+
         virtual void btnSmpl(btn_code_t btn) { }
         virtual void btnLong(btn_code_t btn) { }
         virtual bool useLong(btn_code_t btn) { return false; }
@@ -131,11 +139,9 @@ class ViewBase {
     private:
 };
 
-void viewSet(ViewBase &v);
-bool viewIs(ViewBase &v);
-
-void viewIntDis();
-void viewIntEn();
+void viewSet(View &v, View::id_t id = View::idUnknown);
+bool viewIs(View::id_t id);
+bool viewIs(View &v);
 
 void viewInit();
 void viewProcess();

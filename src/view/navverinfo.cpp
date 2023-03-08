@@ -50,7 +50,7 @@ class ViewNavVerInfo : public ViewInfo {
         void updStr(uint16_t i) {
             if (i > strall.size())
                 return;
-            PRNL("%s", strall[i]);
+            prnstr(strall[i]);
         }
 };
 static ViewNavVerInfo vNavVerInfo;

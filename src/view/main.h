@@ -21,7 +21,7 @@
 // Экран отображения навигации
 #define MODE_MAIN_NAV       3
 
-class ViewMain : public ViewBase {
+class ViewMain : public View {
     public:
         void btnLong(btn_code_t btn);
         bool useLong(btn_code_t btn) { return true; };

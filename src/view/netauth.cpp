@@ -4,7 +4,7 @@
 #include "main.h"
 #include "../log.h"
 
-class ViewNetAuth : public ViewBase {
+class ViewNetAuth : public View {
     public:
         uint16_t m_code = 0;
         uint16_t m_timeout = 0;

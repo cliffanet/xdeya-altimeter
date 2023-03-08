@@ -1,24 +1,30 @@
 
 #include "info.h"
-void ViewInfo::vprn(viewinfo_txtdir_t dir, const char *s, va_list ap) {
-    int len = vsnprintf_P(NULL, 0, s, ap);
-    char str[len+1];
+
+void ViewInfo::prnstr(const char *s, txtalgn_t algn) {
     int8_t y = (iprn+1)*9+1;
-    
-    vsnprintf_P(str, sizeof(str), s, ap);
-    switch (dir) {
+
+    switch (algn) {
         case TXT_LEFT:
-            _u8g2->drawStr(0, y, str);
+            _u8g2->drawStr(0, y, s);
             break;
         
         case TXT_RIGHT:
-            _u8g2->drawStr(_u8g2->getDisplayWidth()-_u8g2->getStrWidth(str)-2, y, str);
+            _u8g2->drawStr(_u8g2->getDisplayWidth()-_u8g2->getStrWidth(s)-2, y, s);
             break;
         
         case TXT_CENTER:
-            _u8g2->drawStr((_u8g2->getDisplayWidth()-_u8g2->getStrWidth(str))/2, y, str);
+            _u8g2->drawStr((_u8g2->getDisplayWidth()-_u8g2->getStrWidth(s))/2, y, s);
             break;
     }
+}
+
+void ViewInfo::vprn(txtalgn_t algn, const char *s, va_list ap) {
+    int len = vsnprintf_P(NULL, 0, s, ap);
+    char str[len+1];
+    
+    vsnprintf_P(str, sizeof(str), s, ap);
+    prnstr(str, algn);
 }
 
 void ViewInfo::prnl(const char *s, ...) {

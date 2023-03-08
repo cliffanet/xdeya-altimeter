@@ -12,7 +12,7 @@ ViewMenu *menuLogBook();
 
 // Подробное инфо
 
-class ViewMenuLogBookInfo : public ViewBase {
+class ViewMenuLogBookInfo : public View {
     public:
         void open(size_t _isel, size_t _sz) {
             isel = _isel;
@@ -123,13 +123,9 @@ class ViewMenuLogBook : public ViewMenu {
     public:
         void restore() {
             setSize(FileLogBook().sizeall());
-            
-            ViewMenu::restore();
         }
         
-        void getStr(menu_dspl_el_t &str, int16_t i) {
-            CONSOLE("ViewMenuLogBook::getStr: %d", i);
-    
+        void getStr(line_t &str, int16_t i) {
             FileLogBook::item_t jmp;
             if (FileLogBook().getfull(jmp, i)) {
                 auto &tm = jmp.tm;

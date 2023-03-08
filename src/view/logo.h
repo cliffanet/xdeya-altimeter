@@ -10,7 +10,7 @@
 // Вырианты отображения основного режима (в количестве итераций - для view - это 200ms на итерацию)
 #define LOGO_TIME           20
 
-class ViewLogo : public ViewBase {
+class ViewLogo : public View {
     public:
         void draw(U8G2 &u8g2);
         void process();

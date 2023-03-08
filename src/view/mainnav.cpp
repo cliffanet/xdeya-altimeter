@@ -151,7 +151,7 @@ static void drawText(ARG_COMP_DEF) {
 #else // if HWVER < 4
     u8g2.setFont(menuFont);
 #endif
-    if (trkRunning() && ViewBase::isblink())
+    if (trkRunning() && View::isblink())
         u8g2.drawGlyph(0, h-u8g2.getAscent(), 'R');
 }
 
