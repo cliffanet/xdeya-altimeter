@@ -103,7 +103,7 @@ bool Config<T>::load() {
 template <typename T>
 bool Config<T>::save(bool force) {
     if (!force && !_modifed) {
-        CONSOLE("config [%d] not changed", cfgid);
+        //CONSOLE("config [%d] not changed", cfgid);
         return true;
     }
 

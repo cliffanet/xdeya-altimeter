@@ -119,29 +119,22 @@ typedef struct { int x, y; } pnt_t;
 
 class View {
     public:
-        // идентификатор view в числовом представлении.
-        // необязательно обозначать все, достоточно только
-        // те, что требуется идентифизировать
-        typedef enum {
-            idUnknown = 0,
-
-        } id_t;
-
         virtual void btnSmpl(btn_code_t btn) { }
         virtual void btnLong(btn_code_t btn) { }
         virtual bool useLong(btn_code_t btn) { return false; }
+        // признак того, что надо оставаться в pwrActive
+        virtual bool isActive() { return false; }
         
         virtual void draw(U8G2 &u8g2) = 0;
         
         virtual void process() {}
         
         static bool isblink();
-    private:
 };
 
-void viewSet(View &v, View::id_t id = View::idUnknown);
-bool viewIs(View::id_t id);
+void viewSet(View &v);
 bool viewIs(View &v);
+bool viewActive();
 
 void viewInit();
 void viewProcess();

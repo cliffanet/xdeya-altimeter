@@ -10,19 +10,17 @@
  *  Текущий View
  * ------------------------------------------------------------------------------------------- */
 static View *vCur = NULL;
-static View::id_t vId = View::idUnknown;
 
-void viewSet(View &v, View::id_t id) {
+void viewSet(View &v) {
     vCur = &v;
-    vId = id;
-}
-
-bool viewIs(View::id_t id) {
-    return vId == id;
 }
 
 bool viewIs(View &v) {
     return vCur == &v;
+}
+
+bool viewActive() {
+    return (vCur != NULL) && vCur->isActive();
 }
 
 /* ------------------------------------------------------------------------------------------- *

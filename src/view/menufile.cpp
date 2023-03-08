@@ -194,7 +194,7 @@ class ViewMenuFile : public ViewMenu {
         void process() {
             if (btnIdle() > MENU_TIMEOUT) {
                 close();
-                setViewMain();
+                menuClear();
             }
         }
         
@@ -202,5 +202,4 @@ class ViewMenuFile : public ViewMenu {
         std::vector<filei_t> fileall;
 };
 
-static ViewMenuFile vMenuFile;
-ViewMenu *menuFile() { return &vMenuFile; }
+void menuFile() { menuOpen<ViewMenuFile>(); }

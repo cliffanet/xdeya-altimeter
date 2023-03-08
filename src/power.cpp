@@ -173,12 +173,8 @@ static power_mode_t pwrModeCalc() {
         return PWR_ACTIVE;
     if (gpsPwr())
         return PWR_ACTIVE;
-    if (menuIsWifi())
+    if (viewActive())
         return PWR_ACTIVE;
-#if HWVER >= 5
-    if (menuIsFwSd())
-        return PWR_ACTIVE;
-#endif // if HWVER >= 5
     if (!wrkEmpty())
         // Если есть какие-либо выполняемые процессы, надо чтобы они завершились.
         // Иначе, они просто не будут выполняться.

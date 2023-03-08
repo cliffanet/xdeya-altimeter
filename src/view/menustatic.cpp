@@ -38,7 +38,8 @@ typedef struct {
     menu_hnd_t  hold;       // Обработка действия при длинном нажатии на среднюю кнопку
 } menu_el_t;
 
-#define subMenu(m)      [] { menuOpen(m); }
+#define subMenuOpen(v)      menuOpen<ViewMenuStatic>(v, sizeof(v)/sizeof(menu_el_t))
+#define subMenu(v)          [] { subMenuOpen(v); }
 
 class ViewMenuStatic : public ViewMenu {
     public:
@@ -130,7 +131,7 @@ class ViewMenuStatic : public ViewMenu {
         void process() {
             if (btnIdle() > MENU_TIMEOUT) {
                 cfgSave(); //  сохраняем конфиг, если изменён, но в случае ошибки игнорим
-                setViewMain();
+                menuClear();
             }
     
             if (isedit) {
@@ -158,11 +159,12 @@ class ViewMenuStatic : public ViewMenu {
 /* ------------------------------------------------------------------------------------------- *
  *  Внешние подменю
  * ------------------------------------------------------------------------------------------- */
-ViewMenu *menuLogBook();
-ViewMenu *menuWifi2Cli();
-ViewMenu *menuWifi2Server();
+void menuLogBook();
+void menuFile();
+void menuWifi2Cli();
+void menuWifi2Server();
 #if HWVER >= 5
-ViewMenu *menuFwSdCard();
+void menuFwSdCard();
 #endif
 void setViewMagCalib();
 
@@ -265,7 +267,6 @@ static const menu_el_t menugpsupoint[] {
         },
     },
 };
-static ViewMenuStatic vMenuGpsPoint(menugpsupoint, sizeof(menugpsupoint)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления экраном
@@ -299,7 +300,6 @@ static const menu_el_t menudisplay[] {
         .showval = [] (char *txt) { valYes(txt, cfg.d().flipp180); },
     },
 };
-static ViewMenuStatic vMenuDisplay(menudisplay, sizeof(menudisplay)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню сброса нуля высотомера (на земле)
@@ -354,7 +354,6 @@ static const menu_el_t menugnd[] {
         },
     },
 };
-static ViewMenuStatic vMenuGnd(menugnd, sizeof(menugnd)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню автоматизации экранами с информацией
@@ -448,7 +447,6 @@ static const menu_el_t menuinfo[] {
         },
     },
 };
-static ViewMenuStatic vMenuInfo(menuinfo, sizeof(menuinfo)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню автоотключения питания
@@ -498,7 +496,6 @@ static const menu_el_t menupoweroff[] {
         },
     },
 };
-static ViewMenuStatic vMenuPowerOff(menupoweroff, sizeof(menupoweroff)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню автоматического включения NAV-приёмника
@@ -576,7 +573,6 @@ static const menu_el_t menugpson[] {
         },
     },
 };
-static ViewMenuStatic vMenuGpsOn(menugpson, sizeof(menugpson)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню выбора функций кнопок вверх/вниз
@@ -638,11 +634,18 @@ static const menu_el_t menubtndo[] {
         },
     },
 };
-static ViewMenuStatic vMenuBtnDo(menubtndo, sizeof(menubtndo)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню работы с трэками
  * ------------------------------------------------------------------------------------------- */
+static struct {
+    size_t count = 0;
+    size_t avail = 0;
+} trk_info;
+static void trk_info_upd() {
+    trk_info.count = FileTrack().count();
+    trk_info.avail = trkCountAvail();
+}
 static const menu_el_t menutrack[] {
     {   // Текущий режим записи трэка
         .name = PTXT(MENU_TRACK_RECORDING),
@@ -685,14 +688,14 @@ static const menu_el_t menutrack[] {
     {   // Количество записей
         .name = PTXT(MENU_TRACK_COUNT),
         .enter = NULL,
-        .showval = [] (char *txt) { valInt(txt, FileTrack().count()); },
+        .showval = [] (char *txt) { valInt(txt, trk_info.count); },
     },
     {   // Сколько времени доступно
         .name = PTXT(MENU_TRACK_AVAIL),
         .enter = NULL,
         .showval = [] (char *txt) {
             // сколько записей ещё влезет
-            size_t avail = trkCountAvail() / 5; // количество секунд
+            size_t avail = trk_info.avail / 5; // количество секунд
             if (avail >= 60)
                 sprintf_P(txt, PSTR("%d:%02d"), avail/60, avail%60);
             else
@@ -700,7 +703,6 @@ static const menu_el_t menutrack[] {
         },
     },
 };
-static ViewMenuStatic vMenuTrack(menutrack, sizeof(menutrack)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления часами
@@ -739,7 +741,6 @@ static const menu_el_t menutime[] {
         },
     },
 };
-static ViewMenuStatic vMenuTime(menutime, sizeof(menutime)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню опций
@@ -747,23 +748,23 @@ static ViewMenuStatic vMenuTime(menutime, sizeof(menutime)/sizeof(menu_el_t));
 static const menu_el_t menuoptions[] {
     {
         .name       = PTXT(MENU_OPTION_DISPLAY),
-        .enter      = subMenu(vMenuDisplay),
+        .enter      = subMenu(menudisplay),
     },
     {
         .name       = PTXT(MENU_OPTION_GNDCORRECT),
-        .enter      = subMenu(vMenuGnd),
+        .enter      = subMenu(menugnd),
     },
     {
         .name       = PTXT(MENU_OPTION_AUTOSCREEN),
-        .enter      = subMenu(vMenuInfo),
+        .enter      = subMenu(menuinfo),
     },
     {
         .name       = PTXT(MENU_OPTION_AUTOPOWER),
-        .enter      = subMenu(vMenuPowerOff),
+        .enter      = subMenu(menupoweroff),
     },
     {
         .name       = PTXT(MENU_OPTION_AUTONAV),
-        .enter      = subMenu(vMenuGpsOn),
+        .enter      = subMenu(menugpson),
     },
     {   // использовать компас
         .name       = PTXT(MENU_OPTION_COMPEN),
@@ -791,18 +792,20 @@ static const menu_el_t menuoptions[] {
     },
     {
         .name       = PTXT(MENU_OPTION_BTNDO),
-        .enter      = subMenu(vMenuBtnDo),
+        .enter      = subMenu(menubtndo),
     },
     {
         .name       = PTXT(MENU_OPTION_TRACK),
-        .enter      = subMenu(vMenuTrack),
+        .enter      = [] {
+            subMenuOpen(menutrack);
+            trk_info_upd();
+        },
     },
     {
         .name       = PTXT(MENU_OPTION_TIME),
-        .enter      = subMenu(vMenuTime),
+        .enter      = subMenu(menutime),
     },
 };
-static ViewMenuStatic vMenuOptions(menuoptions, sizeof(menuoptions)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню Обновления прошивки
@@ -864,11 +867,10 @@ static const menu_el_t menufirmware[] {
 #if HWVER >= 5
     {
         .name       = PTXT(MENU_FW_SDCARD),
-        .enter      = subMenu((*menuFwSdCard())),
+        .enter      = menuFwSdCard,
     },
 #endif // HWVER >= 5
 };
-static ViewMenuStatic vMenuFirmWare(menufirmware, sizeof(menufirmware)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню работы с навигацией
@@ -902,7 +904,6 @@ static const menu_el_t menunavigation[] {
         },
     },
 };
-static ViewMenuStatic vMenuNavigation(menunavigation, sizeof(menunavigation)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню тестирования оборудования
@@ -1040,13 +1041,10 @@ static const menu_el_t menuhwtest[] {
     },
 #endif
 };
-static ViewMenuStatic vMenuHwTest(menuhwtest, sizeof(menuhwtest)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню управления остальными системными настройками
  * ------------------------------------------------------------------------------------------- */
-ViewMenu *menuFile();
-
 static const menu_el_t menusystem[] {
     {
         .name = PTXT(MENU_POWEROFF_FORCE),
@@ -1084,26 +1082,25 @@ static const menu_el_t menusystem[] {
     },
     {
         .name       = PTXT(MENU_SYSTEM_FWUPDATE),
-        .enter      = subMenu(vMenuFirmWare),
+        .enter      = subMenu(menufirmware),
     },
     {
         .name       = PTXT(MENU_SYSTEM_NAVIGATION),
-        .enter      = subMenu(vMenuNavigation),
+        .enter      = subMenu(menunavigation),
     },
     {
         .name       = PTXT(MENU_SYSTEM_FILES),
-        .enter      = subMenu((*menuFile())),
+        .enter      = menuFile,
     },
     {
         .name       = PTXT(MENU_SYSTEM_HWTEST),
-        .enter      = subMenu(vMenuHwTest),
+        .enter      = subMenu(menuhwtest),
     },
     {
         .name       = PTXT(MENU_SYSTEM_MAGCALIB),
         .enter      = setViewMagCalib,
     },
 };
-static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню синхронизации по сети: приложение через wifi (информация о подключенной сети)
@@ -1111,7 +1108,7 @@ static ViewMenuStatic vMenuSystem(menusystem, sizeof(menusystem)/sizeof(menu_el_
 static const menu_el_t menunetappwifi[] {
     {
         .name       = PTXT(MENU_WIFICLI_NET),
-        .enter      = subMenu((*menuWifi2Cli())),
+        .enter      = menuWifi2Cli,
         .showval    = [] (char *txt) { wifiCliNet(txt); },
     },
     {
@@ -1141,7 +1138,6 @@ static const menu_el_t menunetappwifi[] {
         },
     },
 };
-static ViewMenuStatic vMenuAppWiFi(menunetappwifi, sizeof(menunetappwifi)/sizeof(menu_el_t));
 
 /* ------------------------------------------------------------------------------------------- *
  *  Меню синхронизации по сети
@@ -1150,11 +1146,10 @@ static const menu_el_t menunetsync[] {
     {
         .name       = PTXT(MENU_NET_WIFICLI),
         .enter      = [] {
-            auto &m =
-                wifiStatus() == WIFI_STA_NULL ?
-                    *menuWifi2Cli() :
-                    vMenuAppWiFi;
-            menuOpen(m);
+            if (wifiStatus() == WIFI_STA_NULL)
+                menuWifi2Cli();
+            else
+                menuOpen<ViewMenuStatic>(menunetappwifi, sizeof(menunetappwifi)/sizeof(menu_el_t));
         },
     },
     
@@ -1177,11 +1172,9 @@ static const menu_el_t menunetsync[] {
     
     {
         .name       = PTXT(MENU_NET_WIFISERVER),
-        .enter      = subMenu((*menuWifi2Server())),
+        .enter      = menuWifi2Server,
     },
 };
-static ViewMenuStatic vMenuNetSync(menunetsync, sizeof(menunetsync)/sizeof(menu_el_t));
-static ViewMenuStatic *getMenuNetSync() { return &vMenuNetSync; }
 
 /* ------------------------------------------------------------------------------------------- *
  *  Главное меню конфига, тут в основном только подразделы
@@ -1189,7 +1182,7 @@ static ViewMenuStatic *getMenuNetSync() { return &vMenuNetSync; }
 static const menu_el_t menumain[] {
     {
         .name       = PTXT(MENU_ROOT_NAVPOINT),
-        .enter      = subMenu(vMenuGpsPoint),
+        .enter      = subMenu(menugpsupoint),
     },
     {
         .name       = PTXT(MENU_ROOT_JUMPCOUNT),
@@ -1204,22 +1197,19 @@ static const menu_el_t menumain[] {
     },
     {
         .name       = PTXT(MENU_ROOT_LOGBOOK),
-        .enter      = subMenu((*menuLogBook())),
+        .enter      = menuLogBook,
     },
     {
         .name       = PTXT(MENU_ROOT_OPTIONS),
-        .enter      = subMenu(vMenuOptions),
+        .enter      = subMenu(menuoptions),
     },
     {
         .name       = PTXT(MENU_ROOT_SYSTEM),
-        .enter      = subMenu(vMenuSystem),
+        .enter      = subMenu(menusystem),
     },
     {
         .name       = PTXT(MENU_ROOT_NETSYNC),
-        .enter      = subMenu(vMenuNetSync),
+        .enter      = subMenu(menunetsync),
     },
 };
-static ViewMenuStatic vMenuMain(menumain, sizeof(menumain)/sizeof(menu_el_t));
-void setViewMenu() {
-    menuOpen(vMenuMain);
-}
+void setViewMenu() { menuOpen<ViewMenuStatic>(menumain, sizeof(menumain)/sizeof(menu_el_t)); }

@@ -12,6 +12,8 @@
 
 class ViewNetSync : public View {
     public:
+        bool isActive() { return true; }
+        
         void btnSmpl(btn_code_t btn) {
             // короткое нажатие на любую кнопку ускоряет выход,
             // если процес завершился и ожидается таймаут финального сообщения
@@ -171,6 +173,8 @@ ViewNetSync vNetSync;
  * ------------------------------------------------------------------------------------------- */
 class ViewMenuWifiNet : public ViewMenu {
     public:
+        bool isActive() { return true; }
+
         void restore() {
             CONSOLE("Wifi init begin");
             // Сначала прорисуем на экране, что мы начали сканировать
@@ -262,7 +266,7 @@ class ViewMenuWifiNet : public ViewMenu {
         void process() {
             if (btnIdle() > MENU_TIMEOUT) {
                 close();
-                setViewMain();
+                menuClear();
             }
         }
         
@@ -275,21 +279,16 @@ class ViewMenuWifiNet : public ViewMenu {
 class ViewMenuWifi2Cli : public ViewMenuWifiNet {
     void netopen(const char *ssid, const char *pass = NULL) {
         wifiCliBegin(ssid, pass);
-        setViewMain();
+        menuClear();
     }
 };
-static ViewMenuWifi2Cli vMenuWifi2Cli;
-ViewMenu *menuWifi2Cli() { return &vMenuWifi2Cli; }
+void menuWifi2Cli() { menuOpen<ViewMenuWifi2Cli>(); }
 
 class ViewMenuWifi2Server : public ViewMenuWifiNet {
     void netopen(const char *ssid, const char *pass = NULL) {
         wifiSyncBegin(ssid, pass);
+        menuClear();
         viewSet(vNetSync);
     }
 };
-static ViewMenuWifi2Server vMenuWifi2Server;
-ViewMenu *menuWifi2Server() { return &vMenuWifi2Server; }
-
-bool menuIsWifi() {
-    return viewIs(vMenuWifi2Cli) || viewIs(vMenuWifi2Server) || viewIs(vNetSync);
-}
+void menuWifi2Server() { menuOpen<ViewMenuWifi2Server>(); }

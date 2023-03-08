@@ -101,7 +101,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_OPTION_GNDCORRECT  "Подст. уровня земли"
 #define TXT_MENU_OPTION_AUTOSCREEN  "Автоперекл. экрана"
 #define TXT_MENU_OPTION_AUTOPOWER   "Автовыключение"
-#define TXT_MENU_OPTION_AUTONAV     "Управление режимом Нави"
+#define TXT_MENU_OPTION_AUTONAV     "Режим Навигации"
 #define TXT_MENU_OPTION_COMPEN      "Использовать Компас"
 #define TXT_MENU_OPTION_TXTCOURSE   "Курс числом"
 #define TXT_MENU_OPTION_BTNDO       "Функции кнопок"

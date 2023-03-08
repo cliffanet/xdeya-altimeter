@@ -3,6 +3,7 @@
 
 #include "info.h"
 #include "main.h"
+#include "menu.h"
 
 #include "../navi/proc.h"
 #include "../navi/ubloxproto.h"
@@ -152,6 +153,7 @@ class ViewInfoSat : public ViewInfo {
 };
 static ViewInfoSat vInfSat;
 void setViewInfoSat() {
+    menuClear();
     viewSet(vInfSat);
     vInfSat.start();
 }

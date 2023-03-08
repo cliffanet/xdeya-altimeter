@@ -125,5 +125,6 @@ ViewMagCalib vMagCalib;
 
 void setViewMagCalib() {
     vMagCalib.init();
+    menuClear();
     viewSet(vMagCalib);
 }

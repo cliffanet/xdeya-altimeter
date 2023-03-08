@@ -8,8 +8,6 @@
 /* ------------------------------------------------------------------------------------------- *
  *  LogBook
  * ------------------------------------------------------------------------------------------- */
-ViewMenu *menuLogBook();
-
 // Подробное инфо
 
 class ViewMenuLogBookInfo : public View {
@@ -33,10 +31,11 @@ class ViewMenuLogBookInfo : public View {
                     read();
                     break;
                     
-                case BTN_SEL:
-                    viewSet(*(menuLogBook()));
-                    menuLogBook()->restore();
-                    menuLogBook()->setSel(isel+1);
+                case BTN_SEL: {
+                        auto p = menuRestore();
+                        if (p != NULL)
+                            p->setSel(isel+1);
+                    }
                     break;
                     
                 case BTN_DOWN:
@@ -106,7 +105,7 @@ class ViewMenuLogBookInfo : public View {
         
         void process() {
             if (btnIdle() > MENU_TIMEOUT)
-                setViewMain();
+                menuClear();
         }
         
     private:
@@ -119,24 +118,47 @@ static ViewMenuLogBookInfo vLogBookInfo;
 
 // список
 
+#define DCNT 10
 class ViewMenuLogBook : public ViewMenu {
+    struct {
+        int16_t i = -1;
+        line_t str;
+    } dd[DCNT];
+    uint8_t n = 0;
+
     public:
         void restore() {
             setSize(FileLogBook().sizeall());
         }
-        
-        void getStr(line_t &str, int16_t i) {
+        // система кеширования, т.к. весь логбук мы сразу не можем прочесть,
+        // работаем простым кешем
+        line_t & read(int16_t i) {
+            for (auto &d : dd)
+                if (i == d.i)
+                    return d.str;
+            
+            auto &d = dd[n];
+            d.i = i;
+            n++;
+            if (n >= DCNT) n=0;
+
             FileLogBook::item_t jmp;
             if (FileLogBook().getfull(jmp, i)) {
                 auto &tm = jmp.tm;
-                snprintf_P(str.name, sizeof(str.name), PSTR("%2d.%02d.%02d %2d:%02d"),
+                snprintf_P(d.str.name, sizeof(d.str.name), PSTR("%2d.%02d.%02d %2d:%02d"),
                                 tm.day, tm.mon, tm.year % 100, tm.h, tm.m);
-                snprintf_P(str.val, sizeof(str.val), PSTR("%d"), jmp.num);
+                snprintf_P(d.str.val, sizeof(d.str.val), PSTR("%d"), jmp.num);
             }
             else {
-                str.name[0] = '\0';
-                str.val[0] = '\0';
+                d.str.name[0] = '\0';
+                d.str.val[0] = '\0';
             }
+
+            return d.str;
+        }
+        
+        void getStr(line_t &str, int16_t i) {
+            str = read(i);
         }
         
         void btnSmpl(btn_code_t btn) {
@@ -153,9 +175,8 @@ class ViewMenuLogBook : public ViewMenu {
         
         void process() {
             if (btnIdle() > MENU_TIMEOUT)
-                setViewMain();
+                menuClear();
         }
 };
 
-static ViewMenuLogBook vMenuLogBook;
-ViewMenu *menuLogBook() { return &vMenuLogBook; }
+void menuLogBook() { menuOpen<ViewMenuLogBook>(); }

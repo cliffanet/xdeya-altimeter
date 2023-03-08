@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "info.h"
-#include "main.h"
+#include "menu.h"
 
 #include "../navi/proc.h"
 #include "../navi/ubloxproto.h"
@@ -44,7 +44,7 @@ class ViewNavVerInfo : public ViewInfo {
             }
             
             stop();
-            setViewMain();
+            menuRestore();
         }
         
         void updStr(uint16_t i) {

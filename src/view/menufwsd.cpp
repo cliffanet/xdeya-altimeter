@@ -214,6 +214,8 @@ typedef struct {
  * ------------------------------------------------------------------------------------------- */
 class ViewMenuFwSdCard : public ViewMenu {
     public:
+        bool isActive() { return true; }
+        
         void restore() {
             fileExtInit();
             fs::FS &fs = SD;
@@ -320,6 +322,7 @@ class ViewMenuFwSdCard : public ViewMenu {
             
             const auto &f = fileall[sel()];
             
+            menuClear();
             viewSet(vFwUpd);
             vFwUpd.begin(f.name);
         }
@@ -327,7 +330,7 @@ class ViewMenuFwSdCard : public ViewMenu {
         void process() {
             if (btnIdle() > MENU_TIMEOUT) {
                 close();
-                setViewMain();
+                menuClear();
             }
         }
         
@@ -335,12 +338,6 @@ class ViewMenuFwSdCard : public ViewMenu {
         std::vector<fwi_t> fileall;
 };
 
-static ViewMenuFwSdCard vMenuFwSdCard;
-ViewMenu *menuFwSdCard() { return &vMenuFwSdCard; }
-
-
-bool menuIsFwSd() {
-    return viewIs(vFwUpd);
-}
+void menuFwSdCard() { menuOpen<ViewMenuFwSdCard>(); }
 
 #endif // HWVER >= 5

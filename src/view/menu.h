@@ -42,7 +42,7 @@ class ViewMenu : public View {
         
         void setSize(uint16_t _sz);
         virtual
-        void open(const char *_title = NULL);
+        void setTitle(const char *_title = NULL);
         virtual
         void restore() {}
         
@@ -72,8 +72,15 @@ class ViewMenu : public View {
         const char *titlep = NULL;
 };
 
-void menuOpen(ViewMenu &menu);
-void menuPrev();
+void _menuAdd(ViewMenu *menu);
+template<typename T, typename... _Args>
+T* menuOpen(_Args&&... __args) {
+    auto m = new T(__args...);
+    _menuAdd(m);
+    return m;
+}
+ViewMenu *menuPrev();
+ViewMenu *menuRestore();
 void menuClear();
         
 // Запоминаем текст сообщения и сколько тактов отображения показывать
@@ -83,10 +90,5 @@ void menuFlashHold();
 void menuFlashClear();
 
 void setViewMenu();
-
-bool menuIsWifi();
-#if HWVER >= 5
-bool menuIsFwSd();
-#endif
 
 #endif // _view_menu_H

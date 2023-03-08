@@ -31,11 +31,8 @@ void ViewMenu::setSize(uint16_t _sz) {
         isel = sz-1;
 }
 
-void ViewMenu::open(const char *_title) {
+void ViewMenu::setTitle(const char *_title) {
     titlep = _title;
-    itop = 0;
-    isel = 0;
-    restore();
 }
 
 void ViewMenu::setTop(int16_t _itop) {
@@ -170,27 +167,56 @@ void ViewMenu::draw(U8G2 &u8g2) {
  *  Функции мигания сообщением на выбранном пункте меню
  * ------------------------------------------------------------------------------------------- */
 static std::vector<ViewMenu *> menuall;
-void menuOpen(ViewMenu &menu) {
-    viewSet(menu);
-    menu.open(menuall.size() > 0 ? menuall.back()->getSelName() : PTXT(MENU_ROOT));
-    menuall.push_back(&menu);
+void _menuAdd(ViewMenu *menu) {
+    viewSet(*menu);
+    menu->setTitle(menuall.size() > 0 ? menuall.back()->getSelName() : PTXT(MENU_ROOT));
+    // Перерисуем, чтобы особо медленные в инициализации,
+    // подвешивая процессор, всё же показывали, что переключение
+    // всё-таки произошло (кнопка нажалась).
+    displayUpdate();
+    menu->restore();
+    menuall.push_back(menu);
     CONSOLE("size: %d", menuall.size());
 }
-void menuPrev() {
+ViewMenu *menuPrev() {
     // выход в предыдущее меню
+    if (menuall.size() == 0)
+        return NULL;
+    
+    delete menuall.back();
     menuall.pop_back();
+    CONSOLE("size: %d", menuall.size());
     if (menuall.size() > 0) {
         auto prev = menuall.back();
         viewSet(*prev);
+        displayUpdate();
         prev->restore();
+        return prev;
     }
     else
         setViewMain();
-    CONSOLE("size: %d", menuall.size());
+    
+    return NULL;
+}
+ViewMenu *menuRestore() {
+    // возобновление верхнего меню,
+    // актуально, когда мы делаем viewSet без menuClear
+    // и надо вернуть обратно меню
+    if (menuall.size() == 0)
+        return NULL;
+    
+    auto prev = menuall.back();
+    viewSet(*prev);
+    displayUpdate();
+    prev->restore();
+    return prev;
 }
 void menuClear() {
     if (menuall.size() == 0)
         return;
+    
+    for (auto m: menuall)
+        delete m;
     
     menuall.clear();
     setViewMain();
