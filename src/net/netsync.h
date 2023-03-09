@@ -32,26 +32,19 @@ enum {
 };
 
 
-class WrkNet : public WrkOk {
+class WrkNet : public WrkCmpl {
     public:
-        typedef struct {
-            uint32_t val, sz;
-        } cmpl_t;
-
         WrkNet(BinProto *_pro, uint16_t _id = 0) :
             m_id(_id),
-            m_pro(_pro),
-            m_cmpl({ 0, 0 })
+            m_pro(_pro)
             {}
 
         uint16_t id() const { return m_id; };
         bool isnetok() const { return m_pro != NULL; }
-        const cmpl_t& cmpl() const { return m_cmpl; };
 
     protected:
         uint16_t m_id = 0;
         BinProto *m_pro;
-        cmpl_t m_cmpl;
 };
 
 bool sendCfgMain(BinProto *pro);

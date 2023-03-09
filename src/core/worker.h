@@ -48,6 +48,7 @@ class Wrk {
         uint16_t __opts = 0;
 };
 
+// воркер, возвращающий значение
 template <class T>
 class WrkRet : public Wrk {
     public:
@@ -56,6 +57,7 @@ class WrkRet : public Wrk {
         T m_ret;
 };
 
+// воркер, возвращающий bool: isok()
 class WrkOk : public Wrk {
     public:
         bool isok() const { return m_isok; }
@@ -71,6 +73,26 @@ class WrkOk : public Wrk {
         bool m_isok = false;
 };
 
+// воркер процессинг, за которым можно
+// наблюдать процент выполненного, а так же,
+// получать статус isok()
+class WrkCmpl : public WrkOk {
+    public:
+        typedef struct {
+            uint32_t val, sz;
+        } cmpl_t;
+
+        WrkCmpl() :
+            m_cmpl({ 0, 0 })
+            {}
+
+        const cmpl_t& cmpl() const { return m_cmpl; };
+
+    protected:
+        cmpl_t m_cmpl;
+};
+
+// Шаблон класса-контроллера за воркером
 template <class T>
 class WrkProc {
     public:

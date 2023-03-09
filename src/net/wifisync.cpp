@@ -101,7 +101,7 @@ class _wifiSync : public Wrk {
             m_timeout = 0;
         }
         
-        WrkNet::cmpl_t complete() const {
+        WrkCmpl::cmpl_t complete() const {
             if (!m_wrk.valid())
                 return { 0, 0 };
             
