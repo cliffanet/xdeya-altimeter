@@ -520,12 +520,16 @@ public:
             return ok();
         }
 
-        if (!tr.open(m_fn))
-            WPRC_ERR("Can't open num: %d", m_fn);
+        if (!tr.open(m_fn)) {
+            CONSOLE("Can't open num: %d", m_fn);
+            return RUN;
+        }
         
         FileTrack::head_t th;
-        if (!tr.get(th))
-            WPRC_ERR("Can't get head num: %d", m_fn);
+        if (!tr.get(th)) {
+            CONSOLE("Can't get head num: %d", m_fn);
+            return RUN;
+        }
 
         struct __attribute__((__packed__)) {
             uint32_t id;

@@ -106,6 +106,7 @@ void WrkBkpSDall::end() {
     fileExtStop();
 }
 
+/*
 Wrk::state_t WrkBkpSDlast::run() {
 WPROC
     if (!fileExtInit())
@@ -121,5 +122,6 @@ WPRC(END)
 void WrkBkpSDlast::end() {
     fileExtStop();
 }
+*/
 
 #endif // HWVER >= 5

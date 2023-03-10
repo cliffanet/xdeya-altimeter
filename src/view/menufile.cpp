@@ -59,7 +59,7 @@ class ViewMenuFile : public ViewMenu {
                 fileall.push_back(f);
             }
     
-            setSize(fileall.size()+4);
+            setSize(fileall.size()+3);
     
             CONSOLE("fileall: %d", fileall.size());
         }
@@ -75,15 +75,17 @@ class ViewMenuFile : public ViewMenu {
                     strncpy_P(str.name, PTXT(BKPSD_ALL), sizeof(str.name));
                     str.val[0] = '\0';
                     return;
+                /*
                 case 1:
                     strncpy_P(str.name, PTXT(BKPSD_LAST), sizeof(str.name));
                     str.val[0] = '\0';
                     return;
-                case 2:
+                */
+                case 1:
                     strncpy_P(str.name, PSTR("LogBook ReNum"), sizeof(str.name));
                     str.val[0] = '\0';
                     return;
-                case 3:
+                case 2:
                     strncpy_P(str.name, PSTR("Track ReNum"), sizeof(str.name));
                     str.val[0] = '\0';
                     return;
@@ -110,11 +112,11 @@ class ViewMenuFile : public ViewMenu {
 
             switch (sel()) {
                 case 0:
-                case 1:
+                //case 1:
                     menuFlashP(PSTR("Hold to run"));
                     return;
+                case 1:
                 case 2:
-                case 3:
                     menuFlashP(PSTR("Hold to ReNum"));
                     return;
 #if !defined(FWVER_DEV) && !defined(FWVER_DEBUG)
@@ -176,10 +178,12 @@ class ViewMenuFile : public ViewMenu {
                 case 0:
                     operRun<WrkBkpSDall>(PTXT(BKPSD_ALL));
                     return;
+                /*
                 case 1:
                     operRun<WrkBkpSDlast>(PTXT(BKPSD_ALL));
                     return;
-                case 2:
+                */
+                case 1:
                     menuFlashP(PSTR("ReNum begin..."));
                     displayUpdate();
                     if (FileLogBook().renum())
@@ -187,7 +191,7 @@ class ViewMenuFile : public ViewMenu {
                     else
                         menuFlashP(PSTR("ReNum fail"));
                     return;
-                case 3:
+                case 2:
                     menuFlashP(PSTR("ReNum begin..."));
                     displayUpdate();
                     if (FileTrack().renum())
@@ -205,7 +209,7 @@ class ViewMenuFile : public ViewMenu {
                 return;
             }
             fileall.erase(fileall.begin() + i);
-            setSize(fileall.size()+2);
+            setSize(fileall.size()+3);
     
             menuFlashP(PSTR("Remove OK"));
         }

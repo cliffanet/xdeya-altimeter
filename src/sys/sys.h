@@ -69,6 +69,7 @@ class WrkBkpSDall : public WrkOperation {
         void end();
 };
 
+/*
 class WrkBkpSDlast : public WrkOperation {
     File fh;
 
@@ -76,5 +77,6 @@ class WrkBkpSDlast : public WrkOperation {
         state_t run();
         void end();
 };
+*/
 
 #endif // _sys_H
