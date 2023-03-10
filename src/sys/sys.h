@@ -7,7 +7,8 @@
 
 #include "../../def.h"
 #include "../core/worker.h"
-#include <SD.h>
+#include "../view/menu.h"
+#include "FS.h"
 
 // воркер операции: позволяет считать процент выполненного,
 // видеть текст текущей операции, статус выполненного
@@ -37,11 +38,41 @@ class WrkOperation : public WrkCmpl {
         char m_str[WRK_OPERATION_STRLEN];
 };
 
+void viewOperation(WrkProc<WrkOperation> &wrk, const char *titlep = NULL);
+
+template<typename T, typename... _Args>
+inline WrkProc<WrkOperation> operRun(const char * title, _Args&&... __args) {
+    auto w = wrkRun<T, WrkOperation>(__args...);
+    menuClear();
+    viewOperation(w, title);
+    return w;
+}
+
 class WrkFwUpdCard : public WrkOperation {
     File fh;
 
     public:
         WrkFwUpdCard(const char *fname);
+        state_t run();
+        void end();
+};
+
+#define WRKBKP_DIRLEN 64
+class WrkBkpSDall : public WrkOperation {
+    File m_dh;
+    File m_fhi;
+    File m_fho;
+    char m_dirname[WRKBKP_DIRLEN];
+
+    public:
+        state_t run();
+        void end();
+};
+
+class WrkBkpSDlast : public WrkOperation {
+    File fh;
+
+    public:
         state_t run();
         void end();
 };

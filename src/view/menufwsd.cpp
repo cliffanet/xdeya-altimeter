@@ -9,13 +9,12 @@
 #include "../sys/sys.h"
 #include "../core/file.h"
 
+#include <SD.h>
 #include <vector>
 
 /* ------------------------------------------------------------------------------------------- *
  *  ViewMenuFwSdCard
  * ------------------------------------------------------------------------------------------- */
-void viewOperation(WrkProc<WrkOperation> &wrk, const char *titlep = NULL);
-
 class ViewMenuFwSdCard : public ViewMenu {
     typedef struct {
         char name[47];
@@ -134,9 +133,7 @@ class ViewMenuFwSdCard : public ViewMenu {
             
             const auto &f = fileall[sel()];
             
-            menuClear();
-            auto w = wrkRun<WrkFwUpdCard, WrkOperation>(f.name);
-            viewOperation(w, PTXT(FWSD_TITLE));
+            operRun<WrkFwUpdCard>(PTXT(FWSD_TITLE), f.name);
         }
         
         void process() {

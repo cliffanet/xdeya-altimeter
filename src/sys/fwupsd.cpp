@@ -9,7 +9,6 @@
 
 #include <Update.h>         // Обновление прошивки
 #include <SD.h>
-#include <vector>
 
 #define ERR(s)              err(PSTR(TXT_FWSD_ERR_ ## s))
 
