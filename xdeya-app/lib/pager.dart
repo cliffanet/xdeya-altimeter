@@ -11,6 +11,7 @@ import 'page/wifiedit.dart';
 import 'page/filesbackup.dart';
 import 'page/filesrestore.dart';
 import '../net/wifidiscovery.dart';
+import '../data/track.dart';
 import '../net/proc.dart';
 
 enum PageCode {
@@ -119,7 +120,7 @@ class Pager extends StatelessWidget {
                 return () { net.requestTrkList(); };
             
             case PageCode.trackview:
-                return () { net.reloadTrkData(); };
+                return () { trk.reload(); };
             
             case PageCode.wifipass:
                 return () { net.requestWiFiPass(); };

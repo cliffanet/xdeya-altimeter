@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import '../data/track.dart';
 import 'binproto.dart';
 import 'types.dart';
 
@@ -66,6 +67,8 @@ class NetProc {
 
     int _datacnt = 0;
     int _datamax = 0;
+    set progmax(int v) { _datamax = v; _datacnt=0; }
+    set progcnt(int v) => _datacnt = v;
     double get dataProgress => _datacnt > _datamax ? 1.0 : _datacnt / _datamax;
     bool get isProgress => _datamax > 0;
 
@@ -348,6 +351,16 @@ class NetProc {
         return _reciever[cmd];
     }
 
+    bool recieverContains(Set<int> cmds) {
+        for (final cmd in cmds) {
+            if (_reciever.containsKey(cmd)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /*//////////////////////////////////////
      *
      *  confirmer
@@ -378,6 +391,66 @@ class NetProc {
 
     void Function(int ?err)? confirmer(int cmd) {
         return _confirmer[cmd];
+    }
+
+
+    /*//////////////////////////////////////
+     *
+     *  request
+     * 
+     *//////////////////////////////////////
+    
+    Future<bool> request(
+            int cmd, String? pk, List<dynamic>? vars,
+            {
+                // Первый ответ, он будет удалён
+                required void Function(BinProto pro) hnd,
+                // hnd, которые надо будет добавить после первого ответа
+                Map<int, void Function(BinProto pro)> ?sechnd,
+                // при каких ответах мы удаляем какие hnd
+                Map<int, List<int>> ?rmvhnd
+            }
+        ) async {
+        if (_reciever[cmd] != null) {
+            developer.log('reciever($cmd) exists');
+            return false;
+        }
+        if (sechnd != null) {
+            final ex = sechnd.keys.where((cmd) => _reciever[cmd] != null);
+            if (ex.isNotEmpty) {
+                developer.log('second reciever exists: ${ex.join(", ")}');
+                return false;
+            }
+        }
+
+        if (!await _autochk()) return false;
+        
+        bool ok = recieverAdd(cmd, () {
+            recieverDel(cmd);
+            hnd(_pro);
+            doNotifyInf();
+
+            for (final cmd in sechnd!.keys) {
+                final hnd = sechnd[cmd];
+                recieverAdd(cmd, () {
+                    if (rmvhnd!.containsKey(cmd)) {
+                        final cmdlst = rmvhnd[cmd];
+                        for (final cmd in cmdlst!) {
+                            recieverDel(cmd);
+                        }
+                    }
+
+                    hnd!(_pro);
+                    doNotifyInf();
+                });
+            }
+        }) &&
+
+        send(cmd, pk, vars);
+
+        if (!ok) recieverDel(cmd);
+
+        return ok;
     }
 
 
@@ -558,264 +631,7 @@ class NetProc {
         return true;
     }
 
-    /*//////////////////////////////////////
-     *
-     *  TrkData
-     * 
-     *//////////////////////////////////////
-
-    // trkinfo
-    TrkInfo _trkinfo = TrkInfo.byvars([]);
-    TrkInfo get trkinfo => _trkinfo;
-    // trkdata
-    final ValueNotifier<int> _trkdatasz = ValueNotifier(0);
-    ValueNotifier<int> get notifyTrkData => _trkdatasz;
-    final List<Struct> _trkdata = [];
-    List<Struct> get trkdata => _trkdata;
-    bool trkSatValid(int i) => ((_trkdata[i]['flags'] ?? 0) & 0x0001) > 0;
-    // trkCenter
-    final ValueNotifier<Struct ?> _trkcenter = ValueNotifier(null);
-    Struct ? get trkCenter => _trkcenter.value;
-    ValueNotifier<Struct ?> get notifyTrkCenter => _trkcenter;
-
-    Future<bool> Function() ?_reloadTrkData;
-    Future<bool> reloadTrkData() async {
-        return
-            _reloadTrkData != null ?
-                await _reloadTrkData!() :
-                false;
-    }
-    Future<bool> requestTrkData(TrkItem trk, { Function() ?onLoad, Function(Struct) ?onCenter }) async {
-        if (!await _autochk()) return false;
-
-        if (_rcvelm.contains(NetRecvElem.trackdata)) {
-            _reloadTrkData = null;
-            return false;
-        }
-        _reloadTrkData = () => requestTrkData(trk, onLoad:onLoad, onCenter:onCenter);
-
-        bool ok = recieverAdd(0x54, () {
-                recieverDel(0x54);
-                List<dynamic> ?v = _pro.rcvData('NNNNTNH');
-                if ((v == null) || v.isEmpty) {
-                    return;
-                }
-                _trkinfo = TrkInfo.byvars(v);
-
-                developer.log('trkdata beg ${_trkinfo.jmpnum}, ${_trkinfo.dtBeg}');
-                _datamax = (_trkinfo.fsize-32) ~/ 64;
-                _trkdata.clear();
-                _trkdatasz.value = 0;
-                _trkcenter.value = null;
-                _datacnt = 0;
-                doNotifyInf();
-
-                recieverAdd(0x55, () {
-                    List<dynamic> ?v = _pro.rcvData(pkLogItem);
-                    if ((v == null) || v.isEmpty) {
-                        return;
-                    }
-                    Struct ti = fldUnpack(fldLogItem, v);
-                    _trkdata.add(ti);
-                    _trkdatasz.value = _trkdata.length;
-                    _datacnt = _trkdata.length;
-                    if ((_trkcenter.value == null) && (((ti['flags'] ?? 0) & 0x0001) > 0)) {
-                        _trkcenter.value = ti;
-                        if (onCenter != null) onCenter(ti);
-                    }
-                    doNotifyInf();
-                });
-                recieverAdd(0x56, () {
-                    recieverDel(0x55);
-                    recieverDel(0x56);
-                    developer.log('trkdata end $_datacnt / $_datamax');
-                    _pro.rcvNext();
-                    _rcvelm.remove(NetRecvElem.trackdata);
-                    _datamax = 0;
-                    _datacnt = 0;
-                    doNotifyInf();
-                    if (onLoad != null) onLoad();
-                });
-            });
-        if (!ok) return false;
-        if (!send(0x54, 'NNNTC', [trk.id, trk.jmpnum, trk.jmpkey, trk.tmbeg, trk.fnum])) {
-            recieverDel(0x54);
-            return false;
-        }
-        _rcvelm.add(NetRecvElem.trackdata);
-        doNotifyInf();
-
-        return true;
-    }
-
-    String get trkGeoJson {
-        String features = '';
-        int i=0;
-        int segid = 0;
-        while (i < _trkdata.length) {
-            while ( // пропустим все точки без спутников
-                    (i < _trkdata.length) &&
-                    !trkSatValid(i)
-                ) {
-                i++;
-            }
-            if (i >= _trkdata.length) {
-                break;
-            }
-
-            Struct p = _trkdata[i];
-            String pstate = p['state'];
-
-            double lat = p['lat'] / 10000000;
-            double lon = p['lon'] / 10000000;
-            String crd = '[$lat,$lon]';
-
-            int n = 1;
-            i++;
-            while (
-                    (i < _trkdata.length) &&
-                    (n < 5) &&
-                    (_trkdata[i]['state'] == pstate) &&
-                    trkSatValid(i)
-                ) {
-                double lat = _trkdata[i]['lat'] / 10000000;
-                double lon = _trkdata[i]['lon'] / 10000000;
-                crd = '$crd,[$lat,$lon]';
-                i++;
-                n++;
-            }
-
-            if (n < 2) continue;
-
-            segid ++;
-            final String color =
-                (pstate == 's') || (pstate == 't') ? // takeoff
-                    "#2e2f30" :
-                pstate == 'f' ? // freefall
-                    "#7318bf" :
-                (pstate == 'c') || (pstate == 'l') ? // canopy
-                    "#0052ef" :
-                    "#fcb615";
-            
-
-            int sec = (p['tmoffset'] ?? 0) ~/ 1000;
-            int min = sec ~/ 60;
-            sec -= min*60;
-            final String time = '$min:${sec.toString().padLeft(2,'0')}';
-
-            final String vert = '${p['alt']} m (${ (p['altspeed']/100).toStringAsFixed(1) } m/s)';
-            final String horz = '${p['heading']}&deg; (${ (p['hspeed']/100).toStringAsFixed(1) } m/s)';
-
-            final String kach =
-                p['altspeed'] < -10 ?
-                    ' [кач: ${ (-1.0 * p['hspeed'] / p['altspeed']).toStringAsFixed(1) }]' :
-                    '';
-            
-            features = 
-                '$features'
-                '{'
-                    '"type": "Feature",'
-                    '"id": $segid,'
-                    '"options": {"strokeWidth": 4, "strokeColor": "$color"},'
-                    '"geometry": {'
-                        '"type": "LineString",'
-                        '"coordinates": [$crd]'
-                    '},'
-                    '"properties": {'
-                        '"balloonContentHeader": "$time",'
-                        '"balloonContentBody": "Вертикаль: $vert<br />Горизонт: $horz$kach",'
-                        '"hintContent": "$time<br/>Вер: $vert<br/>Гор: $horz$kach",'
-                    '}'
-                '},';
-        }
-
-        return '{ "type": "FeatureCollection", "features": [ $features ] }';
-    }
-
-    String get trkGPX {
-        List<String> data = [];
-        int i = 0;
-        int seg = 0;
-
-        data.add(
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            '<gpx version="1.1" creator="XdeYa altimeter" xmlns="http://www.topografix.com/GPX/1/1">'
-                '<metadata>'
-                    '<name><![CDATA[Без названия]]></name>'
-                    '<desc/>'
-                    '<time>2017-10-18T12:19:23.353Z</time>'
-                '</metadata>'
-                '<trk>'
-                    '<name>трек</name>'
-        );
-
-        String pstate = '';
-
-        while (i < _trkdata.length) {
-            if ((seg > 0) && (
-                    !trkSatValid(i) ||
-                    (pstate != _trkdata[i]['state'])
-                )) {
-                data.add('</trkseg>');
-                seg = 0;
-            }
-            while ( // пропустим все точки без спутников
-                    (i < _trkdata.length) &&
-                    !trkSatValid(i)
-                ) {
-                i++;
-            }
-            if (i >= _trkdata.length) {
-                break;
-            }
-
-            if (seg == 0) {
-                data.add('<trkseg>');
-            }
-
-            Struct p = _trkdata[i];
-            i++;
-            seg++;
-            pstate = p['state'];
-
-            double lat = p['lat'] / 10000000;
-            double lon = p['lon'] / 10000000;
-
-            int sec = (p['tmoffset'] ?? 0) ~/ 1000;
-            int min = sec ~/ 60;
-            sec -= min*60;
-            final String time = '$min:${sec.toString().padLeft(2,'0')}';
-
-            final String vert = '${p['alt']} m (${ (p['altspeed']/100).toStringAsFixed(1) } m/s)';
-            final String horz = '${p['heading']}гр (${ (p['hspeed']/100).toStringAsFixed(1) } m/s)';
-
-            final String kach =
-                p['altspeed'] < -10 ?
-                    ' [кач: ${ (-1.0 * p['hspeed'] / p['altspeed']).toStringAsFixed(1) }]' :
-                    '';
-
-            data.add(
-                '<trkpt lon="$lon" lat="$lat">'
-                    '<name>$time, $vert</name>'
-                    '<desc>Горизонт: $horz$kach</desc>'
-                    '<ele>${p['alt']}</ele>'
-                    '<magvar>${p['heading']}</magvar>'
-                    '<sat>${p['sat']}</sat>'
-                '</trkpt>'
-            );
-        }
-
-        if (seg > 0) {
-            data.add('</trkseg>');
-        }
-
-        data.add(
-                '</trk>'
-            '</gpx>'
-        );
-
-        return data.join();
-    }
+    
 
     /*//////////////////////////////////////
      *

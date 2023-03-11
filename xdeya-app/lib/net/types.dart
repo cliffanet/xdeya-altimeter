@@ -1,4 +1,5 @@
 import 'binproto.dart';
+import '../data/dtime.dart';
 
 const String pkLogItem = 'NnaaiiIIIiiINC nNNNNNN';
                          
@@ -27,21 +28,6 @@ const List<String> fldLogItem = [
     'millis',       // для отладки времени tmoffset
     'msave',
 ];
-
-    
-String _sec2time(int sec) {
-    int min = sec ~/ 60;
-    sec -= min*60;
-    int hour = min ~/ 60;
-    min -= hour*60;
-
-    return '$hour:${min.toString().padLeft(2,'0')}:${sec.toString().padLeft(2,'0')}';
-}
-String _dt2format(DateTime dt) {
-    return
-        '${dt.day}.${dt.month.toString().padLeft(2,'0')}.${dt.year} '
-        '${dt.hour.toString().padLeft(2, ' ')}:${dt.minute.toString().padLeft(2,'0')}';
-}
 
 class LogBook {
     static const pk = 'NNT$pkLogItem$pkLogItem$pkLogItem$pkLogItem';
@@ -76,81 +62,15 @@ class LogBook {
         );
     
     String get date => '${tm.day}.${tm.month.toString().padLeft(2,'0')}.${tm.year}';
-    String get timeTakeoff => _sec2time( (toff['tmoffset'] ?? 0) ~/ 1000 );
-    String get dtBeg => _dt2format(tm);
+    String get timeTakeoff => sec2time( (toff['tmoffset'] ?? 0) ~/ 1000 );
+    String get dtBeg => dt2format(tm);
     int    get altBeg => beg['alt'] ?? 0;
-    String get timeFF => _sec2time(((cnp['tmoffset']??0) - (beg['tmoffset']??0)) ~/ 1000);
+    String get timeFF => sec2time(((cnp['tmoffset']??0) - (beg['tmoffset']??0)) ~/ 1000);
     int    get altCnp => cnp['alt'] ?? 0;
-    String get timeCnp => _sec2time(((end['tmoffset']??0) - (cnp['tmoffset']??0)) ~/ 1000);
-}
-
-class TrkItem {
-    final int id;
-    final int flags;
-    final int jmpnum;
-    final int jmpkey;
-    final DateTime tmbeg;
-    final int fsize;
-    final int fnum;
-
-    TrkItem({
-        required this.id,
-        required this.flags,
-        required this.jmpnum,
-        required this.jmpkey,
-        required this.tmbeg,
-        required this.fsize,
-        required this.fnum,
-    });
-
-    TrkItem.byvars(List<dynamic> vars) :
-        this(
-            id:     (vars.isNotEmpty) && (vars[0]) is int ? vars[0] : 0,
-            flags:  (vars.length > 1) && (vars[1]) is int ? vars[1] : 0,
-            jmpnum: (vars.length > 2) && (vars[2]) is int ? vars[2] : 0,
-            jmpkey: (vars.length > 3) && (vars[3]) is int ? vars[3] : 0,
-            tmbeg:  (vars.length > 4) && (vars[4]) is DateTime ? vars[4] : DateTime(0),
-            fsize:  (vars.length > 5) && (vars[5]) is int ? vars[5] : 0,
-            fnum:   (vars.length > 6) && (vars[6]) is int ? vars[6] : 0,
-        );
-
-    String get dtBeg => _dt2format(tmbeg);
+    String get timeCnp => sec2time(((end['tmoffset']??0) - (cnp['tmoffset']??0)) ~/ 1000);
 }
 
 
-
-class TrkInfo {
-    final int id;
-    final int flags;
-    final int jmpnum;
-    final int jmpkey;
-    final DateTime tmbeg;
-    final int fsize;
-    final int chksum;
-
-    TrkInfo({
-        required this.id,
-        required this.flags,
-        required this.jmpnum,
-        required this.jmpkey,
-        required this.tmbeg,
-        required this.fsize,
-        required this.chksum,
-    });
-
-    TrkInfo.byvars(List<dynamic> vars) :
-        this(
-            id:     (vars.isNotEmpty) && (vars[0]) is int ? vars[0] : 0,
-            flags:  (vars.length > 1) && (vars[1]) is int ? vars[1] : 0,
-            jmpnum: (vars.length > 2) && (vars[2]) is int ? vars[2] : 0,
-            jmpkey: (vars.length > 3) && (vars[3]) is int ? vars[3] : 0,
-            tmbeg:  (vars.length > 4) && (vars[4]) is DateTime ? vars[4] : DateTime(0),
-            fsize:  (vars.length > 5) && (vars[5]) is int ? vars[5] : 0,
-            chksum: (vars.length > 6) && (vars[6]) is int ? vars[6] : 0,
-        );
-
-    String get dtBeg => _dt2format(tmbeg);
-}
 
 class WiFiPass {
     final String ssid;

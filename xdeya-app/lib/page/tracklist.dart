@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 
 import '../net/proc.dart';
+import '../data/track.dart';
 import '../pager.dart';
 
 class PageTrackList extends StatelessWidget {
@@ -42,16 +43,16 @@ class PageTrackList extends StatelessWidget {
                         return ListView.separated(
                             itemCount: net.trklist.length,
                             itemBuilder: (BuildContext contextItem, int index) {
-                                final trk = net.trklist[net.trklist.length - index - 1];
+                                final trkinfo = net.trklist[net.trklist.length - index - 1];
                                 return Card(
                                     child: ListTile(
                                     onTap: () {
                                         developer.log('tap on: $index');
-                                        net.requestTrkData(trk);
+                                        trk.netRequest(trkinfo);
                                         Pager.push(context, PageCode.trackview);
                                     },
                                     trailing: const SizedBox.shrink(),
-                                    title: Text('трэк: ${trk.dtBeg}'),
+                                    title: Text('трэк: ${trkinfo.dtBeg}'),
                                 )
                                 );
                             },

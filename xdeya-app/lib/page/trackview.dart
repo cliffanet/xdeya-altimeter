@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'dart:developer' as developer;
 
-import '../net/proc.dart';
+import '../data/track.dart';
 
 class PageTrackView extends StatelessWidget {
     const PageTrackView({ super.key });
@@ -16,7 +16,7 @@ class PageTrackView extends StatelessWidget {
             case TargetPlatform.android:
             case TargetPlatform.iOS:
                 return ValueListenableBuilder(
-                    valueListenable: net.notifyTrkCenter,
+                    valueListenable: trk.notifyCenter,
                     builder: (BuildContext context, center, Widget? child) {
                         if (center == null) {
                             return const Center(
@@ -51,11 +51,11 @@ class PageTrackView extends StatelessWidget {
                                         () async {
                                             // без этой паузы повисает.
                                             await Future.delayed(const Duration(milliseconds: 100));
-                                            return net.rcvElem.contains(NetRecvElem.trackdata);
+                                            return trk.isRecv;
                                         }
                                     );
                                     developer.log('ctrl fin');
-                                    ctrl.runJavascript('loadGPX(${ net.trkGeoJson })');
+                                    ctrl.runJavascript('loadGPX(${ trk.exportJSON })');
                                 }
                                 catch (err) {
                                     developer.log('webview err: $err');

@@ -5,5 +5,6 @@ void main() {
     runApp(const MaterialApp(
         title: 'Xde-Ya altimeter',
         home: Pager(page: PageCode.discovery),
+        debugShowCheckedModeBanner: false
     ));
 }

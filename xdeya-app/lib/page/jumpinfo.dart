@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
+import '../data/track.dart';
 import '../net/types.dart';
 import '../net/proc.dart';
 import '../pager.dart';
@@ -147,7 +148,7 @@ class PageJumpInfo extends StatelessWidget {
                                         if (li.trk == null) {
                                             return;
                                         }
-                                        net.requestTrkData(li.trk ?? TrkItem.byvars([]));
+                                        trk.netRequest(li.trk ?? TrkItem.byvars([]));
                                         Pager.push(context, PageCode.trackview);
                                     },
                                     trailing: const SizedBox.shrink(),

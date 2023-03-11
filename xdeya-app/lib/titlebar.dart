@@ -251,11 +251,8 @@ Widget getTitleBarClient(PageCode page) {
                         Pager.push(context, PageCode.tracklist);
                         break;
                     case MenuCode.SaveGpx:
-                        final dt = net.trkinfo.dtBeg.replaceAll(' ', '_').replaceAll(':', '.');
-                        trackSaveGpx(
-                            filename: 'track_${dt}_jmp-${net.trkinfo.jmpnum}.gpx',
-                            data: net.trkGPX
-                        );
+                        final dt = trk.inf.dtBeg.replaceAll(' ', '_').replaceAll(':', '.');
+                        trk.saveGpx('track_${dt}_jmp-${trk.inf.jmpnum}.gpx');
                         break;
                     case MenuCode.FilesBackup:
                         String? dir = await FilePicker.platform.getDirectoryPath();
