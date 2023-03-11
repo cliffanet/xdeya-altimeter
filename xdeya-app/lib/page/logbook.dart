@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:masked_text/masked_text.dart';
 import 'dart:developer' as developer;
 
+import '../data/logbook.dart';
 import '../net/proc.dart';
 import '../pager.dart';
 
@@ -66,9 +67,9 @@ class PageLogBook extends StatelessWidget {
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 return ValueListenableBuilder(
-                    valueListenable: net.notifyLogBook,
+                    valueListenable: logbook.notify,
                     builder: (BuildContext context, count, Widget? child) {
-                        if (net.logbook.isEmpty) {
+                        if (logbook.isEmpty) {
                             return const Center(
                                 child: Text(
                                     'Не найдено', 
@@ -78,9 +79,9 @@ class PageLogBook extends StatelessWidget {
                         }
                         
                         return ListView.separated(
-                            itemCount: net.logbook.length,
+                            itemCount: logbook.length,
                             itemBuilder: (BuildContext contextItem, int index) {
-                                final lb = net.logbook[index];
+                                final lb = logbook[index];
                                 return Card(
                                     child: ListTile(
                                         onTap: () {

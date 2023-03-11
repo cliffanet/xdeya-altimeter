@@ -29,46 +29,7 @@ const List<String> fldLogItem = [
     'msave',
 ];
 
-class LogBook {
-    static const pk = 'NNT$pkLogItem$pkLogItem$pkLogItem$pkLogItem';
 
-    final int num;
-    final int key;
-    final DateTime tm;
-    final Struct toff;
-    final Struct beg;
-    final Struct cnp;
-    final Struct end;
-
-    LogBook({
-        required this.num,
-        required this.key,
-        required this.tm,
-        required this.toff,
-        required this.beg,
-        required this.cnp,
-        required this.end
-    });
-
-    LogBook.byvars(List<dynamic> vars) :
-        this(
-            num: (vars.isNotEmpty) && (vars[0]) is int ? vars[0] : 0,
-            key: (vars.length > 1) && (vars[1]) is int ? vars[1] : 0,
-            tm:  (vars.length > 2) && (vars[2]) is DateTime ? vars[2] : DateTime(0),
-            toff: fldUnpack(fldLogItem, vars, 3),
-            beg:  fldUnpack(fldLogItem, vars, 3 + fldLogItem.length),
-            cnp:  fldUnpack(fldLogItem, vars, 3 + fldLogItem.length * 2),
-            end:  fldUnpack(fldLogItem, vars, 3 + fldLogItem.length * 3)
-        );
-    
-    String get date => '${tm.day}.${tm.month.toString().padLeft(2,'0')}.${tm.year}';
-    String get timeTakeoff => sec2time( (toff['tmoffset'] ?? 0) ~/ 1000 );
-    String get dtBeg => dt2format(tm);
-    int    get altBeg => beg['alt'] ?? 0;
-    String get timeFF => sec2time(((cnp['tmoffset']??0) - (beg['tmoffset']??0)) ~/ 1000);
-    int    get altCnp => cnp['alt'] ?? 0;
-    String get timeCnp => sec2time(((end['tmoffset']??0) - (cnp['tmoffset']??0)) ~/ 1000);
-}
 
 
 

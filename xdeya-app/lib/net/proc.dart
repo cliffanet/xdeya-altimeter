@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import '../data/trklist.dart';
+import '../data/logbook.dart';
 import 'binproto.dart';
 import 'types.dart';
 
@@ -480,7 +480,7 @@ class NetProc {
         _state = NetState.online;
         doNotifyInf();
 
-        net.requestLogBookDefault();
+        logbook.netRequestDefault();
         
         return true;
     }
@@ -499,79 +499,6 @@ class NetProc {
 
         return send(0x03, 'n', [code]);
     }
-
-    /*//////////////////////////////////////
-     *
-     *  LogBook
-     * 
-     *//////////////////////////////////////
-
-    final ValueNotifier<int> _logbooksz = ValueNotifier(0);
-    ValueNotifier<int> get notifyLogBook => _logbooksz;
-    final List<LogBook> _logbook = [];
-    List<LogBook> get logbook => _logbook;
-
-    Future<bool> requestLogBook({ int beg = 50, int count = 50, Function() ?onLoad }) async {
-        if (!await _autochk()) return false;
-
-        if (_rcvelm.contains(NetRecvElem.logbook)) {
-            return false;
-        }
-        bool ok = recieverAdd(0x31, () {
-                recieverDel(0x31);
-                List<dynamic> ?v = _pro.rcvData('NN');
-                if ((v == null) || v.isEmpty) {
-                    return;
-                }
-
-                developer.log('logbook beg ${v[0]}, ${v[1]}');
-                _datamax = v[0] < v[1] ? v[0] : v[1];
-                _logbook.clear();
-                _logbooksz.value = 0;
-                _datacnt = 0;
-                doNotifyInf();
-
-                recieverAdd(0x32, () {
-                    List<dynamic> ?v = _pro.rcvData(LogBook.pk);
-                    if ((v == null) || v.isEmpty) {
-                        return;
-                    }
-                    _logbook.add(LogBook.byvars(v));
-                    _logbooksz.value = _logbook.length;
-                    _datacnt = _logbook.length;
-                    doNotifyInf();
-                });
-                recieverAdd(0x33, () {
-                    recieverDel(0x32);
-                    recieverDel(0x33);
-                    developer.log('logbook end $_datacnt / $_datamax');
-                    _pro.rcvNext();
-                    _rcvelm.remove(NetRecvElem.logbook);
-                    _datamax = 0;
-                    _datacnt = 0;
-                    doNotifyInf();
-                    if (onLoad != null) onLoad();
-                });
-            });
-        if (!ok) return false;
-        if (!send(0x31, 'NN', [beg, count])) {
-            recieverDel(0x31);
-            return false;
-        }
-        _rcvelm.add(NetRecvElem.logbook);
-        doNotifyInf();
-
-        return true;
-    }
-
-    Future<bool> requestLogBookDefault() {
-        return requestLogBook(
-            onLoad: () => trklist.netRequest()
-        );
-    }
-
-    
-
     
 
     /*//////////////////////////////////////

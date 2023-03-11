@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
+import '../data/logbook.dart';
 import '../data/track.dart';
 import '../data/trklist.dart';
-import '../net/types.dart';
-import '../net/proc.dart';
 import '../pager.dart';
 
 
@@ -24,7 +23,7 @@ class PageJumpInfo extends StatelessWidget {
         return ValueListenableBuilder(
             valueListenable: _index,
             builder: (BuildContext context, ind, Widget? child) {
-                if ((_index.value < 0) || (_index.value >= net.logbook.length)) {
+                if ((_index.value < 0) || (_index.value >= logbook.length)) {
                     return const Center(
                             child: Text(
                                 'Нет информации', 
@@ -33,7 +32,7 @@ class PageJumpInfo extends StatelessWidget {
                         );
                 }
 
-                final LogBook jmp = net.logbook[_index.value];
+                final LogBook jmp = logbook[_index.value];
                 final List<_LWitem> lw = [
                     _LWitem(
                         name:   'Длительность взлёта:',
@@ -74,7 +73,7 @@ class PageJumpInfo extends StatelessWidget {
                             final List<Widget> row = [];
 
                             if (_index.value > 0) {
-                                final LogBook jmp = net.logbook[_index.value-1];
+                                final LogBook jmp = logbook[_index.value-1];
                                 row.add(
                                     IconButton(
                                         tooltip: jmp.num.toString(),
@@ -97,8 +96,8 @@ class PageJumpInfo extends StatelessWidget {
                                 )
                             );
 
-                            if (_index.value < (net.logbook.length-1)) {
-                                final LogBook jmp = net.logbook[_index.value+1];
+                            if (_index.value < (logbook.length-1)) {
+                                final LogBook jmp = logbook[_index.value+1];
                                 row.add(
                                     IconButton(
                                         tooltip: jmp.num.toString(),

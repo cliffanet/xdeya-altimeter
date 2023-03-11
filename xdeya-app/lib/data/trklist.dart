@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
 
 import 'dtime.dart';
+import 'logbook.dart';
 import '../net/proc.dart';
-import '../net/types.dart';
 
 /*//////////////////////////////////////
  *
