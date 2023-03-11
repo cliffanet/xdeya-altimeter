@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 
 import '../net/proc.dart';
+import '../data/trklist.dart';
 import '../data/track.dart';
 import '../pager.dart';
 
@@ -29,9 +30,9 @@ class PageTrackList extends StatelessWidget {
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 return ValueListenableBuilder(
-                    valueListenable: net.notifyTrkList,
+                    valueListenable: trklist.notify,
                     builder: (BuildContext context, count, Widget? child) {
-                        if (net.trklist.isEmpty) {
+                        if (trklist.isEmpty) {
                             return const Center(
                                 child: Text(
                                     'Не найдено', 
@@ -41,9 +42,9 @@ class PageTrackList extends StatelessWidget {
                         }
                         
                         return ListView.separated(
-                            itemCount: net.trklist.length,
+                            itemCount: trklist.length,
                             itemBuilder: (BuildContext contextItem, int index) {
-                                final trkinfo = net.trklist[net.trklist.length - index - 1];
+                                final trkinfo = trklist[trklist.length - index - 1];
                                 return Card(
                                     child: ListTile(
                                     onTap: () {

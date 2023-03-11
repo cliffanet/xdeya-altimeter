@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:masked_text/masked_text.dart';
 import 'dart:developer' as developer;
 
 import '../net/proc.dart';

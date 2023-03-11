@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import '../net/proc.dart';

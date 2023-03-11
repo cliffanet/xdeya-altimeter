@@ -11,6 +11,7 @@ import 'page/wifiedit.dart';
 import 'page/filesbackup.dart';
 import 'page/filesrestore.dart';
 import '../net/wifidiscovery.dart';
+import '../data/trklist.dart';
 import '../data/track.dart';
 import '../net/proc.dart';
 
@@ -117,7 +118,7 @@ class Pager extends StatelessWidget {
                 return () { net.requestLogBookDefault(); };
             
             case PageCode.tracklist:
-                return () { net.requestTrkList(); };
+                return () { trklist.netRequest(); };
             
             case PageCode.trackview:
                 return () { trk.reload(); };

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:developer' as developer;
 
 import '../net/proc.dart';
-import '../pager.dart';
 
 class PageFilesBackup extends StatelessWidget {
     PageFilesBackup({ super.key });

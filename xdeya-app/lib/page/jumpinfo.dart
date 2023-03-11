@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import '../data/track.dart';
+import '../data/trklist.dart';
 import '../net/types.dart';
 import '../net/proc.dart';
 import '../pager.dart';
@@ -61,8 +62,8 @@ class PageJumpInfo extends StatelessWidget {
                 ];
                 final ibeg = lw.length;
 
-                List<TrkItem> trklist = net.trkListByJmp(jmp);
-                for (TrkItem trk in trklist) {
+                List<TrkItem> trkl = trklist.byJmp(jmp);
+                for (TrkItem trk in trkl) {
                     lw.add(_LWitem(name: '', val: '', trk: trk));
                 }
                 

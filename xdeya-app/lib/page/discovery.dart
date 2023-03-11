@@ -57,7 +57,7 @@ class TestRefBar extends StatelessWidget {
                 Pager.push(context, PageCode.logbook);
             },
             trailing: const SizedBox.shrink(),
-            title: Text("тестовый вход"),
+            title: const Text("тестовый вход"),
         );
     }
 }

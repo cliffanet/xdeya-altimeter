@@ -14,6 +14,7 @@ class WiFiDevice {
     final int port;
     const WiFiDevice({ required this.name, required this.ip, required this.port });
 
+    @override
     bool operator ==(covariant WiFiDevice other) {
         return 
             (other.name == name) &&

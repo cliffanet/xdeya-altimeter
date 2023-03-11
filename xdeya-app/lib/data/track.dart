@@ -6,48 +6,10 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:developer' as developer;
 
 import 'dtime.dart';
+import 'trklist.dart';
 import '../net/proc.dart';
 import '../net/binproto.dart';
 import '../net/types.dart';
-
-/*//////////////////////////////////////
- *
- *  TrkItem
- * 
- *//////////////////////////////////////
-
-class TrkItem {
-    final int id;
-    final int flags;
-    final int jmpnum;
-    final int jmpkey;
-    final DateTime tmbeg;
-    final int fsize;
-    final int fnum;
-
-    TrkItem({
-        required this.id,
-        required this.flags,
-        required this.jmpnum,
-        required this.jmpkey,
-        required this.tmbeg,
-        required this.fsize,
-        required this.fnum,
-    });
-
-    TrkItem.byvars(List<dynamic> vars) :
-        this(
-            id:     (vars.isNotEmpty) && (vars[0]) is int ? vars[0] : 0,
-            flags:  (vars.length > 1) && (vars[1]) is int ? vars[1] : 0,
-            jmpnum: (vars.length > 2) && (vars[2]) is int ? vars[2] : 0,
-            jmpkey: (vars.length > 3) && (vars[3]) is int ? vars[3] : 0,
-            tmbeg:  (vars.length > 4) && (vars[4]) is DateTime ? vars[4] : DateTime(0),
-            fsize:  (vars.length > 5) && (vars[5]) is int ? vars[5] : 0,
-            fnum:   (vars.length > 6) && (vars[6]) is int ? vars[6] : 0,
-        );
-
-    String get dtBeg => dt2format(tmbeg);
-}
 
 
 /*//////////////////////////////////////
@@ -335,7 +297,7 @@ class DataTrack {
     }
 
     Future<bool> saveGpx(String? filename) async {
-        if (filename == null) filename = 'track.gpx';
+        filename ??= 'track.gpx';
         final String data = exportGPX;
         
         if (Platform.isAndroid || Platform.isIOS) {

@@ -1,11 +1,9 @@
-import 'dart:ffi';
-
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import '../data/track.dart';
+import '../data/trklist.dart';
 import 'binproto.dart';
 import 'types.dart';
 
@@ -276,7 +274,7 @@ class NetProc {
         List<dynamic> ?v = _pro.rcvData('CC');
         if (
                 (v == null) || (v.length < 2) ||
-                !(v[0] is int) || !(v[1] is int)
+                (v[0] is! int) || (v[1] is! int)
             ) {
             return false;
         }
@@ -446,7 +444,7 @@ class NetProc {
             }
         }) &&
 
-        send(cmd, pk, vars);
+        send(0x0a, 'C${pk?? ''}', [cmd, ...(vars ?? [])]);
 
         if (!ok) recieverDel(cmd);
 
@@ -468,7 +466,7 @@ class NetProc {
             _errstop(NetError.auth);
             return false;
         }
-        if ((v != null) && (v.length >= 2) && (v[1] > 0) && (_sock != null)) {
+        if ((v.length >= 2) && (v[1] > 0) && (_sock != null)) {
             _autokey    = v[1];
             _autoip     = _sock!.remoteAddress;
             _autoport   = _sock!.remotePort;
@@ -568,68 +566,11 @@ class NetProc {
 
     Future<bool> requestLogBookDefault() {
         return requestLogBook(
-            onLoad: () => requestTrkList()
+            onLoad: () => trklist.netRequest()
         );
     }
 
-    /*//////////////////////////////////////
-     *
-     *  TrkList
-     * 
-     *//////////////////////////////////////
-
-    final ValueNotifier<int> _trklistsz = ValueNotifier(0);
-    ValueNotifier<int> get notifyTrkList => _trklistsz;
-    final List<TrkItem> _trklist = [];
-    List<TrkItem> get trklist => _trklist;
-    List<TrkItem> trkListByJmp(LogBook jmp) {
-        return _trklist.where((trk) => trk.jmpnum == jmp.num).toList();
-    }
-
-    Future<bool> requestTrkList({ Function() ?onLoad }) async {
-        if (!await _autochk()) return false;
-
-        if (_rcvelm.contains(NetRecvElem.tracklist)) {
-            return false;
-        }
-        bool ok = recieverAdd(0x51, () {
-                recieverDel(0x51);
-                _pro.rcvNext();
-
-                developer.log('trklist beg');
-                _trklist.clear();
-                _trklistsz.value = 0;
-                doNotifyInf();
-
-                recieverAdd(0x52, () {
-                    List<dynamic> ?v = _pro.rcvData('NNNNTNC');
-                    if ((v == null) || v.isEmpty) {
-                        return;
-                    }
-                    _trklist.add(TrkItem.byvars(v));
-                    _trklistsz.value = _trklist.length;
-                    doNotifyInf();
-                });
-                recieverAdd(0x53, () {
-                    recieverDel(0x52);
-                    recieverDel(0x53);
-                    developer.log('trklist end');
-                    _pro.rcvNext();
-                    _rcvelm.remove(NetRecvElem.tracklist);
-                    doNotifyInf();
-                    if (onLoad != null) onLoad();
-                });
-            });
-        if (!ok) return false;
-        if (!send(0x51)) {
-            recieverDel(0x51);
-            return false;
-        }
-        _rcvelm.add(NetRecvElem.tracklist);
-        doNotifyInf();
-
-        return true;
-    }
+    
 
     
 
@@ -826,7 +767,7 @@ class NetProc {
                     notifyFilesList.value = files.length;
                     doNotifyInf();
 
-                    final file = File(dir + '/' + v[1]);
+                    final file = File('$dir/${v[1]}');
                     if (file.existsSync()) {
                         file.deleteSync();
                     }
