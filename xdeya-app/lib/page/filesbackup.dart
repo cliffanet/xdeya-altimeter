@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../net/proc.dart';
+import '../data/files.dart';
 
 class PageFilesBackup extends StatelessWidget {
     PageFilesBackup({ super.key });
@@ -26,9 +27,9 @@ class PageFilesBackup extends StatelessWidget {
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 return ValueListenableBuilder(
-                    valueListenable: net.notifyFilesList,
+                    valueListenable: files.notify,
                     builder: (BuildContext context, count, Widget? child) {
-                        if (net.files.isEmpty) {
+                        if (files.isEmpty) {
                             return const Center(
                                 child: Text(
                                     'Не найдено', 
@@ -38,9 +39,9 @@ class PageFilesBackup extends StatelessWidget {
                         }
                         
                         return ListView.separated(
-                            itemCount: net.files.length,
+                            itemCount: files.length,
                             itemBuilder: (BuildContext contextItem, int index) {
-                                final f = net.files[index];
+                                final f = files[index];
                                 return Card(
                                     child: ListTile(
                                         trailing: const SizedBox.shrink(),

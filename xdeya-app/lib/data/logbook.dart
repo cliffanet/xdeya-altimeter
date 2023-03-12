@@ -4,10 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
 
 import 'dtime.dart';
+import 'logitem.dart';
 import 'trklist.dart';
 import '../net/proc.dart';
 import '../net/binproto.dart';
-import '../net/types.dart';
 
 /*//////////////////////////////////////
  *
@@ -70,14 +70,21 @@ class DataLogBook extends ListBase<LogBook> {
     ValueNotifier<int> get notify => _sz;
 
     @override
-    set length(int l) => _list.length=l;
+    set length(int l) { 
+        _list.length=l;
+        _sz.value = _list.length;
+    }
     @override
     int get length => _list.length;
 
     @override
     LogBook operator [](int index) => _list[index];
     @override
-    void operator []=(int index, LogBook value) => _list[index]=value;
+    void operator []=(int index, LogBook value) {
+        _list[index]=value;
+        _sz.value = 0;
+        _sz.value = _list.length;
+    }
 
     Future<bool> netRequest({ int beg = 50, int count = 50, Function() ?onLoad }) async {
         return net.requestList(

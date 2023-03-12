@@ -25,26 +25,3 @@ const List<String> fldLogItem = [
     'millis',       // для отладки времени tmoffset
     'msave',
 ];
-
-
-
-
-
-
-class FileItem {
-    final String name;
-    final String? path;
-    final int size;
-    bool checked = true;
-
-    FileItem({
-        required this.name,
-        required this.size,
-        this.path
-    });
-
-    FileItem.byvars(List<dynamic> vars) :
-        size = (vars.isNotEmpty) && (vars[0]) is int ? vars[0] : '',
-        name = (vars.length > 1) && (vars[1]) is String ? vars[1] : '',
-        path = null;
-}

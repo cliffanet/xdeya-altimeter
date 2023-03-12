@@ -3,7 +3,7 @@ import 'dart:developer' as developer;
 
 import '../net/proc.dart';
 import '../data/trklist.dart';
-import '../data/track.dart';
+import '../data/trkdata.dart';
 import '../pager.dart';
 
 class PageTrackList extends StatelessWidget {

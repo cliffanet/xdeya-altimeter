@@ -5,8 +5,9 @@ import 'pager.dart';
 import 'page/filesrestore.dart';
 import 'net/wifidiscovery.dart';
 import 'net/proc.dart';
-import 'data/track.dart';
+import 'data/trkdata.dart';
 import 'data/wifipass.dart';
+import 'data/files.dart';
 
 
 Widget getTitleBarDiscovery() {
@@ -160,7 +161,7 @@ Widget getTitleBarClient(PageCode page) {
                     ),
                 );
                 menu.add(
-                    PopupMenuDivider(),
+                    const PopupMenuDivider(),
                 );
             }
             if ((Pager.top != PageCode.wifipass) && (Pager.top != PageCode.wifiedit)) {
@@ -208,7 +209,7 @@ Widget getTitleBarClient(PageCode page) {
 
             // files
             menu.add(
-                PopupMenuDivider(),
+                const PopupMenuDivider(),
             );
             if (Pager.top != PageCode.filesbackup) {
                 menu.add(
@@ -260,7 +261,7 @@ Widget getTitleBarClient(PageCode page) {
                         if (dir == null) {
                             return;
                         }
-                        net.requestFiles(dir: dir);
+                        files.netRequest(dir: dir);
                         //if (!context.mounted) return;
                         Pager.push(context, PageCode.filesbackup);
                         break;
@@ -274,7 +275,7 @@ Widget getTitleBarClient(PageCode page) {
                         PageFilesRestore.opendir(dir);
                         break;
                 }
-            };
+            }
             
             return AppBar(
                 leading: Navigator.canPop(context) ?

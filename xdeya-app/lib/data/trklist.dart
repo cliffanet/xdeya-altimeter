@@ -64,15 +64,21 @@ class DataTrkList extends ListBase<TrkItem> {
     }
 
     @override
-    set length(int l) => _list.length=l;
+    set length(int l) { 
+        _list.length=l;
+        _sz.value = _list.length;
+    }
     @override
     int get length => _list.length;
 
     @override
     TrkItem operator [](int index) => _list[index];
     @override
-    void operator []=(int index, TrkItem value) => _list[index]=value;
-
+    void operator []=(int index, TrkItem value) {
+        _list[index]=value;
+        _sz.value = 0;
+        _sz.value = _list.length;
+    }
 
     Future<bool> netRequest({ Function() ?onLoad }) async {
         return net.requestList(

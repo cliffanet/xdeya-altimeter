@@ -62,7 +62,7 @@ class PageWiFiPass extends StatelessWidget {
                                                     heroTag: 'btnSave',
                                                     onPressed: wifipass.isChanged ? 
                                                         () {
-                                                            wifipass.save();
+                                                            wifipass.netSave();
                                                             Pager.pop(context);
                                                         } :
                                                         null,

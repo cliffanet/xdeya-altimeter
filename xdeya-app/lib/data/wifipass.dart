@@ -53,16 +53,23 @@ class DataWiFiPass extends ListBase<WiFiPass> {
     ValueNotifier<int> get notify => _sz;
 
     @override
-    set length(int l) => _list.length=l;
+    set length(int l) { 
+        _list.length=l;
+        _sz.value = _list.length;
+    }
     @override
     int get length => _list.length;
 
     @override
     WiFiPass operator [](int index) => _list[index];
     @override
-    void operator []=(int index, WiFiPass value) => _list[index]=value;
+    void operator []=(int index, WiFiPass value) {
+        _list[index]=value;
+        _sz.value = 0;
+        _sz.value = _list.length;
+    }
 
-    Future<bool> netRequest({ int beg = 50, int count = 50, Function() ?onLoad }) async {
+    Future<bool> netRequest({ Function() ?onLoad }) async {
         return net.requestList(
             0x37, null, null,
             beg: (pro) {
@@ -120,7 +127,7 @@ class DataWiFiPass extends ListBase<WiFiPass> {
         return false;
     }
 
-    Future<bool> save({ Function() ?onDone }) async {
+    Future<bool> netSave({ Function() ?onDone }) async {
         if (!await net.autochk()) return false;
 
         // это просто заглушка (команда 0x4a временно отправляется по завершению приёма)

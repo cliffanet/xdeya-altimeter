@@ -10,12 +10,12 @@ import 'page/wifipass.dart';
 import 'page/wifiedit.dart';
 import 'page/filesbackup.dart';
 import 'page/filesrestore.dart';
-import '../net/wifidiscovery.dart';
-import '../data/logbook.dart';
-import '../data/trklist.dart';
-import '../data/track.dart';
-import '../data/wifipass.dart';
-import '../net/proc.dart';
+import 'data/logbook.dart';
+import 'data/trklist.dart';
+import 'data/trkdata.dart';
+import 'data/wifipass.dart';
+import 'net/wifidiscovery.dart';
+import 'net/proc.dart';
 
 enum PageCode {
     discovery, logbook, jumpinfo, tracklist, trackview, wifipass, wifiedit,
@@ -33,7 +33,7 @@ final Map<PageCode, PageFunc> _pageMap = {
     PageCode.wifipass:  ([int ?i]) { return PageWiFiPass(); },
     PageCode.wifiedit:  ([int ?index]) { return index != null ? PageWiFiEdit(index: index) : null; },
     PageCode.filesbackup:([int ?i]) { return PageFilesBackup(); },
-    PageCode.filesrestore:([int ?i]) { return PageFilesRestore(); },
+    PageCode.filesrestore:([int ?i]) { return const PageFilesRestore(); },
 };
 
 class Pager extends StatelessWidget {
@@ -57,7 +57,7 @@ class Pager extends StatelessWidget {
             body: widget ?? Container(),
             bottomSheet: 
                     page == PageCode.discovery ?
-                        TestRefBar() :
+                        const TestRefBar() :
                         null
         );
     }

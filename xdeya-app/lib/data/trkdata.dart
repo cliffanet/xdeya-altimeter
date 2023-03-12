@@ -9,7 +9,7 @@ import 'dtime.dart';
 import 'trklist.dart';
 import '../net/proc.dart';
 import '../net/binproto.dart';
-import '../net/types.dart';
+import 'logitem.dart';
 
 
 /*//////////////////////////////////////

@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'dart:io';
 
-import '../net/proc.dart';
-import '../net/types.dart';
+import '../data/files.dart';
 import '../pager.dart';
 
 class PageFilesRestore extends StatelessWidget {
     static final ValueNotifier<int> _notifyList = ValueNotifier(0);
     static final List<FileItem> _flist = [];
-    static void opendir(String _dir) {
+    static void opendir(String path) {
         clearlist();
-        final dir = Directory(_dir);
+        final dir = Directory(path);
         final List<FileSystemEntity> entities = dir.listSync().toList();
         final Iterable<File> files = entities.whereType<File>();
         for (final f in files) {
@@ -62,7 +61,7 @@ class PageFilesRestore extends StatelessWidget {
                                             heroTag: 'btnSave',
                                             onPressed: _saveallow ? 
                                                 () {
-                                                    net.saveFiles(
+                                                    files.netSave(
                                                         files: _flist.where((f) => f.checked).toList()
                                                     );
                                                     Pager.pop(context);

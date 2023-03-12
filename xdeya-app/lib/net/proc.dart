@@ -5,7 +5,6 @@ import 'dart:developer' as developer;
 
 import '../data/logbook.dart';
 import 'binproto.dart';
-import 'types.dart';
 
 enum NetState {
     offline,
@@ -22,16 +21,6 @@ enum NetError {
     proto,
     cmddup,
     auth
-}
-
-enum NetRecvElem {
-    logbook,
-    tracklist,
-    trackdata,
-    wifipass,
-    wifisave,
-    files,
-    filessave
 }
 
 final net = NetProc();
@@ -60,14 +49,11 @@ class NetProc {
 
     Timer? _kalive;
 
-    final Set<NetRecvElem> _rcvelm = {};
-    Set<NetRecvElem> get rcvElem => _rcvelm;
-
-    int _datacnt = 0;
+    int progcnt = 0;
     int _datamax = 0;
-    set progmax(int v) { _datamax = v; _datacnt=0; }
-    set progcnt(int v) => _datacnt = v;
-    double get dataProgress => _datacnt > _datamax ? 1.0 : _datacnt / _datamax;
+    int get progmax => _datamax;
+    set progmax(int v) { _datamax = v; progcnt=0; }
+    double get dataProgress => progcnt > _datamax ? 1.0 : progcnt / _datamax;
     bool get isProgress => _datamax > 0;
 
     final ValueNotifier<int> _notify = ValueNotifier(0);
@@ -132,13 +118,11 @@ class NetProc {
         _pro.rcvClear();
         _reciever.clear();
         _confirmer.clear();
-        _rcvelm.clear();
         if (_kalive != null) {
             _kalive!.cancel();
         }
         _kalive = null;
-        _datamax = 0;
-        _datacnt = 0;
+        progmax = 0;
 
         _state = NetState.offline;
         developer.log('net cleared');
@@ -363,13 +347,19 @@ class NetProc {
         return false;
     }
 
+    bool recieverOne(int cmd, void Function(BinProto) ?hnd) {
+        return recieverAdd(cmd, (pro) {
+            recieverDel(cmd);
+            hnd!(pro);
+        });
+    }
+
     bool recieverList(int cmd, {
             void Function(BinProto) ?beg,
             void Function(BinProto) ?item,
             void Function(BinProto) ?end }) {
 
-        return recieverAdd(cmd, (pro) {
-            recieverDel(cmd);
+        return recieverOne(cmd, (pro) {
             beg!(pro);
 
             if (item != null) {
@@ -427,6 +417,26 @@ class NetProc {
      * 
      *//////////////////////////////////////
     
+    Future<bool> requestOne(
+            int cmd, String? pk, List<dynamic>? vars,
+            void Function(BinProto pro) ?hnd
+        ) async {
+        if (_reciever.containsKey(cmd)) {
+            developer.log('reciever($cmd) exists');
+            return false;
+        }
+
+        if (!await autochk()) return false;
+        
+        bool ok =
+            recieverOne(cmd, hnd) &&
+            send(0x0a, 'C${pk?? ''}', [cmd, ...(vars ?? [])]);
+
+        if (!ok) recieverDel(cmd);
+
+        return ok;
+    }
+    
     Future<bool> requestList(
             int cmd, String? pk, List<dynamic>? vars,
             {
@@ -435,7 +445,7 @@ class NetProc {
                 void Function(BinProto pro) ?end,
             }
         ) async {
-        if (_reciever.containsKey(cmd) || _reciever.containsKey(cmd+1) || _reciever.containsKey(cmd+2)) {
+        if (recieverContains({ cmd, cmd+1, cmd+2 })) {
             developer.log('reciever($cmd or ${cmd+1} or ${cmd+2}) exists');
             return false;
         }
@@ -497,152 +507,5 @@ class NetProc {
         doNotifyInf();
 
         return send(0x03, 'n', [code]);
-    }
-    
-
-    /*//////////////////////////////////////
-     *
-     *  Backup Files
-     * 
-     *//////////////////////////////////////
-    final ValueNotifier<int> notifyFilesList = ValueNotifier(0);
-    final List<FileItem> files = [];
-    void _filesClear() {
-        files.clear();
-        notifyFilesList.value = 0;
-    }
-
-    Future<bool> requestFiles({ required String dir, Function() ?onLoad }) async {
-        if (!await autochk()) return false;
-
-        if (_rcvelm.contains(NetRecvElem.files)) {
-            return false;
-        }
-        _filesClear();
-
-        bool ok = recieverAdd(0x5a, (_) {
-                recieverDel(0x5a);
-                List<dynamic> ?v = _pro.rcvData('nN');
-                if ((v == null) || v.isEmpty) {
-                    return;
-                }
-                _filesClear();
-                _datamax = v[1];
-                _datacnt = 0;
-
-                void recvfin(_) {
-                    recieverDel(0x5b);
-                    recieverDel(0x5e);
-                    _pro.rcvNext();
-                    developer.log('requestFiles finish');
-                    _rcvelm.remove(NetRecvElem.files);
-                    if (onLoad != null) onLoad();
-                    _datamax = 0;
-                    _datacnt = 0;
-                }
-                recieverAdd(0x5e, recvfin);
-
-                developer.log('requestFiles beg proc ${v[0]} / ${v[1]} bytes');
-                void recvfile(_) async {
-                    recieverDel(0x5b);
-                    recieverDel(0x5e);
-                    List<dynamic> ?v = _pro.rcvData('Ns');
-                    if ((v == null) || (v.length < 2)) {
-                        return;
-                    }
-                    developer.log('requestFiles beg file: ${v[1]} (${v[0]} bytes)');
-                    files.add(FileItem.byvars(v));
-                    notifyFilesList.value = files.length;
-
-                    final file = File('$dir/${v[1]}');
-                    if (file.existsSync()) {
-                        file.deleteSync();
-                    }
-                    final fh = file.openSync(mode: FileMode.writeOnly);
-
-                    recieverAdd(0x5c, (_) {
-                        List<dynamic> ?v = _pro.rcvData('B');
-                        if ((v == null) || v.isEmpty || (v[0] is! Uint8List)) {
-                            return;
-                        }
-                        final data = v[0] as Uint8List;
-                        developer.log('requestFiles data size=${data.length}');
-                        _datacnt += data.length;
-                        fh.writeFromSync(data.toList());
-                    });
-                    recieverAdd(0x5d, (_) {
-                        recieverDel(0x5c);
-                        recieverDel(0x5d);
-                        _pro.rcvNext();
-                        fh.close();
-                        developer.log('requestFiles end file');
-                        recieverAdd(0x5b, recvfile);
-                        recieverAdd(0x5e, recvfin);
-                    });
-                }
-                recieverAdd(0x5b, recvfile);
-            });
-        if (!ok) return false;
-        if (!send(0x0a, "C", [0x5a])) {
-            recieverDel(0x5a);
-            return false;
-        }
-        _rcvelm.add(NetRecvElem.files);
-        doNotifyInf();
-
-        return true;
-    }
-
-    Future<bool> saveFiles({ required List<FileItem> files, Function() ?onDone }) async {
-        if (!await autochk()) return false;
-
-        if (_rcvelm.contains(NetRecvElem.filessave)) {
-            return false;
-        }
-        if (files.isEmpty) {
-            return false;
-        }
-        bool ok = confirmerAdd(0x5a, (err) {
-            _rcvelm.remove(NetRecvElem.filessave);
-            if ((err == null) && (onDone != null)) onDone();
-        });
-        if (!ok) {
-            return false;
-        }
-
-        if (!send(0x5a)) {
-            confirmerDel(0x5a);
-            return false;
-        }
-        _rcvelm.add(NetRecvElem.filessave);
-        doNotifyInf();
-
-        for (var f in files) {
-            if ((f.path == null) || f.path!.isEmpty) continue;
-            final fh = await File(f.path ?? '').open();
-            if (!send(0x5b, 'Ns', [fh.lengthSync(), f.name])) {
-                confirmerDel(0x5a);
-                return false;
-            }
-
-            while (fh.positionSync() < fh.lengthSync()) {
-                if (!send(0x5c, 'B', [await fh.read(256)])) {
-                    confirmerDel(0x5a);
-                    return false;
-                }
-            }
-
-            fh.close();
-            if (!send(0x5d)) {
-                confirmerDel(0x5a);
-                return false;
-            }
-        }
-
-        if (!send(0x5e)) {
-            confirmerDel(0x5a);
-            return false;
-        }
-        return true;
     }
 }
