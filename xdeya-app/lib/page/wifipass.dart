@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 
+import '../data/wifipass.dart';
 import '../net/proc.dart';
 import '../pager.dart';
 
@@ -28,9 +29,9 @@ class PageWiFiPass extends StatelessWidget {
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 return ValueListenableBuilder(
-                    valueListenable: net.notifyWiFiList,
+                    valueListenable: wifipass.notify,
                     builder: (BuildContext context, count, Widget? child) {
-                        if (net.wifipass.isEmpty) {
+                        if (wifipass.isEmpty) {
                             return const Center(
                                 child: Text(
                                     'Не найдено', 
@@ -40,9 +41,9 @@ class PageWiFiPass extends StatelessWidget {
                         }
                         
                         return ListView.separated(
-                            itemCount: net.wifipass.length+1,
+                            itemCount: wifipass.length+1,
                             itemBuilder: (BuildContext contextItem, int index) {
-                                if (index >= net.wifipass.length) {
+                                if (index >= wifipass.length) {
                                     return Padding(
                                         padding: const EdgeInsets.symmetric(
                                             vertical: 8.0,
@@ -59,9 +60,9 @@ class PageWiFiPass extends StatelessWidget {
                                                 const SizedBox(width: 20, height: 20),
                                                 FloatingActionButton(
                                                     heroTag: 'btnSave',
-                                                    onPressed: net.wifiChanged ? 
+                                                    onPressed: wifipass.isChanged ? 
                                                         () {
-                                                            net.saveWiFiPass();
+                                                            wifipass.save();
                                                             Pager.pop(context);
                                                         } :
                                                         null,
@@ -72,7 +73,7 @@ class PageWiFiPass extends StatelessWidget {
                                     );
                                 }
 
-                                final wifi = net.wifipass[index];
+                                final wifi = wifipass[index];
                                 return Card(
                                     child: ListTile(
                                     onTap: () {

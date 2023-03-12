@@ -86,7 +86,7 @@ class NetProc {
         //}
         return true;
     }
-    Future<bool> _autochk() async {
+    Future<bool> autochk() async {
         if (_sockchk()) {
             return true;
         }
@@ -182,7 +182,7 @@ class NetProc {
         doNotifyInf();
 
         // запрос hello
-        if (!recieverAdd(0x02, () {
+        if (!recieverAdd(0x02, (_) {
                 recieverDel(0x02);
                 // 0x03 (authreply) вы добавляем, если у нас есть
                 // autokey с предыдущей авторизации, но он может не пройти
@@ -192,7 +192,6 @@ class NetProc {
                 _autokey = 0;
                 _autoip = null;
                 _autoport = null;
-                doNotifyInf();
                 developer.log('rcv hello');
             }))
         {
@@ -252,10 +251,11 @@ class NetProc {
                 _recvConfirm();
             }
             else {
-                Function() ?hnd = _reciever[ _pro.rcvCmd ];
+                Function(BinProto) ?hnd = _reciever[ _pro.rcvCmd ];
 
                 if (hnd != null) {
-                    hnd();
+                    hnd(_pro);
+                    doNotifyInf();
                 }
                 else {
                     developer.log('recv unknown: cmd=0x${_pro.rcvCmd.toRadixString(16)}');
@@ -290,6 +290,7 @@ class NetProc {
         developer.log('confirm: cmd=0x${cmd.toRadixString(16)}, err=$err');
         hnd(err == 0 ? null : err);
         confirmerDel(cmd);
+        doNotifyInf();
 
         return true;
     }
@@ -316,17 +317,17 @@ class NetProc {
      * 
      *//////////////////////////////////////
 
-    final Map<int, void Function()> _reciever = {};
+    final Map<int, void Function(BinProto)> _reciever = {};
     bool get isLoading => _reciever.isNotEmpty || _confirmer.isNotEmpty;
 
-    bool recieverAdd(int cmd, void Function() hnd) {
+    bool recieverAdd(int cmd, void Function(BinProto) hnd) {
         if (_sock == null)  {
             _err = NetError.disconnected;
             doNotifyInf();
             return false;
         }
 
-        if (_reciever[cmd] != null) {
+        if (_reciever.containsKey(cmd)) {
             return false;
         }
 
@@ -336,7 +337,7 @@ class NetProc {
     }
     
     bool recieverDel(int cmd) {
-        if (_reciever[cmd] == null) {
+        if (!_reciever.containsKey(cmd)) {
             return false;
         }
 
@@ -345,7 +346,10 @@ class NetProc {
         return true;
     }
 
-    void Function()? reciever(int cmd) {
+    void Function(BinProto)? reciever(int cmd) {
+        if (!_reciever.containsKey(cmd)) {
+            return null;
+        }
         return _reciever[cmd];
     }
 
@@ -368,7 +372,7 @@ class NetProc {
     final Map<int, void Function(int ?err)> _confirmer = {};
 
     bool confirmerAdd(int cmd, void Function(int ?err) hnd) {
-        if (_confirmer[cmd] != null) {
+        if (_confirmer.containsKey(cmd)) {
             return false;
         }
 
@@ -378,7 +382,7 @@ class NetProc {
     }
     
     bool confirmerDel(int cmd) {
-        if (_confirmer[cmd] == null) {
+        if (!_confirmer.containsKey(cmd)) {
             return false;
         }
 
@@ -388,6 +392,10 @@ class NetProc {
     }
 
     void Function(int ?err)? confirmer(int cmd) {
+        if (!_confirmer.containsKey(cmd)) {
+            return null;
+        }
+
         return _confirmer[cmd];
     }
 
@@ -421,16 +429,15 @@ class NetProc {
             }
         }
 
-        if (!await _autochk()) return false;
+        if (!await autochk()) return false;
         
-        bool ok = recieverAdd(cmd, () {
+        bool ok = recieverAdd(cmd, (_) {
             recieverDel(cmd);
             hnd(_pro);
-            doNotifyInf();
 
             for (final cmd in sechnd!.keys) {
                 final hnd = sechnd[cmd];
-                recieverAdd(cmd, () {
+                recieverAdd(cmd, (_) {
                     if (rmvhnd!.containsKey(cmd)) {
                         final cmdlst = rmvhnd[cmd];
                         for (final cmd in cmdlst!) {
@@ -439,7 +446,6 @@ class NetProc {
                     }
 
                     hnd!(_pro);
-                    doNotifyInf();
                 });
             }
         }) &&
@@ -458,7 +464,7 @@ class NetProc {
      * 
      *//////////////////////////////////////
 
-    bool _auth_recv() {
+    bool _auth_recv(BinProto _) {
         recieverDel(0x02);
         recieverDel(0x03);
         List<dynamic> ?v = _pro.rcvData('Cn');
@@ -478,7 +484,6 @@ class NetProc {
         }
         developer.log('auth ok');
         _state = NetState.online;
-        doNotifyInf();
 
         logbook.netRequestDefault();
         
@@ -490,8 +495,8 @@ class NetProc {
             return false;
         }
 
-        bool ok = recieverAdd(0x03, () {
-                final on = _auth_recv() ? onReplyOk : onReplyErr;
+        bool ok = recieverAdd(0x03, (pro) {
+                final on = _auth_recv(pro) ? onReplyOk : onReplyErr;
                 if (on != null) on();
             });
         if (!ok) return false;
@@ -500,142 +505,6 @@ class NetProc {
         return send(0x03, 'n', [code]);
     }
     
-
-    /*//////////////////////////////////////
-     *
-     *  WiFi Pass
-     * 
-     *//////////////////////////////////////
-
-    final ValueNotifier<int> _wifipasssz = ValueNotifier(0);
-    ValueNotifier<int> get notifyWiFiList => _wifipasssz;
-    final List<WiFiPass> _wifipass = [];
-    List<WiFiPass> get wifipass => _wifipass;
-
-   Future<bool> requestWiFiPass({ Function() ?onLoad }) async {
-        if (!await _autochk()) return false;
-
-        if (_rcvelm.contains(NetRecvElem.wifipass)) {
-            return false;
-        }
-        bool ok = recieverAdd(0x37, () {
-                recieverDel(0x37);
-                List<dynamic> ?v = _pro.rcvData('N');
-                if ((v == null) || v.isEmpty) {
-                    return;
-                }
-
-                developer.log('wifipass beg ${v[0]}');
-                _datamax = v[0];
-                _wifipass.clear();
-                _wifipasssz.value = 0;
-                _datacnt = 0;
-                doNotifyInf();
-
-                recieverAdd(0x38, () {
-                    List<dynamic> ?v = _pro.rcvData('ssN');
-                    if ((v == null) || v.isEmpty) {
-                        return;
-                    }
-                    _wifipass.add(WiFiPass.byvars(v));
-                    _wifipasssz.value = _wifipass.length;
-                    _datacnt = (v.length > 2) && (v[2]) is int ? v[2] : 0;
-                    doNotifyInf();
-                });
-                recieverAdd(0x39, () {
-                    recieverDel(0x38);
-                    recieverDel(0x39);
-                    developer.log('wifipass end $_datacnt / $_datamax');
-                    _pro.rcvNext();
-                    _rcvelm.remove(NetRecvElem.wifipass);
-                    _datamax = 0;
-                    _datacnt = 0;
-                    doNotifyInf();
-                    if (onLoad != null) onLoad();
-                });
-            });
-        if (!ok) return false;
-        if (!send(0x37)) {
-            recieverDel(0x37);
-            return false;
-        }
-        _rcvelm.add(NetRecvElem.wifipass);
-        doNotifyInf();
-
-        return true;
-    }
-
-    void addWiFiPass(String ssid, String pass) {
-        _wifipass.add(WiFiPass(ssid: ssid, pass: pass));
-        _wifipasssz.value = _wifipass.length;
-    }
-    void setWiFiPass(int index, String ssid, String pass) {
-        if ((index < 0) || (index >= _wifipass.length)) {
-            return;
-        }
-        _wifipass[index] = WiFiPass.edited(ssid, pass, _wifipass[index]);
-        _wifipasssz.value = 0;
-        _wifipasssz.value = _wifipass.length;
-    }
-    void delWiFiPass(int index) {
-        if ((index < 0) || (index >= _wifipass.length)) {
-            return;
-        }
-        _wifipass.removeAt(index);
-        _wifipasssz.value = _wifipass.length;
-    }
-    bool get wifiChanged {
-        for (final w in _wifipass) {
-            if (w.isChanged) return true;
-        }
-        return false;
-    }
-
-    Future<bool> saveWiFiPass({ Function() ?onDone }) async {
-        if (!await _autochk()) return false;
-
-        if (_rcvelm.contains(NetRecvElem.wifisave)) {
-            return false;
-        }
-        // это просто заглушка (команда 0x4a временно отправляется по завершению приёма)
-        if (!recieverAdd(0x4a, () { _pro.rcvNext(); })) {
-            return false;
-        }
-        bool ok = confirmerAdd(0x41, (err) {
-            recieverDel(0x4a);
-            _rcvelm.remove(NetRecvElem.wifisave);
-            doNotifyInf();
-            if ((err == null) && (onDone != null)) onDone();
-        });
-        if (!ok) {
-            recieverDel(0x4a);
-            return false;
-        }
-
-        if (!send(0x41)) {
-            recieverDel(0x4a);
-            confirmerDel(0x41);
-            return false;
-        }
-        _rcvelm.add(NetRecvElem.wifisave);
-        doNotifyInf();
-
-        for (var wifi in _wifipass) {
-            if (!send(0x42, 'ss', [wifi.ssid, wifi.pass])) {
-                recieverDel(0x4a);
-                confirmerDel(0x41);
-                return false;
-            }
-        }
-
-        if (!send(0x43)) {
-            recieverDel(0x4a);
-            confirmerDel(0x41);
-            return false;
-        }
-
-        return true;
-    }
 
     /*//////////////////////////////////////
      *
@@ -650,14 +519,14 @@ class NetProc {
     }
 
     Future<bool> requestFiles({ required String dir, Function() ?onLoad }) async {
-        if (!await _autochk()) return false;
+        if (!await autochk()) return false;
 
         if (_rcvelm.contains(NetRecvElem.files)) {
             return false;
         }
         _filesClear();
 
-        bool ok = recieverAdd(0x5a, () {
+        bool ok = recieverAdd(0x5a, (_) {
                 recieverDel(0x5a);
                 List<dynamic> ?v = _pro.rcvData('nN');
                 if ((v == null) || v.isEmpty) {
@@ -666,9 +535,8 @@ class NetProc {
                 _filesClear();
                 _datamax = v[1];
                 _datacnt = 0;
-                doNotifyInf();
 
-                void recvfin() {
+                void recvfin(_) {
                     recieverDel(0x5b);
                     recieverDel(0x5e);
                     _pro.rcvNext();
@@ -677,12 +545,11 @@ class NetProc {
                     if (onLoad != null) onLoad();
                     _datamax = 0;
                     _datacnt = 0;
-                    doNotifyInf();
                 }
                 recieverAdd(0x5e, recvfin);
 
                 developer.log('requestFiles beg proc ${v[0]} / ${v[1]} bytes');
-                void recvfile() async {
+                void recvfile(_) async {
                     recieverDel(0x5b);
                     recieverDel(0x5e);
                     List<dynamic> ?v = _pro.rcvData('Ns');
@@ -692,7 +559,6 @@ class NetProc {
                     developer.log('requestFiles beg file: ${v[1]} (${v[0]} bytes)');
                     files.add(FileItem.byvars(v));
                     notifyFilesList.value = files.length;
-                    doNotifyInf();
 
                     final file = File('$dir/${v[1]}');
                     if (file.existsSync()) {
@@ -700,7 +566,7 @@ class NetProc {
                     }
                     final fh = file.openSync(mode: FileMode.writeOnly);
 
-                    recieverAdd(0x5c, () {
+                    recieverAdd(0x5c, (_) {
                         List<dynamic> ?v = _pro.rcvData('B');
                         if ((v == null) || v.isEmpty || (v[0] is! Uint8List)) {
                             return;
@@ -709,9 +575,8 @@ class NetProc {
                         developer.log('requestFiles data size=${data.length}');
                         _datacnt += data.length;
                         fh.writeFromSync(data.toList());
-                        doNotifyInf();
                     });
-                    recieverAdd(0x5d, () {
+                    recieverAdd(0x5d, (_) {
                         recieverDel(0x5c);
                         recieverDel(0x5d);
                         _pro.rcvNext();
@@ -719,7 +584,6 @@ class NetProc {
                         developer.log('requestFiles end file');
                         recieverAdd(0x5b, recvfile);
                         recieverAdd(0x5e, recvfin);
-                        doNotifyInf();
                     });
                 }
                 recieverAdd(0x5b, recvfile);
@@ -736,7 +600,7 @@ class NetProc {
     }
 
     Future<bool> saveFiles({ required List<FileItem> files, Function() ?onDone }) async {
-        if (!await _autochk()) return false;
+        if (!await autochk()) return false;
 
         if (_rcvelm.contains(NetRecvElem.filessave)) {
             return false;
@@ -746,7 +610,6 @@ class NetProc {
         }
         bool ok = confirmerAdd(0x5a, (err) {
             _rcvelm.remove(NetRecvElem.filessave);
-            doNotifyInf();
             if ((err == null) && (onDone != null)) onDone();
         });
         if (!ok) {

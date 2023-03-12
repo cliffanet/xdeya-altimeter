@@ -6,6 +6,7 @@ import 'page/filesrestore.dart';
 import 'net/wifidiscovery.dart';
 import 'net/proc.dart';
 import 'data/track.dart';
+import 'data/wifipass.dart';
 
 
 Widget getTitleBarDiscovery() {
@@ -244,7 +245,7 @@ Widget getTitleBarClient(PageCode page) {
                         Pager.refreshPressed!();
                         break;
                     case MenuCode.WiFiPass:
-                        net.requestWiFiPass();
+                        wifipass.netRequest();
                         Pager.push(context, PageCode.wifipass);
                         break;
                     case MenuCode.TrackList:

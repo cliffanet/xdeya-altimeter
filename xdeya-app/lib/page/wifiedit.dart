@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 
-import '../net/proc.dart';
+import '../data/wifipass.dart';
 import '../pager.dart';
 
 class PageWiFiEdit extends StatelessWidget {
@@ -16,12 +16,12 @@ class PageWiFiEdit extends StatelessWidget {
 
     PageWiFiEdit({ super.key, required int index }) : 
         _index = index,
-        _ismod = (index >= 0) && (index < net.wifipass.length)
+        _ismod = (index >= 0) && (index < wifipass.length)
     {
         if (_ismod) {
-            _ssid = net.wifipass[_index].ssid;
+            _ssid = wifipass[_index].ssid;
             _orig_ssid = _ssid;
-            _pass = net.wifipass[_index].pass;
+            _pass = wifipass[_index].pass;
             _orig_pass = _pass;
         }
     }
@@ -69,7 +69,7 @@ class PageWiFiEdit extends StatelessWidget {
                                 child: const Icon(Icons.close),
                                 onPressed: () {
                                     developer.log('index: $_index');
-                                    net.delWiFiPass(_index);
+                                    wifipass.del(_index);
                                     Pager.pop(context);
                                 }
                             ) :
@@ -85,10 +85,10 @@ class PageWiFiEdit extends StatelessWidget {
                                             developer.log('ssid: $_ssid, pass: $_pass');
                                             if ((_ssid == '') || (_pass == '')) return;
                                             if (_ismod) {
-                                                net.setWiFiPass(_index, _ssid, _pass);
+                                                wifipass.set(_index, _ssid, _pass);
                                             }
                                             else {
-                                                net.addWiFiPass(_ssid, _pass);
+                                                wifipass.push(_ssid, _pass);
                                             }
                                             Pager.pop(context);
                                         } :
