@@ -75,31 +75,28 @@ class DataTrkList extends ListBase<TrkItem> {
 
 
     Future<bool> netRequest({ Function() ?onLoad }) async {
-        return net.request(
+        return net.requestList(
             0x51, null, null,
-            hnd: (pro) {
+            beg: (pro) {
                 pro.rcvNext();
 
                 developer.log('trklist beg');
                 _list.clear();
                 _sz.value = 0;
             },
-            sechnd: {
-                0x52: (pro) {
-                    List<dynamic> ?v = pro.rcvData('NNNNTNC');
-                    if ((v == null) || v.isEmpty) {
-                        return;
-                    }
-                    _list.add(TrkItem.byvars(v));
-                    _sz.value = _list.length;
-                },
-                0x53: (pro) {
-                    pro.rcvNext();
-                    developer.log('trklist end');
-                    if (onLoad != null) onLoad();
+            item: (pro) {
+                List<dynamic> ?v = pro.rcvData('NNNNTNC');
+                if ((v == null) || v.isEmpty) {
+                    return;
                 }
+                _list.add(TrkItem.byvars(v));
+                _sz.value = _list.length;
             },
-            rmvhnd: { 0x53: [ 0x52, 0x53 ] }
+            end: (pro) {
+                pro.rcvNext();
+                developer.log('trklist end');
+                if (onLoad != null) onLoad();
+            }
         );
     }
 }

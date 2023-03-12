@@ -86,9 +86,9 @@ class DataTrack {
     Future<bool> netRequest(TrkItem trk, { Function() ?onLoad, Function(Struct) ?onCenter }) async {
         _reload = () => netRequest(trk, onLoad:onLoad, onCenter:onCenter);
 
-        return net.request(
+        return net.requestList(
             0x54, 'NNNTC', [trk.id, trk.jmpnum, trk.jmpkey, trk.tmbeg, trk.fnum],
-            hnd: (pro) {
+            beg: (pro) {
                 List<dynamic> ?v = pro.rcvData('NNNNTNH');
                 if ((v == null) || v.isEmpty) {
                     return;
@@ -101,29 +101,26 @@ class DataTrack {
                 _center.value = null;
                 net.progmax = (_inf.fsize-32) ~/ 64;
             },
-            sechnd: {
-                0x55: (pro) {
-                    List<dynamic> ?v = pro.rcvData(pkLogItem);
-                    if ((v == null) || v.isEmpty) {
-                        return;
-                    }
-                    Struct ti = fldUnpack(fldLogItem, v);
-                    _data.add(ti);
-                    _sz.value = _data.length;
-                    net.progcnt = _data.length;
-                    if ((_center.value == null) && (((ti['flags'] ?? 0) & 0x0001) > 0)) {
-                        _center.value = ti;
-                        if (onCenter != null) onCenter(ti);
-                    }
-                },
-                0x56: (pro) {
-                    pro.rcvNext();
-                    developer.log('trkdata end');
-                    net.progmax = 0;
-                    if (onLoad != null) onLoad();
+            item: (pro) {
+                List<dynamic> ?v = pro.rcvData(pkLogItem);
+                if ((v == null) || v.isEmpty) {
+                    return;
+                }
+                Struct ti = fldUnpack(fldLogItem, v);
+                _data.add(ti);
+                _sz.value = _data.length;
+                net.progcnt = _data.length;
+                if ((_center.value == null) && (((ti['flags'] ?? 0) & 0x0001) > 0)) {
+                    _center.value = ti;
+                    if (onCenter != null) onCenter(ti);
                 }
             },
-            rmvhnd: { 0x56: [0x55, 0x56] }
+            end: (pro) {
+                pro.rcvNext();
+                developer.log('trkdata end');
+                net.progmax = 0;
+                if (onLoad != null) onLoad();
+            }
         );
     }
 

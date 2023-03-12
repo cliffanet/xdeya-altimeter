@@ -63,9 +63,9 @@ class DataWiFiPass extends ListBase<WiFiPass> {
     void operator []=(int index, WiFiPass value) => _list[index]=value;
 
     Future<bool> netRequest({ int beg = 50, int count = 50, Function() ?onLoad }) async {
-        return net.request(
+        return net.requestList(
             0x37, null, null,
-            hnd: (pro) {
+            beg: (pro) {
                 List<dynamic> ?v = pro.rcvData('N');
                 if ((v == null) || v.isEmpty) {
                     return;
@@ -76,24 +76,21 @@ class DataWiFiPass extends ListBase<WiFiPass> {
                 _sz.value = 0;
                 net.progmax = v[0];
             },
-            sechnd: {
-                0x38: (pro) {
-                    List<dynamic> ?v = pro.rcvData('ssN');
-                    if ((v == null) || v.isEmpty) {
-                        return;
-                    }
-                    _list.add(WiFiPass.byvars(v));
-                    _sz.value = _list.length;
-                    net.progcnt = (v.length > 2) && (v[2]) is int ? v[2] : 0;
-                },
-                0x39: (pro) {
-                    pro.rcvNext();
-                    developer.log('wifipass end');
-                    net.progmax = 0;
-                    if (onLoad != null) onLoad();
+            item: (pro) {
+                List<dynamic> ?v = pro.rcvData('ssN');
+                if ((v == null) || v.isEmpty) {
+                    return;
                 }
+                _list.add(WiFiPass.byvars(v));
+                _sz.value = _list.length;
+                net.progcnt = (v.length > 2) && (v[2]) is int ? v[2] : 0;
             },
-            rmvhnd: { 0x39: [ 0x38, 0x39 ] }
+            end: (pro) {
+                pro.rcvNext();
+                developer.log('wifipass end');
+                net.progmax = 0;
+                if (onLoad != null) onLoad();
+            }
         );
     }
 

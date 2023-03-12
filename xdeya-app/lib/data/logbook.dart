@@ -80,9 +80,9 @@ class DataLogBook extends ListBase<LogBook> {
     void operator []=(int index, LogBook value) => _list[index]=value;
 
     Future<bool> netRequest({ int beg = 50, int count = 50, Function() ?onLoad }) async {
-        return net.request(
+        return net.requestList(
             0x31, 'NN', [beg, count],
-            hnd: (pro) {
+            beg: (pro) {
                 List<dynamic> ?v = pro.rcvData('NN');
                 if ((v == null) || v.isEmpty) {
                     return;
@@ -93,24 +93,21 @@ class DataLogBook extends ListBase<LogBook> {
                 _sz.value = 0;
                 net.progmax = v[0] < v[1] ? v[0] : v[1];
             },
-            sechnd: {
-                0x32: (pro) {
-                    List<dynamic> ?v = pro.rcvData(LogBook.pk);
-                    if ((v == null) || v.isEmpty) {
-                        return;
-                    }
-                    _list.add(LogBook.byvars(v));
-                    _sz.value = _list.length;
-                    net.progcnt = _list.length;
-                },
-                0x33: (pro) {
-                    pro.rcvNext();
-                    developer.log('logbook end');
-                    net.progmax = 0;
-                    if (onLoad != null) onLoad();
+            item: (pro) {
+                List<dynamic> ?v = pro.rcvData(LogBook.pk);
+                if ((v == null) || v.isEmpty) {
+                    return;
                 }
+                _list.add(LogBook.byvars(v));
+                _sz.value = _list.length;
+                net.progcnt = _list.length;
             },
-            rmvhnd: { 0x33: [ 0x32, 0x33 ] }
+            end: (pro) {
+                pro.rcvNext();
+                developer.log('logbook end');
+                net.progmax = 0;
+                if (onLoad != null) onLoad();
+            }
         );
     }
 

@@ -363,6 +363,27 @@ class NetProc {
         return false;
     }
 
+    bool recieverList(int cmd, {
+            void Function(BinProto) ?beg,
+            void Function(BinProto) ?item,
+            void Function(BinProto) ?end }) {
+
+        return recieverAdd(cmd, (pro) {
+            recieverDel(cmd);
+            beg!(pro);
+
+            if (item != null) {
+                recieverAdd(cmd+1, item);
+            }
+            recieverAdd(cmd+2, (pro) {
+                recieverDel(cmd+1);
+                recieverDel(cmd+2);
+
+                end!(pro);
+            });
+        });
+    }
+
     /*//////////////////////////////////////
      *
      *  confirmer
@@ -406,51 +427,24 @@ class NetProc {
      * 
      *//////////////////////////////////////
     
-    Future<bool> request(
+    Future<bool> requestList(
             int cmd, String? pk, List<dynamic>? vars,
             {
-                // Первый ответ, он будет удалён
-                required void Function(BinProto pro) hnd,
-                // hnd, которые надо будет добавить после первого ответа
-                Map<int, void Function(BinProto pro)> ?sechnd,
-                // при каких ответах мы удаляем какие hnd
-                Map<int, List<int>> ?rmvhnd
+                void Function(BinProto pro) ?beg,
+                void Function(BinProto pro) ?item,
+                void Function(BinProto pro) ?end,
             }
         ) async {
-        if (_reciever[cmd] != null) {
-            developer.log('reciever($cmd) exists');
+        if (_reciever.containsKey(cmd) || _reciever.containsKey(cmd+1) || _reciever.containsKey(cmd+2)) {
+            developer.log('reciever($cmd or ${cmd+1} or ${cmd+2}) exists');
             return false;
-        }
-        if (sechnd != null) {
-            final ex = sechnd.keys.where((cmd) => _reciever[cmd] != null);
-            if (ex.isNotEmpty) {
-                developer.log('second reciever exists: ${ex.join(", ")}');
-                return false;
-            }
         }
 
         if (!await autochk()) return false;
         
-        bool ok = recieverAdd(cmd, (_) {
-            recieverDel(cmd);
-            hnd(_pro);
-
-            for (final cmd in sechnd!.keys) {
-                final hnd = sechnd[cmd];
-                recieverAdd(cmd, (_) {
-                    if (rmvhnd!.containsKey(cmd)) {
-                        final cmdlst = rmvhnd[cmd];
-                        for (final cmd in cmdlst!) {
-                            recieverDel(cmd);
-                        }
-                    }
-
-                    hnd!(_pro);
-                });
-            }
-        }) &&
-
-        send(0x0a, 'C${pk?? ''}', [cmd, ...(vars ?? [])]);
+        bool ok =
+            recieverList(cmd, beg: beg, item: item, end: end) &&
+            send(0x0a, 'C${pk?? ''}', [cmd, ...(vars ?? [])]);
 
         if (!ok) recieverDel(cmd);
 
