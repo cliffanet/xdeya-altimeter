@@ -27,7 +27,7 @@
 
     [xdeya.v0.7.3.apk](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya.v0.7.3.apk)
 
-- Android
+- iOS
 
     [![](appstore.svg)](https://apps.apple.com/app/xde-ya/id6445976117)
 
