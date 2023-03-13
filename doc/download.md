@@ -27,6 +27,10 @@
 
     [xdeya.v0.7.3.apk](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.3/xdeya.v0.7.3.apk)
 
+- Android
+
+    [![](appstore.svg)](https://apps.apple.com/app/xde-ya/id6445976117)
+
 ## Как подключиться из приложения
 
 * При первом подключении требуется WiFi-сеть без пароля.
