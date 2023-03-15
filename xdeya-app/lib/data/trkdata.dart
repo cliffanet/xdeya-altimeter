@@ -52,6 +52,27 @@ class TrkInfo {
 }
 
 
+class TrkSeg {
+    final String state;
+    final bool satValid;
+    final List<LogItem> data = [];
+
+    TrkSeg(this.state, this.satValid);
+    TrkSeg.byEl(LogItem ti) :
+        state = ti['state'],
+        satValid = ti.satValid;
+    
+    String get color =>
+                (state == 's') || (state == 't') ? // takeoff
+                    "#2e2f30" :
+                state == 'f' ? // freefall
+                    "#7318bf" :
+                (state == 'c') || (state == 'l') ? // canopy
+                    "#0052ef" :
+                    "#fcb615";
+}
+
+
 /*//////////////////////////////////////
  *
  *  TrkData
@@ -66,14 +87,15 @@ class DataTrack {
     // trkdata
     final ValueNotifier<int> _sz = ValueNotifier(0);
     ValueNotifier<int> get notifyData => _sz;
-    final List<Struct> _data = [];
-    List<Struct> get data => _data;
-    bool satValid(int i) => ((_data[i]['flags'] ?? 0) & 0x0001) > 0;
+    final List<LogItem> _data = [];
+    List<LogItem> get data => _data;
+    final List<TrkSeg> _seg = [];
+    List<TrkSeg> get seg => _seg;
 
     // trkCenter
-    final ValueNotifier<Struct ?> _center = ValueNotifier(null);
-    Struct ? get center => _center.value;
-    ValueNotifier<Struct ?> get notifyCenter => _center;
+    final ValueNotifier<LogItem ?> _center = ValueNotifier(null);
+    LogItem ? get center => _center.value;
+    ValueNotifier<LogItem ?> get notifyCenter => _center;
 
     bool get isRecv => net.recieverContains({ 0x54, 0x55, 0x56 });
     Future<bool> Function() ?_reload;
@@ -83,7 +105,7 @@ class DataTrack {
                 await _reload!() :
                 false;
     }
-    Future<bool> netRequest(TrkItem trk, { Function() ?onLoad, Function(Struct) ?onCenter }) async {
+    Future<bool> netRequest(TrkItem trk, { Function() ?onLoad, Function(LogItem) ?onCenter }) async {
         _reload = () => netRequest(trk, onLoad:onLoad, onCenter:onCenter);
 
         return net.requestList(
@@ -106,11 +128,24 @@ class DataTrack {
                 if ((v == null) || v.isEmpty) {
                     return;
                 }
-                Struct ti = fldUnpack(fldLogItem, v);
+
+                final ti = LogItem.byvars(v);
                 _data.add(ti);
                 _sz.value = _data.length;
                 net.progcnt = _data.length;
-                if ((_center.value == null) && (((ti['flags'] ?? 0) & 0x0001) > 0)) {
+
+                if (
+                    (seg.length > 0) &&
+                    (seg.last.state == ti['state']) &&
+                    (seg.last.satValid == ti.satValid)
+                    ) {
+                    seg.last.data.add(ti);
+                }
+                else {
+                    seg.add(TrkSeg.byEl(ti));
+                }
+
+                if ((_center.value == null) && ti.satValid) {
                     _center.value = ti;
                     if (onCenter != null) onCenter(ti);
                 }
@@ -126,83 +161,38 @@ class DataTrack {
 
     String get exportJSON {
         String features = '';
-        int i=0;
         int segid = 0;
-        while (i < _data.length) {
-            while ( // пропустим все точки без спутников
-                    (i < _data.length) &&
-                    !satValid(i)
-                ) {
-                i++;
-            }
-            if (i >= _data.length) {
-                break;
-            }
+        for (final s in seg) {
+            if (!s.satValid) continue;
 
-            Struct p = _data[i];
-            String pstate = p['state'];
+            for (int i=0; (i+1)<s.data.length; i+=5) {
+                final p = s.data[i];
+                String crd = p.crd;
+                for (int n=1; ((i+n)<s.data.length) && (n < 5); n++) {
+                    crd = '$crd,${s.data[i+n].crd}';
+                }
 
-            double lat = p['lat'] / 10000000;
-            double lon = p['lon'] / 10000000;
-            String crd = '[$lat,$lon]';
+                segid ++;
 
-            int n = 1;
-            i++;
-            while (
-                    (i < _data.length) &&
-                    (n < 5) &&
-                    (_data[i]['state'] == pstate) &&
-                    satValid(i)
-                ) {
-                double lat = _data[i]['lat'] / 10000000;
-                double lon = _data[i]['lon'] / 10000000;
-                crd = '$crd,[$lat,$lon]';
-                i++;
-                n++;
-            }
-
-            if (n < 2) continue;
-
-            segid ++;
-            final String color =
-                (pstate == 's') || (pstate == 't') ? // takeoff
-                    "#2e2f30" :
-                pstate == 'f' ? // freefall
-                    "#7318bf" :
-                (pstate == 'c') || (pstate == 'l') ? // canopy
-                    "#0052ef" :
-                    "#fcb615";
+                final String horz = '${p['heading']}&deg; (${ p.hspeed.toStringAsFixed(1) } m/s)';
             
-
-            int sec = (p['tmoffset'] ?? 0) ~/ 1000;
-            int min = sec ~/ 60;
-            sec -= min*60;
-            final String time = '$min:${sec.toString().padLeft(2,'0')}';
-
-            final String vert = '${p['alt']} m (${ (p['altspeed']/100).toStringAsFixed(1) } m/s)';
-            final String horz = '${p['heading']}&deg; (${ (p['hspeed']/100).toStringAsFixed(1) } m/s)';
-
-            final String kach =
-                p['altspeed'] < -10 ?
-                    ' [кач: ${ (-1.0 * p['hspeed'] / p['altspeed']).toStringAsFixed(1) }]' :
-                    '';
-            
-            features = 
-                '$features'
-                '{'
-                    '"type": "Feature",'
-                    '"id": $segid,'
-                    '"options": {"strokeWidth": 4, "strokeColor": "$color"},'
-                    '"geometry": {'
-                        '"type": "LineString",'
-                        '"coordinates": [$crd]'
-                    '},'
-                    '"properties": {'
-                        '"balloonContentHeader": "$time",'
-                        '"balloonContentBody": "Вертикаль: $vert<br />Горизонт: $horz$kach",'
-                        '"hintContent": "$time<br/>Вер: $vert<br/>Гор: $horz$kach",'
-                    '}'
-                '},';
+                features = 
+                    '$features'
+                    '{'
+                        '"type": "Feature",'
+                        '"id": $segid,'
+                        '"options": {"strokeWidth": 4, "strokeColor": "${s.color}"},'
+                        '"geometry": {'
+                            '"type": "LineString",'
+                            '"coordinates": [$crd]'
+                        '},'
+                        '"properties": {'
+                            '"balloonContentHeader": "${p.time}",'
+                            '"balloonContentBody": "Вертикаль: ${p.dscrVert}<br />Горизонт: $horz${p.dscrKach}",'
+                            '"hintContent": "${p.time}<br/>Вер: ${p.dscrVert}<br/>Гор: $horz${p.dscrKach}",'
+                        '}'
+                    '},';
+            }
         }
 
         return '{ "type": "FeatureCollection", "features": [ $features ] }';
@@ -210,8 +200,6 @@ class DataTrack {
 
     String get exportGPX {
         List<String> data = [];
-        int i = 0;
-        int seg = 0;
 
         data.add(
             '<?xml version="1.0" encoding="UTF-8"?>'
@@ -224,64 +212,21 @@ class DataTrack {
                 '<trk>'
                     '<name>трек</name>'
         );
-
-        String pstate = '';
-
-        while (i < _data.length) {
-            if ((seg > 0) && (
-                    !satValid(i) ||
-                    (pstate != _data[i]['state'])
-                )) {
-                data.add('</trkseg>');
-                seg = 0;
+        for (final s in seg) {
+            if (!s.satValid) continue;
+            
+            data.add('<trkseg>');
+            for (final p in s.data) {
+                data.add(
+                    '<trkpt lon="${p.lon}" lat="${p.lat}">'
+                        '<name>${p.time}, ${p.dscrVert}</name>'
+                        '<desc>Горизонт: ${p.dscrHorz}${p.dscrKach}</desc>'
+                        '<ele>${p['alt']}</ele>'
+                        '<magvar>${p['heading']}</magvar>'
+                        '<sat>${p['sat']}</sat>'
+                    '</trkpt>'
+                );
             }
-            while ( // пропустим все точки без спутников
-                    (i < _data.length) &&
-                    !satValid(i)
-                ) {
-                i++;
-            }
-            if (i >= _data.length) {
-                break;
-            }
-
-            if (seg == 0) {
-                data.add('<trkseg>');
-            }
-
-            Struct p = _data[i];
-            i++;
-            seg++;
-            pstate = p['state'];
-
-            double lat = p['lat'] / 10000000;
-            double lon = p['lon'] / 10000000;
-
-            int sec = (p['tmoffset'] ?? 0) ~/ 1000;
-            int min = sec ~/ 60;
-            sec -= min*60;
-            final String time = '$min:${sec.toString().padLeft(2,'0')}';
-
-            final String vert = '${p['alt']} m (${ (p['altspeed']/100).toStringAsFixed(1) } m/s)';
-            final String horz = '${p['heading']}гр (${ (p['hspeed']/100).toStringAsFixed(1) } m/s)';
-
-            final String kach =
-                p['altspeed'] < -10 ?
-                    ' [кач: ${ (-1.0 * p['hspeed'] / p['altspeed']).toStringAsFixed(1) }]' :
-                    '';
-
-            data.add(
-                '<trkpt lon="$lon" lat="$lat">'
-                    '<name>$time, $vert</name>'
-                    '<desc>Горизонт: $horz$kach</desc>'
-                    '<ele>${p['alt']}</ele>'
-                    '<magvar>${p['heading']}</magvar>'
-                    '<sat>${p['sat']}</sat>'
-                '</trkpt>'
-            );
-        }
-
-        if (seg > 0) {
             data.add('</trkseg>');
         }
 

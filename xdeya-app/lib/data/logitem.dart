@@ -1,3 +1,5 @@
+import '../net/binproto.dart';
+
 const String pkLogItem = 'NnaaiiIIIiiINC nNNNNNN';
                          
 const List<String> fldLogItem = [
@@ -25,3 +27,34 @@ const List<String> fldLogItem = [
     'millis',       // для отладки времени tmoffset
     'msave',
 ];
+
+
+class LogItem {
+    final Struct _log;
+
+    LogItem.byvars(List<dynamic> vars) :
+        _log = fldUnpack(fldLogItem, vars);
+
+    dynamic operator [](String f) => _log[f];
+
+    bool get satValid   => ((_log['flags'] ?? 0) & 0x0001) > 0;
+    double get lat      => _log['lat'] / 10000000;
+    double get lon      => _log['lon'] / 10000000;
+    String get crd      => '[$lat,$lon]';
+    double get altspeed => _log['altspeed']/100;
+    double get hspeed   => _log['hspeed']/100;
+
+    String get time {
+        int sec = (_log['tmoffset'] ?? 0) ~/ 1000;
+        int min = sec ~/ 60;
+        sec -= min*60;
+        return '$min:${sec.toString().padLeft(2,'0')}';
+    }
+    
+    String get dscrVert => '${_log['alt']} m (${ (altspeed).toStringAsFixed(1) } m/s)';
+    String get dscrHorz => '${_log['heading']}гр (${ (hspeed).toStringAsFixed(1) } m/s)';
+    String get dscrKach =>
+                _log['altspeed'] < -10 ?
+                    ' [кач: ${ (-1.0 * _log['hspeed'] / _log['altspeed']).toStringAsFixed(1) }]' :
+                    '';
+}
