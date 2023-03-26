@@ -62,6 +62,11 @@ class TrkSeg {
                 (state == 'c') || (state == 'l') ? // canopy
                     "#0052ef" :
                     "#fcb615";
+    
+    bool addAllow(LogItem ti) {
+        return (state == ti['state']) &&
+                (satValid == ti.satValid);
+    }
 }
 
 class TrkArea {

@@ -76,6 +76,7 @@ class DataTrack {
 
                 developer.log('trkdata beg ${_inf.jmpnum}, ${_inf.dtBeg}');
                 _data.clear();
+                _seg.clear();
                 _area = null;
                 _sz.value = 0;
                 _center.value = null;
@@ -101,14 +102,13 @@ class DataTrack {
                 net.progcnt = _data.length;
 
                 if (
-                    (seg.length > 0) &&
-                    (seg.last.state == ti['state']) &&
-                    (seg.last.satValid == ti.satValid)
+                    _seg.isNotEmpty &&
+                    _seg.last.addAllow(ti)
                     ) {
-                    seg.last.data.add(ti);
+                    _seg.last.data.add(ti);
                 }
                 else {
-                    seg.add(TrkSeg.byEl(ti));
+                    _seg.add(TrkSeg.byEl(ti));
                 }
 
                 if ((_center.value == null) && ti.satValid) {
@@ -118,7 +118,7 @@ class DataTrack {
             },
             end: (pro) {
                 pro.rcvNext();
-                developer.log('trkdata end');
+                developer.log('trkdata end ${_data.length}');
                 net.progmax = 0;
                 if (onLoad != null) onLoad();
             }
@@ -128,7 +128,7 @@ class DataTrack {
     String get exportJSON {
         String features = '';
         int segid = 0;
-        for (final s in seg) {
+        for (final s in _seg) {
             if (!s.satValid) continue;
 
             for (int i=0; (i+1)<s.data.length; i+=5) {
@@ -178,7 +178,7 @@ class DataTrack {
                 '<trk>'
                     '<name>трек</name>'
         );
-        for (final s in seg) {
+        for (final s in _seg) {
             if (!s.satValid) continue;
             
             data.add('<trkseg>');

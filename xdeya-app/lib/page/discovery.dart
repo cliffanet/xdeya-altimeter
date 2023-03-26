@@ -53,7 +53,7 @@ class TestRefBar extends StatelessWidget {
         return ListTile(
             onTap: () {
                 developer.log('tap on test ref');
-                net.start('test.xdeya.ru', 65321);
+                net.startTest();
                 Pager.push(context, PageCode.logbook);
             },
             trailing: const SizedBox.shrink(),

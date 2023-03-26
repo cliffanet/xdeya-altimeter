@@ -61,6 +61,7 @@ class NetProc {
     void doNotifyInf() => _notify.value++;
 
     int _autokey = 0;
+    bool _istest = false;
     InternetAddress ?_autoip;
     int ?_autoport;
     bool _sockchk() {
@@ -129,7 +130,13 @@ class NetProc {
     }
 
     Future<bool> start(host, int port) {
+        _istest = false;
         return _sockproc = _process(host, port);
+    }
+
+    Future<bool> startTest() {
+        _istest = true;
+        return _sockproc = _process('test.xdeya.ru', 65321);
     }
 
     Future<bool> _process(host, int port) async {
@@ -476,6 +483,12 @@ class NetProc {
             _errstop(NetError.auth);
             return false;
         }
+        if (_istest) {
+            _autokey    = 1;
+            _autoip     = _sock!.remoteAddress;
+            _autoport   = _sock!.remotePort;
+        }
+        else
         if ((v.length >= 2) && (v[1] > 0) && (_sock != null)) {
             _autokey    = v[1];
             _autoip     = _sock!.remoteAddress;
