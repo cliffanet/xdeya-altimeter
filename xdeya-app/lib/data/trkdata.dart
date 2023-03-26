@@ -1,76 +1,17 @@
 
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:developer' as developer;
 
-import 'dtime.dart';
 import 'trklist.dart';
 import '../net/proc.dart';
-import '../net/binproto.dart';
 import 'logitem.dart';
-
-
-/*//////////////////////////////////////
- *
- *  TrkInfo
- * 
- *//////////////////////////////////////
- 
-class TrkInfo {
-    final int id;
-    final int flags;
-    final int jmpnum;
-    final int jmpkey;
-    final DateTime tmbeg;
-    final int fsize;
-    final int chksum;
-
-    TrkInfo({
-        required this.id,
-        required this.flags,
-        required this.jmpnum,
-        required this.jmpkey,
-        required this.tmbeg,
-        required this.fsize,
-        required this.chksum,
-    });
-
-    TrkInfo.byvars(List<dynamic> vars) :
-        this(
-            id:     (vars.isNotEmpty) && (vars[0]) is int ? vars[0] : 0,
-            flags:  (vars.length > 1) && (vars[1]) is int ? vars[1] : 0,
-            jmpnum: (vars.length > 2) && (vars[2]) is int ? vars[2] : 0,
-            jmpkey: (vars.length > 3) && (vars[3]) is int ? vars[3] : 0,
-            tmbeg:  (vars.length > 4) && (vars[4]) is DateTime ? vars[4] : DateTime(0),
-            fsize:  (vars.length > 5) && (vars[5]) is int ? vars[5] : 0,
-            chksum: (vars.length > 6) && (vars[6]) is int ? vars[6] : 0,
-        );
-
-    String get dtBeg => dt2format(tmbeg);
-}
-
-
-class TrkSeg {
-    final String state;
-    final bool satValid;
-    final List<LogItem> data = [];
-
-    TrkSeg(this.state, this.satValid);
-    TrkSeg.byEl(LogItem ti) :
-        state = ti['state'],
-        satValid = ti.satValid;
-    
-    String get color =>
-                (state == 's') || (state == 't') ? // takeoff
-                    "#2e2f30" :
-                state == 'f' ? // freefall
-                    "#7318bf" :
-                (state == 'c') || (state == 'l') ? // canopy
-                    "#0052ef" :
-                    "#fcb615";
-}
+import 'trktypes.dart';
 
 
 /*//////////////////////////////////////
@@ -92,10 +33,25 @@ class DataTrack {
     final List<TrkSeg> _seg = [];
     List<TrkSeg> get seg => _seg;
 
+    // area
+    TrkArea ?_area;
+    TrkArea ? get area => _area;
+
     // trkCenter
     final ValueNotifier<LogItem ?> _center = ValueNotifier(null);
     LogItem ? get center => _center.value;
     ValueNotifier<LogItem ?> get notifyCenter => _center;
+
+    // mapImg
+    ui.Image ?_img;
+    ui.Image ? get img => _img;
+    Future<void> loadImg() async {
+        _img = null;
+        final data = await rootBundle.load('assets/map.jpg');
+        _img = await decodeImageFromList(data.buffer.asUint8List());
+        _sz.value ++;
+        _sz.value --;
+    }
 
     bool get isRecv => net.recieverContains({ 0x54, 0x55, 0x56 });
     Future<bool> Function() ?_reload;
@@ -107,6 +63,7 @@ class DataTrack {
     }
     Future<bool> netRequest(TrkItem trk, { Function() ?onLoad, Function(LogItem) ?onCenter }) async {
         _reload = () => netRequest(trk, onLoad:onLoad, onCenter:onCenter);
+        loadImg();
 
         return net.requestList(
             0x54, 'NNNTC', [trk.id, trk.jmpnum, trk.jmpkey, trk.tmbeg, trk.fnum],
@@ -119,6 +76,7 @@ class DataTrack {
 
                 developer.log('trkdata beg ${_inf.jmpnum}, ${_inf.dtBeg}');
                 _data.clear();
+                _area = null;
                 _sz.value = 0;
                 _center.value = null;
                 net.progmax = (_inf.fsize-32) ~/ 64;
@@ -131,6 +89,14 @@ class DataTrack {
 
                 final ti = LogItem.byvars(v);
                 _data.add(ti);
+                if (ti.satValid) {
+                    if (_area == null) {
+                        _area = TrkArea(ti);
+                    }
+                    else {
+                        _area!.add(ti);
+                    }
+                }
                 _sz.value = _data.length;
                 net.progcnt = _data.length;
 

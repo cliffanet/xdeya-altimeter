@@ -149,7 +149,8 @@ class PageJumpInfo extends StatelessWidget {
                                             return;
                                         }
                                         trk.netRequest(li.trk ?? TrkItem.byvars([]));
-                                        Pager.push(context, PageCode.trackview);
+                                        //Pager.push(context, PageCode.trackview);
+                                        Pager.push(context, PageCode.trackcube);
                                     },
                                     trailing: const SizedBox.shrink(),
                                     title: Text('трэк: ${li.trk?.dtBeg}'),

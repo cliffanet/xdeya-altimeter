@@ -6,6 +6,7 @@ import 'page/logbook.dart';
 import 'page/jumpinfo.dart';
 import 'page/tracklist.dart';
 import 'page/trackview.dart';
+import 'page/trackcube.dart';
 import 'page/wifipass.dart';
 import 'page/wifiedit.dart';
 import 'page/filesbackup.dart';
@@ -18,7 +19,9 @@ import 'net/wifidiscovery.dart';
 import 'net/proc.dart';
 
 enum PageCode {
-    discovery, logbook, jumpinfo, tracklist, trackview, wifipass, wifiedit,
+    discovery, logbook, jumpinfo,
+    tracklist, trackview, trackcube,
+    wifipass, wifiedit,
     filesbackup, filesrestore
 }
 
@@ -30,6 +33,7 @@ final Map<PageCode, PageFunc> _pageMap = {
     PageCode.jumpinfo:  ([int ?index]) { return index != null ? PageJumpInfo(index: index) : null; },
     PageCode.tracklist: ([int ?i]) { return PageTrackList(); },
     PageCode.trackview: ([int ?i]) { return const PageTrackView(); },
+    PageCode.trackcube: ([int ?i]) { return PageTrackCube(); },
     PageCode.wifipass:  ([int ?i]) { return PageWiFiPass(); },
     PageCode.wifiedit:  ([int ?index]) { return index != null ? PageWiFiEdit(index: index) : null; },
     PageCode.filesbackup:([int ?i]) { return PageFilesBackup(); },
@@ -100,6 +104,7 @@ class Pager extends StatelessWidget {
             case PageCode.jumpinfo: return "Инфо о прыжке";
             case PageCode.tracklist:return "Треки";
             case PageCode.trackview:return "Трек на карте";
+            case PageCode.trackcube:return "Трек на карте";
             case PageCode.wifipass: return "WiFi-пароли";
             //case PageCode.wifiedit: return "Изменение сети";
             case PageCode.filesbackup:return "Файлы";
@@ -123,6 +128,7 @@ class Pager extends StatelessWidget {
                 return () { trklist.netRequest(); };
             
             case PageCode.trackview:
+            case PageCode.trackcube:
                 return () { trk.reload(); };
             
             case PageCode.wifipass:
@@ -143,6 +149,7 @@ class Pager extends StatelessWidget {
             case PageCode.logbook:
             case PageCode.tracklist:
             case PageCode.trackview:
+            case PageCode.trackcube:
             case PageCode.wifipass:
                 return true;
 

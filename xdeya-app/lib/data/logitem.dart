@@ -41,8 +41,10 @@ class LogItem {
     double get lat      => _log['lat'] / 10000000;
     double get lon      => _log['lon'] / 10000000;
     String get crd      => '[$lat,$lon]';
-    double get altspeed => _log['altspeed']/100;
     double get hspeed   => _log['hspeed']/100;
+
+    int    get alt      => _log['alt'];
+    double get altspeed => _log['altspeed']/100;
 
     String get time {
         int sec = (_log['tmoffset'] ?? 0) ~/ 1000;
