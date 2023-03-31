@@ -7,15 +7,14 @@ import 'logitem.dart';
 class TrkAreaView2D {
     final TrkArea area;
     final Size view;
-    TrkAreaView2D(this.area, this.view);
+    final double _mapx, _mapy;
+
+    TrkAreaView2D(this.area, this.view) :
+        _mapx = view.width / (area.lonMax - area.lonMin) / area.lonKoef,
+        _mapy = view.height / (area.latMax - area.latMin);
 
     double get mapx => mapy * area.lonKoef;
-    double get mapy =>
-        view.shortestSide / (
-            area.isMapVertical ?
-                (area.latMax - area.latMin) :
-                (area.lonMax - area.lonMin) / area.lonKoef
-        );
+    double get mapy => _mapx < _mapy ? _mapx : _mapy;
 
     double get padx => (view.width  - ((area.lonMax - area.lonMin) * mapx).abs()) / 2;
     double get pady => (view.height - ((area.latMax - area.latMin) * mapy).abs()) / 2;
@@ -32,6 +31,11 @@ class TrkPointTransform {
     final double mapz;
     final double height;
 
+    final double lonCenter;
+    final double latCenter;
+    final double xCenter;
+    final double yCenter;
+
     TrkPointTransform(TrkArea area, Size view) :
         begLon = -area.lonMin,
         begLat = -area.latMin,
@@ -41,9 +45,14 @@ class TrkPointTransform {
         mapx = TrkAreaView2D(area, view).mapx,
         mapy = TrkAreaView2D(area, view).mapy,
         mapz = view.longestSide / (area.altMax - area.altMin),
-        height = view.height;
+        height = view.height,
 
-    Vector3 map(LogItem ti) {
+        lonCenter   = area.lonCenter,
+        latCenter   = area.latCenter,
+        xCenter     = view.width / 2,
+        yCenter     = view.height / 2;
+
+    Vector3 mapLog(LogItem ti) {
         return
             Vector3(
                 (ti.lon + begLon) * mapx + begx,
@@ -51,6 +60,9 @@ class TrkPointTransform {
                 (ti.alt + begz) * mapz
             );
     }
+
+    double mapLon(double lon) => (lon - lonCenter) * mapx + xCenter;
+    double mapLat(double lat) => height - ((lat - latCenter) * mapy + yCenter);
 }
 
 /*//////////////////////////////////////
@@ -65,7 +77,7 @@ class TrkViewPoint {
 
     TrkViewPoint.byLogItem(LogItem log, TrkPointTransform transform) :
         ti = log,
-        pnt = transform.map(log);
+        pnt = transform.mapLog(log);
 
     dynamic operator [](String f) => ti[f];
 }

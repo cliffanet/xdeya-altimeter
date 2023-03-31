@@ -149,8 +149,8 @@ Worker<T> funcname(...arg...) {
 - всё, кроме viewmain - сделать динамическим
 
 приложение: вместо карты - 3D трек поверх картинки с куском карты
-    трек в виде 3d-линии
-    картинка карты: https://yandex.ru/dev/maps/staticapi/doc/1.x/dg/concepts/map_viewport.html
+-    трек в виде 3d-линии
+-    картинка карты: https://yandex.ru/dev/maps/staticapi/doc/1.x/dg/concepts/map_viewport.html
     по клику отображение инфы о промежуточной точке
     скроллер, выделяющий точку на треке
     воспроизведение - realtime движение точки по треку

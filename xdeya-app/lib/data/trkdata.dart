@@ -1,8 +1,5 @@
 
 import 'dart:io';
-import 'dart:ui' as ui;
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:file_picker/file_picker.dart';
@@ -12,6 +9,7 @@ import 'trklist.dart';
 import '../net/proc.dart';
 import 'logitem.dart';
 import 'trktypes.dart';
+import 'trkimg.dart';
 
 
 /*//////////////////////////////////////
@@ -37,21 +35,14 @@ class DataTrack {
     TrkArea ?_area;
     TrkArea ? get area => _area;
 
+    // trkimg
+    TrkImage ?_img;
+    TrkImage ? get img => _img;
+
     // trkCenter
     final ValueNotifier<LogItem ?> _center = ValueNotifier(null);
     LogItem ? get center => _center.value;
     ValueNotifier<LogItem ?> get notifyCenter => _center;
-
-    // mapImg
-    ui.Image ?_img;
-    ui.Image ? get img => _img;
-    Future<void> loadImg() async {
-        _img = null;
-        final data = await rootBundle.load('assets/map.jpg');
-        _img = await decodeImageFromList(data.buffer.asUint8List());
-        _sz.value ++;
-        _sz.value --;
-    }
 
     bool get isRecv => net.recieverContains({ 0x54, 0x55, 0x56 });
     Future<bool> Function() ?_reload;
@@ -63,7 +54,6 @@ class DataTrack {
     }
     Future<bool> netRequest(TrkItem trk, { Function() ?onLoad, Function(LogItem) ?onCenter }) async {
         _reload = () => netRequest(trk, onLoad:onLoad, onCenter:onCenter);
-        loadImg();
 
         return net.requestList(
             0x54, 'NNNTC', [trk.id, trk.jmpnum, trk.jmpkey, trk.tmbeg, trk.fnum],
@@ -78,6 +68,7 @@ class DataTrack {
                 _data.clear();
                 _seg.clear();
                 _area = null;
+                _img = null;
                 _sz.value = 0;
                 _center.value = null;
                 net.progmax = (_inf.fsize-32) ~/ 64;
@@ -119,6 +110,15 @@ class DataTrack {
             end: (pro) {
                 pro.rcvNext();
                 developer.log('trkdata end ${_data.length}');
+                if (_area != null) {
+                    _img = TrkImage(_area!);
+                    void loadimg() async {
+                        await _img!.loadImg();
+                        _sz.value ++;
+                    }
+                    loadimg();
+                    developer.log('query ${_img!.query}');
+                }
                 net.progmax = 0;
                 if (onLoad != null) onLoad();
             }

@@ -8,20 +8,60 @@ import 'dart:developer' as developer;
 import 'viewmatrix.dart';
 import '../data/trkdata.dart';
 import '../data/trkview.dart';
+import '../data/trkimg.dart';
 
 class CubePainter extends CustomPainter {
     final ViewMatrix view;
-    final ui.Image ? img;
     final void Function(Size size) ?onSize;
-    CubePainter({ required this.view, this.onSize, this.img });
+    CubePainter({ required this.view, this.onSize });
+
+    List<ui.Vertices> imgVertices(TrkImage img, TrkPointTransform tr) {
+        if (!img.imgLoaded) return [];
+
+        {
+            final lon = img.lon(0);
+            final lat = img.lat(0);
+            final x1 = tr.mapLon(lon);
+            final y1 = tr.mapLat(lat);
+            final o = Offset(x1, y1);
+        }
+        {
+            final lon = img.lon(img.width);
+            final lat = img.lat(img.height);
+            final x1 = tr.mapLon(lon);
+            final y1 = tr.mapLat(lat);
+            final o = Offset(x1, y1);
+        }
+
+        final lst = <ui.Vertices>[];
+        for (var v in img.vertex!) {
+            int n=0;
+            final vertices = Float32List(v.height * img.width * 2);
+            for (int y = 0; y < v.height; y++) {
+                for (int x = 0; x < img.width; x++) {
+                    final x1    = tr.mapLon( img.lon(x) );
+                    final y1    = tr.mapLat( img.lat(y+v.ybeg) );
+                    final p     = view.getPoint(Vector3(x1, y1, tr.begz*tr.mapz));
+                    vertices[n]     = p.dx;
+                    vertices[n+1]   = p.dy;
+                    n += 2;
+                }
+            }
+
+            lst.add(
+                ui.Vertices.raw(
+                    VertexMode.triangles,
+                    vertices,
+                    colors:     v.colors,
+                    indices:    v.indices
+                )
+            );
+        }
+        return lst;
+    }
 
     @override
     void paint(Canvas canvas, Size size) {
-        //ByteData data = img.toByteData();
-        //if (img != null) {
-        //    canvas.drawImage(img!, const Offset(100.0, 0.0), Paint());
-       // }
-        // Применение матрицы вида
         if (onSize != null) {
             onSize!(size);
         }
@@ -31,8 +71,18 @@ class CubePainter extends CustomPainter {
             return;
         }
 
-        // Рисование 3D линии
+        canvas.save();
+        
+        // коэфициенты преобразования
         final tr = TrkPointTransform(trk.area!, size);
+        
+        if ((trk.img != null) && trk.img!.imgLoaded) {
+            for (final v in imgVertices(trk.img!, tr)) {
+                canvas.drawVertices(v, BlendMode.src, Paint());
+            }
+        }
+
+        // Рисование 3D линии
         final data = trk.seg.where((s) => s.satValid).map((s) => TrkViewSeg.bySeg(s, tr)).toList();
         for (var seg in data) {
             if (seg.pnt.isEmpty) {
@@ -50,60 +100,7 @@ class CubePainter extends CustomPainter {
             }
         }
 
-        final paint = Paint()
-            ..color = Colors.black
-            ..strokeWidth = 3;
-        canvas.drawLine(
-            view.getPoint(
-                Vector3(
-                    size.width / 2 - 50,
-                    size.height / 2 - 50,
-                    -50
-                )
-            ),
-            view.getPoint(
-                Vector3(
-                    size.width / 2 + 50,
-                    size.height / 2 - 50,
-                    -50
-                )
-            ),
-            paint,
-        );
-        canvas.drawLine(
-            view.getPoint(
-                Vector3(
-                    size.width / 2 + 50,
-                    size.height / 2 - 50,
-                    -50
-                )
-            ),
-            view.getPoint(
-                Vector3(
-                    size.width / 2 + 50,
-                    size.height / 2 + 50,
-                    -50
-                )
-            ),
-            paint,
-        );
-        canvas.drawLine(
-            view.getPoint(
-                Vector3(
-                    size.width / 2 + 50,
-                    size.height / 2 + 50,
-                    -50
-                )
-            ),
-            view.getPoint(
-                Vector3(
-                    size.width / 2 - 50,
-                    size.height / 2 + 50,
-                    -50
-                )
-            ),
-            paint,
-        );
+        canvas.restore();
     }
 
     @override

@@ -50,7 +50,7 @@ class PageTrackList extends StatelessWidget {
                                     onTap: () {
                                         developer.log('tap on: $index');
                                         trk.netRequest(trkinfo);
-                                        Pager.push(context, PageCode.trackview);
+                                        Pager.push(context, PageCode.trackcube);
                                     },
                                     trailing: const SizedBox.shrink(),
                                     title: Text('трэк: ${trkinfo.dtBeg}'),

@@ -77,13 +77,13 @@ class NetProc {
         if (_sockchk()) {
             return true;
         }
-        if ((_autokey == 0) ||
+        if ((!_istest && (_autokey == 0)) ||
             (_autoip == null) ||
             (_autoport == null)) {
             return false;
         }
 
-        return await start(_autoip!, _autoport!);
+        return await _process(_autoip!, _autoport!);
     }
 
     // start / stop
@@ -484,7 +484,7 @@ class NetProc {
             return false;
         }
         if (_istest) {
-            _autokey    = 1;
+            _autokey    = 0;
             _autoip     = _sock!.remoteAddress;
             _autoport   = _sock!.remotePort;
         }

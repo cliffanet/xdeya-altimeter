@@ -41,6 +41,7 @@ class ViewMatrix {
 
     // матрица преобразования
     Matrix4 _view = Matrix4.identity();
+    Matrix4 get matr => _view;
     void _updView() {
         _view = Matrix4.identity();
         _view
