@@ -90,14 +90,18 @@ class TrkViewSeg {
         state = seg.state,
         pnt = seg.data.map((p) => TrkViewPoint.byLogItem(p, transform)).toList();
     
-    Color get color =>
-                (state == 's') || (state == 't') ? // takeoff
-                    Color.fromRGBO(0x2e, 0x2f, 0x30, 1.0) :
-                state == 'f' ? // freefall
-                    Color.fromRGBO(0x73, 0x18, 0xbf, 1.0) :
-                (state == 'c') || (state == 'l') ? // canopy
-                    Color.fromRGBO(0x00, 0x52, 0xef, 1.0) :
-                    Color.fromRGBO(0xfc, 0xb6, 0x15, 1.0);
+    Color get color => trkColor(state);
+}
+
+Color trkColor(String state) {
+    return
+        (state == 's') || (state == 't') ? // takeoff
+            const Color.fromRGBO(0x2e, 0x2f, 0x30, 1.0) :
+        state == 'f' ? // freefall
+            const Color.fromRGBO(0x73, 0x18, 0xbf, 1.0) :
+        (state == 'c') || (state == 'l') ? // canopy
+            const Color.fromRGBO(0x00, 0x52, 0xef, 1.0) :
+            const Color.fromRGBO(0xfc, 0xb6, 0x15, 1.0);
 }
 
 

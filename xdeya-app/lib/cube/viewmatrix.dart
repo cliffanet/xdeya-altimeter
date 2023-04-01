@@ -3,9 +3,42 @@ import 'package:vector_math/vector_math_64.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 
+class ViewTransform {
+    double rx = 0;
+    double ry = 0;
+    double rz = 0;
+    double scale = 1.0;
+
+    ViewTransform() { reset(); }
+
+    void reset() {
+        rx = 0;
+        ry = 0;
+        rz = 0;
+        scale = 0.9;
+    }
+}
+
 class ViewMatrix {
     final _notify = ValueNotifier<int>(0);
     get notify => _notify;
+
+    // pos - позиция в треке. Храним тут, т.к. неважно, где,
+    // а тут мы сможем _notify обновлять
+    int _pos = 0;
+    int get pos => _pos;
+    set pos(int p) {
+        if (_pos == p) return;
+        _pos = p;
+        _notify.value ++;
+    }
+    bool _posVisible = false;
+    bool get posVisible => _posVisible;
+    set posVisible(v) {
+        if (_posVisible == v) return;
+        _posVisible = v;
+        _notify.value ++;
+    }
 
     // размер viewport
     var _size = Size.zero;
@@ -19,7 +52,7 @@ class ViewMatrix {
     }
 
     // вращение
-    final _trns = Vector3(0.0, 0.0, .9); // x, y, scale
+    final _trns = ViewTransform(); // x, y, scale
     var _pnt = Offset.zero;
 
     void scaleStart(ScaleStartDetails details) {
@@ -30,9 +63,10 @@ class ViewMatrix {
         final delta = details.focalPoint - _pnt;
         _pnt = details.focalPoint;
 
-        _trns.x += delta.dx / 100.0;
-        _trns.y += delta.dy / 100.0;
-        _trns.z *= details.scale;
+        _trns.rx += delta.dx / 100.0;
+        _trns.ry += delta.dy / 100.0;
+        _trns.rz += details.rotation;
+        _trns.scale *= details.scale;
 
         //developer.log('scaleUpdate: ${delta} $_trns');
         _updView();
@@ -48,11 +82,16 @@ class ViewMatrix {
             // смещаем центр координат в центр нашей фигуры
             ..translate(_size.width/2, _size.height/2)
             // делаем нужные преобразования
-            ..rotateX(-_trns.y)
-            ..rotateY(_trns.x)
-            ..scale(_trns.z)
+            ..rotateZ(_trns.rz)
+            ..rotateX(-_trns.ry)
+            ..rotateY(_trns.rx)
+            ..scale(_trns.scale)
             // смещаем центр координат обратно
             ..translate(-_size.width/2, -_size.height/2);
+    }
+    void reset() {
+        _trns.reset();
+        _updView();
     }
 
     Offset getPoint(Vector3 pnt) {
