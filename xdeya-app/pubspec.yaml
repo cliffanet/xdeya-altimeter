@@ -43,7 +43,7 @@ dependencies:
   webview_flutter: ^3.0.4
   loading_animation_widget: ^1.2.0+3
   udp: ^5.0.3
-  flutter_launcher_icons: ^0.11.0
+  flutter_launcher_icons: ^0.12.0
   masked_text: ^1.1.2
   flutter_file_dialog: ^3.0.0
   file_picker: ^5.2.5
@@ -110,6 +110,7 @@ flutter:
 flutter_icons:
   android: true
   ios: true
+  image_path_ios: "icon/xdeya.noalpha.png"
   macos:
     generate: true
     image_path: "icon/xdeya.x0.805.png"
