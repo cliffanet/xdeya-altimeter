@@ -2,7 +2,6 @@
 
 #include "base.h"
 
-#if HWVER >= 5
 #include "main.h"
 
 #include "../log.h"
@@ -76,5 +75,3 @@ class ViewOperation : public View {
 void viewOperation(WrkProc<WrkOperation> &wrk, const char *titlep) {
     viewOpen<ViewOperation>(wrk, titlep);
 }
-
-#endif // HWVER >= 5

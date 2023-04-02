@@ -176,7 +176,9 @@ class ViewMenuFile : public ViewMenu {
             
             switch (sel()) {
                 case 0:
+#if HWVER >= 5
                     operRun<WrkBkpSDall>(PTXT(BKPSD_ALL));
+#endif // HWVER >= 5
                     return;
                 /*
                 case 1:
