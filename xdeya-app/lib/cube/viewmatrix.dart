@@ -53,11 +53,15 @@ class ViewMatrix {
 
     // вращение
     final _trns = ViewTransform(); // x, y, scale
+    ViewTransform get trns => _trns;
     var _pnt = Offset.zero;
 
+    double _rzbeg = 0, _scbeg = 0;
     void scaleStart(ScaleStartDetails details) {
         // Сохранение начальных значений
         _pnt = details.focalPoint;
+        _rzbeg = _trns.rz;
+        _scbeg = _trns.scale;
     }
     void scaleUpdate(ScaleUpdateDetails details) {
         final delta = details.focalPoint - _pnt;
@@ -65,8 +69,8 @@ class ViewMatrix {
 
         _trns.rx += delta.dx / 100.0;
         _trns.ry += delta.dy / 100.0;
-        _trns.rz += details.rotation;
-        _trns.scale *= details.scale;
+        _trns.rz = _rzbeg + details.rotation;
+        _trns.scale = _scbeg * details.scale;
 
         //developer.log('scaleUpdate: ${delta} $_trns');
         _updView();
