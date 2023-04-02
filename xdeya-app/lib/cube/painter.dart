@@ -116,7 +116,7 @@ class CubePainter extends CustomPainter {
             // info
             final text = TextPainter(
                 text: TextSpan(
-                    text: 'верт: ${ti.dscrVert}\nгор: ${ti.dscrHorz}\n${ti.dscrKach}',
+                    text: '${ti.time}\nверт: ${ti.dscrVert}\nгор: ${ti.dscrHorz}\n${ti.dscrKach}',
                     style: const TextStyle(
                         color: Colors.black,
                         fontSize: 10,
@@ -133,7 +133,7 @@ class CubePainter extends CustomPainter {
             );
             final paintInfo = Paint()
                     ..color = Colors.white.withAlpha(100)
-                    ..maskFilter = MaskFilter.blur(BlurStyle.normal, convertRadiusToSigma(2));;
+                    ..maskFilter = MaskFilter.blur(BlurStyle.normal, convertRadiusToSigma(2));
             canvas.drawRRect(rect, paintInfo);
 
             // paint info
