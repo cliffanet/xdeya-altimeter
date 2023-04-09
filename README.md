@@ -50,7 +50,7 @@
 
 ![](doc/app.png "Приложение")
 
-![](doc/demo.mp4 "demo")
+![](doc/demo.mp4 "demo" | width=100)
 
 ***
 ## Контакты
