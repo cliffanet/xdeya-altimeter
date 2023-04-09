@@ -50,7 +50,7 @@
 
 ![](doc/app.png "Приложение")
 
-<video width="250" controls title="demo">
+<video width="475" controls title="demo">
   <source src="doc/demo.mp4" type="video/mp4">
 </video>
 
