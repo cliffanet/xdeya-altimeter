@@ -50,7 +50,10 @@
 
 ![](doc/app.png "Приложение")
 
-![](doc/demo.mp4 "demo")
+<video width="250" controls title="demo">
+  <source src="doc/demo.mp4" type="video/mp4">
+</video>
+
 
 ***
 ## Контакты
