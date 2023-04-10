@@ -25,7 +25,7 @@ class TrkImage {
             if (latMax < area.latMax) continue;
             final lonMax = area.lonCenter + z2dx(z, area.lonKoef)/2;
             if (lonMax < area.lonMax) continue;
-            return z;
+            return z-1;
         }
         return 0;
     }
