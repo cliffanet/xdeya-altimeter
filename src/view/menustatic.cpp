@@ -546,30 +546,111 @@ static const menu_el_t menugpson[] {
         .showval    = [] (char *txt) { valYes(txt, cfg.d().navoffland); },
     },
     {   // Режим GPS/GLONASS
-        .name       = PTXT(MENU_NAV_MODE),
+        .name       = PTXT(MENU_NAV_GNSS),
         .enter      = NULL,
         .showval    = [] (char *txt) {
-            switch (cfg.d().navmode) {
+            switch (cfg.d().navgnss) {
                 case 0:
-                case 3: strcpy_P(txt, PTXT(MENU_NAV_MODE_GLONGPS)); break;
-                case 1: strcpy_P(txt, PTXT(MENU_NAV_MODE_GLONASS)); break;
-                case 2: strcpy_P(txt, PTXT(MENU_NAV_MODE_GPS)); break;
+                case 3: strcpy_P(txt, PTXT(MENU_NAV_GNSS_GLONGPS)); break;
+                case 1: strcpy_P(txt, PTXT(MENU_NAV_GNSS_GLONASS)); break;
+                case 2: strcpy_P(txt, PTXT(MENU_NAV_GNSS_GPS)); break;
                 default: *txt = 0;
             }
         },
         .edit       = [] (int val) {
             if (val > 0) {
-                cfg.set().navmode =
-                        cfg.d().navmode >= 3 ?
-                            1 : cfg.d().navmode+1;
+                cfg.set().navgnss =
+                        cfg.d().navgnss >= 3 ?
+                            1 : cfg.d().navgnss+1;
             }
             else
             if (val < 0) {
-                cfg.set().navmode =
-                        cfg.d().navmode <= 1 ?
-                            3 : cfg.d().navmode-1;
+                cfg.set().navgnss =
+                        cfg.d().navgnss <= 1 ?
+                            3 : cfg.d().navgnss-1;
             }
-            gpsUpdateMode();
+            gpsUpdateCfgGNSS();
+        },
+    },
+    {   // Режим Nav-model
+        .name       = PTXT(MENU_NAV_MODEL),
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            uint8_t m =
+                cfg.d().navmodel & 0x01 ?
+                    (cfg.d().navmodel >> 1) & 0x0f :
+                    NAV_MODEL_AIRBORN_2G;
+            switch (m) {
+                case NAV_MODEL_PORTABLE:    strcpy_P(txt, PTXT(MENU_NAV_MODEL_PORTABLE)); break;
+                case NAV_MODEL_STATIONARY:  strcpy_P(txt, PTXT(MENU_NAV_MODEL_STATIONARY)); break;
+                case NAV_MODEL_PEDESTRIAN:  strcpy_P(txt, PTXT(MENU_NAV_MODEL_PEDESTRIAN)); break;
+                case NAV_MODEL_AUTOMOTIVE:  strcpy_P(txt, PTXT(MENU_NAV_MODEL_AUTOMOTIVE)); break;
+                case NAV_MODEL_SEA:         strcpy_P(txt, PTXT(MENU_NAV_MODEL_SEA)); break;
+                case NAV_MODEL_AIRBORN_1G:  strcpy_P(txt, PTXT(MENU_NAV_MODEL_AIRBORN_1G)); break;
+                case NAV_MODEL_AIRBORN_2G:  strcpy_P(txt, PTXT(MENU_NAV_MODEL_AIRBORN_2G)); break;
+                case NAV_MODEL_AIRBORN_4G:  strcpy_P(txt, PTXT(MENU_NAV_MODEL_AIRBORN_4G)); break;
+                case NAV_MODEL_WRISTWORN:   strcpy_P(txt, PTXT(MENU_NAV_MODEL_WRISTWORN)); break;
+                case NAV_MODEL_BIKE:        strcpy_P(txt, PTXT(MENU_NAV_MODEL_BIKE)); break;
+                default: *txt = 0;
+            }
+        },
+        .edit       = [] (int val) {
+            int8_t m =
+                cfg.d().navmodel & 0x01 ?
+                    (cfg.d().navmodel >> 1) & 0x0f :
+                    NAV_MODEL_AIRBORN_2G;
+            if (val > 0) {
+                m ++;
+                if (m == 1) m++;
+                if (m > NAV_MODEL_BIKE) m = 0;
+            }
+            else
+            if (val < 0) {
+                m --;
+                if (m == 1) m--;
+                if (m < 0) m = NAV_MODEL_BIKE;
+            }
+            cfg.set().navmodel =
+                (cfg.d().navmodel & 0xe0) |
+                ((m & 0x0f) << 1) | 0x01;
+            CONSOLE("navmodel: 0x%02x 0x%02x", m, cfg.d().navmodel);
+            gpsUpdateCfgModel();
+        },
+    },
+    {   // Режим Nav-FixMode
+        .name       = PTXT(MENU_NAV_FIXMODE),
+        .enter      = NULL,
+        .showval    = [] (char *txt) {
+            uint8_t f = (cfg.d().navmodel >> 6) & 0x03;
+            switch (f) {
+                case 0:  strcpy_P(txt, PTXT(MENU_NAV_FIXMODE_AUTO));   break;
+                case 1:  strcpy_P(txt, PTXT(MENU_NAV_FIXMODE_2D));     break;
+                case 2:  strcpy_P(txt, PTXT(MENU_NAV_FIXMODE_3D));     break;
+                default: *txt = 0;
+            }
+        },
+        .edit       = [] (int val) {
+            int8_t f = (cfg.d().navmodel >> 6) & 0x03;
+            if ((cfg.d().navmodel & 0x01) == 0) {
+                cfg.set().navmodel =
+                    (cfg.d().navmodel & 0xe0) |
+                    (NAV_MODEL_AIRBORN_2G << 1) | 0x01;
+            }
+
+            if (val > 0) {
+                f ++;
+                if (f > 2) f = 0;
+            }
+            else
+            if (val < 0) {
+                f --;
+                if (f < 0) f = 2;
+            }
+            cfg.set().navmodel =
+                (cfg.d().navmodel & 0x3F) |
+                ((f & 0x03) << 6) | 0x01;
+            CONSOLE("navfixmode: 0x%02x 0x%02x", f, cfg.d().navmodel);
+            gpsUpdateCfgModel();
         },
     },
 };

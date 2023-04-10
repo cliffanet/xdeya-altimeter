@@ -91,6 +91,19 @@ typedef enum {
     NAV_STATE_OK
 } gps_state_t;
 
+typedef enum {
+    NAV_MODEL_PORTABLE = 0,
+    NAV_MODEL_STATIONARY = 2,
+    NAV_MODEL_PEDESTRIAN,
+    NAV_MODEL_AUTOMOTIVE,
+    NAV_MODEL_SEA,
+    NAV_MODEL_AIRBORN_1G,
+    NAV_MODEL_AIRBORN_2G,
+    NAV_MODEL_AIRBORN_4G,
+    NAV_MODEL_WRISTWORN,
+    NAV_MODEL_BIKE,
+} nav_model_t;
+
 class UbloxGpsProto;
 
 void naviInit();
@@ -106,7 +119,8 @@ void gpsProcess();
 
 bool gpsColdRestart();
 
-bool gpsUpdateMode();
+bool gpsUpdateCfgGNSS();
+bool gpsUpdateCfgModel();
 
 void gpsDirectTgl();
 bool gpsDirect();

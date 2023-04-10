@@ -66,10 +66,13 @@ typedef struct __attribute__((__packed__)) {
     
     int16_t altcorrect = 0;                     // Превышение площадки приземления
     
-    uint8_t navmode = 3;                        // режим навигации - gps/glonass
+    uint8_t navgnss = 3;                        // режим навигации - gps/glonass
+    uint8_t navmodel = 0;                       // режим навигации - model
     
+    uint8_t _1 = 0;
+    uint8_t _2 = 0;
+    uint8_t _3 = 0;
     uint8_t net = 0;                            // net: 0x1 = bluetooth, 0x2 = wifi
-    uint32_t _2 = 0;
 } cfg_main_t;
 
 template <class T>

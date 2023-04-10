@@ -203,32 +203,12 @@ public:
     	};
         gpsnd(UBX_CFG, UBX_CFG_RATE, cfg_mrate);
     WPRC_RUN
-        
-        const struct {
-        	uint16_t mask;              // Only masked parameters will be applied
-        	uint8_t  dynModel;          // Dynamic platform model
-        	uint8_t  fixMode;           // Position fixing mode
-        	int32_t  fixedAlt;          // Fixed altitude (MSL) for 2D mode       (m)
-        	uint32_t fixedAltVar;       // Fixed altitude variance for 2D mode    (m^2)
-        	int8_t   minElev;           // Minimum elevation for satellite        (deg)
-        	uint8_t  drLimit;           // Maximum time to perform dead reckoning (s)
-        	uint16_t pDop;              // Position DOP mask
-        	uint16_t tDop;              // Time DOP mask
-        	uint16_t pAcc;              // Position accuracy mask                 (m)
-        	uint16_t tAcc;              // Time accuracy mask                     (m)
-        	uint8_t  staticHoldThresh;  // Static hold threshold                  (cm/s)
-        	uint8_t  res1;              // Reserved, set to 0
-        	uint32_t res2;              // Reserved, set to 0
-        	uint32_t res3;              // Reserved, set to 0
-        	uint32_t res4;              // Reserved, set to 0
-        } cfg_nav5 = {
-    		.mask       = 0x0001,       // Apply dynamic model settings
-    		.dynModel   = 7             // Airborne with < 1 g acceleration
-    	};
-        gpsnd(UBX_CFG, UBX_CFG_NAV5, cfg_nav5);
+
+        if (!gpsUpdateCfgModel())
+            return errsnd();
     WPRC_RUN
         
-        if (!gpsUpdateMode())
+        if (!gpsUpdateCfgGNSS())
             return errsnd();
     WPRC_RUN
         
@@ -520,6 +500,33 @@ static void gpsRecvGnss(UbloxGpsProto &gps) {
         n++;
     }
 }
+
+static void gpsRecvModel(UbloxGpsProto &gps) {
+    struct {
+        uint16_t mask;              // Only masked parameters will be applied
+        uint8_t  dynModel;          // Dynamic platform model
+        uint8_t  fixMode;           // Position fixing mode
+        int32_t  fixedAlt;          // Fixed altitude (MSL) for 2D mode       (m)
+        uint32_t fixedAltVar;       // Fixed altitude variance for 2D mode    (m^2)
+        int8_t   minElev;           // Minimum elevation for satellite        (deg)
+        uint8_t  drLimit;           // Maximum time to perform dead reckoning (s)
+        uint16_t pDop;              // Position DOP mask
+        uint16_t tDop;              // Time DOP mask
+        uint16_t pAcc;              // Position accuracy mask                 (m)
+        uint16_t tAcc;              // Time accuracy mask                     (m)
+        uint8_t  staticHoldThresh;  // Static hold threshold                  (cm/s)
+        uint8_t  res1;              // Reserved, set to 0
+        uint32_t res2;              // Reserved, set to 0
+        uint32_t res3;              // Reserved, set to 0
+        uint32_t res4;              // Reserved, set to 0
+    } m;
+
+    if (!gps.bufcopy(m))
+        return;
+    
+    CONSOLE("Model config: dynModel=%u, fixMode=%u",
+        m.dynModel, m.fixMode);
+}
 #endif // FWVER_DEBUG
 
 static void gpsDirectToSerial(uint8_t c) {
@@ -587,7 +594,7 @@ bool gpsColdRestart() {
 /* ------------------------------------------------------------------------------------------- *
  *  Обновление режима GPS/GLONASS
  * ------------------------------------------------------------------------------------------- */
-bool gpsUpdateMode() {
+bool gpsUpdateCfgGNSS() {
     CONSOLE("update gnss");
 
     typedef struct {
@@ -630,16 +637,16 @@ bool gpsUpdateMode() {
         .glon    = {
             .gnssId     = 0x06,
             .resTrkCh   = 8,
-            .maxTrkCh   = static_cast<uint8_t>(cfg.d().navmode & 0x2U ? 16 : 32),
+            .maxTrkCh   = static_cast<uint8_t>(cfg.d().navgnss & 0x2U ? 16 : 32),
             ._          = 0,
-            .flags      = (0x01<<16) | ((cfg.d().navmode & 0x1) > 0 ? 0x1U : 0x0U),
+            .flags      = (0x01<<16) | ((cfg.d().navgnss & 0x1) > 0 ? 0x1U : 0x0U),
         },
         .gps    = {
             .gnssId     = 0x00,
             .resTrkCh   = 8,
-            .maxTrkCh   = static_cast<uint8_t>(cfg.d().navmode & 0x1U ? 16U : 32U),
+            .maxTrkCh   = static_cast<uint8_t>(cfg.d().navgnss & 0x1U ? 16U : 32U),
             ._          = 0,
-            .flags      = (0x01<<16) | ((cfg.d().navmode & 0x2) > 0 ? 0x1U : 0x0U),
+            .flags      = (0x01<<16) | ((cfg.d().navgnss & 0x2) > 0 ? 0x1U : 0x0U),
         }
     };
     
@@ -649,6 +656,50 @@ bool gpsUpdateMode() {
 #ifdef FWVER_DEBUG
     CONSOLE("get gnss");
     return gps.get(UBX_CFG, UBX_CFG_GNSS, &gpsRecvGnss);
+#else
+    return true;
+#endif // FWVER_DEBUG
+}
+
+bool gpsUpdateCfgModel() {
+    CONSOLE("update model");
+        
+    struct {
+        uint16_t mask;              // Only masked parameters will be applied
+        uint8_t  dynModel;          // Dynamic platform model
+        uint8_t  fixMode;           // Position fixing mode
+        int32_t  fixedAlt;          // Fixed altitude (MSL) for 2D mode       (m)
+        uint32_t fixedAltVar;       // Fixed altitude variance for 2D mode    (m^2)
+        int8_t   minElev;           // Minimum elevation for satellite        (deg)
+        uint8_t  drLimit;           // Maximum time to perform dead reckoning (s)
+        uint16_t pDop;              // Position DOP mask
+        uint16_t tDop;              // Time DOP mask
+        uint16_t pAcc;              // Position accuracy mask                 (m)
+        uint16_t tAcc;              // Time accuracy mask                     (m)
+        uint8_t  staticHoldThresh;  // Static hold threshold                  (cm/s)
+        uint8_t  res1;              // Reserved, set to 0
+        uint32_t res2;              // Reserved, set to 0
+        uint32_t res3;              // Reserved, set to 0
+        uint32_t res4;              // Reserved, set to 0
+    } cfg_nav5 = {
+        .mask       = 0x01 | 0x04,  // Apply dynamic model settings
+    };
+
+    cfg_nav5.dynModel =
+                cfg.d().navmodel & 0x01 ?
+                    (cfg.d().navmodel >> 1) & 0x0f :
+                    NAV_MODEL_AIRBORN_2G;
+    
+    cfg_nav5.fixMode = (cfg.d().navmodel >> 6) & 0x03;
+    if (cfg_nav5.fixMode == 0)
+        cfg_nav5.fixMode = 0x03;
+    
+    if (!gps.send(UBX_CFG, UBX_CFG_NAV5, cfg_nav5))
+        return false;
+
+#ifdef FWVER_DEBUG
+    CONSOLE("get model");
+    return gps.get(UBX_CFG, UBX_CFG_NAV5, &gpsRecvModel);
 #else
     return true;
 #endif // FWVER_DEBUG
