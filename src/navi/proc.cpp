@@ -659,6 +659,13 @@ bool gpsUpdateMode() {
  * ------------------------------------------------------------------------------------------- */
 void gpsDirectTgl() {
     direct = !direct;
+
+#ifndef FWVER_DEBUG
+    if (direct)
+        Serial.begin(115200);
+    else
+        Serial.end();
+#endif // not FWVER_DEBUG
 }
 bool gpsDirect() { return direct; }
 

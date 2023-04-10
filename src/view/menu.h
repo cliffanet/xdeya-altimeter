@@ -14,11 +14,11 @@
 #endif
 
 #if defined(FWVER_LANG) && (FWVER_LANG == 'R')
-#define MENUSZ_NAME 40
-#define MENUSZ_VAL 30
+#define MENUSZ_NAME 96
+#define MENUSZ_VAL 32
 #else
-#define MENUSZ_NAME 20
-#define MENUSZ_VAL 15
+#define MENUSZ_NAME 48
+#define MENUSZ_VAL 16
 #endif
 
 #define MENU_TIMEOUT    15000
