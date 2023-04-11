@@ -72,4 +72,6 @@
 #define WIFIPASS_FILE   "wifi.txt"
 #define VERAVAIL_FILE   "veravail.txt"
 
+#define WIFI_PASS_DEFAULT   "z12344321"
+
 #endif // _def_H

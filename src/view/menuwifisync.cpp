@@ -255,8 +255,10 @@ class ViewMenuWifiNet : public ViewMenu {
             else {
                 char pass[64];
                 if (!wifiPassFind(n->ssid, pass)) {
-                    menuFlashP(PTXT(WIFI_NEEDPASSWORD));
-                    return;
+                    //menuFlashP(PTXT(WIFI_NEEDPASSWORD));
+                    //return;
+                    strncpy_P(pass, PSTR(WIFI_PASS_DEFAULT), sizeof(pass));
+                    pass[sizeof(pass)-1] = '\0';
                 }
                 
                 netopen(n->ssid, pass);
