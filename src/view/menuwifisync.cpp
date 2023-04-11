@@ -194,6 +194,9 @@ class ViewMenuWifiNet : public ViewMenu {
             setSize(n);
             wifiStop();
 
+            if (wifiCliIsRun())
+                wifiCliStop();
+
             _isinit = false;
         }
         
