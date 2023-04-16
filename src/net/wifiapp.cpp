@@ -31,6 +31,7 @@ class _wifiApp : public Wrk {
         const char  *m_ssid, *m_pass;
         int         m_bcast, m_srvsock;
         uint16_t    m_srvport;
+        uint16_t    m_off;
     public:
         _wifiApp(const char *ssid, const char *pass) :
             m_cancel(false),
@@ -38,7 +39,8 @@ class _wifiApp : public Wrk {
             m_timeout(0),
             m_bcast(0),
             m_srvsock(0),
-            m_srvport(0)
+            m_srvport(0),
+            m_off(0)
         {
             // Приходится копировать, т.к. к моменту,
             // когда мы этими строками воспользуемся, их источник будет удалён.
@@ -209,6 +211,21 @@ class _wifiApp : public Wrk {
                 CONSOLE("request connection from: %d.%d.%d.%d : %d", ip[0], ip[1], ip[2], ip[3], ntohs(addr.sin_port));
                 netApp(new NetSocketClient<WiFiClient>(WiFiClient(sock)));
             }
+
+            if (netAppCount() == 0) {
+                if (m_off > 0) {
+                    m_off --;
+                    if (m_off == 0) {
+                        CONSOLE("No clients log time, shutdown network");
+                        return END;
+                    }
+                }
+                else
+                    m_off = 10 * 60 * 10;
+            }
+            else
+            if (m_off > 0)
+                m_off = 0;
         }
         
     WPRC(DLY);
