@@ -20,6 +20,11 @@
 
 #define ERR(s)                  END
 
+static struct {
+    uint32_t ip;
+    uint16_t port;
+} last = { 0, 0 };
+
 class _wifiApp : public Wrk {
         bool        m_cancel, m_wifi;
         uint16_t    m_timeout;
@@ -100,7 +105,16 @@ class _wifiApp : public Wrk {
         if (wst == WIFI_STA_CONNECTED) {
             if (!m_wifi) {
                 m_wifi = true;
-                CONSOLE("wifi ok");
+                auto ip = wifiIP();
+                CONSOLE("wifi ok: %u.%u.%u.%u", ip.bytes[0], ip.bytes[1], ip.bytes[2], ip.bytes[3]);
+                if ((last.ip == 0) || (last.port == 0) || (last.ip != ip.dword)) {
+                    last.ip = ip.dword;
+                    last.port = 35005 + (esp_random() % 256);
+                    CONSOLE("Generated new port: %u", last.port);
+                }
+                else {
+                    CONSOLE("Using last port: %u", last.port);
+                }
                 m_timeout = 0;
             }
         }
@@ -168,7 +182,7 @@ class _wifiApp : public Wrk {
             int reuse = 1;
             setsockopt(m_srvsock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
             
-            m_srvport = 35005 + (esp_random() % 256);
+            m_srvport = last.port;
             struct sockaddr_in srv;
             srv.sin_family = AF_INET;
             srv.sin_addr.s_addr = htonl(INADDR_ANY);
