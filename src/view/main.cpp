@@ -140,5 +140,10 @@ void setViewMain(int8_t m, bool save) {
             CONSOLE("click to nav");
             setViewMainNav();
             break;
+        
+        case MODE_MAIN_NAVPATH:
+            CONSOLE("click to navpath");
+            setViewMainNavPath();
+            break;
     }
 }

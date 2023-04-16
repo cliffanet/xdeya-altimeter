@@ -20,6 +20,8 @@
 #define MODE_MAIN_ALT       2
 // Экран отображения навигации
 #define MODE_MAIN_NAV       3
+// Экран отображения пройденного пути
+#define MODE_MAIN_NAVPATH   4
 
 class ViewMain : public View {
     public:
@@ -36,5 +38,8 @@ void setViewMain(int8_t mode = MODE_MAIN_LAST, bool save = true);
 void setViewMainAltNav();
 void setViewMainAlt();
 void setViewMainNav();
+void setViewMainNavPath();
+
+void navPathAdd(int mode, bool valid, int32_t lon, int32_t lat);
 
 #endif // _view_main_H

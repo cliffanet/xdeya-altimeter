@@ -27,6 +27,7 @@
 #define TXT_MENU_MAINPAGE_ALTNAV    "Nav+Alt"
 #define TXT_MENU_MAINPAGE_ALT       "Alti"
 #define TXT_MENU_MAINPAGE_NAV       "Navi"
+#define TXT_MENU_MAINPAGE_NAVPATH   "Path"
 
 #define TXT_MENU_POINT_CURRENT      "Current"
 #define TXT_MENU_POINT_NOTUSED      " (no used)"

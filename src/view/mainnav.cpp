@@ -378,7 +378,7 @@ class ViewMainNav : public ViewMain {
             if (btn != BTN_SEL)
                 return;
     
-            setViewMain(MODE_MAIN_ALT);
+            setViewMain(MODE_MAIN_NAVPATH);
         }
         
         void draw(U8G2 &u8g2) {

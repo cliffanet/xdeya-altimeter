@@ -190,6 +190,7 @@ static void valDsplAuto(char *txt, int8_t val) {
         case MODE_MAIN_ALTNAV:  strcpy_P(txt, PTXT(MENU_MAINPAGE_ALTNAV)); break;
         case MODE_MAIN_ALT:     strcpy_P(txt, PTXT(MENU_MAINPAGE_ALT)); break;
         case MODE_MAIN_NAV:     strcpy_P(txt, PTXT(MENU_MAINPAGE_NAV)); break;
+        case MODE_MAIN_NAVPATH: strcpy_P(txt, PTXT(MENU_MAINPAGE_NAVPATH)); break;
     }
 }
 
