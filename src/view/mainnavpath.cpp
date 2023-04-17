@@ -17,6 +17,7 @@ class NavPath {
     int32_t m_lonmax = 0;
     int32_t m_latmin = 0;
     int32_t m_latmax = 0;
+    double m_ang = 0;
 
     typedef struct {
         bool isvalid;
@@ -48,6 +49,8 @@ public:
     bool lastValid()    const {
         return (data.size() > 0) && (data.back().isvalid);
     }
+
+    double ang()        const { return m_ang; }
 
     // коэфициенты для преобразования градусов в метры
     uint64_t klon() const {
@@ -86,13 +89,17 @@ public:
         };
     }
 
-    void add(int mode, bool valid, int32_t lon, int32_t lat) {
+    void add(int mode, bool valid, int32_t lon, int32_t lat, double ang) {
         bool isnew = m_mode != mode;
         if (isnew) {
             data.clear();
             m_mode = mode;
             m_frstmode = valid;
+            m_ang = 0;
         }
+
+        if (valid)
+            m_ang = ang;
 
         if (m_frstmode && (data.size() == data.max_size()))
             m_frstmode = false;
@@ -139,6 +146,36 @@ static const ma_t maall[] = {
     { 50000,PSTR("50km") },
 };
 
+#define XY(p)               p.x, p.y
+static inline pnt_t pntinit(int cx, int cy, const pnt_t &p, double ang) {
+    // Вращение точки вокруг центра _по_ часовой стрелке
+    //
+    // В математике OY направлена вверх, а градусы двигаются против часовой стрелки,
+    // т.е. от оси OX через положительное направление OY.
+    // У нас вращение географическое (по часовой стрелке), но и ось OY направлена вниз,
+    // т.е. нужное нам вращение будет так же через положительное направление OY,
+    // поэтому нам подходит оригинальная математическая формула вращения точки:
+    //      x2 = x1*cos - y1*sin
+    //      y2 = x1*sin + y1*cos
+    
+    // Надо:
+    // - из точки вычесть координаты центра вращения,
+    // - провращать точку,
+    // - обратно прибавить координаты точки вращения.
+    return {
+        static_cast<int>(cx + round(cos(ang) * (p.x - cx) - sin(ang) * (p.y - cy))),
+        static_cast<int>(cy + round(sin(ang) * (p.x - cx) + cos(ang) * (p.y - cy)))
+    };
+}
+static void drawMoveArr(U8G2 &u8g2, int cx, int cy, double ang = 0) {
+    pnt_t
+        p1 = pntinit(cx,cy, { cx-4,cy }, ang),
+        p2 = pntinit(cx,cy, { cx,  cy-7 }, ang),
+        p3 = pntinit(cx,cy, { cx+4,cy }, ang);
+    
+    u8g2.drawTriangle(XY(p1), XY(p2), XY(p3));
+}
+
 static void drawPath(U8G2 &u8g2) {
     int w = u8g2.getDisplayWidth();
     int h = u8g2.getDisplayHeight();
@@ -174,6 +211,7 @@ static void drawPath(U8G2 &u8g2) {
 
     // Отрисовка пути
     NavPath::navmet_t lp = { false };
+    NavPath::navmet_t lv = { false };
     for (int i = 0; i < path.size(); i++) {
         auto p = path[i];
         if (!p.isvalid) {
@@ -190,11 +228,17 @@ static void drawPath(U8G2 &u8g2) {
             u8g2.drawLine(dw+lp.x, h-(dh+lp.y), dw+p.x, h-(dh+p.y));
         
         lp = p;
+        lv = p;
     }
 
     // Текущая точка
     if (lp.isvalid)
-        u8g2.drawCircle(dw+lp.x, h-(dh+lp.y), 2);
+        drawMoveArr(u8g2, dw+lp.x, h-(dh+lp.y), path.ang());
+    else
+    if (lv.isvalid) {
+        u8g2.setFont(u8g2_font_open_iconic_www_2x_t);
+        u8g2.drawGlyph(dw+lv.x-8, h-(dh+lv.y)+8, 'J');
+    }
 }
 
 class ViewMainNavPath : public ViewMain {
@@ -207,6 +251,11 @@ class ViewMainNavPath : public ViewMain {
         }
         
         void draw(U8G2 &u8g2) {
+            if (path.valid() < 10) {
+                u8g2.setFont(u8g2_font_open_iconic_www_4x_t);
+                u8g2.drawGlyph(u8g2.getDisplayWidth()/2-16, u8g2.getDisplayHeight()/2+16, 'J');
+                return;
+            }
             // ----
             if ((path.width() >= 2) && (path.height() >= 2))
                 drawPath(u8g2);
@@ -215,6 +264,6 @@ class ViewMainNavPath : public ViewMain {
 static ViewMainNavPath vNavPath;
 void setViewMainNavPath() { viewSet(vNavPath); }
 
-void navPathAdd(int mode, bool valid, int32_t lon, int32_t lat) {
-    path.add(mode, valid, lon, lat);
+void navPathAdd(int mode, bool valid, int32_t lon, int32_t lat, double ang) {
+    path.add(mode, valid, lon, lat, ang);
 }

@@ -104,7 +104,7 @@ static void jmpPreLogAdd(uint16_t interval) {
         case ACDIR_DOWN:        li.direct = 'd'; break;
     }
 
-    navPathAdd(ac.jmpmode(), gps.validLocation(), gps.lon, gps.lat);
+    navPathAdd(ac.jmpmode(), gps.validLocation(), gps.lon, gps.lat, gps.headRad());
 }
 
 /* ------------------------------------------------------------------------------------------- *
@@ -247,7 +247,7 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
     for (uint32_t old = 30; old > 0; old--) {
         auto cur = jmpPreCursor()-old;
         auto li = jmpPreLog(cur);
-        navPathAdd(jmpmode, (li.flags & LI_FLAG_NAV_VLOC) > 0, li.lon, li.lat);
+        navPathAdd(jmpmode, (li.flags & LI_FLAG_NAV_VLOC) > 0, li.lon, li.lat, DEGRAD * li.heading);
     }
     
     tmcntReset(TMCNT_NOFLY, jmpmode == ACJMP_NONE);

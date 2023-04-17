@@ -40,6 +40,6 @@ void setViewMainAlt();
 void setViewMainNav();
 void setViewMainNavPath();
 
-void navPathAdd(int mode, bool valid, int32_t lon, int32_t lat);
+void navPathAdd(int mode, bool valid, int32_t lon, int32_t lat, double ang);
 
 #endif // _view_main_H
