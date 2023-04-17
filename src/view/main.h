@@ -9,7 +9,7 @@
 
 // Вырианты отображения основного режима
 #define MODE_MAIN_MIN       1
-#define MODE_MAIN_MAX       3
+#define MODE_MAIN_MAX       4
 // не переключать на main-экран (ничего не делать)
 #define MODE_MAIN_NONE      -1
 // Использовать крайний запомненный (не менять экран, но включить main-режим)

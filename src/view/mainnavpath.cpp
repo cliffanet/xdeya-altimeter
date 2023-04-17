@@ -121,14 +121,25 @@ public:
 
 static NavPath path;
 
-static void drawPath(U8G2 &u8g2) {
-    char s[64];
-    uint16_t y = 60;
-#define prn(fmt, ...) \
-            snprintf_P(s, sizeof(s), PSTR(fmt), ##__VA_ARGS__); \
-            u8g2.drawStr(5, y, s); \
-            y += 10;
+typedef struct {
+    uint16_t met;
+    const char *txt;
+} ma_t;
+static const ma_t maall[] = {
+    { 100,  PSTR("100m") },
+    { 500,  PSTR("500m") },
+    { 1000, PSTR("1 km") },
+    { 2000, PSTR("2 km") },
+    { 3000, PSTR("3 km") },
+    { 5000, PSTR("5 km") },
+    { 10000,PSTR("10km") },
+    { 20000,PSTR("20km") },
+    { 30000,PSTR("30km") },
+    { 40000,PSTR("40km") },
+    { 50000,PSTR("50km") },
+};
 
+static void drawPath(U8G2 &u8g2) {
     int w = u8g2.getDisplayWidth();
     int h = u8g2.getDisplayHeight();
     // середина дисплея
@@ -139,10 +150,11 @@ static void drawPath(U8G2 &u8g2) {
 
     // Подбираем коэфициент масштаба
     double k = 1;
-    uint32_t ma = 10; // сколько метров в сантиметре
-    for (; ma < 1000000; ma *= 10) {
+    ma_t ma; // сколько метров в сантиметре
+    for (const auto &ma1 : maall) {
+        ma = ma1;
         // 32 - это примерное число пикселей в 1см на большом дисплее.
-        k = static_cast<double>(ma) / 32;
+        k = static_cast<double>(ma.met) / 32;
         if (
                 ((static_cast<double>(path.width()) / k) <= w) &&
                 ((static_cast<double>(path.height())/ k) <= h)
@@ -150,8 +162,18 @@ static void drawPath(U8G2 &u8g2) {
             break;
     }
 
-    NavPath::navmet_t lp = { false };
+    // Печать масштаба в углу
+    u8g2.drawLine(2, h-8, 2, h-3);
+    u8g2.drawLine(2, h-3, 34, h-3);
+    u8g2.drawLine(34, h-3, 34, h-8);
+    char s[64];
+    strncpy_P(s, ma.txt, sizeof(s));
+    s[sizeof(s)-1] = '\0';
+    u8g2.setFont(u8g2_font_b10_b_t_japanese1);
+    u8g2.drawStr(2 + (32-u8g2.getTxtWidth(s)) / 2, h-5, s);
 
+    // Отрисовка пути
+    NavPath::navmet_t lp = { false };
     for (int i = 0; i < path.size(); i++) {
         auto p = path[i];
         if (!p.isvalid) {
@@ -170,11 +192,9 @@ static void drawPath(U8G2 &u8g2) {
         lp = p;
     }
 
-    if (lp.isvalid) {
+    // Текущая точка
+    if (lp.isvalid)
         u8g2.drawCircle(dw+lp.x, h-(dh+lp.y), 2);
-        prn("pnt: %dx%d (%d: %.4f)", lp.x, lp.y, ma, k);
-    }
-#undef prn
 }
 
 class ViewMainNavPath : public ViewMain {
@@ -187,19 +207,6 @@ class ViewMainNavPath : public ViewMain {
         }
         
         void draw(U8G2 &u8g2) {
-            char s[64];
-            uint16_t y = 10;
-#define prn(fmt, ...) \
-            snprintf_P(s, sizeof(s), PSTR(fmt), ##__VA_ARGS__); \
-            u8g2.drawStr(5, y, s); \
-            y += 10;
-
-            u8g2.setFont(u8g2_font_ncenB08_tr);
-            prn("count:  %u (%u)", path.valid(), path.size());
-            prn("width:  %u", path.width());
-            prn("height: %u", path.height());
-#undef prn
-
             // ----
             if ((path.width() >= 2) && (path.height() >= 2))
                 drawPath(u8g2);
