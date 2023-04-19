@@ -3,6 +3,7 @@
 
 #include "../navi/proc.h"
 #include "../cfg/point.h"
+#include "../jump/proc.h"
 #include "../filtlib/ring.h"
 #include "../log.h"
 
@@ -99,14 +100,14 @@ public:
     }
 
     void add(int mode, bool valid, int32_t lon, int32_t lat, double ang) {
-        bool isnew = m_mode != mode;
-        if (isnew) {
+        if (m_mode != mode) {
             CONSOLE("cleared by mode %d (valid: %d)", mode, valid);
             data.clear();
             m_mode = mode;
-            m_frstmode = valid;
             m_ang = 0;
         }
+        if (data.size() == 0)
+            m_frstmode = valid;
 
         if (valid)
             m_ang = ang;
@@ -295,6 +296,51 @@ static void drawPath(U8G2 &u8g2) {
     }
 }
 
+static void drawText(U8G2 &u8g2) {
+    char s[50];
+    int w = u8g2.getDisplayWidth();
+    int h = u8g2.getDisplayHeight();
+    
+    // Шрифт для высоты и расстояния
+#if HWVER < 4
+    u8g2.setFont(u8g2_font_helvB08_tr);
+#else // if HWVER < 4
+    u8g2.setFont(u8g2_font_fub20_tf);
+#endif
+    
+    // Высота
+    auto &ac = altCalc();
+    int16_t alt = round(ac.alt() + cfg.d().altcorrect);
+    int16_t o = alt % ALT_STEP;
+    alt -= o;
+    if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
+    sprintf_P(s, PSTR("%d"), alt);
+    u8g2.drawStr(w-u8g2.getStrWidth(s), u8g2.getAscent(), s);
+    
+    // Расстояние до точки
+    int y1 = u8g2.getAscent();
+    auto &gps = gpsInf();
+    if (gps.validLocation() && gps.validPoint() && pnt.numValid() && pnt.cur().used) {
+        double dist =
+            gpsDistance(
+                gps.getLat(),
+                gps.getLon(),
+                pnt.cur().lat, 
+                pnt.cur().lng
+            );
+    
+        if (dist < 950) 
+            sprintf_P(s, PSTR("%0.0fm"), dist);
+        else if (dist < 9500) 
+            sprintf_P(s, PSTR("%0.1fk"), dist/1000);
+        else if (dist < 950000) 
+            sprintf_P(s, PSTR("%0.0fk"), dist/1000);
+        else
+            sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
+        u8g2.drawStr(w-u8g2.getStrWidth(s), h, s);
+    }
+}
+
 class ViewMainNavPath : public ViewMain {
     public:
         void btnSmpl(btn_code_t btn) {
@@ -305,6 +351,8 @@ class ViewMainNavPath : public ViewMain {
         }
         
         void draw(U8G2 &u8g2) {
+            drawText(u8g2);
+
             if (path.valid() < 10) {
                 u8g2.setFont(u8g2_font_open_iconic_www_4x_t);
                 u8g2.drawGlyph(u8g2.getDisplayWidth()/2-16, u8g2.getDisplayHeight()/2+16, 'J');
