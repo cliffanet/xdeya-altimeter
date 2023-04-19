@@ -38,6 +38,7 @@ class NavPath {
         { true, 375210350, 558298280 }
     };
     */
+    navp_t m_pnt = { false };
 
 public:
     NavPath() : data(3 * 60 * 10) {}
@@ -89,9 +90,18 @@ public:
         };
     }
 
+    navmet_t dstpnt() const {
+        return {
+            true,
+            klon() * (m_pnt.lon-m_lonmin) / NAV_KOEF_LATLON,
+            klat() * (m_pnt.lat-m_latmin) / NAV_KOEF_LATLON,
+        };
+    }
+
     void add(int mode, bool valid, int32_t lon, int32_t lat, double ang) {
         bool isnew = m_mode != mode;
         if (isnew) {
+            CONSOLE("cleared by mode %d (valid: %d)", mode, valid);
             data.clear();
             m_mode = mode;
             m_frstmode = valid;
@@ -105,6 +115,10 @@ public:
             m_frstmode = false;
         data.push_back({ valid, lon, lat });
 
+        recalc();
+    }
+
+    void recalc() {
         m_valid = 0;
         for (const auto p : data) {
             if (!p.isvalid)
@@ -123,6 +137,16 @@ public:
                 if (m_latmax < p.lat) m_latmax = p.lat;
             }
         }
+
+        m_pnt.isvalid = (m_valid > 0) && pnt.numValid() && pnt.cur().used;
+        if (m_pnt.isvalid) {
+            m_pnt.lon = round(pnt.cur().lng * NAV_KOEF_LATLON);
+            m_pnt.lat = round(pnt.cur().lat * NAV_KOEF_LATLON);
+            if (m_lonmin > m_pnt.lon) m_lonmin = m_pnt.lon;
+            if (m_lonmax < m_pnt.lon) m_lonmax = m_pnt.lon;
+            if (m_latmin > m_pnt.lat) m_latmin = m_pnt.lat;
+            if (m_latmax < m_pnt.lat) m_latmax = m_pnt.lat;
+        }
     }
 };
 
@@ -134,6 +158,7 @@ typedef struct {
 } ma_t;
 static const ma_t maall[] = {
     { 100,  PSTR("100m") },
+    { 200,  PSTR("200m") },
     { 500,  PSTR("500m") },
     { 1000, PSTR("1 km") },
     { 2000, PSTR("2 km") },
@@ -176,6 +201,17 @@ static void drawMoveArr(U8G2 &u8g2, int cx, int cy, double ang = 0) {
     u8g2.drawTriangle(XY(p1), XY(p2), XY(p3));
 }
 
+static void drawPntC(U8G2 &u8g2, const pnt_t &p) {
+    u8g2.setDrawColor(0);
+    u8g2.drawDisc(XY(p), 8);
+    u8g2.setDrawColor(1);
+    u8g2.drawDisc(XY(p), 6);
+    u8g2.setFont(u8g2_font_helvB08_tr);
+    u8g2.setDrawColor(0);
+    u8g2.drawGlyph(p.x-2,p.y+4, '0' + pnt.num());
+    u8g2.setDrawColor(1);
+}
+
 static void drawPath(U8G2 &u8g2) {
     int w = u8g2.getDisplayWidth();
     int h = u8g2.getDisplayHeight();
@@ -199,6 +235,14 @@ static void drawPath(U8G2 &u8g2) {
             break;
     }
 
+    // Функция преобразования координат в экранные
+#define pntmap(p) \
+        p.x -= pw; \
+        p.x = dw + round(static_cast<double>(p.x) / k); \
+        p.y -= ph; \
+        p.y = dh + round(static_cast<double>(p.y) / k); \
+        p.y = h-p.y;
+
     // Печать масштаба в углу
     u8g2.drawLine(2, h-8, 2, h-3);
     u8g2.drawLine(2, h-3, 34, h-3);
@@ -209,35 +253,45 @@ static void drawPath(U8G2 &u8g2) {
     u8g2.setFont(u8g2_font_b10_b_t_japanese1);
     u8g2.drawStr(2 + (32-u8g2.getTxtWidth(s)) / 2, h-5, s);
 
+    // рисуем стартовую точку
+    if (path.frstmode() && (path.size() > 0)) {
+        auto p = path[0];
+        pntmap(p);
+        u8g2.drawLine(p.x-3, p.y-3, p.x+3, p.y+3);
+        u8g2.drawLine(p.x+3, p.y-3, p.x-3, p.y+3);
+    }
+
     // Отрисовка пути
     NavPath::navmet_t lp = { false };
     NavPath::navmet_t lv = { false };
     for (int i = 0; i < path.size(); i++) {
         auto p = path[i];
-        if (!p.isvalid) {
-            lp = p;
-            continue;
+
+        if (p.isvalid) {
+            pntmap(p);
+            if (lp.isvalid && ((lp.x != p.x) || (lp.y != p.y)))
+                u8g2.drawLine(lp.x, lp.y, p.x, p.y);
+
+            lv = p;
         }
-
-        p.x -= pw;
-        p.x = round(static_cast<double>(p.x) / k);
-        p.y -= ph;
-        p.y = round(static_cast<double>(p.y) / k);
-
-        if (lp.isvalid && ((lp.x != p.x) || (lp.y != p.y)))
-            u8g2.drawLine(dw+lp.x, h-(dh+lp.y), dw+p.x, h-(dh+p.y));
         
         lp = p;
-        lv = p;
     }
 
     // Текущая точка
     if (lp.isvalid)
-        drawMoveArr(u8g2, dw+lp.x, h-(dh+lp.y), path.ang());
+        drawMoveArr(u8g2, lp.x, lp.y, path.ang());
     else
     if (lv.isvalid) {
         u8g2.setFont(u8g2_font_open_iconic_www_2x_t);
-        u8g2.drawGlyph(dw+lv.x-8, h-(dh+lv.y)+8, 'J');
+        u8g2.drawGlyph(lv.x-8, lv.y+8, 'J');
+    }
+
+    // точка-назначение
+    auto p = path.dstpnt();
+    if (p.isvalid) {
+        pntmap(p);
+        drawPntC(u8g2, { p.x, p.y });
     }
 }
 
