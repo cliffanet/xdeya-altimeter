@@ -102,7 +102,7 @@ class CubePainter extends CustomPainter {
 
         // Рисование точки с инфой
         if (view.posVisible &&
-            (view.pos > 0) && (view.pos < trk.data.length) &&
+            (view.pos >= 0) && (view.pos < trk.data.length) &&
             trk.data[view.pos].satValid) {
             final ti = trk.data[view.pos];
 
@@ -116,7 +116,7 @@ class CubePainter extends CustomPainter {
             // info
             final text = TextPainter(
                 text: TextSpan(
-                    text: '${ti.time}\nверт: ${ti.dscrVert}\nгор: ${ti.dscrHorz}\n${ti.dscrKach}',
+                    text: '[${view.pos}] ${ti.time}\nверт: ${ti.dscrVert}\nгор: ${ti.dscrHorz}\n${ti.dscrKach}',
                     style: const TextStyle(
                         color: Colors.black,
                         fontSize: 10,
