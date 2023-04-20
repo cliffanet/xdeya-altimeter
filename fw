@@ -190,6 +190,7 @@ sub build {
     print "=======================================================\n";
     
     my $flags = flags('HWVER='.$hwver, $type, $lang);
+    #$flags .= ' --clean';
     #print "FLAGS: $flags\n";
     
     my $cmd = "$cli compile --fqbn $fqbn --output-dir $dir/.build $flags $srcdir";# --verbose --log-level trace --clean";

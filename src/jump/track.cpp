@@ -308,6 +308,13 @@ public:
         if (prelogcur == jmpPreCursor())
             return DLY;
         
+#ifdef FWVER_DEBUG
+        int old = jmpPreCursor() - prelogcur;
+        if (old > 3) {
+            CONSOLE("old: %d", old);
+        }
+#endif // FWVER_DEBUG
+        
         prelogcur++;
         auto ti = jmpPreLog(prelogcur);
         
