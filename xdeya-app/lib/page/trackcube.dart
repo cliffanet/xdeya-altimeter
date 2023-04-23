@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:XdeYa/data/trkview.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'dart:developer' as developer;
 
 import '../data/trkdata.dart';
@@ -74,14 +75,22 @@ class PageTrackCube extends StatelessWidget {
                             valueListenable: _matr.notify,
                             builder: (BuildContext context, matr, Widget? child) {
                         
-                                return CustomPaint(
-                                    painter: CubePainter(
-                                        view: _matr,
-                                        onSize: (size) {
-                                            _matr.size = size;
+                                return Listener(
+                                    onPointerSignal: (pointerSignal) {
+                                        //pointerSignal.
+                                        if (pointerSignal is PointerScrollEvent) {
+                                            _matr.scaleChange(pointerSignal.scrollDelta.dy);
                                         }
-                                    ),
-                                    size: Size.infinite,
+                                    },
+                                    child: CustomPaint(
+                                        painter: CubePainter(
+                                            view: _matr,
+                                            onSize: (size) {
+                                                _matr.size = size;
+                                            }
+                                        ),
+                                        size: Size.infinite,
+                                    )
                                 );
                             }
                         )
