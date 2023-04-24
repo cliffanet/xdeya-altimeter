@@ -89,7 +89,11 @@ class PageLogBook extends StatelessWidget {
                                             Pager.push(context, PageCode.jumpinfo, index);
                                         },
                                         trailing: const SizedBox.shrink(),
-                                        title: Text(lb.num.toString()),
+                                        title: Row(children: [
+                                            Text(lb.num.toString()),
+                                            const Spacer(),
+                                            Text(lb.dtBeg)
+                                        ]),
                                     )
                                 );
                             },

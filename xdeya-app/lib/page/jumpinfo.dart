@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import '../data/logbook.dart';
 import '../data/trkdata.dart';
 import '../data/trklist.dart';
+import 'tracklist.dart';
 import '../pager.dart';
 
 
@@ -152,7 +153,7 @@ class PageJumpInfo extends StatelessWidget {
                                         Pager.push(context, PageCode.trackcube);
                                     },
                                     trailing: const SizedBox.shrink(),
-                                    title: Text('трэк: ${li.trk?.dtBeg}'),
+                                    title: TrackTile(li.trk!),
                                 )
                         );
                     },

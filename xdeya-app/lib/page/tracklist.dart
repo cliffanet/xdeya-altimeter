@@ -6,6 +6,25 @@ import '../data/trklist.dart';
 import '../data/trkdata.dart';
 import '../pager.dart';
 
+Widget TrackTile(TrkItem trkinfo) {
+    return Row(children: [
+        Text('трэк (${trkinfo.jmpnum})'),
+        const Spacer(),
+        Text(trkinfo.dtBeg),
+        SizedBox(
+            width: 50,
+            child: Text(
+                '[${trkinfo.fnum}]',
+                style: const TextStyle(
+                    color: Colors.black26,
+                    fontSize: 10,
+                ),
+                textAlign: TextAlign.right,
+            ),
+        )
+    ]);
+}
+
 class PageTrackList extends StatelessWidget {
     PageTrackList({ super.key });
 
@@ -53,7 +72,7 @@ class PageTrackList extends StatelessWidget {
                                         Pager.push(context, PageCode.trackcube);
                                     },
                                     trailing: const SizedBox.shrink(),
-                                    title: Text('трэк: ${trkinfo.dtBeg}'),
+                                    title: TrackTile(trkinfo),
                                 )
                                 );
                             },
