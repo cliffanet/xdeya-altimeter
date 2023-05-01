@@ -6,6 +6,20 @@ import 'dart:developer' as developer;
 import 'dtime.dart';
 import 'logbook.dart';
 import '../net/proc.dart';
+import '../data/filebin.dart';
+
+
+/*//////////////////////////////////////
+ *
+ *  TrkFile
+ * 
+ *//////////////////////////////////////
+
+class TrkFile {
+    final String path;
+    final int num;
+    TrkFile(this.path, this.num);
+}
 
 /*//////////////////////////////////////
  *
@@ -21,6 +35,7 @@ class TrkItem {
     final DateTime tmbeg;
     final int fsize;
     final int fnum;
+    final String file;
 
     TrkItem({
         required this.id,
@@ -30,6 +45,7 @@ class TrkItem {
         required this.tmbeg,
         required this.fsize,
         required this.fnum,
+        required this.file,
     });
 
     TrkItem.byvars(List<dynamic> vars) :
@@ -41,6 +57,19 @@ class TrkItem {
             tmbeg:  (vars.length > 4) && (vars[4]) is DateTime ? vars[4] : DateTime(0),
             fsize:  (vars.length > 5) && (vars[5]) is int ? vars[5] : 0,
             fnum:   (vars.length > 6) && (vars[6]) is int ? vars[6] : 0,
+            file:   '',
+        );
+    
+    TrkItem.byfile(List<dynamic> vars, int fsize, int fnum, String file) :
+        this(
+            id:     (vars.isNotEmpty) && (vars[0]) is int ? vars[0] : 0,
+            flags:  (vars.length > 1) && (vars[1]) is int ? vars[1] : 0,
+            jmpnum: (vars.length > 2) && (vars[2]) is int ? vars[2] : 0,
+            jmpkey: (vars.length > 3) && (vars[3]) is int ? vars[3] : 0,
+            tmbeg:  (vars.length > 4) && (vars[4]) is DateTime ? vars[4] : DateTime(0),
+            fsize:  fsize,
+            fnum:   fnum,
+            file:   file,
         );
 
     String get dtBeg => dt2format(tmbeg);
@@ -106,8 +135,31 @@ class DataTrkList extends ListBase<TrkItem> {
         );
     }
 
-    Future<bool> loadFile({ required List<String> files, Function() ?onLoad }) async {
+    Future<bool> loadFile({ required List<TrkFile> files, Function() ?onLoad }) async {
+        _list.clear();
+        _sz.value = files.length;
+
+        for (final file in files) {
+            final fh = FileBin();
+
+            if (!await fh.open(file.path)) {
+                continue;
+            }
+
+            final v = await fh.get('NNNNT');
+            if (v == null) {
+                continue;
+            }
+
+            _list.add(TrkItem.byfile(v, fh.size, file.num, file.path));
+            net.progcnt ++;
+            _sz.value ++;
+        }
         
+        net.progmax = 0;
+        _sz.value = -1;
+        
+        if (onLoad != null) onLoad();
         return true;
     }
 }

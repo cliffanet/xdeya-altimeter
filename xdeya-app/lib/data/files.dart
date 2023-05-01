@@ -199,11 +199,6 @@ class DataFiles extends ListBase<FileItem> {
  *  Jump/Track Files
  * 
  *//////////////////////////////////////
-class TrkFile {
-    final String path;
-    final int num;
-    TrkFile(this.path, this.num);
-}
 void filesLoadJumpTrack(String path) {
     logbook.clear();
     trklist.clear();
@@ -230,6 +225,6 @@ void filesLoadJumpTrack(String path) {
 
     if (trk.isNotEmpty) {
         trk.sort((a, b) => a.num.compareTo(b.num));
-        trklist.loadFile(files: trk.map((t) => t.path).toList());
+        trklist.loadFile(files: trk);
     }
 }

@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:developer' as developer;
 
 import 'trklist.dart';
+import '../data/filebin.dart';
 import '../net/proc.dart';
 import 'logitem.dart';
 import 'trktypes.dart';
@@ -44,6 +45,51 @@ class DataTrack {
     LogItem ? get center => _center.value;
     ValueNotifier<LogItem ?> get notifyCenter => _center;
 
+    void _loadBeg() {
+        _data.clear();
+        _seg.clear();
+        _area = null;
+        _img = null;
+        _center.value = null;
+    }
+    void _loadItem(LogItem ti, Function(LogItem) ?onCenter) {
+        _data.add(ti);
+        if (ti.satValid) {
+            if (_area == null) {
+                _area = TrkArea(ti);
+            }
+            else {
+                _area!.add(ti);
+            }
+        }
+
+        if (
+            _seg.isNotEmpty &&
+            _seg.last.addAllow(ti)
+            ) {
+            _seg.last.data.add(ti);
+        }
+        else {
+            _seg.add(TrkSeg.byEl(ti));
+        }
+
+        if ((_center.value == null) && ti.satValid) {
+            _center.value = ti;
+            if (onCenter != null) onCenter(ti);
+        }
+    }
+    void _loadEnd() {
+        if (_area != null) {
+            _img = TrkImage(_area!);
+            void loadimg() async {
+                await _img!.loadImg();
+                _sz.value ++;
+            }
+            loadimg();
+            developer.log('query ${_img!.query}');
+        }
+    }
+
     bool get isRecv => net.recieverContains({ 0x54, 0x55, 0x56 });
     Future<bool> Function() ?_reload;
     Future<bool> reload() async {
@@ -65,12 +111,8 @@ class DataTrack {
                 _inf = TrkInfo.byvars(v);
 
                 developer.log('trkdata beg ${_inf.jmpnum}, ${_inf.dtBeg}');
-                _data.clear();
-                _seg.clear();
-                _area = null;
-                _img = null;
+                _loadBeg();
                 _sz.value = 0;
-                _center.value = null;
                 net.progmax = (_inf.fsize-32) ~/ 64;
             },
             item: (pro) {
@@ -79,50 +121,49 @@ class DataTrack {
                     return;
                 }
 
-                final ti = LogItem.byvars(v);
-                _data.add(ti);
-                if (ti.satValid) {
-                    if (_area == null) {
-                        _area = TrkArea(ti);
-                    }
-                    else {
-                        _area!.add(ti);
-                    }
-                }
+                _loadItem(LogItem.byvars(v), onCenter);
                 _sz.value = _data.length;
                 net.progcnt = _data.length;
-
-                if (
-                    _seg.isNotEmpty &&
-                    _seg.last.addAllow(ti)
-                    ) {
-                    _seg.last.data.add(ti);
-                }
-                else {
-                    _seg.add(TrkSeg.byEl(ti));
-                }
-
-                if ((_center.value == null) && ti.satValid) {
-                    _center.value = ti;
-                    if (onCenter != null) onCenter(ti);
-                }
             },
             end: (pro) {
                 pro.rcvNext();
                 developer.log('trkdata end ${_data.length}');
-                if (_area != null) {
-                    _img = TrkImage(_area!);
-                    void loadimg() async {
-                        await _img!.loadImg();
-                        _sz.value ++;
-                    }
-                    loadimg();
-                    developer.log('query ${_img!.query}');
-                }
+                _loadEnd();
                 net.progmax = 0;
                 if (onLoad != null) onLoad();
             }
         );
+    }
+
+    Future<bool> loadFile({ required String file, Function() ?onLoad, Function(LogItem) ?onCenter }) async {
+        final fh = FileBin();
+
+        _loadBeg();
+        _sz.value = 0;
+
+        if (!await fh.open(file)) {
+            return false;
+        }
+
+        net.progmax = fh.size;
+        await fh.get('');
+
+        while (!fh.eof) {
+            final v = await fh.get(pkLogItem);
+            if (v == null) {
+                break;
+            }
+            _loadItem(LogItem.byvars(v), onCenter);
+            net.progcnt = fh.pos;
+            _sz.value = fh.pos;
+        }
+        
+        _loadEnd();
+        net.progmax = 0;
+        _sz.value = -1;
+
+        if (onLoad != null) onLoad();
+        return true;
     }
 
     String get exportJSON {

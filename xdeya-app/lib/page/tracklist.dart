@@ -68,7 +68,13 @@ class PageTrackList extends StatelessWidget {
                                     child: ListTile(
                                     onTap: () {
                                         developer.log('tap on: $index');
-                                        trk.netRequest(trkinfo);
+                                        if (net.isUsed) {
+                                            trk.netRequest(trkinfo);
+                                        }
+                                        else
+                                        if (trkinfo.file != '') {
+                                            trk.loadFile(file: trkinfo.file);
+                                        }
                                         Pager.push(context, PageCode.trackcube);
                                     },
                                     trailing: const SizedBox.shrink(),

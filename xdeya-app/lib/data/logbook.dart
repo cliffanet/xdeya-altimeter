@@ -143,13 +143,14 @@ class DataLogBook extends ListBase<LogBook> {
                 break;
             }
             _list.add(LogBook.byvars(v));
-            _sz.value = fh.pos;
             net.progcnt = fh.pos;
+            _sz.value = fh.pos;
         }
         
         net.progmax = 0;
         _sz.value = -1;
 
+        if (onLoad != null) onLoad();
         return true;
     }
 }

@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import '../data/logbook.dart';
 import '../data/trkdata.dart';
 import '../data/trklist.dart';
+import '../net/proc.dart';
 import 'tracklist.dart';
 import '../pager.dart';
 
@@ -149,7 +150,13 @@ class PageJumpInfo extends StatelessWidget {
                                         if (li.trk == null) {
                                             return;
                                         }
-                                        trk.netRequest(li.trk ?? TrkItem.byvars([]));
+                                        if (net.isUsed) {
+                                            trk.netRequest(li.trk ?? TrkItem.byvars([]));
+                                        }
+                                        else
+                                        if (li.trk!.file != '') {
+                                            trk.loadFile(file: li.trk!.file);
+                                        }
                                         Pager.push(context, PageCode.trackcube);
                                     },
                                     trailing: const SizedBox.shrink(),
