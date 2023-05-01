@@ -32,6 +32,12 @@ class DataTrack {
     final List<TrkSeg> _seg = [];
     List<TrkSeg> get seg => _seg;
 
+    // alt
+    int _altmax = 0;
+    int get altMax => _altmax;
+    final List<double> _alt = [];
+    List<double> get alt => _alt;
+
     // area
     TrkArea ?_area;
     TrkArea ? get area => _area;
@@ -48,6 +54,8 @@ class DataTrack {
     void _loadBeg() {
         _data.clear();
         _seg.clear();
+        _altmax = 0;
+        _alt.clear();
         _area = null;
         _img = null;
         _center.value = null;
@@ -72,6 +80,9 @@ class DataTrack {
         else {
             _seg.add(TrkSeg.byEl(ti));
         }
+
+        _alt.add(ti.alt.toDouble());
+        if (ti.alt + 50 > _altmax) _altmax += 400;
 
         if ((_center.value == null) && ti.satValid) {
             _center.value = ti;

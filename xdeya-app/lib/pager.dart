@@ -11,6 +11,7 @@ import 'page/wifipass.dart';
 import 'page/wifiedit.dart';
 import 'page/filesbackup.dart';
 import 'page/filesrestore.dart';
+import 'page/chart.dart';
 import 'data/logbook.dart';
 import 'data/trklist.dart';
 import 'data/trkdata.dart';
@@ -22,7 +23,8 @@ enum PageCode {
     discovery, logbook, jumpinfo,
     tracklist, trackview, trackcube,
     wifipass, wifiedit,
-    filesbackup, filesrestore
+    filesbackup, filesrestore,
+    chartalt
 }
 
 typedef PageFunc = Widget ? Function([int ?index]);
@@ -38,6 +40,7 @@ final Map<PageCode, PageFunc> _pageMap = {
     PageCode.wifiedit:  ([int ?index]) { return index != null ? PageWiFiEdit(index: index) : null; },
     PageCode.filesbackup:([int ?i]) { return PageFilesBackup(); },
     PageCode.filesrestore:([int ?i]) { return const PageFilesRestore(); },
+    PageCode.chartalt:  ([int ?i]) { return const PageChart(); },
 };
 
 class Pager extends StatelessWidget {
@@ -105,6 +108,7 @@ class Pager extends StatelessWidget {
             //case PageCode.wifiedit: return "Изменение сети";
             case PageCode.filesbackup:return "Файлы";
             case PageCode.filesrestore:return "Восстановление";
+            case PageCode.chartalt: return "График высоты";
             default:
         }
 
@@ -125,6 +129,7 @@ class Pager extends StatelessWidget {
             
             case PageCode.trackview:
             case PageCode.trackcube:
+            case PageCode.chartalt:
                 return () { trk.reload(); };
             
             case PageCode.wifipass:
@@ -146,6 +151,7 @@ class Pager extends StatelessWidget {
             case PageCode.tracklist:
             case PageCode.trackview:
             case PageCode.trackcube:
+            case PageCode.chartalt:
             case PageCode.wifipass:
                 return true;
 

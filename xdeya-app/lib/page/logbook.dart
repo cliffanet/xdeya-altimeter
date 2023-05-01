@@ -64,8 +64,6 @@ class PageLogBook extends StatelessWidget {
                     return _pageAuth();
                 }
 
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-
                 return ValueListenableBuilder(
                     valueListenable: logbook.notify,
                     builder: (BuildContext context, count, Widget? child) {
@@ -77,6 +75,8 @@ class PageLogBook extends StatelessWidget {
                                 )
                             );
                         }
+
+                        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                         
                         return ListView.separated(
                             itemCount: logbook.length,

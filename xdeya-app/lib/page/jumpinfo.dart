@@ -115,7 +115,23 @@ class PageJumpInfo extends StatelessWidget {
                             return Row( children: row );
                         }
                         final li = lw[index-1];
-                        return Card(
+                        
+                        bool loadTrk() {
+                            if (li.trk == null) {
+                                return false;
+                            }
+                            if (net.isUsed) {
+                                trk.netRequest(li.trk ?? TrkItem.byvars([]));
+                            }
+                            else
+                            if (li.trk!.file != '') {
+                                trk.loadFile(file: li.trk!.file);
+                            }
+
+                            return true;
+                        }
+
+                        final btn = <Widget>[ Card(
                             child: li.trk == null ?
                                 Row(
                                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -146,23 +162,45 @@ class PageJumpInfo extends StatelessWidget {
                                 ) :
                                 ListTile(
                                     onTap: () {
-                                        developer.log('tap on: $index');
-                                        if (li.trk == null) {
-                                            return;
-                                        }
-                                        if (net.isUsed) {
-                                            trk.netRequest(li.trk ?? TrkItem.byvars([]));
-                                        }
-                                        else
-                                        if (li.trk!.file != '') {
-                                            trk.loadFile(file: li.trk!.file);
-                                        }
+                                        developer.log('trackview on: $index');
+                                        if (!loadTrk()) return;
                                         Pager.push(context, PageCode.trackcube);
                                     },
                                     trailing: const SizedBox.shrink(),
                                     title: TrackTile(li.trk!),
                                 )
-                        );
+                        ) ];
+
+                        if (li.trk != null) {
+                            btn.add(
+                                ListTile(
+                                    onTap: () {
+                                        developer.log('chartalt on: $index');
+                                        if (!loadTrk()) return;
+                                        Pager.push(context, PageCode.chartalt);
+                                    },
+                                    trailing: const SizedBox.shrink(),
+                                    title: Row(children: [
+                                        Text('график высоты'),
+                                        const Spacer(),
+                                        Text(li.trk!.dtBeg),
+                                        SizedBox(
+                                            width: 50,
+                                            child: Text(
+                                                '[${li.trk!.fnum}]',
+                                                style: const TextStyle(
+                                                    color: Colors.black26,
+                                                    fontSize: 10,
+                                                ),
+                                                textAlign: TextAlign.right,
+                                            ),
+                                        )
+                                    ]),
+                                )
+                            );
+                        }
+
+                        return Column(children: btn);
                     },
                     separatorBuilder: (BuildContext context, int index) => index == ibeg ? const Divider() : Container(),
                 );

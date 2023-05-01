@@ -46,7 +46,6 @@ class PageTrackList extends StatelessWidget {
         return ValueListenableBuilder(
             valueListenable: net.notifyInf,
             builder: (BuildContext context, inf, Widget? child) {
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 return ValueListenableBuilder(
                     valueListenable: trklist.notify,
@@ -59,6 +58,8 @@ class PageTrackList extends StatelessWidget {
                                 )
                             );
                         }
+                        
+                        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                         
                         return ListView.separated(
                             itemCount: trklist.length,
