@@ -6,6 +6,10 @@ import 'dart:developer' as developer;
 
 import '../net/proc.dart';
 
+import 'package:path/path.dart';
+import 'logbook.dart';
+import 'trklist.dart';
+
 /*//////////////////////////////////////
  *
  *  FileItem
@@ -187,5 +191,45 @@ class DataFiles extends ListBase<FileItem> {
             return false;
         }
         return true;
+    }
+}
+
+/*//////////////////////////////////////
+ *
+ *  Jump/Track Files
+ * 
+ *//////////////////////////////////////
+class TrkFile {
+    final String path;
+    final int num;
+    TrkFile(this.path, this.num);
+}
+void filesLoadJumpTrack(String path) {
+    logbook.clear();
+    trklist.clear();
+    
+    final dir = Directory(path);
+    final List<FileSystemEntity> entities = dir.listSync().toList();
+    final Iterable<File> files = entities.whereType<File>();
+    
+    final trk = <TrkFile>[];
+    final exp = RegExp(r'^track\.(\d+)$');
+    
+    for (final f in files) {
+        final name = basename(f.path);
+        if (name == 'logsimple.01') {
+            logbook.loadFile(file: f.path);
+        }
+        else {
+            final m = exp.firstMatch(name);
+            if (m != null) {
+                trk.add(TrkFile(f.path, int.parse(m[1]!)));
+            }
+        }
+    }
+
+    if (trk.isNotEmpty) {
+        trk.sort((a, b) => a.num.compareTo(b.num));
+        trklist.loadFile(files: trk.map((t) => t.path).toList());
     }
 }

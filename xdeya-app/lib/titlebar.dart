@@ -147,7 +147,7 @@ Widget getTitleBarClient(PageCode page) {
 
 
             List<PopupMenuEntry<MenuCode>> menu = [];
-            if (Pager.refreshVisible) {
+            if (net.isUsed && Pager.refreshVisible) {
                 menu.add(
                     PopupMenuItem(
                         value: MenuCode.Refresh,
@@ -164,7 +164,7 @@ Widget getTitleBarClient(PageCode page) {
                     const PopupMenuDivider(),
                 );
             }
-            if ((Pager.top != PageCode.wifipass) && (Pager.top != PageCode.wifiedit)) {
+            if (net.isUsed && (Pager.top != PageCode.wifipass) && (Pager.top != PageCode.wifiedit)) {
                 menu.add(
                     PopupMenuItem(
                         value: MenuCode.WiFiPass,
@@ -208,36 +208,38 @@ Widget getTitleBarClient(PageCode page) {
             }
 
             // files
-            menu.add(
-                const PopupMenuDivider(),
-            );
-            if (Pager.top != PageCode.filesbackup) {
+            if (net.isUsed) {
                 menu.add(
-                    PopupMenuItem(
-                        value: MenuCode.FilesBackup,
-                        child: Row(
-                            children: const [
-                                Icon(Icons.outbox, color: Colors.black),
-                                SizedBox(width: 8),
-                                Text('Скачать все настройки'),
-                            ]
-                        ),
-                    ),
+                    const PopupMenuDivider(),
                 );
-            }
-            if (Pager.top != PageCode.filesrestore) {
-                menu.add(
-                    PopupMenuItem(
-                        value: MenuCode.FilesRestore,
-                        child: Row(
-                            children: const [
-                                Icon(Icons.outbox, color: Colors.black),
-                                SizedBox(width: 8),
-                                Text('Восстановить настройки'),
-                            ]
+                if (Pager.top != PageCode.filesbackup) {
+                    menu.add(
+                        PopupMenuItem(
+                            value: MenuCode.FilesBackup,
+                            child: Row(
+                                children: const [
+                                    Icon(Icons.outbox, color: Colors.black),
+                                    SizedBox(width: 8),
+                                    Text('Скачать все настройки'),
+                                ]
+                            ),
                         ),
-                    ),
-                );
+                    );
+                }
+                if (Pager.top != PageCode.filesrestore) {
+                    menu.add(
+                        PopupMenuItem(
+                            value: MenuCode.FilesRestore,
+                            child: Row(
+                                children: const [
+                                    Icon(Icons.outbox, color: Colors.black),
+                                    SizedBox(width: 8),
+                                    Text('Восстановить настройки'),
+                                ]
+                            ),
+                        ),
+                    );
+                }
             }
 
             void onSelect(MenuCode mitem) async {

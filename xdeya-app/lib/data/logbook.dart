@@ -6,6 +6,7 @@ import 'dart:developer' as developer;
 import 'dtime.dart';
 import 'logitem.dart';
 import 'trklist.dart';
+import '../data/filebin.dart';
 import '../net/proc.dart';
 import '../net/binproto.dart';
 
@@ -122,5 +123,33 @@ class DataLogBook extends ListBase<LogBook> {
         return netRequest(
             onLoad: () => trklist.netRequest()
         );
+    }
+
+    Future<bool> loadFile({ required String file, Function() ?onLoad }) async {
+        final fh = FileBin();
+
+        _list.clear();
+        _sz.value = 0;
+
+        if (!await fh.open(file)) {
+            return false;
+        }
+
+        net.progmax = fh.size;
+
+        while (!fh.eof) {
+            final v = await fh.get(LogBook.pk);
+            if (v == null) {
+                break;
+            }
+            _list.add(LogBook.byvars(v));
+            _sz.value = fh.pos;
+            net.progcnt = fh.pos;
+        }
+        
+        net.progmax = 0;
+        _sz.value = -1;
+
+        return true;
     }
 }

@@ -56,6 +56,9 @@ class NetProc {
     double get dataProgress => progcnt > _datamax ? 1.0 : progcnt / _datamax;
     bool get isProgress => _datamax > 0;
 
+    bool _used = false;
+    bool get isUsed => _used;
+
     final ValueNotifier<int> _notify = ValueNotifier(0);
     ValueNotifier<int> get notifyInf => _notify;
     void doNotifyInf() => _notify.value++;
@@ -90,6 +93,7 @@ class NetProc {
 
     void stop() {
         _errstop(NetError.canceled);
+        _used = false;
     }
 
     void _errstop(NetError ?err) {
@@ -141,6 +145,7 @@ class NetProc {
 
     Future<bool> _process(host, int port) async {
         stop();
+        _used = true;
         //_sock!.close();
         //await Future.doWhile(() => isActive);
 

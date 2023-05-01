@@ -105,4 +105,9 @@ class DataTrkList extends ListBase<TrkItem> {
             }
         );
     }
+
+    Future<bool> loadFile({ required List<String> files, Function() ?onLoad }) async {
+        
+        return true;
+    }
 }
