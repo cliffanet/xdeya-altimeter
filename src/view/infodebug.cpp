@@ -20,7 +20,7 @@ class ViewInfoDebug : public ViewInfo {
                 return;
             }
     
-            setViewMain(MODE_MAIN_ALTNAV);
+            setViewMainLog();
         }
         
         void updStr(uint16_t i) {

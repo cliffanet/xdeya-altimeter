@@ -83,6 +83,7 @@ typedef enum {
 
 // режим прыжка
 typedef enum {
+    ACJMP_INIT = -1,
     ACJMP_NONE,
     ACJMP_TAKEOFF,
     ACJMP_FREEFALL,
@@ -166,7 +167,7 @@ class AltCalc
         uint32_t _interval = 0;
         ac_state_t _state = ACST_INIT;
         ac_direct_t _dir = ACDIR_INIT;
-        ac_jmpmode_t _jmpmode = ACJMP_NONE;
+        ac_jmpmode_t _jmpmode = ACJMP_INIT;
         uint32_t _statecnt = 0, _statetm = 0;
         uint32_t _dircnt = 0, _dirtm = 0;
         uint32_t _jmpcnt = 0, _jmptm = 0;

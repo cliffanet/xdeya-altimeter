@@ -156,6 +156,14 @@ ac_state_t AltCalc::stateupdate() {
     ac_jmpmode_t jmp = _jmpmode;
     auto tint = _data[_c].interval;
     switch (_jmpmode) {
+        case ACJMP_INIT:
+            if (state() > ACST_INIT) {
+                jmp = ACJMP_NONE;
+                _jmpccnt = 0;
+                _jmpctm = 0;
+            }
+            break;
+        
         case ACJMP_NONE:
             if (state() > ACST_GROUND) {
                 _jmpccnt++;

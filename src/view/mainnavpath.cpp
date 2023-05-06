@@ -230,8 +230,8 @@ static void drawPath(U8G2 &u8g2) {
         // 32 - это примерное число пикселей в 1см на большом дисплее.
         k = static_cast<double>(ma.met) / 32;
         if (
-                ((static_cast<double>(path.width()) / k) <= w) &&
-                ((static_cast<double>(path.height())/ k) <= h)
+                ((static_cast<double>(path.width()) / k) <= (w-10)) &&
+                ((static_cast<double>(path.height())/ k) <= (h-10))
             )
             break;
     }
@@ -255,11 +255,13 @@ static void drawPath(U8G2 &u8g2) {
     u8g2.drawStr(2 + (32-u8g2.getTxtWidth(s)) / 2, h-5, s);
 
     // рисуем стартовую точку
-    if (path.frstmode() && (path.size() > 0)) {
+    if (/*path.frstmode() && */(path.size() > 0)) {
         auto p = path[0];
         pntmap(p);
-        u8g2.drawLine(p.x-3, p.y-3, p.x+3, p.y+3);
-        u8g2.drawLine(p.x+3, p.y-3, p.x-3, p.y+3);
+        u8g2.setFont(u8g2_font_open_iconic_www_1x_t);
+        u8g2.drawGlyph(p.x-3, p.y+4, 0x40);
+        //u8g2.drawLine(p.x-3, p.y-3, p.x+3, p.y+3);
+        //u8g2.drawLine(p.x+3, p.y-3, p.x-3, p.y+3);
     }
 
     // Отрисовка пути

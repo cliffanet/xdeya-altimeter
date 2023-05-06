@@ -2,6 +2,7 @@
 #include "proc.h"
 #include "track.h"
 #include "../log.h"
+#include "../monlog.h"
 #include "../cfg/main.h"
 #include "../navi/proc.h"
 #include "../view/base.h"   // btnPushed()
@@ -177,6 +178,10 @@ bool jmpTakeoffCheck() {
  *  Обработка изменения режима высотомера
  * ------------------------------------------------------------------------------------------- */
 static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
+    MONITOR("altState: %d / %d", prev, jmpmode);
+    MONITOR("alt: %d", ac.alt());
+    MONITOR("count: %d", ac.jmpcnt());
+
     if ((prev == ACJMP_FREEFALL) && cfg.d().dsplautoff) {
         // Восстанавливаем обработчики после принудительного FF-режима
         setViewMain();
@@ -222,6 +227,9 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
             break;
             
         case ACJMP_NONE:
+            if (prev < ACJMP_NONE)
+                return;
+            
             setViewMain(cfg.d().dsplland);
             
             // Прыг закончился совсем, сохраняем результат

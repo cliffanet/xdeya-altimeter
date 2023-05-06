@@ -39,6 +39,10 @@ void setViewMainAltNav();
 void setViewMainAlt();
 void setViewMainNav();
 void setViewMainNavPath();
+    
+#ifdef FWVER_DEBUG
+void setViewMainLog();
+#endif
 
 void navPathAdd(int mode, bool valid, int32_t lon, int32_t lat, double ang);
 
