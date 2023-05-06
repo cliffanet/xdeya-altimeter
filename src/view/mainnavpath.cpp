@@ -6,6 +6,7 @@
 #include "../jump/proc.h"
 #include "../filtlib/ring.h"
 #include "../log.h"
+#include "../monlog.h"
 
 /* ------------------------------------------------------------------------------------------- *
  *  Навигация - пройденный путь
@@ -101,19 +102,24 @@ public:
 
     void add(int mode, bool valid, int32_t lon, int32_t lat, double ang) {
         if (m_mode != mode) {
-            CONSOLE("cleared by mode %d (valid: %d)", mode, valid);
+            CONSOLE("cleared by mode %d (val: %d, prv: %d)", mode, valid, m_mode);
+            MONITOR("clear: %d (val: %d, prv: %d)", mode, valid, m_mode);
             data.clear();
             m_mode = mode;
             m_ang = 0;
         }
-        if (data.size() == 0)
+        if (data.size() == 0) {
             m_frstmode = valid;
+            MONITOR("m_frstmode beg: %d", m_frstmode);
+        }
 
         if (valid)
             m_ang = ang;
 
-        if (m_frstmode && (data.size() == data.max_size()))
+        if (m_frstmode && (data.size() == data.capacity())) {
             m_frstmode = false;
+            MONITOR("m_frstmode end");
+        }
         data.push_back({ valid, lon, lat });
 
         recalc();
@@ -259,11 +265,11 @@ static void drawPath(U8G2 &u8g2) {
     drawMa(u8g2, 2, 15, ma);
 
     // рисуем стартовую точку
-    if (/*path.frstmode() && */(path.size() > 0)) {
+    if (path.frstmode() && (path.size() > 0)) {
         auto p = path[0];
         pntmap(p);
         u8g2.setFont(u8g2_font_open_iconic_www_1x_t);
-        u8g2.drawGlyph(p.x-3, p.y+4, 0x40);
+        u8g2.drawGlyph(p.x-4, p.y, 'G');
         //u8g2.drawLine(p.x-3, p.y-3, p.x+3, p.y+3);
         //u8g2.drawLine(p.x+3, p.y-3, p.x-3, p.y+3);
     }

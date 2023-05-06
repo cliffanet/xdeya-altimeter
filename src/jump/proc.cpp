@@ -252,7 +252,7 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
     }
 
     // перерисовываем путь на странице navpath
-    for (uint32_t old = 30; old > 0; old--) {
+    for (uint32_t old = ac.jmpcnt(); old > 0; old--) {
         auto cur = jmpPreCursor()-old;
         auto li = jmpPreLog(cur);
         navPathAdd(jmpmode, (li.flags & LI_FLAG_NAV_VLOC) > 0, li.lon, li.lat, DEGRAD * li.heading);
