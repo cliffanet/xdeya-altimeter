@@ -213,6 +213,17 @@ static void drawPntC(U8G2 &u8g2, const pnt_t &p) {
     u8g2.setDrawColor(1);
 }
 
+static void drawMa(U8G2 &u8g2, int x, int y, const ma_t &ma) {
+    u8g2.drawLine(x, y-5, x, y);
+    u8g2.drawLine(x, y, x+32, y);
+    u8g2.drawLine(x+32, y, x+32, y-5);
+    char s[10];
+    strncpy_P(s, ma.txt, sizeof(s));
+    s[sizeof(s)-1] = '\0';
+    u8g2.setFont(u8g2_font_b10_b_t_japanese1);
+    u8g2.drawStr(x + (32-u8g2.getTxtWidth(s)) / 2, y-2, s);
+}
+
 static void drawPath(U8G2 &u8g2) {
     int w = u8g2.getDisplayWidth();
     int h = u8g2.getDisplayHeight();
@@ -245,14 +256,7 @@ static void drawPath(U8G2 &u8g2) {
         p.y = h-p.y;
 
     // Печать масштаба в углу
-    u8g2.drawLine(2, h-8, 2, h-3);
-    u8g2.drawLine(2, h-3, 34, h-3);
-    u8g2.drawLine(34, h-3, 34, h-8);
-    char s[64];
-    strncpy_P(s, ma.txt, sizeof(s));
-    s[sizeof(s)-1] = '\0';
-    u8g2.setFont(u8g2_font_b10_b_t_japanese1);
-    u8g2.drawStr(2 + (32-u8g2.getTxtWidth(s)) / 2, h-5, s);
+    drawMa(u8g2, 2, 15, ma);
 
     // рисуем стартовую точку
     if (/*path.frstmode() && */(path.size() > 0)) {
@@ -320,27 +324,10 @@ static void drawText(U8G2 &u8g2) {
     u8g2.drawStr(w-u8g2.getStrWidth(s), u8g2.getAscent(), s);
     
     // Расстояние до точки
-    int y1 = u8g2.getAscent();
-    auto &gps = gpsInf();
-    if (gps.validLocation() && gps.validPoint() && pnt.numValid() && pnt.cur().used) {
-        double dist =
-            gpsDistance(
-                gps.getLat(),
-                gps.getLon(),
-                pnt.cur().lat, 
-                pnt.cur().lng
-            );
-    
-        if (dist < 950) 
-            sprintf_P(s, PSTR("%0.0fm"), dist);
-        else if (dist < 9500) 
-            sprintf_P(s, PSTR("%0.1fk"), dist/1000);
-        else if (dist < 950000) 
-            sprintf_P(s, PSTR("%0.0fk"), dist/1000);
-        else
-            sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
-        u8g2.drawStr(w-u8g2.getStrWidth(s), h, s);
-    }
+    ViewMain::drawNavDist(u8g2, h);
+
+    // Количество спутников
+    ViewMain::drawNavSat(u8g2);
 }
 
 class ViewMainNavPath : public ViewMain {

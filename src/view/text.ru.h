@@ -298,11 +298,11 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_LOGBOOK_TIMECNP         "Длит. пилотир"
 
 #define TXT_MAIN_VERTSPEED          "%.0f км/ч"
-#define TXT_MAIN_NAVSTATE_OFF       "gps откл"
-#define TXT_MAIN_NAVSTATE_INIT      "gps иниц"
-#define TXT_MAIN_NAVSTATE_INITFAIL  "gps ош.иниц."
-#define TXT_MAIN_NAVSTATE_NODATA    "нет gps данных"
-#define TXT_MAIN_NAVSTATE_SATCOUNT  "сп: %d"
+#define TXT_MAIN_NAVSTATE_OFF       "выкл"
+#define TXT_MAIN_NAVSTATE_INIT      "иниц"
+#define TXT_MAIN_NAVSTATE_INITFAIL  "ош.иниц."
+#define TXT_MAIN_NAVSTATE_NODATA    "нет данных"
+#define TXT_MAIN_NAVSTATE_SATCOUNT  "%d"
 #define TXT_MAIN_NAVSTATE_CRS       "крс:"
 #define TXT_MAIN_NAVSTATE_PNT       "тчк:"
 

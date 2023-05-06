@@ -97,53 +97,10 @@ static void drawText(ARG_COMP_DEF) {
     u8g2.drawStr(0, u8g2.getAscent(), s);
     
     // Расстояние до точки
-    int y1 = u8g2.getAscent();
-    auto &gps = gpsInf();
-    if (gps.validLocation() && gps.validPoint() && pnt.numValid() && pnt.cur().used) {
-        double dist =
-            gpsDistance(
-                gps.getLat(),
-                gps.getLon(),
-                pnt.cur().lat, 
-                pnt.cur().lng
-            );
-    
-        if (dist < 950) 
-            sprintf_P(s, PSTR("%0.0fm"), dist);
-        else if (dist < 9500) 
-            sprintf_P(s, PSTR("%0.1fk"), dist/1000);
-        else if (dist < 950000) 
-            sprintf_P(s, PSTR("%0.0fk"), dist/1000);
-        else
-            sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
-        u8g2.drawStr(w-u8g2.getStrWidth(s), y1, s);
-    }
+    ViewMain::drawNavDist(u8g2, u8g2.getAscent());
     
     // Количество спутников
-    u8g2.setFont(menuFont);
-    switch (gpsState()) {
-        case NAV_STATE_OFF:
-            strcpy_P(s, PTXT(MAIN_NAVSTATE_OFF));
-            break;
-        
-        case NAV_STATE_INIT:
-            strcpy_P(s, PTXT(MAIN_NAVSTATE_INIT));
-            break;
-        
-        case NAV_STATE_FAIL:
-            strcpy_P(s, PTXT(MAIN_NAVSTATE_INITFAIL));
-            break;
-        
-        case NAV_STATE_NODATA:
-            strcpy_P(s, PTXT(MAIN_NAVSTATE_NODATA));
-            break;
-        
-        case NAV_STATE_OK:
-            sprintf_P(s, PTXT(MAIN_NAVSTATE_SATCOUNT), gps.numSV);
-            break;
-    }
-    y1 += 2+u8g2.getAscent();
-    u8g2.drawTxt(w-u8g2.getTxtWidth(s), compass().ok ? y1 : h-2, s);
+    ViewMain::drawNavSat(u8g2);
     
     // запись трека
 #if HWVER < 4

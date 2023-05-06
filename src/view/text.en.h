@@ -292,11 +292,11 @@
 #define TXT_LOGBOOK_TIMECNP         "CNP time"
 
 #define TXT_MAIN_VERTSPEED          "%.0f km/h"
-#define TXT_MAIN_NAVSTATE_OFF       "gps off"
-#define TXT_MAIN_NAVSTATE_INIT      "gps init"
-#define TXT_MAIN_NAVSTATE_INITFAIL  "gps init fail"
-#define TXT_MAIN_NAVSTATE_NODATA    "no gps data"
-#define TXT_MAIN_NAVSTATE_SATCOUNT  "s: %d"
+#define TXT_MAIN_NAVSTATE_OFF       "off"
+#define TXT_MAIN_NAVSTATE_INIT      "init"
+#define TXT_MAIN_NAVSTATE_INITFAIL  "fail"
+#define TXT_MAIN_NAVSTATE_NODATA    "no data"
+#define TXT_MAIN_NAVSTATE_SATCOUNT  "%d"
 #define TXT_MAIN_NAVSTATE_CRS       "crs:"
 #define TXT_MAIN_NAVSTATE_PNT       "pnt:"
 

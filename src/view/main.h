@@ -28,8 +28,10 @@ class ViewMain : public View {
         void btnLong(btn_code_t btn);
         bool useLong(btn_code_t btn) { return true; };
         
-        void drawState(U8G2 &u8g2);
-        void drawClock(U8G2 &u8g2);
+        static void drawState(U8G2 &u8g2);
+        static void drawClock(U8G2 &u8g2);
+        static void drawNavSat(U8G2 &u8g2);
+        static void drawNavDist(U8G2 &u8g2, int y);
 };
 
 void setViewMain(int8_t mode = MODE_MAIN_LAST, bool save = true);

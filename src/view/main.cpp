@@ -7,6 +7,7 @@
 #include "../clock.h"
 #include "../jump/track.h"
 #include "../navi/proc.h"
+#include "../cfg/point.h"
 
 static RTC_DATA_ATTR uint8_t mode = MODE_MAIN_ALTNAV; // Текущая страница отображения, сохраняется при переходе в меню
 
@@ -108,6 +109,62 @@ void ViewMain::drawClock(U8G2 &u8g2) {
     u8g2.setFont(u8g2_font_amstrad_cpc_extended_8n);
     u8g2.drawStr(80, 10, s);
 #endif // if HWVER < 4
+}
+
+void ViewMain::drawNavSat(U8G2 &u8g2) {
+    auto &gps = gpsInf();
+    char s[50];
+    
+    u8g2.setFont(menuFont);
+    
+    switch (gpsState()) {
+        case NAV_STATE_OFF:
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_OFF));
+            break;
+        
+        case NAV_STATE_INIT:
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_INIT));
+            break;
+        
+        case NAV_STATE_FAIL:
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_INITFAIL));
+            break;
+        
+        case NAV_STATE_NODATA:
+            strcpy_P(s, PTXT(MAIN_NAVSTATE_NODATA));
+            break;
+        
+        case NAV_STATE_OK:
+            sprintf_P(s, PTXT(MAIN_NAVSTATE_SATCOUNT), gps.numSV);
+            break;
+    }
+    u8g2.drawTxt(0, u8g2.getDisplayHeight()-1, s);
+}
+
+void ViewMain::drawNavDist(U8G2 &u8g2, int y) {
+    auto &gps = gpsInf();
+    if (!gps.validLocation() || !gps.validPoint() || !pnt.numValid() || !pnt.cur().used)
+        return;
+    
+    char s[10];
+    double dist =
+        gpsDistance(
+            gps.getLat(),
+            gps.getLon(),
+            pnt.cur().lat, 
+            pnt.cur().lng
+        );
+
+    if (dist < 950) 
+        sprintf_P(s, PSTR("%0.0fm"), dist);
+    else if (dist < 9500) 
+        sprintf_P(s, PSTR("%0.1fk"), dist/1000);
+    else if (dist < 950000) 
+        sprintf_P(s, PSTR("%0.0fk"), dist/1000);
+    else
+        sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
+
+    u8g2.drawStr(u8g2.getDisplayWidth() - u8g2.getStrWidth(s), y, s);
 }
 
 void setViewMain(int8_t m, bool save) {

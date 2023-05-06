@@ -50,39 +50,6 @@ static inline pnt_t pntinit(int cx, int cy, const pnt_t &p, double ang) {
 #define ARG_COMP_DEF   U8G2 &u8g2, int cx, int cy, int w, int h
 #define ARG_COMP_CALL  u8g2, cx, cy, w, h
 
-
-
-static void drawGpsState(U8G2 &u8g2) {
-    auto &gps = gpsInf();
-    char s[50];
-    
-    u8g2.setFont(menuFont);
-    
-    switch (gpsState()) {
-        case NAV_STATE_OFF:
-            strcpy_P(s, PTXT(MAIN_NAVSTATE_OFF));
-            break;
-        
-        case NAV_STATE_INIT:
-            strcpy_P(s, PTXT(MAIN_NAVSTATE_INIT));
-            break;
-        
-        case NAV_STATE_FAIL:
-            strcpy_P(s, PTXT(MAIN_NAVSTATE_INITFAIL));
-            break;
-        
-        case NAV_STATE_NODATA:
-            strcpy_P(s, PTXT(MAIN_NAVSTATE_NODATA));
-            break;
-        
-        case NAV_STATE_OK:
-            sprintf_P(s, PTXT(MAIN_NAVSTATE_SATCOUNT), gps.numSV);
-            break;
-    }
-    u8g2.drawTxt(0, u8g2.getDisplayHeight()-1, s);
-}
-
-
 #if HWVER < 4
 
 static void drawText(ARG_COMP_DEF) {
@@ -134,28 +101,13 @@ static void drawText(ARG_COMP_DEF) {
     u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 30, s);
 
     // навигация
+
+    // Расстояние до точки
+    u8g2.setFont(u8g2_font_fub20_tf);
+    ViewMain::drawNavDist(u8g2, 54);
+
+    // гориз скорость
     auto &gps = gpsInf();
-    if (gps.validLocation() && gps.validPoint() && pnt.numValid() && pnt.cur().used) {
-        double dist = 
-            gpsDistance(
-                gps.getLat(),
-                gps.getLon(),
-                pnt.cur().lat, 
-                pnt.cur().lng
-            );
-
-        u8g2.setFont(u8g2_font_fub20_tf);
-        if (dist < 950) 
-            sprintf_P(s, PSTR("%0.0fm"), dist);
-        else if (dist < 9500) 
-            sprintf_P(s, PSTR("%0.1fk"), dist/1000);
-        else if (dist < 950000) 
-            sprintf_P(s, PSTR("%0.0fk"), dist/1000);
-        else
-            sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
-        u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 54, s);
-    }
-
     if (gps.validSpeed()) {
         u8g2.setFont(menuFont);
         sprintf_P(s, PTXT(MAIN_3DSPEED_MS), NAV_CM_F(gps.gSpeed));
@@ -214,28 +166,13 @@ static void drawText(ARG_COMP_DEF) {
     u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s)+6, 44, s);
 
     // навигация
+
+    // Расстояние до точки
+    u8g2.setFont(u8g2_font_logisoso30_tf);
+    ViewMain::drawNavDist(u8g2, 81);
+
+    // гориз скорость
     auto &gps = gpsInf();
-    if (gps.validLocation() && gps.validPoint() && pnt.numValid() && pnt.cur().used) {
-        double dist = 
-            gpsDistance(
-                gps.getLat(),
-                gps.getLon(),
-                pnt.cur().lat, 
-                pnt.cur().lng
-            );
-
-        u8g2.setFont(u8g2_font_logisoso30_tf);
-        if (dist < 950) 
-            sprintf_P(s, PSTR("%0.0fm"), dist);
-        else if (dist < 9500) 
-            sprintf_P(s, PSTR("%0.1fk"), dist/1000);
-        else if (dist < 950000) 
-            sprintf_P(s, PSTR("%0.0fk"), dist/1000);
-        else
-            sprintf_P(s, PSTR("%0.2fM"), dist/1000000);
-        u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 81, s);
-    }
-
     if (gps.validSpeed()) {
         u8g2.setFont(u8g2_font_ImpactBits_tr);
         sprintf_P(s, PSTR("%0.1f m/s"), NAV_CM_F(gps.gSpeed));
@@ -447,7 +384,7 @@ class ViewMainAltNav : public ViewMain {
             
             drawGrid(ARG_COMP_CALL);
             drawText(ARG_COMP_CALL); // Весь текст пишем в самом начале, чтобы графика рисовалась поверх
-            drawGpsState(u8g2);
+            drawNavSat(u8g2);
             
             drawCompass(ARG_COMP_CALL, compass().head);
         }
