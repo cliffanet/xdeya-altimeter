@@ -309,10 +309,6 @@ static void drawPath(U8G2 &u8g2) {
 }
 
 static void drawText(U8G2 &u8g2) {
-    char s[50];
-    int w = u8g2.getDisplayWidth();
-    int h = u8g2.getDisplayHeight();
-    
     // Шрифт для высоты и расстояния
 #if HWVER < 4
     u8g2.setFont(u8g2_font_helvB08_tr);
@@ -321,16 +317,10 @@ static void drawText(U8G2 &u8g2) {
 #endif
     
     // Высота
-    auto &ac = altCalc();
-    int16_t alt = round(ac.alt() + cfg.d().altcorrect);
-    int16_t o = alt % ALT_STEP;
-    alt -= o;
-    if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
-    sprintf_P(s, PSTR("%d"), alt);
-    u8g2.drawStr(w-u8g2.getStrWidth(s), u8g2.getAscent(), s);
+    ViewMain::drawAlt(u8g2, -1, u8g2.getAscent());
     
     // Расстояние до точки
-    ViewMain::drawNavDist(u8g2, h);
+    ViewMain::drawNavDist(u8g2, u8g2.getDisplayHeight());
 
     // Количество спутников
     ViewMain::drawNavSat(u8g2);

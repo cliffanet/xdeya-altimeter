@@ -60,15 +60,8 @@ static void drawText(ARG_COMP_DEF) {
     // Высота и скорость снижения
     auto &ac = altCalc();
     if (ac.state() > ACST_INIT) {
-        u8g2.setFont(u8g2_font_ncenB08_tr);
-        int16_t alt = round(ac.alt() + cfg.d().altcorrect);
-        int16_t o = alt % ALT_STEP;
-        alt -= o;
-        if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
-
         u8g2.setFont(u8g2_font_fub20_tn);
-        sprintf_P(s, PSTR("%d"), alt);
-        u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 20, s);
+        ViewMain::drawAlt(u8g2, -1, 20);
         
         switch (ac.direct()) {
             case ACDIR_UP:
@@ -125,15 +118,8 @@ static void drawText(ARG_COMP_DEF) {
     // Высота и скорость снижения
     auto &ac = altCalc();
     if (ac.state() > ACST_INIT) {
-        u8g2.setFont(u8g2_font_ncenB08_tr);
-        int16_t alt = round(ac.alt() + cfg.d().altcorrect);
-        int16_t o = alt % ALT_STEP;
-        alt -= o;
-        if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
-
         u8g2.setFont(u8g2_font_logisoso30_tf);
-        sprintf_P(s, PSTR("%d"), alt);
-        u8g2.drawStr(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), 30, s);
+        ViewMain::drawAlt(u8g2, -1, 30);
         
         switch (ac.direct()) {
             case ACDIR_UP:

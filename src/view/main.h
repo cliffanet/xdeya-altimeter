@@ -30,6 +30,7 @@ class ViewMain : public View {
         
         static void drawState(U8G2 &u8g2);
         static void drawClock(U8G2 &u8g2);
+        static void drawAlt(U8G2 &u8g2, int x, int y);
         static void drawNavSat(U8G2 &u8g2);
         static void drawNavDist(U8G2 &u8g2, int y);
 };

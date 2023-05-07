@@ -77,8 +77,6 @@ static void drawGrid(ARG_COMP_DEF) {
 }
 
 static void drawText(ARG_COMP_DEF) {
-    char s[50];
-    
     // Шрифт для высоты и расстояния
 #if HWVER < 4
     u8g2.setFont(u8g2_font_helvB08_tr);
@@ -87,14 +85,7 @@ static void drawText(ARG_COMP_DEF) {
 #endif
     
     // Высота
-    auto &ac = altCalc();
-    int16_t alt = round(ac.alt() + cfg.d().altcorrect);
-    int16_t o = alt % ALT_STEP;
-    alt -= o;
-    if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
-    sprintf_P(s, PSTR("%d"), alt);
-    
-    u8g2.drawStr(0, u8g2.getAscent(), s);
+    ViewMain::drawAlt(u8g2, 0, u8g2.getAscent());
     
     // Расстояние до точки
     ViewMain::drawNavDist(u8g2, u8g2.getAscent());

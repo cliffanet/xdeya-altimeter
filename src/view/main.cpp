@@ -5,6 +5,7 @@
 #include "../log.h"
 #include "../power.h" // pwrBattRaw()
 #include "../clock.h"
+#include "../jump/proc.h"
 #include "../jump/track.h"
 #include "../navi/proc.h"
 #include "../cfg/point.h"
@@ -109,6 +110,24 @@ void ViewMain::drawClock(U8G2 &u8g2) {
     u8g2.setFont(u8g2_font_amstrad_cpc_extended_8n);
     u8g2.drawStr(80, 10, s);
 #endif // if HWVER < 4
+}
+
+void ViewMain::drawAlt(U8G2 &u8g2, int x, int y) {
+    auto &ac = altCalc();
+    if (ac.state() <= ACST_INIT)
+        return;
+    
+    int16_t alt = round(ac.alt() + cfg.d().altcorrect);
+    int16_t o = alt % ALT_STEP;
+    alt -= o;
+    if (abs(o) > ALT_STEP_ROUND) alt+= o >= 0 ? ALT_STEP : -ALT_STEP;
+
+    char s[10];
+    snprintf_P(s, sizeof(s), PSTR("%d"), alt);
+
+    if (x < 0)
+        x = u8g2.getDisplayWidth()-u8g2.getStrWidth(s) + x + 1;
+    u8g2.drawStr(x, y, s);
 }
 
 void ViewMain::drawNavSat(U8G2 &u8g2) {
