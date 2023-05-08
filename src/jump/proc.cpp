@@ -20,6 +20,7 @@ static Adafruit_BMP280 bmp(5); // hardware SPI on IO5
 static AltCalc ac;
 
 static jmp_cur_t logcursor;
+static uint32_t logid = 0;
 static log_item_t logall[JMP_PRELOG_SIZE] = { { 0 } };
 
 /* ------------------------------------------------------------------------------------------- *
@@ -36,8 +37,8 @@ AltCalc & altCalc() {
 static void jmpPreLogAdd(uint16_t interval) {
     auto &gps = gpsInf();
     
-    logcursor ++;
-    auto &li = logall[*logcursor];
+    logid++;
+    auto &li = logall[logcursor.nxt()];
     
     li = {
         tmoffset    : interval,
@@ -111,20 +112,33 @@ static void jmpPreLogAdd(uint16_t interval) {
 /* ------------------------------------------------------------------------------------------- *
  *  Получение текущего индекса и данных по любому индексу
  * ------------------------------------------------------------------------------------------- */
+uint32_t jmpPreId() { return logid; }
+uint16_t jmpPreOld(uint32_t prvid) {
+    uint32_t old = logid - prvid;
+    return 
+        old >= JMP_PRELOG_SIZE ?
+            JMP_PRELOG_SIZE-1 :
+            old;
+}
 const jmp_cur_t &jmpPreCursor() {
+    // вроде уже нигде не используется, только для отладки
+    // можно удалять
+    // к функциям jmpPreLog и jmpPreInterval обращаемся теперь только через old,
+    // который вычисляем через разницу в jmpPreId() или внутри у себя считаем тики
     return logcursor;
 }
-const log_item_t &jmpPreLog(const jmp_cur_t &cursor) {
-    return logall[*cursor];
+const log_item_t &jmpPreLog(uint16_t old) {
+    return logall[logcursor[old]];
 }
 
-uint32_t jmpPreInterval(const jmp_cur_t &from) {
-    jmp_cur_t cursor = logcursor;
+uint32_t jmpPreInterval(uint16_t old) {
     uint32_t interval = 0;
     
-    while (cursor != from) {
-        interval += logall[*cursor].tmoffset;
-        cursor--;
+    if (old > logcursor.capacity())
+        old = logcursor.capacity();
+
+    for (; old > 0; old--) {
+        interval += logall[logcursor[old-1]].tmoffset;
     }
     
     return interval;
@@ -178,9 +192,9 @@ bool jmpTakeoffCheck() {
  *  Обработка изменения режима высотомера
  * ------------------------------------------------------------------------------------------- */
 static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
-    MONITOR("altState: %d / %d", prev, jmpmode);
-    MONITOR("alt: %d", ac.alt());
-    MONITOR("count: %d", ac.jmpcnt());
+    //MONITOR("state: %d / %d (cnt %d, alt %.0f)", prev, jmpmode, ac.jmpcnt(), ac.alt());
+    auto tm = tmNow();
+    MONITOR("time(%d/%d) %d.%02d.%d %d:%02d:%02d", jmpmode, ac.jmpcnt(), tm.day, tm.mon, tm.year, tm.h, tm.m, tm.s);
 
     if ((prev == ACJMP_FREEFALL) && cfg.d().dsplautoff) {
         // Восстанавливаем обработчики после принудительного FF-режима
@@ -201,7 +215,7 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
         // флагом LI_FLAG_JMPDECISS - момент принятия решения о начале прыжка
         logall[*logcursor].flags            |= LI_FLAG_JMPDECISS;
         // А момент, который мы считаем отделением - флагом LI_FLAG_JMPBEG
-        logall[*(logcursor - jmpcnt)].flags |= LI_FLAG_JMPBEG;
+        logall[logcursor[jmpcnt]].flags |= LI_FLAG_JMPBEG;
 
         // Временно сделаем, чтобы при автозапуске трека, он начинал писать чуть заранее до отделения
         trkStart(TRK_RUNBY_JMPBEG, jmpcnt+50);
@@ -222,7 +236,7 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
         case ACJMP_CANOPY:
             setViewMain(cfg.d().dsplcnp, false);
             
-            logall[*(logcursor - jmpcnt)].flags  |= LI_FLAG_JMPCNP;
+            logall[logcursor[jmpcnt]].flags  |= LI_FLAG_JMPCNP;
             jmp.cnp(jmpcnt);
             break;
             
@@ -252,9 +266,11 @@ static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
     }
 
     // перерисовываем путь на странице navpath
-    for (uint32_t old = ac.jmpcnt(); old > 0; old--) {
-        auto cur = jmpPreCursor()-old;
-        auto li = jmpPreLog(cur);
+    uint32_t old = ac.jmpcnt()+1;
+    if (old > JMP_PRELOG_SIZE)
+        old = JMP_PRELOG_SIZE;
+    for (; old > 0; old--) {
+        auto li = jmpPreLog(old-1);
         navPathAdd(jmpmode, (li.flags & LI_FLAG_NAV_VLOC) > 0, li.lon, li.lat, DEGRAD * li.heading);
     }
     

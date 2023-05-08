@@ -2,6 +2,7 @@
 #include "jump.h"
 #include "../jump/logbook.h"
 #include "../clock.h"
+#include "../monlog.h"
 
 #include "esp_system.h"
 
@@ -59,10 +60,16 @@ bool ConfigJump::toff(uint16_t old) {
     
     data.last.num = data.count;
     
+    data.last.tm = tmNow(jmpPreInterval(old));
+#ifdef FWVER_DEBUG
+    MONITOR("toff[%d]: %d.%02d.%d %d:%02d:%02d", old, 
+        data.last.tm.day, data.last.tm.mon, data.last.tm.year,
+        data.last.tm.h, data.last.tm.m, data.last.tm.s);
     auto cur = jmpPreCursor()-old;
-    data.last.tm = tmNow(jmpPreInterval(cur));
+    MONITOR("cur toff: %d(%d) / %d / %d (%d)", cur.value(), jmpPreCursor().value(), cur.capacity(), cur.size());
+#endif // FWVER_DEBUG
     
-    data.last.toff = jmpPreLog(cur);
+    data.last.toff = jmpPreLog(old);
     data.last.toff.tmoffset = 0;
     data.last.toff.msave = utm() / 1000;
     
@@ -79,19 +86,22 @@ bool ConfigJump::beg(uint16_t old) {
     data.count++;
     data.last.num = data.count;
     
-    auto cur = jmpPreCursor()-old;
-    
-    auto tm = tmNow(jmpPreInterval(cur));
+    auto tm = tmNow(jmpPreInterval(old));
+    MONITOR("beg[%d]: %d.%02d.%d %d:%02d:%02d", old, tm.day, tm.mon, tm.year, tm.h, tm.m, tm.s);
     if (data.state == LOGJMP_TOFF)
         data.last.toff.tmoffset = tmInterval(data.last.tm, tm);
     data.last.tm = tm;
+#ifdef FWVER_DEBUG
+    auto cur = jmpPreCursor()-old;
+    MONITOR("cur beg: %d(%d) / %d / %d (%d)", cur.value(), jmpPreCursor().value(), cur.capacity(), cur.size());
+#endif // FWVER_DEBUG
     
     if (data.last.key == 0)
         // перегенерируем key только если он нулевой (не используется никем)
         keygen();
     data.state = LOGJMP_BEG;
     
-    data.last.beg = jmpPreLog(cur);
+    data.last.beg = jmpPreLog(old);
     data.last.beg.tmoffset = 0;
     data.last.beg.msave = utm() / 1000;
     data.last.cnp = data.last.beg;
@@ -109,11 +119,10 @@ bool ConfigJump::cnp(uint16_t old) {
     
     data.state = LOGJMP_CNP;
     
-    auto cur = jmpPreCursor()-old;
+    auto tm = tmNow(jmpPreInterval(old));
+    MONITOR("cnp[%d]: %d.%02d.%d %d:%02d:%02d", old, tm.day, tm.mon, tm.year, tm.h, tm.m, tm.s);
     
-    auto tm = tmNow(jmpPreInterval(cur));
-    
-    data.last.cnp = jmpPreLog(cur);
+    data.last.cnp = jmpPreLog(old);
     data.last.cnp.tmoffset = tmInterval(data.last.tm, tm);
     data.last.cnp.msave = utm() / 1000;
     data.last.end = data.last.cnp;
@@ -131,6 +140,7 @@ bool ConfigJump::end() {
     }
     
     data.state = LOGJMP_NONE;
+    MONITOR("jmp end");
     
     data.last.end = jmpPreLog();
     data.last.end.tmoffset = tmIntervalToNow(data.last.tm);

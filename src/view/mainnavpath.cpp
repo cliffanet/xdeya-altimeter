@@ -103,14 +103,14 @@ public:
     void add(int mode, bool valid, int32_t lon, int32_t lat, double ang) {
         if (m_mode != mode) {
             CONSOLE("cleared by mode %d (val: %d, prv: %d)", mode, valid, m_mode);
-            MONITOR("clear: %d (val: %d, prv: %d)", mode, valid, m_mode);
+            //MONITOR("clear: %d (val: %d, prv: %d)", mode, valid, m_mode);
             data.clear();
             m_mode = mode;
             m_ang = 0;
         }
         if (data.size() == 0) {
             m_frstmode = valid;
-            MONITOR("m_frstmode beg: %d", m_frstmode);
+            //MONITOR("m_frstmode beg: %d", m_frstmode);
         }
 
         if (valid)
@@ -118,7 +118,7 @@ public:
 
         if (m_frstmode && (data.size() == data.capacity())) {
             m_frstmode = false;
-            MONITOR("m_frstmode end");
+            //MONITOR("m_frstmode end");
         }
         data.push_back({ valid, lon, lat });
 

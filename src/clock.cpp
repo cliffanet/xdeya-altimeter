@@ -256,6 +256,8 @@ void clockInit() {
 #endif
     
     initok = true;
+
+    clockUpd();
 }
 
 static uint16_t adj = 0;

@@ -232,7 +232,7 @@ class trkWrk : public Wrk {
     uint8_t m_by;
     uint8_t m_cnt;
     uint32_t tmoffset;
-    jmp_cur_t prelogcur;
+    uint32_t preid;
     bool useext;
     FileTrack tr;
     WrkProc<trkRotate> m_rotate;
@@ -240,7 +240,7 @@ class trkWrk : public Wrk {
 public:
     trkWrk(uint8_t by, uint16_t old = 0) : m_by(by), m_cnt(0) {
         CONSOLE("track(0x%08x) begin by:0x%02x", this, by);
-        prelogcur = jmpPreCursor()-old;
+        preid = jmpPreId()-old;
         tmoffset = 0;
         if (old > 0)
             // если мы начали не с текущего момента, то отнимем из offset первую запись,
@@ -249,7 +249,7 @@ public:
             // какой там будет tmoffset, поэтому в этом случае начинаться лог будет уже не с нуля.
             // Но это и логично, т.к. первая запись в логе появится не сразу после запуска,
             // а только с появлением её в prelog
-            tmoffset -= jmpPreLog(prelogcur+1).tmoffset;
+            tmoffset -= jmpPreLog(JMP_PRELOG_SIZE).tmoffset;
     }
 #ifdef FWVER_DEBUG
     ~trkWrk() {
@@ -296,7 +296,7 @@ public:
             if (jmp.state() == LOGJMP_NONE) // в случае, если прыг не начался (включение трека до начала прыга),
                 th.jmpnum ++;          // за номер прыга считаем следующий
             th.jmpkey = jmp.key();
-            th.tmbeg = tmNow(jmpPreInterval(prelogcur));
+            th.tmbeg = tmNow(jmpPreInterval(jmpPreOld(preid)));
 
             if (!tr.create(th))
                 WPRC_ERR("Track file create fail");
@@ -305,18 +305,23 @@ public:
         }
         
         //CONSOLE("diff: %d", jmpPreCursor()-prelogcur);
-        if (prelogcur == jmpPreCursor())
+        uint32_t old = jmpPreId()-preid;
+        if (old == 0)
             return DLY;
         
 #ifdef FWVER_DEBUG
-        int old = jmpPreCursor() - prelogcur;
-        if (old > 3) {
-            CONSOLE("old: %d", old);
+        if (old > 4) {
+            CONSOLE("old: %d", old-1);
         }
 #endif // FWVER_DEBUG
-        
-        prelogcur++;
-        auto ti = jmpPreLog(prelogcur);
+
+        if (old > JMP_PRELOG_SIZE) {
+            old = JMP_PRELOG_SIZE;
+            preid = jmpPreId()-old;
+        }
+        preid++;
+
+        auto ti = jmpPreLog(old-1);
         
         tmoffset += ti.tmoffset;
         ti.tmoffset = tmoffset;
