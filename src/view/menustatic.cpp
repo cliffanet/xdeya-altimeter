@@ -555,20 +555,21 @@ static const menu_el_t menugpson[] {
                 case 3: strcpy_P(txt, PTXT(MENU_NAV_GNSS_GLONGPS)); break;
                 case 1: strcpy_P(txt, PTXT(MENU_NAV_GNSS_GLONASS)); break;
                 case 2: strcpy_P(txt, PTXT(MENU_NAV_GNSS_GPS)); break;
+                case 4: strcpy_P(txt, PTXT(MENU_NAV_GNSS_ALL)); break;
                 default: *txt = 0;
             }
         },
         .edit       = [] (int val) {
             if (val > 0) {
                 cfg.set().navgnss =
-                        cfg.d().navgnss >= 3 ?
+                        cfg.d().navgnss >= 4 ?
                             1 : cfg.d().navgnss+1;
             }
             else
             if (val < 0) {
                 cfg.set().navgnss =
                         cfg.d().navgnss <= 1 ?
-                            3 : cfg.d().navgnss-1;
+                            4 : cfg.d().navgnss-1;
             }
             gpsUpdateCfgGNSS();
         },

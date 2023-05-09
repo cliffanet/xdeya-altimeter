@@ -72,6 +72,7 @@
 #define TXT_MENU_NAV_GNSS_GLONASS   "GLONASS"
 #define TXT_MENU_NAV_GNSS_GPS       "GPS"
 #define TXT_MENU_NAV_GNSS_GLONGPS   "GLON+GPS"
+#define TXT_MENU_NAV_GNSS_ALL       "all"
 
 #define TXT_MENU_NAV_MODEL              "Model"
 #define TXT_MENU_NAV_MODEL_PORTABLE     "PORT"

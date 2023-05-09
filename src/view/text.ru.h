@@ -78,6 +78,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_NAV_GNSS_GLONASS   "GLONASS"
 #define TXT_MENU_NAV_GNSS_GPS       "GPS"
 #define TXT_MENU_NAV_GNSS_GLONGPS   "GLON+GPS"
+#define TXT_MENU_NAV_GNSS_ALL       "все"
 
 #define TXT_MENU_NAV_MODEL              "dyn-Модель"
 #define TXT_MENU_NAV_MODEL_PORTABLE     "PORT"

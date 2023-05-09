@@ -623,30 +623,74 @@ bool gpsUpdateCfgGNSS() {
         uint32_t flags;         // Bitfield of flags. At least one signal must
                                 // be configured in every enabled system.
     } sys_t;
+
+    const struct {
+        bool glo, gps, all;
+    } use {
+        .glo    = ((cfg.d().navgnss & 0x1) > 0) || ((cfg.d().navgnss & 0x4) > 0),
+        .gps    = ((cfg.d().navgnss & 0x2) > 0) || ((cfg.d().navgnss & 0x4) > 0),
+        .all    = (cfg.d().navgnss & 0x4) > 0,
+    };
+    CONSOLE("cfg navgnss: %d; glo: %d, gps: %d, all: %d", cfg.d().navgnss, use.glo, use.gps, use.all);
     
     const struct {
         hdr_t hdr;
-        sys_t glon, gps;
+        sys_t glon, gps, sbas, galileo, beidoo, imes, qzss;
     } data = {
         .hdr    = {
             .msgVer     = 0x00,
             .numTrkChHw = 32,
-            .numTrkChUse= 32,
-            .numConfigBlocks=2,
+            .numTrkChUse= 0xFF,
+            .numConfigBlocks=7,
         },
         .glon    = {
             .gnssId     = 0x06,
-            .resTrkCh   = 8,
-            .maxTrkCh   = static_cast<uint8_t>(cfg.d().navgnss & 0x2U ? 16 : 32),
+            .resTrkCh   = 6,
+            .maxTrkCh   = static_cast<uint8_t>(use.all ? 12 : use.gps ? 16 : 32),
             ._          = 0,
-            .flags      = (0x01<<16) | ((cfg.d().navgnss & 0x1) > 0 ? 0x1U : 0x0U),
+            .flags      = (0x01<<16) | (use.glo ? 0x1 : 0x0),
         },
         .gps    = {
             .gnssId     = 0x00,
-            .resTrkCh   = 8,
-            .maxTrkCh   = static_cast<uint8_t>(cfg.d().navgnss & 0x1U ? 16U : 32U),
+            .resTrkCh   = 6,
+            .maxTrkCh   = static_cast<uint8_t>(use.all ? 12 : use.glo ? 16 : 32),
             ._          = 0,
-            .flags      = (0x01<<16) | ((cfg.d().navgnss & 0x2) > 0 ? 0x1U : 0x0U),
+            .flags      = (0x01<<16) | (use.gps ? 0x1 : 0x0),
+        },
+        .sbas    = {
+            .gnssId     = 0x01,
+            .resTrkCh   = 4,
+            .maxTrkCh   = 10,
+            ._          = 0,
+            .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
+        },
+        .galileo    = {
+            .gnssId     = 0x02,
+            .resTrkCh   = 4,
+            .maxTrkCh   = 10,
+            ._          = 0,
+            .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
+        },
+        .beidoo    = {
+            .gnssId     = 0x03,
+            .resTrkCh   = 4,
+            .maxTrkCh   = 10,
+            ._          = 0,
+            .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
+        },
+        .imes    = {
+            .gnssId     = 0x04,
+            .resTrkCh   = 4,
+            .maxTrkCh   = 10,
+            ._          = 0,
+            .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
+        },
+        .qzss    = {
+            .gnssId     = 0x05,
+            .resTrkCh   = 4,
+            .maxTrkCh   = 10,
+            ._          = 0,
+            .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
         }
     };
     
@@ -654,6 +698,7 @@ bool gpsUpdateCfgGNSS() {
         return false;
 
 #ifdef FWVER_DEBUG
+    delay(2000);
     CONSOLE("get gnss");
     return gps.get(UBX_CFG, UBX_CFG_GNSS, &gpsRecvGnss);
 #else
