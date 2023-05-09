@@ -597,7 +597,7 @@ bool gpsColdRestart() {
 bool gpsUpdateCfgGNSS() {
     CONSOLE("update gnss");
 
-    typedef struct {
+    typedef struct __attribute__((__packed__)) {
     	uint8_t  msgVer;        // Message version (0x00 for this version)
     	uint8_t  numTrkChHw;    // Number of tracking channels available in hardware (read only)
     	uint8_t  numTrkChUse;   // (Read only in protocol versions greater
@@ -608,7 +608,7 @@ bool gpsUpdateCfgGNSS() {
     	uint8_t  numConfigBlocks; // Number of configuration blocks following
     } hdr_t;
     
-    typedef struct {
+    typedef struct __attribute__((__packed__)) {
     	uint8_t  gnssId;        // System identifier
     	uint8_t  resTrkCh;      // (Read only in protocol versions greater
                                 // than 23) Number of reserved (minimum)
@@ -635,7 +635,7 @@ bool gpsUpdateCfgGNSS() {
     
     const struct {
         hdr_t hdr;
-        sys_t glon, gps, sbas, galileo, beidoo, imes, qzss;
+        sys_t gps, sbas, galileo, beidoo, imes, qzss, glon;
     } data = {
         .hdr    = {
             .msgVer     = 0x00,
@@ -643,62 +643,62 @@ bool gpsUpdateCfgGNSS() {
             .numTrkChUse= 0xFF,
             .numConfigBlocks=7,
         },
-        .glon    = {
-            .gnssId     = 0x06,
-            .resTrkCh   = 6,
-            .maxTrkCh   = static_cast<uint8_t>(use.all ? 12 : use.gps ? 16 : 32),
-            ._          = 0,
-            .flags      = (0x01<<16) | (use.glo ? 0x1 : 0x0),
-        },
         .gps    = {
             .gnssId     = 0x00,
-            .resTrkCh   = 6,
-            .maxTrkCh   = static_cast<uint8_t>(use.all ? 12 : use.glo ? 16 : 32),
+            .resTrkCh   = 8,
+            .maxTrkCh   = 32,//static_cast<uint8_t>(use.glo ? 16 : 32),
             ._          = 0,
             .flags      = (0x01<<16) | (use.gps ? 0x1 : 0x0),
         },
         .sbas    = {
             .gnssId     = 0x01,
             .resTrkCh   = 4,
-            .maxTrkCh   = 10,
+            .maxTrkCh   = 8,
             ._          = 0,
             .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
         },
         .galileo    = {
             .gnssId     = 0x02,
             .resTrkCh   = 4,
-            .maxTrkCh   = 10,
+            .maxTrkCh   = 8,
             ._          = 0,
             .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
         },
         .beidoo    = {
             .gnssId     = 0x03,
-            .resTrkCh   = 4,
-            .maxTrkCh   = 10,
+            .resTrkCh   = 8,
+            .maxTrkCh   = 16,
             ._          = 0,
             .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
         },
         .imes    = {
             .gnssId     = 0x04,
             .resTrkCh   = 4,
-            .maxTrkCh   = 10,
+            .maxTrkCh   = 8,
             ._          = 0,
             .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
         },
         .qzss    = {
             .gnssId     = 0x05,
             .resTrkCh   = 4,
-            .maxTrkCh   = 10,
+            .maxTrkCh   = 8,
             ._          = 0,
             .flags      = (0x01<<16) | (use.all ? 0x1 : 0x0),
-        }
+        },
+        .glon    = {
+            .gnssId     = 0x06,
+            .resTrkCh   = 8,
+            .maxTrkCh   = 32,//static_cast<uint8_t>(use.gps ? 16 : 32),
+            ._          = 0,
+            .flags      = (0x01<<16) | (use.glo ? 0x1 : 0x0),
+        },
     };
     
     if (!gps.send(UBX_CFG, UBX_CFG_GNSS, data))
         return false;
 
 #ifdef FWVER_DEBUG
-    delay(2000);
+    delay(3000);
     CONSOLE("get gnss");
     return gps.get(UBX_CFG, UBX_CFG_GNSS, &gpsRecvGnss);
 #else
