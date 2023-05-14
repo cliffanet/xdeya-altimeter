@@ -66,7 +66,7 @@ bool ConfigJump::toff(uint16_t old) {
         data.last.tm.day, data.last.tm.mon, data.last.tm.year,
         data.last.tm.h, data.last.tm.m, data.last.tm.s);
     auto cur = jmpPreCursor()-old;
-    MONITOR("cur toff: %d(%d) / %d / %d (%d)", cur.value(), jmpPreCursor().value(), cur.capacity(), cur.size());
+    MONITOR("cur toff: %d(%d) / %d / %d (%d)", cur.value(), jmpPreCursor().value(), cur.size(), cur.capacity());
 #endif // FWVER_DEBUG
     
     data.last.toff = jmpPreLog(old);
@@ -93,7 +93,7 @@ bool ConfigJump::beg(uint16_t old) {
     data.last.tm = tm;
 #ifdef FWVER_DEBUG
     auto cur = jmpPreCursor()-old;
-    MONITOR("cur beg: %d(%d) / %d / %d (%d)", cur.value(), jmpPreCursor().value(), cur.capacity(), cur.size());
+    MONITOR("cur beg: %d(%d) / %d / %d (%d)", cur.value(), jmpPreCursor().value(), cur.size(), cur.capacity());
 #endif // FWVER_DEBUG
     
     if (data.last.key == 0)

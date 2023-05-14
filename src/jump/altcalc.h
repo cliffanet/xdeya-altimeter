@@ -156,7 +156,7 @@ class AltCalc
         ac_state_t stateupdate();
         // сбрасывает "ноль" высоты в текущие показания и обнуляет все состояния
         void gndreset();
-        void gndset(float press);
+        void gndset(float press, uint16_t interval = 100);
   
     private:
         float _pressgnd = 101325;

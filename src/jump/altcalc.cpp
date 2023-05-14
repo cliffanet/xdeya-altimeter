@@ -31,6 +31,12 @@ void AltCalc::tick(float press, uint16_t tinterval)
     
     if (_state == ACST_INIT) {
         if (_c+1 >= AC_DATA_COUNT) {
+            // в этом месте _press0 ещё не заполнена,
+            // и из-за этого неверно считаются avg-значения
+            // сразу после перехода из init в рабочий режим,
+            // поэтому заполним её самым нулевым значением,
+            // _alt0 будет пересчитана в gndreset();
+            _press0 = _data[0].press;
             gndreset();
             _state = ACST_GROUND;
         }
@@ -281,13 +287,13 @@ void AltCalc::gndreset() {
     dcalc();
 }
 
-void AltCalc::gndset(float press) {
+void AltCalc::gndset(float press, uint16_t tinterval) {
     _pressgnd = press;
     
     if (_state == ACST_INIT) {
         for (auto &d: _data) { // забиваем весь массив текущим значением
             d.press = press;
-            d.interval = 100;
+            d.interval = tinterval;
             d.alt = 0;
         }
         _state = ACST_GROUND;

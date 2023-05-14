@@ -3,6 +3,7 @@
 #include "info.h"
 #include "../jump/proc.h"
 #include "../cfg/main.h"
+#include "../monlog.h"
 
 class ViewMainAlt : public ViewMain {
     public:
@@ -11,7 +12,7 @@ class ViewMainAlt : public ViewMain {
                 return;
             
 #ifdef FWVER_DEBUG
-            setViewInfoDebug();
+            setViewMainAltChart();
 #else
             setViewMain(MODE_MAIN_ALTNAV);
 #endif

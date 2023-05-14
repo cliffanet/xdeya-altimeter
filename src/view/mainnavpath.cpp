@@ -116,7 +116,7 @@ public:
         if (valid)
             m_ang = ang;
 
-        if (m_frstmode && (data.size() == data.capacity())) {
+        if (m_frstmode && data.full()) {
             m_frstmode = false;
             //MONITOR("m_frstmode end");
         }

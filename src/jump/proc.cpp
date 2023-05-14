@@ -134,8 +134,8 @@ const log_item_t &jmpPreLog(uint16_t old) {
 uint32_t jmpPreInterval(uint16_t old) {
     uint32_t interval = 0;
     
-    if (old > logcursor.capacity())
-        old = logcursor.capacity();
+    if (old > logcursor.size())
+        old = logcursor.size();
 
     for (; old > 0; old--) {
         interval += logall[logcursor[old-1]].tmoffset;
@@ -194,7 +194,8 @@ bool jmpTakeoffCheck() {
 static void altState(ac_jmpmode_t prev, ac_jmpmode_t jmpmode) {
     //MONITOR("state: %d / %d (cnt %d, alt %.0f)", prev, jmpmode, ac.jmpcnt(), ac.alt());
     auto tm = tmNow();
-    MONITOR("time(%d/%d) %d.%02d.%d %d:%02d:%02d", jmpmode, ac.jmpcnt(), tm.day, tm.mon, tm.year, tm.h, tm.m, tm.s);
+    MONITOR("mode(%d/%d) %d -  %d.%02d.%d %d:%02d:%02d", jmpmode, ac.jmpcnt(), ac.alt(), tm.day, tm.mon, tm.year, tm.h, tm.m, tm.s);
+    altchartmode(jmpmode, ac.jmpcnt());
 
     if ((prev == ACJMP_FREEFALL) && cfg.d().dsplautoff) {
         // Восстанавливаем обработчики после принудительного FF-режима
@@ -305,6 +306,8 @@ void jmpProcess() {
     _pressgnd = ac.pressgnd();
     _altlast = ac.alt();
     _toffcnt = 0;
+    if (ac.state() > ACST_INIT)
+        altchartadd(ac.alt(), ac.altapp());
     
     // Автокорректировка нуля
     if (cfg.d().gndauto &&
