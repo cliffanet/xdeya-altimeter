@@ -300,14 +300,14 @@ void jmpStop() {
  * ------------------------------------------------------------------------------------------- */
 void jmpProcess() {
     static uint32_t tck;
-    uint32_t interval = utm_diff32(tck, tck);
-    ac.tick(bmp.readPressure(), interval / 1000);
-    jmpPreLogAdd(interval / 1000);
+    uint32_t interval = utm_diff32(tck, tck) / 1000;
+    ac.tick(bmp.readPressure(), interval);
+    jmpPreLogAdd(interval);
     _pressgnd = ac.pressgnd();
     _altlast = ac.alt();
     _toffcnt = 0;
     if (ac.state() > ACST_INIT)
-        altchartadd(ac.alt(), ac.altapp());
+        altchartadd(interval, ac.alt(), ac.altapp(), ac.speedapp());
     
     // Автокорректировка нуля
     if (cfg.d().gndauto &&

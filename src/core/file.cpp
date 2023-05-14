@@ -22,7 +22,14 @@ File dirIntOpen() {
 }
 
 #ifdef USE_SDCARD
+uint16_t sdinit = 0;
 bool fileExtInit() {
+    if (sdinit > 0) {
+        sdinit++;
+        CONSOLE("card double init: %d", sdinit);
+        return true;
+    }
+
     if (!SD.begin(PIN_SDCARD)) {
         CONSOLE("SD Mount Failed");
         initok &= ~1;
@@ -32,11 +39,19 @@ bool fileExtInit() {
     CONSOLE("card init: type: %d, size: %llu", SD.cardType(), SD.cardSize());
     
     initok |= 1;
+    sdinit ++;
     
     return true;
 }
 
 void fileExtStop() {
+    if (sdinit > 0)
+        sdinit--;
+    if (sdinit > 0) {
+        CONSOLE("card stop, used: %d", sdinit);
+        return;
+    }
+    
     SD.end();
     CONSOLE("card stop");
     initok &= ~1;

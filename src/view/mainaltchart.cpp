@@ -1,28 +1,114 @@
 
 #include "main.h"
 #include "info.h"
+#include "../core/worker.h"
+#include "../core/filetxt.h"
 #include "../filtlib/ring.h"
 #include "../clock.h"
 #include "../monlog.h"
 
 #ifdef FWVER_DEBUG
 
-class ViewMainAltChart : public ViewMain {
     typedef struct {
+        uint16_t interval;
         int val;
         int avg;
+        float speed;
         char mode;
         bool ismode;
         uint16_t mcnt;
     } alt_t;
+
+class altChartWrk : public Wrk {
+    ring<alt_t> m_log;
+    FileTxt m_fh;
+    uint32_t m_i = 0;
+
+public:
+    altChartWrk(ring<alt_t> &_log) : m_log(_log) {
+        CONSOLE("save altchart(0x%08x) begin: %d", this, m_log.size());
+    }
+    ~altChartWrk() {
+        CONSOLE("save altchart(0x%08x) destroy", this);
+    }
+    
+    state_t run() {
+
+    WPROC
+#ifdef USE_SDCARD
+        if (!fileExtInit())
+            return END;
+#else
+        return END;
+#endif
+        
+    WPRC_RUN
+    char fname[64];
+    auto tm = tmNow();
+    snprintf_P(
+        fname, sizeof(fname),
+        PSTR("/xdeya_altlog-%04d-%02d-%02d_%02d%02d%02d.csv"),
+        tm.year, tm.mon, tm.day,
+        tm.h, tm.m, tm.s
+    );
+    if (!m_fh.open(fname, FileMy::MODE_WRITE, true)) {
+        CONSOLE("open fail");
+        return END;
+    }
+
+    WPRC_RUN
+    char head[256];
+    strncpy_P(head, PSTR("interval;alt;avg;speed;ismode;mode"), sizeof(head));
+    head[sizeof(head)-1] = '\0';
+    if (!m_fh.print_line(head)) {
+        CONSOLE("white head fail");
+        return END;
+    }
+
+    WPRC_RUN
+    const auto &a = m_log[m_i];
+    char m[32];
+    if (a.mode)
+        snprintf_P(m, sizeof(m), PSTR("%c-%d"), a.mode, a.mcnt);
+    else
+        m[0] = '\0';
+    char sp[16];
+    snprintf_P(sp, sizeof(sp), PSTR("%0.1f"), a.speed);
+    sp[strlen(sp)-2] = ',';
+    char s[256];
+    snprintf_P(
+        s, sizeof(s), PSTR("%u;%d;%d;%s;%d;%s"),
+        a.interval, a.val, a.avg, sp, a.ismode, m
+    );
+    if (!m_fh.print_line(s)) {
+        CONSOLE("white(%u) fail", m_i);
+        return END;
+    }
+
+    m_i++;
+    if (m_i < m_log.size())
+        return RUN;
+        
+    WPRC(END)
+    }
+    
+    void end() {
+        m_fh.close();
+        fileExtStop();
+        CONSOLE("save altchart(0x%08x) stopped", this);
+    }
+};
+
+class ViewMainAltChart : public ViewMain {
     ring<alt_t> m_log;
     int m_min = 0, m_max = 0;
+    int m_save = 0;
 
     public:
         ViewMainAltChart() : m_log(60*10*2) { }
 
-        void add(int val, int avg) {
-            m_log.push_back({ val, avg, '\0', false, 0 });
+        void add(uint16_t interval, int val, int avg, float speed) {
+            m_log.push_back({ interval, val, avg, speed, '\0', false, 0 });
 
             m_min = m_log[0].val;
             m_max = m_log[0].val;
@@ -60,8 +146,17 @@ class ViewMainAltChart : public ViewMain {
         }
 
         void btnSmpl(btn_code_t btn) {
-            if (btn == BTN_SEL)
-                setViewInfoDebug();
+            switch (btn) {
+                case BTN_SEL:
+                    setViewInfoDebug();
+                    break;
+                case BTN_UP:
+                    m_save = 5;
+                    break;
+                case BTN_DOWN:
+                    m_save = 80;
+                    break;
+            }
         }
         
         void draw(U8G2 &u8g2) {
@@ -77,6 +172,20 @@ class ViewMainAltChart : public ViewMain {
 
             char s[32];
             u8g2.setFont(menuFont);
+
+            if (m_save > 0) {
+                // сообщение о сохранении в файл
+                if (m_save > 5)
+                    snprintf_P(s, sizeof(s), PSTR("save %d sec"), (m_save-5)/5);
+                else
+                    snprintf_P(s, sizeof(s), PSTR("saving..."));
+                u8g2.drawTxt(30, u8g2.getAscent(), s);
+
+                if (m_save == 5)
+                    wrkRun<altChartWrk>(m_log);
+                
+                m_save--;
+            }
 
             // вертикальная шкала
             u8g2.drawLine(0, 0, 5, 0);
@@ -125,7 +234,9 @@ class ViewMainAltChart : public ViewMain {
 static ViewMainAltChart vAltChart;
 void setViewMainAltChart() { viewSet(vAltChart); }
 
-void altchartadd(int val, int avg) { vAltChart.add(val, avg); }
+void altchartadd(uint16_t interval, int val, int avg, float speed) {
+    vAltChart.add(interval, val, avg, speed);
+}
 void altchartmode(int m, uint16_t cnt) { vAltChart.mode(m, cnt); }
 
 #endif // FWVER_DEBUG
