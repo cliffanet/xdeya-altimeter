@@ -72,7 +72,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_NAVON_POWERON      "Вкл. при включении"
 #define TXT_MENU_NAVON_TRKREC       "Вкл. при записи трека"
 #define TXT_MENU_NAVON_TAKEOFF      "Вкл. на высоте"
-#define TXT_MENU_NAVON_OFFLAND      "Выключать при приземлении"
+#define TXT_MENU_NAVON_OFFLAND      "Выкл. на приземлении"
 
 #define TXT_MENU_NAV_GNSS           "Режим"
 #define TXT_MENU_NAV_GNSS_GLONASS   "GLONASS"

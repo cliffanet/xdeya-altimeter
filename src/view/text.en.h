@@ -63,10 +63,10 @@
 #define TXT_MENU_POWEROFF_AFTON     "Aft. Pwr-On"
 
 #define TXT_MENU_NAVON_CURRENT      "Current State"
-#define TXT_MENU_NAVON_POWERON      "Auto-On by Pwr-On"
-#define TXT_MENU_NAVON_TRKREC       "Auto-On by Track Rec"
-#define TXT_MENU_NAVON_TAKEOFF      "Auto-On by Takeoff Alt"
-#define TXT_MENU_NAVON_OFFLAND      "Force-Off by Landing"
+#define TXT_MENU_NAVON_POWERON      "On by Pwr-On"
+#define TXT_MENU_NAVON_TRKREC       "On by Track Rec"
+#define TXT_MENU_NAVON_TAKEOFF      "On by Takeoff Alt"
+#define TXT_MENU_NAVON_OFFLAND      "Off by Landing"
 
 #define TXT_MENU_NAV_GNSS           "GNSS"
 #define TXT_MENU_NAV_GNSS_GLONASS   "GLONASS"
