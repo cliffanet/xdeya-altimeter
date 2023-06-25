@@ -81,6 +81,12 @@ typedef enum {
 // Время (мс), которое должен удерживаться state() == ACST_GROUND для перехода в NONE
 #define AC_JMP_GND_TIME         6000
 
+// порог переключения в sqbig (сильные турбуленции)
+#define AC_JMP_SQBIG_THRESH     7
+#define AC_JMP_SQBIG_MIN        3
+// время (кол-во тиков) между элементами профайла начала прыжка
+#define AC_JMP_PROFILE_COUNT    10
+
 // режим прыжка
 typedef enum {
     ACJMP_INIT = -1,
@@ -140,7 +146,11 @@ class AltCalc
         void jmpreset() { _jmpcnt = 0; _jmptm = 0; }
         
         // среднеквадратическое отклонение прямой скорости
-        const double        sqdiff()  const { return _sqdiff; }
+        const double        sqdiff()    const { return _sqdiff; }
+        // большая турбуленция (высокое среднеквадратическое отклонение)
+        const bool          sqbig()     const { return _sqbig; }
+        const uint32_t      sqbigtm()   const { return _sqbigtm; }
+        const uint32_t      sqbigcnt()  const { return _sqbigcnt; }
         // коэфициент kb - фактически высота в km самом начале бувера вычислений
         const double        kb()  const { return _kb; }
         
@@ -153,25 +163,37 @@ class AltCalc
         // пересчитать из данных коэфициенты линейной аппроксимации и средние значения
         void dcalc();
         // обновляет текущее состояние, вычисленное по коэфициентам
-        ac_state_t stateupdate();
         // сбрасывает "ноль" высоты в текущие показания и обнуляет все состояния
         void gndreset();
         void gndset(float press, uint16_t interval = 100);
+
+        // временно для отладки выводим данные по отработке профиля начала прыжка
+        const uint8_t   ffprof()    const { return _ffprof; }
+        const uint32_t  ffproftm()  const { return _ffproftm; }
+        const int32_t   ffalt()  const { return _altprof; }
   
     private:
         float _pressgnd = 101325;
         ac_data_t _data[AC_DATA_COUNT];
         uint8_t _c = 0xff;
         double _ka = 0, _kb = 0, _sqdiff = 0;
-        float _alt0 = 0, _press0 = 0, _altavg = 0, _speedavg = 0;
+        float _alt0 = 0, _press0 = 0, _altavg = 0, _altprof = 0, _speedavg = 0;
         uint32_t _interval = 0;
         ac_state_t _state = ACST_INIT;
         ac_direct_t _dir = ACDIR_INIT;
         ac_jmpmode_t _jmpmode = ACJMP_INIT;
+        bool _sqbig = false;
+        uint8_t _ffprof = 0;
         uint32_t _statecnt = 0, _statetm = 0;
         uint32_t _dircnt = 0, _dirtm = 0;
         uint32_t _jmpcnt = 0, _jmptm = 0;
         uint32_t _jmpccnt = 0, _jmpctm = 0;
+        uint32_t _sqbigcnt = 0, _sqbigtm = 0;
+        uint32_t _ffprofcnt = 0, _ffproftm = 0;
+
+        ac_state_t stateupdate(uint16_t tinterval);
+        // вынесенное отдельно из stateupdate(); пересчёт в режиме takeoff
+        void toffupdate(uint16_t tinterval);
         
         int8_t          i2i(int8_t i);
         const int8_t    ifrst() const;

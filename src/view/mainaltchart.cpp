@@ -3,6 +3,7 @@
 #include "info.h"
 #include "../core/worker.h"
 #include "../core/filetxt.h"
+#include "../jump/proc.h"
 #include "../filtlib/ring.h"
 #include "../clock.h"
 #include "../monlog.h"
@@ -151,10 +152,10 @@ class ViewMainAltChart : public ViewMain {
                     setViewInfoDebug();
                     break;
                 case BTN_UP:
-                    m_save = 5;
+                    m_save = 80;
                     break;
                 case BTN_DOWN:
-                    m_save = 80;
+                    m_save = 305;
                     break;
             }
         }
@@ -168,10 +169,25 @@ class ViewMainAltChart : public ViewMain {
 #endif
             
             // Высота
-            ViewMain::drawAlt(u8g2, -1, u8g2.getAscent());
+            int y = u8g2.getAscent();
+            ViewMain::drawAlt(u8g2, -1, y);
 
             char s[32];
             u8g2.setFont(menuFont);
+
+            // параметры altcalc
+            y += u8g2.getAscent() + 5;
+            snprintf_P(s, sizeof(s), PSTR("sq: %0.1f (%ds)"), altCalc().sqdiff(), altCalc().sqbigtm()/1000);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            y += u8g2.getAscent() + 2;
+            snprintf_P(s, sizeof(s), PSTR("state: %d (%ds)"), altCalc().state(), altCalc().statetm()/1000);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            y += u8g2.getAscent() + 2;
+            snprintf_P(s, sizeof(s), PSTR("jmp: %d (%ds)"), altCalc().jmpmode(), altCalc().jmptm()/1000);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
+            y += u8g2.getAscent() + 2;
+            snprintf_P(s, sizeof(s), PSTR("ff: %d (%d) (%ds)"), altCalc().ffprof(), altCalc().ffalt(), altCalc().ffproftm()/1000);
+            u8g2.drawTxt(u8g2.getDisplayWidth()-u8g2.getStrWidth(s), y, s);
 
             if (m_save > 0) {
                 // сообщение о сохранении в файл

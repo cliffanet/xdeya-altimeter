@@ -52,8 +52,10 @@ void AltCalc::tick(float press, uint16_t tinterval)
     _statecnt ++;
     _jmptm += tinterval;
     _jmpcnt ++;
+    _sqbigtm += tinterval;
+    _sqbigcnt ++;
     
-    stateupdate();
+    stateupdate(tinterval);
 }
 
 void AltCalc::dcalc() {
@@ -109,7 +111,7 @@ void AltCalc::dcalc() {
     _sqdiff = sqrt(sq / (n-1));
 }
 
-ac_state_t AltCalc::stateupdate() {
+ac_state_t AltCalc::stateupdate(uint16_t tinterval) {
     ac_direct_t dir = // направление движения
         speedapp() > AC_SPEED_FLAT ?
             ACDIR_UP :
@@ -118,6 +120,19 @@ ac_state_t AltCalc::stateupdate() {
             ACDIR_FLAT;
     if (_dir != dir) {
         _dir = dir;
+        _dircnt = 0;
+        _dirtm = 0;
+    }
+
+    // большая турбуленция (высокое среднеквадратическое отклонение)
+    if (!_sqbig && (_sqdiff >= AC_JMP_SQBIG_THRESH)) {
+        _sqbig = true;
+        _dircnt = 0;
+        _dirtm = 0;
+    }
+    else
+    if (_sqbig && (_sqdiff < AC_JMP_SQBIG_MIN)) {
+        _sqbig = false;
         _dircnt = 0;
         _dirtm = 0;
     }
@@ -185,6 +200,9 @@ ac_state_t AltCalc::stateupdate() {
             break;
             
         case ACJMP_TAKEOFF:
+            toffupdate(tinterval);
+            return st;
+            /*
             if ((_jmpccnt == 0) && (speedapp() < -AC_JMP_SPEED_MIN)) {
                 // При скорости снижения выше пороговой
                 // включаем счётчик времени прыжка
@@ -219,6 +237,7 @@ ac_state_t AltCalc::stateupdate() {
                 _jmpctm = 0;
             }
             break;
+            */
             
         case ACJMP_FREEFALL:
             // Переход в режим CNP после начала прыга,
@@ -262,6 +281,64 @@ ac_state_t AltCalc::stateupdate() {
     }
     
     return st;
+}
+
+// профиль начала прыжка
+const int8_t ffprofile[] = { -10, -20, -30, -10, -4, -4 };
+#define chktresh(val,tresh) (((tresh) < 0) && ((val) <= (tresh))) || (((tresh) >= 0) && ((val) >= (tresh)))
+
+void AltCalc::toffupdate(uint16_t tinterval) {
+    if (_ffprof == 0) {
+        // стартуем определять вхождение в профиль по средней скорости
+        if (chktresh(speedapp(), ffprofile[0])) {
+            _ffprof ++;
+            _altprof = altapp();
+            _ffproftm = 0;
+            _ffprofcnt = AC_DATA_COUNT/2;
+        }
+        return;
+    }
+
+    // теперь считаем интервал от самого первого пункта в профиле
+    _ffproftm += tinterval;
+    _ffprofcnt ++;
+
+    // далее - каждые 10 тиков от старта будем проверять каждый следующий пункт профиля
+    if ((_ffprofcnt/AC_JMP_PROFILE_COUNT) < _ffprof)
+        return;
+
+    if (chktresh(altapp()-_altprof, ffprofile[_ffprof])) {
+        // мы всё ещё соответствуем профилю начала прыга
+        _ffprof ++;
+
+        if (_ffprof >= sizeof(ffprofile)) {
+            // профиль закончился, принимаем окончательное решение
+            _jmpmode = speedapp() >= -AC_JMP_SPEED_CANOPY ? ACJMP_CANOPY : ACJMP_FREEFALL;
+            _jmptm = _ffproftm;
+            _jmpcnt = _ffprofcnt;
+            _ffprof = 0;
+            _altprof = 0;
+            _ffproftm = 0;
+            _ffprofcnt = 0;
+        }
+
+        _altprof = altapp();
+        return;
+    }
+
+    // мы вышли за пределы профиля
+    if (chktresh(speedapp(), ffprofile[0])) {
+        // но мы ещё в рамках старта профиля
+        _ffprof = 1;
+        _altprof = altapp();
+    }
+    else {
+        // выход из профиля полный - полный сброс процесса
+        _ffprof = 0;
+        _altprof = 0;
+    }
+    _ffproftm = 0;
+    _ffprofcnt = 0;
 }
 
 void AltCalc::gndreset() {
