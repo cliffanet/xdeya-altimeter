@@ -40,13 +40,18 @@ class ViewMainAlt : public ViewMain {
                 u8g2.drawGlyph(-5, 48, '-');
 #else // if HWVER < 4
             u8g2.setFont(u8g2_font_logisoso62_tn);
-            sprintf_P(s, PSTR("%0.1f"), abs(alt / 1000));
-            //uint8_t x = 17; // Для немоноширных шрифтов автоцентровка не подходит (прыгает при смене цифр)
-            //uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2;
-            uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))-45;
-            u8g2.drawStr(x, 80, s);
-            if (alt < -30) // чтобы минус не сдвигал цифры, пишем его отдельно
-                u8g2.drawGlyph(0, 70, '-');
+            if (cfg.d().altmeter && (alt < 998)) {
+                drawAlt(u8g2, -20, 80);
+            }
+            else {
+                sprintf_P(s, PSTR("%0.1f"), abs(alt / 1000));
+                //uint8_t x = 17; // Для немоноширных шрифтов автоцентровка не подходит (прыгает при смене цифр)
+                //uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))/2;
+                uint8_t x = (u8g2.getDisplayWidth()-u8g2.getStrWidth(s))-45;
+                u8g2.drawStr(x, 80, s);
+                if (alt < -30) // чтобы минус не сдвигал цифры, пишем его отдельно
+                    u8g2.drawGlyph(0, 70, '-');
+            }
 #endif // if HWVER < 4
             
             switch (ac.direct()) {

@@ -58,6 +58,10 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_GND_CORRECTONGND   "На земле"
 #define TXT_MENU_GND_ALTCORRECT     "Превышение площадки"
 
+#define TXT_MENU_ALT_NUMMODE        "Единица высоты"
+#define TXT_MENU_ALT_NUMMETER       "m/km"
+#define TXT_MENU_ALT_NUMKM          "km"
+
 #define TXT_MENU_AUTOMAIN_FF        "Своб. падение"
 #define TXT_MENU_AUTOMAIN_CNP       "После раскрытия"
 #define TXT_MENU_AUTOMAIN_LAND      "При приземлении"

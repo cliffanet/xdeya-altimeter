@@ -52,6 +52,10 @@
 #define TXT_MENU_GND_CORRECTONGND   "On GND"
 #define TXT_MENU_GND_ALTCORRECT     "Alt correction"
 
+#define TXT_MENU_ALT_NUMMODE        "Alt numbers"
+#define TXT_MENU_ALT_NUMMETER       "m/km"
+#define TXT_MENU_ALT_NUMKM          "km"
+
 #define TXT_MENU_AUTOMAIN_FF        "Auto FF-screen"
 #define TXT_MENU_AUTOMAIN_CNP       "On CNP"
 #define TXT_MENU_AUTOMAIN_LAND      "After Land"

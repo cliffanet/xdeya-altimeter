@@ -325,14 +325,14 @@ static const menu_el_t menugnd[] {
     {   // разрешение принудительной калибровки: нет, "на земле", всегда
         .name = PTXT(MENU_GND_MANUALALLOW),
         .enter = [] () {
-            cfg.set().gndmanual = !cfg.d().gndmanual;
+            cfg.set().gndmanual = cfg.d().gndmanual ? 0 : 1;
         },
         .showval = [] (char *txt) { valYes(txt, cfg.d().gndmanual); },
     },
     {   // выбор автоматической калибровки: нет, автоматически на земле
         .name = PTXT(MENU_GND_AUTOCORRECT),
         .enter = [] () {
-            cfg.set().gndauto = !cfg.d().gndauto;
+            cfg.set().gndauto = cfg.d().gndauto ? 0 : 1;
         },
         .showval = [] (char *txt) { strcpy_P(txt, cfg.d().gndauto ? PTXT(MENU_GND_CORRECTONGND) : PTXT(MENU_NO)); },
     },
@@ -836,6 +836,13 @@ static const menu_el_t menuoptions[] {
     {
         .name       = PTXT(MENU_OPTION_GNDCORRECT),
         .enter      = subMenu(menugnd),
+    },
+    {   // отображение высоты в режиме высотомера
+        .name       = PTXT(MENU_ALT_NUMMODE),
+        .enter      = [] () {
+            cfg.set().altmeter = !cfg.d().altmeter;
+        },
+        .showval = [] (char *txt) { strcpy_P(txt, cfg.d().altmeter ? PTXT(MENU_ALT_NUMMETER) : PTXT(MENU_ALT_NUMKM)); },
     },
     {
         .name       = PTXT(MENU_OPTION_AUTOSCREEN),
