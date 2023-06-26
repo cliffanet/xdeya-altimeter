@@ -33,6 +33,10 @@ static struct {
     pvt     : 15,
 };
 
+const bool gps_data_s::disAcc() const {
+    return cfg.d().navnoacc;
+}
+
 
 /* ------------------------------------------------------------------------------------------- *
  *  NAV-инициализация

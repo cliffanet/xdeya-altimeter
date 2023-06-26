@@ -67,6 +67,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_POWEROFF_FORCE     "Выключить вручную"
 #define TXT_MENU_POWEROFF_NOFLY     "Без взлётов"
 #define TXT_MENU_POWEROFF_AFTON     "После включения"
+#define TXT_MENU_POWEROFF_HR        "%d ч"
 
 #define TXT_MENU_NAVON_CURRENT      "Текущее состояние"
 #define TXT_MENU_NAVON_POWERON      "Вкл. при включении"
@@ -124,6 +125,7 @@ extern const uint8_t u8g2_font_robotobd_08_tx[] U8G2_FONT_SECTION("u8g2_font_rob
 #define TXT_MENU_OPTION_COMPEN      "Использовать Компас"
 #define TXT_MENU_OPTION_TXTCOURSE   "Курс числом"
 #define TXT_MENU_OPTION_BTNDO       "Функции кнопок"
+#define TXT_MENU_OPTION_NAVNOACC    "Фильтр по точности"
 #define TXT_MENU_OPTION_TRACK       "Трэк"
 #define TXT_MENU_OPTION_TIME        "Часы"
 

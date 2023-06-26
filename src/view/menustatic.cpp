@@ -465,7 +465,7 @@ static const menu_el_t menupoweroff[] {
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().hrpwrnofly > 0)
-                valInt(txt, cfg.d().hrpwrnofly);
+                sprintf_P(txt, PTXT(MENU_POWEROFF_HR), cfg.d().hrpwrnofly);
             else
                 strcpy_P(txt, PTXT(MENU_DISABLE));
         },
@@ -483,7 +483,7 @@ static const menu_el_t menupoweroff[] {
         .enter      = NULL,
         .showval    = [] (char *txt) {
             if (cfg.d().hrpwrafton > 0)
-                valInt(txt, cfg.d().hrpwrafton);
+                sprintf_P(txt, PTXT(MENU_POWEROFF_HR), cfg.d().hrpwrafton);
             else
                 strcpy_P(txt, PTXT(MENU_DISABLE));
         },
@@ -852,26 +852,27 @@ static const menu_el_t menuoptions[] {
     {   // использовать компас
         .name       = PTXT(MENU_OPTION_COMPEN),
         .enter      = [] () {
-            if ((cfg.d().flagen & FLAGEN_COMPAS) == 0) {
-                cfg.set().flagen |= FLAGEN_COMPAS;
+            cfg.set().compas = cfg.d().compas ? 0 : 1;
+            if (cfg.d().compas)
                 compInit();
-            }
-            else {
-                cfg.set().flagen &= ~FLAGEN_COMPAS;
+            else
                 compStop();
-            }
         },
-        .showval    = [] (char *txt) { valYes(txt, (cfg.d().flagen & FLAGEN_COMPAS) > 0); },
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().compas); },
     },
     {   // Курс цифрами
         .name       = PTXT(MENU_OPTION_TXTCOURSE),
         .enter      = [] () {
-            if ((cfg.d().flagen & FLAGEN_TXTCOURSE) == 0)
-                cfg.set().flagen |= FLAGEN_TXTCOURSE;
-            else
-                cfg.set().flagen &= ~FLAGEN_TXTCOURSE;
+            cfg.set().navtxtcourse = cfg.d().navtxtcourse ? 0 : 1;
         },
-        .showval    = [] (char *txt) { valYes(txt, (cfg.d().flagen & FLAGEN_TXTCOURSE) > 0); },
+        .showval    = [] (char *txt) { valYes(txt, cfg.d().navtxtcourse); },
+    },
+    {   // Использование точности навигации
+        .name       = PTXT(MENU_OPTION_NAVNOACC),
+        .enter      = [] () {
+            cfg.set().navnoacc = cfg.d().navnoacc ? 0 : 1;
+        },
+        .showval    = [] (char *txt) { valYes(txt, !cfg.d().navnoacc); },
     },
     {
         .name       = PTXT(MENU_OPTION_BTNDO),

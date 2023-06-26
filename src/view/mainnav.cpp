@@ -342,7 +342,7 @@ class ViewMainNav : public ViewMain {
             
             drawCompass(ARG_COMP_CALL, compass().head);
             
-            if ((cfg.d().flagen & FLAGEN_TXTCOURSE) > 0)
+            if (cfg.d().navtxtcourse)
                 drawTxtCourse(ARG_COMP_CALL);
         }
 };

@@ -31,7 +31,7 @@
 
 #define DEGRAD 0.017453292519943295769236907684886
 
-typedef struct {
+typedef struct gps_data_s {
 	int32_t  lon;      // Longitude                    (deg * 10^7)
 	int32_t  lat;      // Latitude                     (deg * 10^7)
 	int32_t  hMSL;     // Height above mean sea level  (mm)
@@ -53,18 +53,20 @@ typedef struct {
     tm_t tm;
     bool rcvok;
 
+    const bool disAcc() const;
+
     inline
     bool valid()            const { return rcvok && (numSV > 0) && (gpsFix == 3); }
     inline
     bool validPoint()       const { return rcvok && ((lon < -2000) || (lon > 2000)) && ((lat < -2000) || (lat > 2000)); }
     inline
-    bool validLocation()    const { return valid() && (hAcc < 30000); }
+    bool validLocation()    const { return valid() && (disAcc() || (hAcc < 30000)); }
     inline
-    bool validVertical()    const { return valid() && (vAcc < 30000); }
+    bool validVertical()    const { return valid() && (disAcc() || (vAcc < 30000)); }
     inline
-    bool validSpeed()       const { return validLocation() && (sAcc < 1000); }
+    bool validSpeed()       const { return validLocation() && (disAcc() || (sAcc < 1000)); }
     inline
-    bool validHead()        const { return validLocation() && (cAcc < 5000000); }
+    bool validHead()        const { return validLocation() && (disAcc() || (cAcc < 5000000)); }
     inline
     bool validTime()        const { return valid() && (tm.year > 2000); }
 

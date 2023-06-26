@@ -61,6 +61,7 @@
 #define TXT_MENU_POWEROFF_FORCE     "Force Off"
 #define TXT_MENU_POWEROFF_NOFLY     "No Fly hours"
 #define TXT_MENU_POWEROFF_AFTON     "Aft. Pwr-On"
+#define TXT_MENU_POWEROFF_HR        "%d hr"
 
 #define TXT_MENU_NAVON_CURRENT      "Current State"
 #define TXT_MENU_NAVON_POWERON      "On by Pwr-On"
@@ -117,6 +118,7 @@
 #define TXT_MENU_OPTION_AUTONAV     "Auto Navi-On"
 #define TXT_MENU_OPTION_COMPEN      "Enable Compass"
 #define TXT_MENU_OPTION_TXTCOURSE   "Course text"
+#define TXT_MENU_OPTION_NAVNOACC    "Accuracy filter"
 #define TXT_MENU_OPTION_BTNDO       "Button operation"
 #define TXT_MENU_OPTION_TRACK       "Track"
 #define TXT_MENU_OPTION_TIME        "Time"

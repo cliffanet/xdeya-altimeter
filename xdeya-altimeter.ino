@@ -58,7 +58,7 @@ void setup() {
     // Загружаем конфиги, но apply делаем только при холодном старте (не из sleep)    
     cfgLoad(pwrMode() != PWR_SLEEP);
     
-    if ((cfg.d().flagen & FLAGEN_COMPAS) > 0)
+    if (cfg.d().compas)
         compInit();
     
     CONSOLE("begin");
