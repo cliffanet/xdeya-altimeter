@@ -307,7 +307,7 @@ void jmpProcess() {
     _altlast = ac.alt();
     _toffcnt = 0;
     if (ac.state() > ACST_INIT)
-        altchartadd(interval, ac.alt(), ac.altapp(), ac.speedapp());
+        altchartadd(interval, ac.alt(), ac.altapp(), ac.speedapp(), ac.sqdiff());
     
     // Автокорректировка нуля
     if (cfg.d().gndauto &&

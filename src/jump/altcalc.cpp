@@ -284,7 +284,7 @@ ac_state_t AltCalc::stateupdate(uint16_t tinterval) {
 }
 
 // профиль начала прыжка
-const int8_t ffprofile[] = { -10, -20, -30, -10, -4, -4 };
+const int8_t ffprofile[] = { -10, -27, -19, -8, -4, -4 };
 #define chktresh(val,tresh) (((tresh) < 0) && ((val) <= (tresh))) || (((tresh) >= 0) && ((val) >= (tresh)))
 
 void AltCalc::toffupdate(uint16_t tinterval) {
@@ -294,7 +294,7 @@ void AltCalc::toffupdate(uint16_t tinterval) {
             _ffprof ++;
             _altprof = altapp();
             _ffproftm = 0;
-            _ffprofcnt = AC_DATA_COUNT/2;
+            _ffprofcnt = 0;
         }
         return;
     }
@@ -315,7 +315,7 @@ void AltCalc::toffupdate(uint16_t tinterval) {
             // профиль закончился, принимаем окончательное решение
             _jmpmode = speedapp() >= -AC_JMP_SPEED_CANOPY ? ACJMP_CANOPY : ACJMP_FREEFALL;
             _jmptm = _ffproftm;
-            _jmpcnt = _ffprofcnt;
+            _jmpcnt = _ffprofcnt + AC_DATA_COUNT; // скорость средняя задерживается примерно на половину-весь размер буфера
             _ffprof = 0;
             _altprof = 0;
             _ffproftm = 0;

@@ -82,8 +82,8 @@ typedef enum {
 #define AC_JMP_GND_TIME         6000
 
 // порог переключения в sqbig (сильные турбуленции)
-#define AC_JMP_SQBIG_THRESH     7
-#define AC_JMP_SQBIG_MIN        3
+#define AC_JMP_SQBIG_THRESH     12
+#define AC_JMP_SQBIG_MIN        4
 // время (кол-во тиков) между элементами профайла начала прыжка
 #define AC_JMP_PROFILE_COUNT    10
 

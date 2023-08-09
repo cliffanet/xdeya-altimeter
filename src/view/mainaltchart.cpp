@@ -15,6 +15,7 @@
         int val;
         int avg;
         float speed;
+        float sqdiff;
         char mode;
         bool ismode;
         uint16_t mcnt;
@@ -59,7 +60,7 @@ public:
 
     WPRC_RUN
     char head[256];
-    strncpy_P(head, PSTR("interval;alt;avg;speed;ismode;mode"), sizeof(head));
+    strncpy_P(head, PSTR("interval;alt;avg;speed;sqdiff;ismode;mode"), sizeof(head));
     head[sizeof(head)-1] = '\0';
     if (!m_fh.print_line(head)) {
         CONSOLE("white head fail");
@@ -76,10 +77,13 @@ public:
     char sp[16];
     snprintf_P(sp, sizeof(sp), PSTR("%0.1f"), a.speed);
     sp[strlen(sp)-2] = ',';
+    char sq[16];
+    snprintf_P(sq, sizeof(sq), PSTR("%0.1f"), a.sqdiff);
+    sq[strlen(sq)-2] = ',';
     char s[256];
     snprintf_P(
-        s, sizeof(s), PSTR("%u;%d;%d;%s;%d;%s"),
-        a.interval, a.val, a.avg, sp, a.ismode, m
+        s, sizeof(s), PSTR("%u;%d;%d;%s;%s;%d;%s"),
+        a.interval, a.val, a.avg, sp, sq, a.ismode, m
     );
     if (!m_fh.print_line(s)) {
         CONSOLE("white(%u) fail", m_i);
@@ -106,10 +110,10 @@ class ViewMainAltChart : public ViewMain {
     int m_save = 0;
 
     public:
-        ViewMainAltChart() : m_log(60*10*2) { }
+        ViewMainAltChart() : m_log(60*10*3) { }
 
-        void add(uint16_t interval, int val, int avg, float speed) {
-            m_log.push_back({ interval, val, avg, speed, '\0', false, 0 });
+        void add(uint16_t interval, int val, int avg, float speed, float sqdiff) {
+            m_log.push_back({ interval, val, avg, speed, sqdiff, '\0', false, 0 });
 
             m_min = m_log[0].val;
             m_max = m_log[0].val;
@@ -250,8 +254,8 @@ class ViewMainAltChart : public ViewMain {
 static ViewMainAltChart vAltChart;
 void setViewMainAltChart() { viewSet(vAltChart); }
 
-void altchartadd(uint16_t interval, int val, int avg, float speed) {
-    vAltChart.add(interval, val, avg, speed);
+void altchartadd(uint16_t interval, int val, int avg, float speed, float sqdiff) {
+    vAltChart.add(interval, val, avg, speed, sqdiff);
 }
 void altchartmode(int m, uint16_t cnt) { vAltChart.mode(m, cnt); }
 

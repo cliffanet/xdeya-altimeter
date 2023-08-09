@@ -17,14 +17,14 @@ void monlog_P(const char *s, ...);
 #define MONITOR(txt, ...) monlog_P(LOG_FMT(txt), ##__VA_ARGS__)
 
 void setViewMainAltChart();
-void altchartadd(uint16_t interval, int val, int avg, float speed);
+void altchartadd(uint16_t interval, int val, int avg, float speed, float sqdiff);
 void altchartmode(int m, uint16_t cnt);
 
 #else // FWVER_DEBUG
 
 #define MONITOR(txt, ...)
 
-#define altchartadd(interval, val, avg, speed)
+#define altchartadd(interval, val, avg, speed, sqdiff)
 #define altchartmode(m, cnt)
 
 #endif // FWVER_DEBUG
