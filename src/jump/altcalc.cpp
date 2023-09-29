@@ -284,7 +284,7 @@ ac_state_t AltCalc::stateupdate(uint16_t tinterval) {
 }
 
 // профиль начала прыжка
-const int8_t ffprofile[] = { -10, -27, -19, -8, -4, -4 };
+const int8_t ffprofile[] = { -10, -23, -18, -8, -4, -2 };
 #define chktresh(val,tresh) (((tresh) < 0) && ((val) <= (tresh))) || (((tresh) >= 0) && ((val) >= (tresh)))
 
 void AltCalc::toffupdate(uint16_t tinterval) {
