@@ -6,6 +6,7 @@ import 'package:XdeYa/data/trkview.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:developer' as developer;
 
 import '../data/trkdata.dart';
@@ -54,6 +55,15 @@ class PageTrackCube extends StatelessWidget {
             _play!.cancel();
             _play = null;
         }
+    }
+
+    void browse() {
+        if (_matr.pos >= trk.data.length)
+            return;
+        final t = trk.data[_matr.pos];
+        final s = 'https://yandex.ru/maps/?l=sat&z=17&text=${t.lat}%2C${t.lon}&ll=${t.lon}%2C${t.lat}';
+
+        launchUrl(Uri.parse(s), mode: LaunchMode.externalApplication);
     }
 
     @override
@@ -149,6 +159,11 @@ class PageTrackCube extends StatelessWidget {
                                             _notify.value ++;
                                         },
                                         child: Icon(_play == null ? Icons.play_arrow : Icons.stop),
+                                    ),
+                                    FloatingActionButton(
+                                        heroTag: 'ya',
+                                        onPressed: browse,
+                                        child: const Icon(Icons.navigation),
                                     ),
                                 ]);
                             }
