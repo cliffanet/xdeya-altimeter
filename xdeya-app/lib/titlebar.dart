@@ -178,7 +178,7 @@ Widget getTitleBarClient(PageCode page) {
                     ),
                 );
             }
-            if ((Pager.top != PageCode.tracklist) && (Pager.top != PageCode.trackview)) {
+            if ((Pager.top != PageCode.tracklist) && (Pager.top != PageCode.trackview) && (Pager.top != PageCode.trackcube)) {
                 menu.add(
                     PopupMenuItem(
                         value: MenuCode.TrackList,
@@ -192,7 +192,7 @@ Widget getTitleBarClient(PageCode page) {
                     ),
                 );
             }
-            if (Pager.top == PageCode.trackview) {
+            if (Pager.top == PageCode.trackcube) {
                 menu.add(
                     PopupMenuItem(
                         value: MenuCode.SaveGpx,
