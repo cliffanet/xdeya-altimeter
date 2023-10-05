@@ -2,8 +2,8 @@
 
 Стабильная версия прошивки (только для [`v.0.5`](models/03.v.0.5.md)):
 
-* RU: [xdeya-altimeter.v0.7.5.hw5.ru.bin](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.5/xdeya-altimeter.v0.7.5.hw5.ru.bin)
-* EN: [xdeya-altimeter.v0.7.5.hw5.en.bin](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.5/xdeya-altimeter.v0.7.5.hw5.en.bin)
+* RU: [xdeya-altimeter.v0.7.6.hw5.ru.bin](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.6/xdeya-altimeter.v0.7.6.hw5.ru.bin)
+* EN: [xdeya-altimeter.v0.7.6.hw5.en.bin](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.6/xdeya-altimeter.v0.7.6.hw5.en.bin)
 
 ## Как обновить прошивку
 
@@ -17,15 +17,15 @@
 
 - Windows
 
-    [xdeya.v0.7.5.zip](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.5/xdeya.v0.7.5.zip)
+    [xdeya.v0.7.6.zip](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.6/xdeya.v0.7.6.zip)
 
 - MacOS
 
-    [xdeya.v0.7.5.dmg](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.5/xdeya.v0.7.5.dmg)
+    [xdeya.v0.7.6.dmg](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.6/xdeya.v0.7.6.dmg)
 
 - Android
 
-    [xdeya.v0.7.5.apk](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.5/xdeya.v0.7.5.apk)
+    [xdeya.v0.7.6.apk](https://github.com/cliffanet/xdeya-altimeter/releases/download/v0.7.6/xdeya.v0.7.6.apk)
 
 - iOS
 
