@@ -194,7 +194,12 @@ void compProcess() {
             _cmp.merr.z ++;
         }
         
-        if (cal.isempty())
+        if (
+                cal.isempty() ||
+                (cal.d().max.x == cal.d().min.x) || // защита от деления на ноль (см ниже на 19 строк)
+                (cal.d().max.y == cal.d().min.y) ||
+                (cal.d().max.z == cal.d().min.z)
+            )
             mag = _cmp.mag;
         else {
             vec16_t cen = {
