@@ -17,18 +17,20 @@
 2. На сайте https://www.silabs.com/support ищем:
 
     ```
-    CP210x_Universal_Windows_Driver
+    install_USBXpress_SDK.exe
     ```
 
     Устанавливаем.
 
-3. Подставляем PID и VID, генерируем драйвер, либо используем стандартный универсальный драйвер.
+3. USBXpress Driver: Подставляем PID и VID, генерируем драйвер, либо используем стандартный универсальный драйвер.
 
 4. Там же https://www.silabs.com/support:
 
     ```
     CP21xxCustomizationUtility
     ```
+    
+    либо: USBXpress Device Customization Utility (из п.2)
 
     Должно появиться устройство. Если устройство не видно, надо сгенерировать драйвер ещё раз.
 

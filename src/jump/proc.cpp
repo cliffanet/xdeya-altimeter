@@ -167,10 +167,9 @@ bool jmpTakeoffCheck() {
         _toffcnt ++;
         if (_toffcnt >= 10) {
             CONSOLE("is toff");
+            _toffcnt = 0;
             return true;
         }
-        else
-            _toffcnt = 0;
     }
     else {
         if (_toffcnt > 0)
